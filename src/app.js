@@ -1,16 +1,25 @@
 import React, { Component } from 'react';
-import { Button } from 'react-bootstrap';
 
-import HelloWorld from './components/helloworld';
+import NavigationBar from './components/navigation-bar';
 
 
 export default class App extends Component {
   render() {
     return (
       <div>
-        <HelloWorld subtitle="Hey! i'm a prop" />
-        <Button>Default</Button>
+        <NavigationBar title="App" />
+        <div className="container" style={styles.content}>
+          {this.props.children}
+        </div>
       </div>
     );
   }
 }
+
+App.propTypes = {
+  children: React.PropTypes.object,
+};
+
+const styles = {
+  content: {},
+};
