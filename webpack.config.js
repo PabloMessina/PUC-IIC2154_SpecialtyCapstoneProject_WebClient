@@ -1,5 +1,5 @@
-const path = require('path')
-const webpack = require('webpack')
+const path = require('path');
+const webpack = require('webpack');
 
 module.exports = {
   devtool: 'eval',
@@ -21,6 +21,9 @@ module.exports = {
       test: /\.js$/,
       loaders: ['react-hot', 'babel'],
       include: path.join(__dirname, 'src'),
+    }, {
+      test: /\.json$/,
+      loader: 'json-loader',
     }],
   },
-}
+};
