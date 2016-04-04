@@ -11,6 +11,10 @@ import Dashboard from './components/dashboard';
 import Login from './components/login/';
 import Join from './components/join/';
 
+// Development help
+// Go to: http://localhost:3000/template
+import Template from './utils/template';
+
 
 const Routing = (
   <Router history={browserHistory}>
@@ -18,6 +22,8 @@ const Routing = (
       <IndexRoute component={Dashboard} />
       <Route path="login" component={Login} />
       <Route path="join" component={Join} />
+
+      <Route path="template" component={Template} />
     </Route>
   </Router>
 );
