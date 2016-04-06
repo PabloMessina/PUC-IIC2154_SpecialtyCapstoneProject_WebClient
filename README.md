@@ -11,6 +11,9 @@ Clone this repository and name it `web-admin`:
 ```sh
 git clone https://github.com/iic2154-uc-cl/2016-1-Grupo5-WebAdmin.git web-admin
 cd web-admin
+
+# Move to the develop branch
+git checkout develop
 ```
 
 ### Setup
