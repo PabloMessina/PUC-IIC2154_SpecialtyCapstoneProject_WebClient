@@ -3,7 +3,7 @@ import { Panel, Row, Col, Input, ButtonInput, Alert } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
 
-import app from '../../app';
+import app, { login } from '../../app';
 
 
 export default class Login extends Component {
@@ -23,24 +23,17 @@ export default class Login extends Component {
 
   authenticate() {
     const options = {
-      type: 'local',
       email: this.state.email,
       password: this.state.password,
     };
 
-    return app.authenticate(options)
-      .then(result => {
-        // Hide error message
-        this.setState({ error: null });
-        // Go to root
-        browserHistory.push('/');
-        // End promise
-        return result;
-      })
-      .catch(err => {
-        // Show error
-        this.setState({ error: err });
-      });
+    return login(options)
+      // Hide error message
+      .then(() => this.setState({ error: null }))
+      // Go to root
+      .then(() => browserHistory.push('/'))
+      // Show and error if present
+      .catch(err => this.setState({ error: err }));
   }
 
   render() {
