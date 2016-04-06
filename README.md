@@ -1,16 +1,16 @@
-# WebAdmin
+# WebClient
 
-Admin web client of [RESTAPI](https://github.com/iic2154-uc-cl/2016-1-Grupo5-RESTAPI) built with [React.js](https://facebook.github.io/react/).
+Web client of [RESTAPI](https://github.com/iic2154-uc-cl/2016-1-Grupo5-RESTAPI) built with [React.js](https://facebook.github.io/react/).
 
 [![wercker status](https://app.wercker.com/status/f23071916b4987c34cae85e38ec7aa45/m "wercker status")](https://app.wercker.com/project/bykey/f23071916b4987c34cae85e38ec7aa45)
 
 ## Development
 
-Clone this repository and name it `web-admin`:
+Clone this repository and name it `web-client`:
 
 ```sh
-git clone https://github.com/iic2154-uc-cl/2016-1-Grupo5-WebAdmin.git web-admin
-cd web-admin
+git clone https://github.com/iic2154-uc-cl/2016-1-Grupo5-WebClient.git web-client
+cd web-client
 
 # Move to the develop branch
 git checkout develop

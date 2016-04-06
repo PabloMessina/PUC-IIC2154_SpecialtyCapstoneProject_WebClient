@@ -1,7 +1,7 @@
 {
-  "name": "web-admin",
+  "name": "web-client",
   "version": "1.0.0",
-  "description": "Admin web client of RESTAPI built with React.js",
+  "description": "Web client of RESTAPI built with React.js",
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/iic2154-uc-cl/2016-1-Grupo5-WebAdmin.git"
+    "url": "git+https://github.com/iic2154-uc-cl/2016-1-Grupo5-WebClient.git"
   },
   "dependencies": {
     "feathers": "^2.0.0",
