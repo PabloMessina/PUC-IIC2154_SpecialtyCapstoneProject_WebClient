@@ -2,7 +2,7 @@
 
 Web client of [RESTAPI](https://github.com/iic2154-uc-cl/2016-1-Grupo5-RESTAPI) built with [React.js](https://facebook.github.io/react/).
 
-[![wercker status](https://app.wercker.com/status/f23071916b4987c34cae85e38ec7aa45/m "wercker status")](https://app.wercker.com/project/bykey/f23071916b4987c34cae85e38ec7aa45)
+[![wercker status](https://app.wercker.com/status/7d071f233c5de3a0b4bc7f7579b323cd/m "wercker status")](https://app.wercker.com/project/bykey/7d071f233c5de3a0b4bc7f7579b323cd)
 
 ## Development
 
