@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
-import { Button } from 'react-bootstrap';
-import renderIf from 'render-if';
+import { Col, Grid, ListGroup, ListGroupItem } from 'react-bootstrap';
+import { browserHistory } from 'react-router';
+// import renderIf from 'render-if';
 
 /**
  * Component life-cycle:
@@ -12,7 +13,7 @@ import renderIf from 'render-if';
  * https://react-bootstrap.github.io/components.html
  */
 
-export default class TemplateComponent extends Component {
+export default class Settings extends Component {
 
   static get defaultProps() {
     return {
@@ -28,39 +29,42 @@ export default class TemplateComponent extends Component {
     };
   }
 
-
   render() {
     return (
       <div style={styles.container}>
-
-        <h1>{this.props.message}</h1>
-
-        {/* Map array to text components */}
-        <ul>
-          {this.state.array.map((item, i) => (
-            <li key={i}>{item}</li>
-          ))}
-        </ul>
-
-        <Button bsStyle="primary" onClick={this.handleClick}>Press me</Button>
-
-        {/* Conditional rendenring (https://github.com/mrpatiwi/render-if) */}
-        {renderIf(this.state.something)(() => (
-          <h4>This is rendered if <code>something</code> is true</h4>
-        ))}
-
+      <Grid>
+           <Col sm={6} md={3}>
+            <h1></h1>
+            <ListGroup>
+              <ListGroupItem onClick={() => browserHistory.push('/settings/general')}>
+              General</ListGroupItem>
+              <ListGroupItem onClick={() => browserHistory.push('/settings/security')}>
+              Seguridad</ListGroupItem>
+              <ListGroupItem onClick={() => browserHistory.push('/settings/notifications')}>
+              Notificaciones</ListGroupItem>
+              <ListGroupItem onClick={() => browserHistory.push('/settings/payments')}>
+              Pagos</ListGroupItem>
+              <ListGroupItem onClick={() => browserHistory.push('/settings/myatlas')}>
+              Mis Atlas</ListGroupItem>
+            </ListGroup>
+           </Col>
+           <Col sm={6} md={9}>
+            {this.props.children}
+           </Col>
+       </Grid>
       </div>
     );
   }
 }
 
+Settings.propTypes = {
+  children: React.PropTypes.object,
+};
+
+
 /*
   See: https://facebook.github.io/react/docs/reusable-components.html#prop-validation
  */
-TemplateComponent.propTypes = {
-  message: React.PropTypes.string,
-};
-
 /*
   See: https://facebook.github.io/react/tips/inline-styles.html
   CSS: http://www.w3schools.com/css/
