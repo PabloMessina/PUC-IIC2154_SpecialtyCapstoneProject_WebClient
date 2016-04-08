@@ -14,7 +14,7 @@ import Join from './components/join/';
 // Development help
 // Go to: http://localhost:3000/template
 import Template from './utils/template';
-
+import DocumentList from './components/document-list';
 
 const Routing = (
   <Router history={browserHistory}>
@@ -22,7 +22,7 @@ const Routing = (
       <IndexRoute component={Dashboard} />
       <Route path="login" component={Login} />
       <Route path="join" component={Join} />
-
+      <Route path="documents" component={DocumentList} />
       <Route path="template" component={Template} />
     </Route>
   </Router>
