@@ -10,11 +10,12 @@ import Main from './components/main';
 import Dashboard from './components/dashboard';
 import Login from './components/login/';
 import Join from './components/join/';
+import Courses from './components/courses';
+import Course from './components/courses/uc';
 
 // Development help
 // Go to: http://localhost:3000/template
 import Template from './utils/template';
-
 
 const Routing = (
   <Router history={browserHistory}>
@@ -22,7 +23,9 @@ const Routing = (
       <IndexRoute component={Dashboard} />
       <Route path="login" component={Login} />
       <Route path="join" component={Join} />
-
+      <Route path="courses" component={Courses}>
+        <Route path=":_id" component={Course} />
+      </Route>
       <Route path="template" component={Template} />
     </Route>
   </Router>

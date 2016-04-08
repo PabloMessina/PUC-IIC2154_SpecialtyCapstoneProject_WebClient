@@ -24,6 +24,9 @@ export default class NavigationBar extends Component {
         <Navbar.Collapse>
           <Nav>
             <NavItem eventKey={1} href="#">Atlases</NavItem>
+            <NavItem eventKey={2} href="#" onClick={() => browserHistory.push('/courses')}>
+              Courses
+            </NavItem>
           </Nav>
           <Nav pullRight>
             <NavItem eventKey={1} href="#" onClick={() => browserHistory.push('/login')}>
