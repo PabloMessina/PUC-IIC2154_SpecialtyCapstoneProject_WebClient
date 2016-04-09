@@ -1,13 +1,8 @@
 import React, { Component } from 'react';
-import { Panel, Label, Col, Grid } from 'react-bootstrap';
+import { Panel } from 'react-bootstrap';
 import Title from './title.js';
 
 export default class Correlation extends Component {
-
-  constructor(props) {
-    super(props);
-  }
-
 
   render() {
     const { _id, tags, fields } = this.props.question;
