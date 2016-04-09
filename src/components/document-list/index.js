@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Col, Grid, Row, ListGroup, ListGroupItem, Navbar, Button, Input } from 'react-bootstrap';
+import { Col, Grid, Row, ListGroup, ListGroupItem, Navbar, Button, Input, ButtonInput } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 import AtlasThumbnail from './atlas-thumbnail';
 // import renderIf from 'render-if';
@@ -29,30 +29,44 @@ export default class Settings extends Component {
         {
           url: 'img/GILROYFICHA.jpg',
           title: 'Atlas 1',
+          author: 'Juan',
+          id: '1',
         },
         {
           url: 'img/atlas1.jpg',
           title: 'Atlas 2',
+          author: 'Juan',
+          id: '2',
         },
         {
           url: 'img/atlas2.jpg',
           title: 'Atlas 3',
+          author: 'Juan',
+          id: '3',
         },
         {
           url: 'img/atlas3.jpg',
           title: 'Atlas 4',
+          author: 'Juan',
+          id: '4',
         },
         {
           url: 'img/atlas4.jpg',
           title: 'Atlas 5',
+          author: 'Juan',
+          id: '5',
         },
         {
           url: 'img/atlas5.JPG',
           title: 'Atlas 6',
+          author: 'Juan',
+          id: '6',
         },
         {
           url: 'img/atlas6.jpg',
           title: 'Atlas 7',
+          author: 'Juan',
+          id: '7',
         },
       ],
     };
@@ -70,34 +84,34 @@ export default class Settings extends Component {
     });
     return (
       <div>
-        <Navbar>
-          <Navbar.Header>
-            <Navbar.Toggle />
-          </Navbar.Header>
-          <Navbar.Collapse>
-            <Navbar.Form pullLeft>
-              <Input type="text" placeholder="Search" />
-              {' '}
-              <Button type="search">Search</Button>
-              </Navbar.Form>
-          </Navbar.Collapse>
-        </Navbar>
-        <Col sm={6} md={2}>
-          <h1>Tags</h1>
-          <ListGroup>
-            <ListGroupItem>Anatomia</ListGroupItem>
-            <ListGroupItem>Tag3</ListGroupItem>
-            <ListGroupItem>Tag2</ListGroupItem>
-            <ListGroupItem>Patologia</ListGroupItem>
-            <ListGroupItem>Tag4</ListGroupItem>
-          </ListGroup>
-        </Col>
-        <Col sm={6} md={10}>
-          <h1>Atlas</h1>
-          <Row className="show-grid">
-          {lista}
-          </Row>
-        </Col>
+        <Row>
+          <form>
+            <Col sm={6} md={2}>
+              <Input type="text" ref="input" onChange={this.handleChange} />
+            </Col>
+            <Col sm={6} md={2}>
+              <ButtonInput bsSize="small">Search</ButtonInput>
+            </Col>
+          </form>
+        </Row>
+        <Row>
+          <Col sm={6} md={2}>
+            <h1>Tags</h1>
+            <ListGroup>
+              <ListGroupItem>Anatomia</ListGroupItem>
+              <ListGroupItem>Tag3</ListGroupItem>
+              <ListGroupItem>Tag2</ListGroupItem>
+              <ListGroupItem>Patologia</ListGroupItem>
+              <ListGroupItem>Tag4</ListGroupItem>
+            </ListGroup>
+          </Col>
+          <Col sm={6} md={10}>
+            <h1>Atlas</h1>
+            <Row className="show-grid">
+            {lista}
+            </Row>
+          </Col>
+        </Row>
       </div>
     );
   }
