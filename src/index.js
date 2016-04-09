@@ -24,7 +24,7 @@ const Routing = (
       <Route path="login" component={Login} />
       <Route path="join" component={Join} />
       <Route path="documents" component={DocumentList} />
-      <Route path="documents/:doc_id" component={DocumentDescription} />
+      <Route path="documents/:docId" component={DocumentDescription} />
       <Route path="template" component={Template} />
     </Route>
   </Router>

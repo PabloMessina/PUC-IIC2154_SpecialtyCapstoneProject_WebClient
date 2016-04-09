@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Col, Grid, Row, ListGroup, ListGroupItem, Navbar, Button, Input, ButtonInput, Label } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 import AtlasThumbnail from './atlas-thumbnail';
+
 // import renderIf from 'render-if';
 
 /**
