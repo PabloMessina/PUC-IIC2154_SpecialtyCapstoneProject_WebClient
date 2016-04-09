@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Col, Grid, Row, ListGroup, ListGroupItem, Navbar, Button, Input, ButtonInput } from 'react-bootstrap';
+import { Col, Grid, Row, ListGroup, ListGroupItem, Navbar, Button, Input, ButtonInput, Label } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 import AtlasThumbnail from './atlas-thumbnail';
 // import renderIf from 'render-if';
@@ -78,7 +78,8 @@ export default class Settings extends Component {
       if (i % 4 === 0) {
         lista.push(<div><Col xs={2} md={3}><AtlasThumbnail document ={doc}></AtlasThumbnail></Col></div>);
       }
-      else {
+      else
+      {
         lista.push(<Col xs={2} md={3}><AtlasThumbnail document ={doc}></AtlasThumbnail></Col>);
       }
     });
@@ -98,11 +99,11 @@ export default class Settings extends Component {
           <Col sm={6} md={2}>
             <h1>Tags</h1>
             <ListGroup>
-              <ListGroupItem>Anatomia</ListGroupItem>
-              <ListGroupItem>Tag3</ListGroupItem>
-              <ListGroupItem>Tag2</ListGroupItem>
-              <ListGroupItem>Patologia</ListGroupItem>
-              <ListGroupItem>Tag4</ListGroupItem>
+              <ListGroupItem><h4><Label bsStyle="primary">Anatomia</Label></h4></ListGroupItem>
+              <ListGroupItem><h4><Label bsStyle="info">Tag2</Label></h4></ListGroupItem>
+              <ListGroupItem><h4><Label bsStyle="info">Tag3</Label></h4></ListGroupItem>
+              <ListGroupItem><h4><Label bsStyle="success">Tag4</Label></h4></ListGroupItem>
+              <ListGroupItem><h4><Label bsStyle="success">Tag5</Label></h4></ListGroupItem>
             </ListGroup>
           </Col>
           <Col sm={6} md={10}>
