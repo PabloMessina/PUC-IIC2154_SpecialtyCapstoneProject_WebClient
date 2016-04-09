@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Navbar, Nav, NavItem, Panel } from 'react-bootstrap';
+import { Panel } from 'react-bootstrap';
 import Correlation from './correlation';
 import MultiChoice from './multi-choice';
 
@@ -38,7 +38,7 @@ export default class Questions extends Component {
         {this.props.questions.map((question, i) => {
           switch (question._type) {
             case 'correlation': return <Correlation key={i} question={question} />;
-            case 'multiChoice': return <MultiChoice key={i} question={question} />;
+            case 'multiChoice': return <MultiChoice key={i} answers static question={question} />;
             default: return null;
           }
         })}

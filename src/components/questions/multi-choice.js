@@ -6,9 +6,18 @@ export default class MultiChoice extends Component {
 
   constructor(props) {
     super(props);
+
+    const checked = new Array(props.question.fields.choices).map(() => false);
+    if (props.answers && props.question.fields.answers) {
+      props.question.fields.answers.forEach(index => {
+        checked[index] = true;
+      });
+    }
+
     this.state = {
-      checked: new Array(props.question.fields.choices),
+      checked,
     };
+
     this.check = this.check.bind(this);
   }
 
@@ -32,6 +41,7 @@ export default class MultiChoice extends Component {
                     label={choice.text}
                     checked={this.state.checked[i]}
                     onChange={this.check}
+                    disabled={this.props.static}
                   />
                 ))}
                 </form>
@@ -45,6 +55,13 @@ export default class MultiChoice extends Component {
 
 MultiChoice.propTypes = {
   question: React.PropTypes.any,
+  answers: React.PropTypes.bool,
+  static: React.PropTypes.bool,
+};
+
+MultiChoice.defaultProps = {
+  answers: false,
+  static: false,
 };
 
 const styles = {
