@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Panel } from 'react-bootstrap';
 import Correlation from './correlation';
 import MultiChoice from './multi-choice';
+import TShort from './tshort';
 
 
 export default class Questions extends Component {
@@ -28,6 +29,22 @@ export default class Questions extends Component {
           values: [{ text: 'A' }, { text: 'B' }, { text: 'C' }, { text: 'D' }],
           answers: [[0, 1], [1, 2], [1, 3]],
         },
+      }, {
+        _id: 3,
+        _type: 'tshort',
+        question: { text: 'Aliquam tempor risus dui, non sodales velit tempor quis. Quisque eleifend diam purus, eu porttitor mauris tempor vel. Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. '},
+        tags: ['Tag 2', 'Tag 3', 'Tag 4'],
+        fields: {
+          answers: ['Answ 1', 'Answ 2'],
+        },
+      }, {
+        _id: 4,
+        _type: 'tshort',
+        question: { text: 'Quisque eleifend diam purus, eu porttitor mauris tempor vel. Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. '},
+        tags: ['Tag 2', 'Tag 3', 'Tag 4'],
+        fields: {
+          answers: ['Answ 1', 'Answ 2'],
+        },
       }],
     };
   }
@@ -38,7 +55,8 @@ export default class Questions extends Component {
         {this.props.questions.map((question, i) => {
           switch (question._type) {
             case 'correlation': return <Correlation key={i} question={question} />;
-            case 'multiChoice': return <MultiChoice key={i} answers static question={question} />;
+            case 'multiChoice': return <MultiChoice key={i}  question={question} />;
+            case 'tshort': return <TShort key={i} question={question} />;
             default: return null;
           }
         })}
