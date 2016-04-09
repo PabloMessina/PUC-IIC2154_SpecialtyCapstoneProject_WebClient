@@ -10,6 +10,7 @@ import Main from './components/main';
 import Dashboard from './components/dashboard';
 import Login from './components/login/';
 import Join from './components/join/';
+import Questions from './components/questions/';
 
 // Development help
 // Go to: http://localhost:3000/template
@@ -24,6 +25,7 @@ const Routing = (
       <Route path="join" component={Join} />
 
       <Route path="template" component={Template} />
+      <Route path="questions" component={Questions} />
     </Route>
   </Router>
 );
