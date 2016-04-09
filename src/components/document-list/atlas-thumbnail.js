@@ -32,6 +32,8 @@ const styles = {
     height: 200,
   },
   box: {
+    hover: 'true',
+    borderRadius: 0,
     top: 5,
     margin: 10,
     padding: 30,

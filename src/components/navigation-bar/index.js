@@ -13,7 +13,7 @@ export default class NavigationBar extends Component {
 
   render() {
     return (
-      <Navbar>
+      <Navbar fixedTop>
 
         <Navbar.Header>
           <Navbar.Brand>

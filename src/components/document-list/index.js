@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
-import { Col, Grid, Row, ListGroup, ListGroupItem, Navbar, Button, Input, ButtonInput, Label } from 'react-bootstrap';
-import { browserHistory } from 'react-router';
+import { Col, Row, ListGroup, ListGroupItem, Input, ButtonInput, Label } from 'react-bootstrap';
 import AtlasThumbnail from './atlas-thumbnail';
 // import renderIf from 'render-if';
 
@@ -76,11 +75,20 @@ export default class Settings extends Component {
     const lista = [];
     this.state.documents.forEach((doc, i) => {
       if (i % 4 === 0) {
-        lista.push(<div><Col xs={2} md={3}><AtlasThumbnail document ={doc}></AtlasThumbnail></Col></div>);
+        lista.push(
+          <div>
+            <Col xs={2} md={3}>
+              <AtlasThumbnail id={ doc.id} document ={doc} />
+            </Col>
+          </div>
+        );
       }
-      else
-      {
-        lista.push(<Col xs={2} md={3}><AtlasThumbnail document ={doc}></AtlasThumbnail></Col>);
+      else {
+        lista.push(
+          <Col xs={2} md={3}>
+            <AtlasThumbnail document ={doc} />
+          </Col>
+        );
       }
     });
     return (
@@ -98,12 +106,12 @@ export default class Settings extends Component {
         <Row>
           <Col sm={6} md={2}>
             <h1>Tags</h1>
-            <ListGroup>
-              <ListGroupItem><h4><Label bsStyle="primary">Anatomia</Label></h4></ListGroupItem>
+            <ListGroup style={styles.list}>
+              <ListGroupItem onClick='' style={styles.list}><h4><Label bsStyle="primary">Anatomia</Label></h4></ListGroupItem>
               <ListGroupItem><h4><Label bsStyle="info">Tag2</Label></h4></ListGroupItem>
               <ListGroupItem><h4><Label bsStyle="info">Tag3</Label></h4></ListGroupItem>
               <ListGroupItem><h4><Label bsStyle="success">Tag4</Label></h4></ListGroupItem>
-              <ListGroupItem><h4><Label bsStyle="success">Tag5</Label></h4></ListGroupItem>
+              <ListGroupItem style={styles.list}><h4><Label bsStyle="success">Tag5</Label></h4></ListGroupItem>
             </ListGroup>
           </Col>
           <Col sm={6} md={10}>
@@ -131,7 +139,7 @@ Settings.propTypes = {
   CSS: http://www.w3schools.com/css/
  */
 const styles = {
-  container: {
-
+  list: {
+    borderRadius: 0,
   },
 };
