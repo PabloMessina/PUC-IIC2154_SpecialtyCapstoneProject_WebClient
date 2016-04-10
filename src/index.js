@@ -28,4 +28,4 @@ const Routing = (
   </Router>
 );
 
-ReactDOM.render(Routing, document.body);
+ReactDOM.render(Routing, document.getElementById('root'));
