@@ -4,20 +4,26 @@ import { Jumbotron, Image } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 
 export default class AtlasThumbnail extends Component {
+
   render() {
     const route = `/documents/${this.props.document.id}`;
     return (
       <Jumbotron style={styles.box} onClick={() => browserHistory.push(route)}>
         <div style={styles.container}>
-          <Image src={this.props.document.url} thumbnail responsive />
+          <Image style={styles.image} src={this.props.document.url} thumbnail responsive />
         </div>
-        <h4>{this.props.document.title}</h4>
-        <h3>{this.props.document.author}</h3>
-        <Rater total={5} rating={2}/>
+        <p>{this.props.document.title}</p>
+        <p>{this.props.document.author}</p>
+        <Rater total={5} rating={2} />
       </Jumbotron>
     );
   }
 }
+
+AtlasThumbnail.propTypes = {
+  // An optional string prop named "description".
+  document: React.PropTypes.object,
+};
 
 AtlasThumbnail.defaultProps = {
   document: {
@@ -26,17 +32,24 @@ AtlasThumbnail.defaultProps = {
   },
 };
 
+
 const styles = {
+  image: {
+    width: '100%',
+    height: 250,
+  },
   container: {
-    width: 134,
-    height: 200,
+    width: '100%',
+    height: '100%',
   },
   box: {
+    boxShadow: '2px 2px 5px 0px rgba(0,0,0,0.5)',
+    width: 200,
+    height: '100%',
+    alignItems: 'center',
     hover: 'true',
     borderRadius: 0,
     top: 5,
-    margin: 10,
-    padding: 30,
-    border: 15,
+    padding: 10,
   },
 };
