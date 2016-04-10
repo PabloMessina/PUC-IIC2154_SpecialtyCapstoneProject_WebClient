@@ -17,6 +17,7 @@ module.exports = {
     new webpack.HotModuleReplacementPlugin(),
   ],
   module: {
+    noParse: /node_modules\/quill\/dist/,
     loaders: [{
       test: /\.js$/,
       loaders: ['react-hot', 'babel'],
