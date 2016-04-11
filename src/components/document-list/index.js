@@ -55,7 +55,7 @@ export default class Settings extends Component {
         <Col md={2} style={styles.fixed}>
           <p style={styles.title}>Tags</p>
           <ListGroup style={styles.list}>
-            <ListGroupItem href="#" style={styles.list}>
+            <ListGroupItem href="#" style={styles.borderRadius}>
               <h4><Label bsStyle="primary">Anatomia</Label></h4>
             </ListGroupItem>
             <ListGroupItem href="#">
@@ -66,7 +66,7 @@ export default class Settings extends Component {
             <ListGroupItem href="#">
               <h4><Label bsStyle="success">Tag4</Label></h4>
             </ListGroupItem>
-            <ListGroupItem href="#" style={styles.list}>
+            <ListGroupItem href="#" style={styles.borderRadius}>
               <h4><Label bsStyle="success">Tag5</Label></h4>
             </ListGroupItem>
           </ListGroup>
@@ -76,10 +76,14 @@ export default class Settings extends Component {
           <Row>
             <form>
               <Col sm={6} md={5}>
-                <Input type="text" ref="input" onChange={this.handleChange} />
+                <Input type="text"
+                  ref="input"
+                  onChange={this.handleChange}
+                  style={styles.borderRadius}
+                />
               </Col>
               <Col sm={6} md={2}>
-                <ButtonInput bsSize="small">Search</ButtonInput>
+                <ButtonInput bsSize="small" style={styles.borderRadius}>Search</ButtonInput>
               </Col>
             </form>
           </Row>
@@ -117,7 +121,7 @@ const styles = {
   title: {
     fontSize: 25,
   },
-  list: {
+  borderRadius: {
     borderRadius: 0,
   },
 };

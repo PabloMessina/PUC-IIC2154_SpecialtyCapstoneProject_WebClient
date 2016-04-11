@@ -9,11 +9,9 @@ export default class AtlasThumbnail extends Component {
     const route = `/documents/${this.props.document.id}`;
     return (
       <Jumbotron style={styles.box} onClick={() => browserHistory.push(route)}>
-        <div style={styles.container}>
-          <Image style={styles.image} src={this.props.document.url} thumbnail responsive />
-        </div>
-        <p>{this.props.document.title}</p>
-        <p>{this.props.document.author}</p>
+        <Image style={styles.image} src={this.props.document.url} thumbnail responsive />
+        <p style={styles.name}>{this.props.document.title}</p>
+        <p style={styles.author}>{this.props.document.author}</p>
         <Rater total={5} rating={2} />
       </Jumbotron>
     );
@@ -21,7 +19,6 @@ export default class AtlasThumbnail extends Component {
 }
 
 AtlasThumbnail.propTypes = {
-  // An optional string prop named "description".
   document: React.PropTypes.object,
 };
 
@@ -38,10 +35,6 @@ const styles = {
     width: '100%',
     height: 250,
   },
-  container: {
-    width: '100%',
-    height: '100%',
-  },
   box: {
     boxShadow: '2px 2px 5px 0px rgba(0,0,0,0.5)',
     width: 200,
@@ -51,5 +44,13 @@ const styles = {
     borderRadius: 0,
     top: 5,
     padding: 10,
+  },
+  name: {
+    fontSize: 20,
+    margin: 0,
+  },
+  author: {
+    fontSize: 15,
+    margin: 0,
   },
 };
