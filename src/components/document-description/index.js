@@ -1,19 +1,17 @@
 import React, { Component } from 'react';
-import { Image, Panel, Col, Grid, Row, ListGroup, ListGroupItem, Navbar, Button, Input } from 'react-bootstrap';
+import { Image, Panel, Col, Row } from 'react-bootstrap';
 import atlasExample from '../../atlas-example.js';
 
 export default class DocumentDescription extends Component {
-  constructor(props) {
-    super(props);
-  }
+
   render() {
-    const doc = atlasExample[this.props.params.docId - 1];
+    const doc = atlasExample.documents[this.props.params.docId - 1];
     return (
       <div>
-        <Panel footer="dededede hdebbdjebdek jdebkjdeb jkdbekjdbe kjdbjdbkjebd dddddddddde eedddddddddd ddddddeddddd dddddddddddd dddddddddd">
+        <Panel footer="dededede hdebbdjebdek jdebkjdeb jkdbekjdbe kjdbjd">
         <Row className="show-grid">
              <Col xs={6} md={4}>
-              <Image src="/img/atlas1.jpg" src={ '/' + doc.url }responsive />
+              <Image src="/img/atlas1.jpg" src={ `/${doc.url}` } responsive />
              </Col>
              <Col xs={6} md={8}>
                <h3>{ doc.title }</h3>
@@ -28,4 +26,8 @@ export default class DocumentDescription extends Component {
   }
 }
 
-//this.props.params.docId
+DocumentDescription.propTypes = {
+  params: React.PropTypes.number,
+};
+
+// this.props.params.docId

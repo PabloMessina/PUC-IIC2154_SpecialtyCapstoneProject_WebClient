@@ -13,7 +13,7 @@ export default class NavigationBar extends Component {
 
   render() {
     return (
-      <Navbar>
+      <Navbar style={styles.navbar}>
 
         <Navbar.Header>
           <Navbar.Brand>
@@ -42,4 +42,10 @@ export default class NavigationBar extends Component {
 
 NavigationBar.propTypes = {
   title: React.PropTypes.node,
+};
+
+const styles = {
+  navbar: {
+    margin: 0,
+  },
 };

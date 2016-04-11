@@ -52,7 +52,7 @@ export default class Settings extends Component {
     return (
       <div>
       <Row>
-        <Col md={2} style={styles.fixed}>
+        <Col md={2} style={styles.filter}>
           <p style={styles.title}>Tags</p>
           <ListGroup style={styles.list}>
             <ListGroupItem href="#" style={styles.borderRadius}>
@@ -110,18 +110,21 @@ Settings.propTypes = {
   CSS: http://www.w3schools.com/css/
  */
 const styles = {
-  fixed: {
-    width: '25%',
-  },
   scroll: {
     left: 'auto',
     float: 'left',
-    width: '75%',
+    width: '80%',
   },
   title: {
+    marginTop: 10,
     fontSize: 25,
   },
   borderRadius: {
     borderRadius: 0,
+  },
+  filter: {
+    borderRight: '1px solid #e7e7e7',
+    width: '20%',
+    height: '900',
   },
 };
