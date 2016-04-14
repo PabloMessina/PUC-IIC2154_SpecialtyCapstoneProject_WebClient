@@ -10,8 +10,12 @@ export default class AtlasThumbnail extends Component {
     return (
       <Jumbotron style={styles.box} onClick={() => browserHistory.push(route)}>
         <Image style={styles.image} src={this.props.document.url} thumbnail responsive />
-        <p style={styles.name}>{this.props.document.title}</p>
-        <p style={styles.author}>{this.props.document.author}</p>
+        <div style={styles.texts}>
+          <p style={styles.name}>{this.props.document.title}</p>
+        </div>
+        <div style={styles.texts}>
+          <p style={styles.author}>{this.props.document.author}</p>
+        </div>
         <Rater total={5} rating={2} />
       </Jumbotron>
     );
@@ -46,8 +50,15 @@ const styles = {
     padding: 10,
   },
   name: {
+    whiteSpace: 'nowrap',
     fontSize: 20,
     margin: 0,
+    backgroundImage: 'linear-gradient(left, rgba(255,255,255,0) 0%, white 80%, white 100%',
+  },
+  texts: {
+    maxWidth: '100%',
+    maxHeight: '20%',
+    overflow: 'hidden',
   },
   author: {
     fontSize: 15,

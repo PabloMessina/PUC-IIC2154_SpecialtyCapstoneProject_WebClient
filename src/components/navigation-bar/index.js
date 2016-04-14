@@ -23,14 +23,19 @@ export default class NavigationBar extends Component {
 
         <Navbar.Collapse>
           <Nav>
-            <NavItem eventKey={1} href="#">Atlases</NavItem>
+            <NavItem eventKey={1} onClick={() => browserHistory.push('/documents')}>
+              Documentos
+            </NavItem>
+            <NavItem eventKey={2} onClick={() => browserHistory.push('/settings')}>
+              Configuración
+            </NavItem>
           </Nav>
           <Nav pullRight>
             <NavItem eventKey={1} href="#" onClick={() => browserHistory.push('/login')}>
-              Sign in
+              Ingresa
             </NavItem>
             <NavItem eventKey={2} href="#" onClick={() => browserHistory.push('/join')}>
-              Sign up
+              Registrate
             </NavItem>
           </Nav>
         </Navbar.Collapse>
@@ -46,6 +51,5 @@ NavigationBar.propTypes = {
 
 const styles = {
   navbar: {
-    margin: 0,
   },
 };

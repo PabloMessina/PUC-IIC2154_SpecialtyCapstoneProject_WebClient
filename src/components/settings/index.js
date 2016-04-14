@@ -36,7 +36,7 @@ export default class Settings extends Component {
            <Col sm={6} md={3}>
             <h1></h1>
             <ListGroup>
-              <ListGroupItem onClick={() => browserHistory.push('/settings/general')}>
+              <ListGroupItem onClick={() => browserHistory.push('/settings')}>
               General</ListGroupItem>
               <ListGroupItem onClick={() => browserHistory.push('/settings/security')}>
               Seguridad</ListGroupItem>

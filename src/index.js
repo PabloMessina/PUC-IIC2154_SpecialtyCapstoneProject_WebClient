@@ -17,6 +17,7 @@ import GeneralSettings from './components/settings/general';
 import SecuritySettings from './components/settings/security';
 import PaymentsSettings from './components/settings/payments';
 
+
 // Development help
 // Go to: http://localhost:3000/template
 import Template from './utils/template';
@@ -32,7 +33,7 @@ const Routing = (
       <Route path="documents" component={DocumentList} />
       <Route path="documents/:docId" component={DocumentDescription} />
       <Route path="settings" component={Settings} >
-        <Route path="general" component={GeneralSettings} />
+        <IndexRoute component={GeneralSettings} />
         <Route path="notifications" component={NotificationSettings} />
         <Route path="security" component={SecuritySettings} />
         <Route path="payments" component={PaymentsSettings} />
