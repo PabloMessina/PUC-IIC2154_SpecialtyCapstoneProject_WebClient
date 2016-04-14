@@ -11,7 +11,7 @@ import Dashboard from './components/dashboard';
 import Login from './components/login/';
 import Join from './components/join/';
 import Courses from './components/courses';
-import Course from './components/courses/uc';
+import Course from './components/course/';
 
 // Development help
 // Go to: http://localhost:3000/template
@@ -24,7 +24,7 @@ const Routing = (
       <Route path="login" component={Login} />
       <Route path="join" component={Join} />
       <Route path="courses" component={Courses}>
-        <Route path=":_id" component={Course} />
+        <Route path=":courseId" component={Course} />
       </Route>
       <Route path="template" component={Template} />
     </Route>
