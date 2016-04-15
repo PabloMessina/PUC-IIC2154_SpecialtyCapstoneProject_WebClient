@@ -61,8 +61,8 @@ export default class SectionTree extends Component {
   render() {
     return (
       <div style={styles.container}>
-          {this.state.sections.map((section, i) => (
-            <Node key={i} section={section} anidation={[i + 1]} />
+        {this.state.sections.map((section, i) => (
+          <Node key={i} section={section} anidation={[i + 1]} />
           ))}
       </div>
     );

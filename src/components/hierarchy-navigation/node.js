@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import renderIf from 'render-if';
+// import Icon from 'react-fa';
 // import Icon from 'react-native-vector-icons/FontAwesome';
 // import StyleSheet from 'react-native-debug-stylesheet';
 // import StyleSheet from 'react-native-debug-stylesheet';
@@ -35,19 +36,31 @@ export default class Node extends Component {
     super(props);
     this.state = {
       collapsed: props.collapsed,
+      section: props.section,
     };
 
     this.collapse = this.collapse.bind(this);
+    this.addSection = this.addSection.bind(this);
   }
 
   collapse() {
     this.setState({ collapsed: !this.state.collapsed });
   }
 
+  addSection() {
+    const section = this.state.section;
+    if (!section.sections) {
+      section.sections = [];
+    }
+
+    section.sections.push({ name: 'Section' });
+    this.setState({ section });
+  }
+
   render() {
-    const { section, anidation } = this.props;
+    const { anidation } = this.props;
     const { collapsed } = this.state;
-    const { name, sections } = section;
+    const { name, sections } = this.state.section;
 
     const hasSubtree = sections && sections.length > 0 && !collapsed;
     const substyle = {
@@ -60,6 +73,9 @@ export default class Node extends Component {
         <div >
           <p style={substyle} onPress={this.collapse}>
             {anidation.join('.')}. {name}
+          </p>
+          <p onClick={this.addSection}>
+            +
           </p>
         </div>
 
