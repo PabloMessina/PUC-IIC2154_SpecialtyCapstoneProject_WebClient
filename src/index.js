@@ -12,6 +12,9 @@ import Login from './components/login/';
 import Join from './components/join/';
 import Courses from './components/courses';
 import Course from './components/course/';
+import OrganizationCreate from './components/organization-create/';
+import CourseCreate from './components/course-create/';
+
 
 // Development help
 // Go to: http://localhost:3000/template
@@ -26,6 +29,8 @@ const Routing = (
       <Route path="courses" component={Courses}>
         <Route path=":courseId" component={Course} />
       </Route>
+      <Route path="organization_create" component={OrganizationCreate} />
+      <Route path="course_create" component={CourseCreate} />
       <Route path="template" component={Template} />
     </Route>
   </Router>
