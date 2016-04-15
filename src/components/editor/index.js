@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Panel } from 'react-bootstrap';
 import ReactQuill from 'react-quill';
-
+import SectionTree from '../hierarchy-navigation';
 
 export default class Editor extends Component {
 
@@ -50,6 +50,8 @@ export default class Editor extends Component {
     const toolbar = this.props.static ? [] : ReactQuill.Toolbar.defaultItems;
     return (
       <div style={styles.container}>
+        <SectionTree />
+
         <ReactQuill
           theme="snow"
           value={this.state.text}
@@ -73,6 +75,8 @@ export default class Editor extends Component {
 
 const styles = {
   container: {
-
+    display: 'flex',
+    flexWrap: 'nowrap',
+    flexDirection: 'row',
   },
 };

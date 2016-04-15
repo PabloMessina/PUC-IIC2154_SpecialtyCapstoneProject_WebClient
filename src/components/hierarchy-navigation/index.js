@@ -8,7 +8,7 @@ import Node from './node.js';
   https://facebook.github.io/react/docs/component-specs.html
  */
 
-export default class Tree extends Component {
+export default class SectionTree extends Component {
 
   constructor(props) {
     super(props);
@@ -60,7 +60,7 @@ export default class Tree extends Component {
 
   render() {
     return (
-      <div >
+      <div style={styles.container}>
           {this.state.sections.map((section, i) => (
             <Node key={i} section={section} anidation={[i + 1]} />
           ))}
@@ -72,7 +72,6 @@ export default class Tree extends Component {
 
 const styles = {
   container: {
-    flex: 1,
     paddingTop: 64,
     backgroundColor: 'white',
     // flexDirection: 'column', // row, column
@@ -88,9 +87,5 @@ const styles = {
     // top: 0,
     // left: 0,
     // bottom: 0,
-  },
-  scrollview: {
-    flex: 1,
-    paddingTop: 20,
   },
 };
