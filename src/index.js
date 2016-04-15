@@ -10,6 +10,7 @@ import Main from './components/main';
 import Dashboard from './components/dashboard';
 import Login from './components/login/';
 import Join from './components/join/';
+import Renderer3D from './components/renderer-3d/';
 
 // Development help
 // Go to: http://localhost:3000/template
@@ -22,7 +23,7 @@ const Routing = (
       <IndexRoute component={Dashboard} />
       <Route path="login" component={Login} />
       <Route path="join" component={Join} />
-
+      <Route path="renderer-3d" component={Renderer3D} />
       <Route path="template" component={Template} />
     </Route>
   </Router>
