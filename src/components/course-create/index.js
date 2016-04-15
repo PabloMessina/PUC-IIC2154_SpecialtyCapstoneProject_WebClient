@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { Button, Input } from 'react-bootstrap';
-import renderIf from 'render-if';
 
 /**
  * Component life-cycle:
@@ -104,6 +103,7 @@ export default class CourseCreate extends Component {
             );
           })}
         </Input>
+
       </div>
     );
   }
