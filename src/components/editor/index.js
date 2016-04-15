@@ -43,6 +43,7 @@ export default class Editor extends Component {
     if (!this.props.static) {
       this.setState({ text: value });
     }
+    console.log(value);
   }
 
   render() {

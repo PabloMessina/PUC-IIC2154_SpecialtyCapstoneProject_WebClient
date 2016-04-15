@@ -10,6 +10,7 @@ import Main from './components/main';
 import Dashboard from './components/dashboard';
 import Login from './components/login/';
 import Join from './components/join/';
+import Tree from './components/hierarchy-navigation/';
 import Editor from './components/editor/';
 
 // Development help
@@ -24,7 +25,7 @@ const Routing = (
       <Route path="login" component={Login} />
       <Route path="join" component={Join} />
       <Route path="editor" component={Editor} />
-
+      <Route path="tree" component={Tree} />
       <Route path="template" component={Template} />
     </Route>
   </Router>
