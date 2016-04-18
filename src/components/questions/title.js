@@ -3,7 +3,7 @@ import { Label } from 'react-bootstrap';
 
 const Title = (props) => (
   <div style={styles.container}>
-    <h3 style={styles.title}>Pregunta {props.number}</h3>
+    <h3 style={styles.title}>{props.value}</h3>
     <div>
       {props.tags.map((tag, i) => <Label key={i} style={styles.tag}>{tag}</Label>)}
     </div>
@@ -11,12 +11,12 @@ const Title = (props) => (
 );
 
 Title.propTypes = {
-  number: React.PropTypes.number,
+  value: React.PropTypes.string,
   tags: React.PropTypes.array,
 };
 
 Title.defaultProps = {
-  number: 0,
+  value: '',
   tags: [],
 };
 

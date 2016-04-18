@@ -7,7 +7,7 @@ export default class Correlation extends Component {
   render() {
     const { _id, tags, fields } = this.props.question;
     return (
-      <Panel style={styles.container} header={<Title number={_id} tags={tags} />}>
+      <Panel style={styles.container} header={<Title value={`Question ${_id}`} tags={tags} />}>
         <div>
           <p>{this.props.question.question.text}</p>
           <div style={styles.body}>

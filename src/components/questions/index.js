@@ -4,6 +4,7 @@ import Correlation from './correlation';
 import MultiChoice from './multi-choice';
 import TShort from './tshort';
 import TrueFalse from './true-false';
+import NewQuestion from './new-question';
 
 
 export default class Questions extends Component {
@@ -36,7 +37,7 @@ export default class Questions extends Component {
         question: { text: 'Aliquam tempor risus dui, non sodales velit tempor quis. Quisque eleifend diam purus, eu porttitor mauris tempor vel. Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
         tags: ['Tag 2', 'Tag 3', 'Tag 4'],
         fields: {
-          answers: ['Answ 1', 'Answ 2'],
+          answers: ['Answ 1', 'Answ 2', 'Answ 3'],
         },
       }, {
         _id: 4,
@@ -52,22 +53,46 @@ export default class Questions extends Component {
         question: { text: 'Quisque eleifend diam purus, eu porttitor mauris tempor vel. Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
         tags: ['Tag 1'],
         fields: {
-          answer: true,
+          answer: 1,
         },
       }],
     };
   }
 
   render() {
-    debugger;
+    const permission = 'editor';
     return (
       <Panel>
+        <NewQuestion />
         {this.props.questions.map((question, i) => {
           switch (question._type) {
-            case 'correlation': return <Correlation key={i} question={question} />;
-            case 'multiChoice': return <MultiChoice key={i} question={question} />;
-            case 'tshort': return <TShort key={i} question={question} />;
-            case 'trueFalse': return <TrueFalse key={i} question={question} />;
+            case 'correlation': return (
+              <Correlation
+                key={i}
+                question={question}
+                permission={permission}
+              />
+            )
+            case 'multiChoice': return (
+              <MultiChoice
+                key={i}
+                question={question}
+                permission={permission}
+              />
+            )
+            case 'tshort': return (
+              <TShort
+                key={i}
+                permission={permission}
+                question={question}
+              />
+            )
+            case 'trueFalse': return (
+              <TrueFalse
+                key={i}
+                permission={permission}
+                question={question}
+              />);
             default: return null;
           }
         })}
