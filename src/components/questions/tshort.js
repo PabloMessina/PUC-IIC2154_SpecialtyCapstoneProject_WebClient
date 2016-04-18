@@ -5,16 +5,26 @@ import renderIf from 'render-if';
 
 export default class TShort extends Component {
 
+  static get propTypes() {
+    return {
+      question: React.PropTypes.any,
+      answers: React.PropTypes.bool,
+      static: React.PropTypes.bool,
+    };
+  }
+
+  static get defaultProps() {
+    return {
+      answers: [''],
+      static: false,
+    };
+  }
+
   constructor(props) {
     super(props);
-
-    let answers = [''];
-    if (props.answers && props.question.fields.answers) {
-      answers = this.props.question.fields.answers;
-    }
-
     this.state = {
-      answers,
+      answers: (this.props.answers && this.props.question.fields.answers) ?
+      this.props.question.fields.answers : this.props.answers,
     };
 
     this.onChange = this.onChange.bind(this);
@@ -88,17 +98,6 @@ export default class TShort extends Component {
     );
   }
 }
-
-TShort.propTypes = {
-  question: React.PropTypes.any,
-  answers: React.PropTypes.bool,
-  static: React.PropTypes.bool,
-};
-
-TShort.defaultProps = {
-  answers: false,
-  static: false,
-};
 
 const styles = {
   container: {
