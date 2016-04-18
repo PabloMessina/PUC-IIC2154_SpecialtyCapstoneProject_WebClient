@@ -59,6 +59,7 @@ export default class Questions extends Component {
   }
 
   render() {
+    debugger;
     return (
       <Panel>
         {this.props.questions.map((question, i) => {

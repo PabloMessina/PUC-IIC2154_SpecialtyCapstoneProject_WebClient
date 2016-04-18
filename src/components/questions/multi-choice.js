@@ -4,10 +4,26 @@ import Title from './title.js';
 
 export default class MultiChoice extends Component {
 
-  constructor(props) {
-    super(props);
+  static get defaultProps() {
+    return {
+      answers: false,
+      static: false,
+    };
+  }
 
-    const checked = new Array(props.question.fields.choices).map(() => false);
+  static get propTypes() {
+    return {
+      question: React.PropTypes.object,
+      checked: React.PropTypes.array,
+      answers: React.PropTypes.bool,
+      static: React.PropTypes.bool,
+    };
+  }
+
+  constructor(props) {
+    debugger;
+    super(props);
+    const checked = Array(this.props.question.fields.choices.length).fill(false);
     if (props.answers && props.question.fields.answers) {
       props.question.fields.answers.forEach(index => {
         checked[index] = true;
@@ -52,17 +68,6 @@ export default class MultiChoice extends Component {
     );
   }
 }
-
-MultiChoice.propTypes = {
-  question: React.PropTypes.any,
-  answers: React.PropTypes.bool,
-  static: React.PropTypes.bool,
-};
-
-MultiChoice.defaultProps = {
-  answers: false,
-  static: false,
-};
 
 const styles = {
   container: {

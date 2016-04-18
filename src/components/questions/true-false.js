@@ -18,6 +18,7 @@ export default class TrueFalse extends Component {
       answer: true,
     };
   }
+
   constructor(props) {
     super(props);
     this.state = {
