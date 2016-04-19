@@ -16,13 +16,12 @@ import MyAtlasSettings from './components/settings/myatlas';
 import GeneralSettings from './components/settings/general';
 import SecuritySettings from './components/settings/security';
 import PaymentsSettings from './components/settings/payments';
-
+import DocumentList from './components/document-list';
+import DocumentDescription from './components/document-description';
 
 // Development help
 // Go to: http://localhost:3000/template
 import Template from './utils/template';
-import DocumentList from './components/document-list';
-import DocumentDescription from './components/document-description';
 
 const Routing = (
   <Router history={browserHistory}>

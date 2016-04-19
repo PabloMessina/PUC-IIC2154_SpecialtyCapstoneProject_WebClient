@@ -16,25 +16,20 @@ export default class Join extends Component {
     super(props);
     this.state = {
       name: '',
-      lastname: '',
       email: '',
-      pass: '',
-      pass1: '',
-      location: '',
-      gender: '',
-      code: '',
+      password: '',
     };
   }
 
   render() {
     return (
       <div style={styles.container}>
-        <h1>
-          Crear Cuenta
-        </h1>
         <Grid>
           <Row>
             <Col md={6}>
+              <h1>
+                Crear Cuenta
+              </h1>
               <p>Descripcion de la aplicación</p>
             </Col>
             <Col md={6}>
@@ -45,11 +40,6 @@ export default class Join extends Component {
                     value={this.state.name}
                     onChange={e => this.setState({ name: e.target.value })}
                   />
-                  <Input type="text"
-                    label="Apellido"
-                    value={this.state.lastname}
-                    onChange={e => this.setState({ lastname: e.target.value })}
-                  />
                   <Input type="email"
                     label="Email"
                     value={this.state.email}
@@ -59,31 +49,6 @@ export default class Join extends Component {
                     label="Clave"
                     value={this.state.pass}
                     onChange={e => this.setState({ pass: e.target.value })}
-                  />
-                  <Input type="password"
-                    label="Repetir Clave"
-                    value={this.state.pass1}
-                    onChange={e => this.setState({ pass1: e.target.value })}
-                  />
-                  <Input type="select"
-                    label="Ubicación"
-                    value={this.state.location}
-                    onChange={e => this.setState({ location: e.target.value })}
-                  >
-                    <option>Chile</option>
-                    <option>Otro</option>
-                  </Input>
-                  <Input type="select"
-                    label="Genero"
-                    onChange={e => this.setState({ gender: e.target.value })}
-                  >
-                    <option value={this.state.gender}>Hombre</option>
-                    <option value={this.state.gender}>Mujer</option>
-                  </Input>
-                  <Input type="text"
-                    label="Código Verificador"
-                    value={this.state.code}
-                    onChange={e => this.setState({ code: e.target.value })}
                   />
                   <ButtonInput bsStyle="primary" type="submit" value="Siguiente" />
                 </form>
@@ -100,7 +65,7 @@ export default class Join extends Component {
   See: https://facebook.github.io/react/docs/reusable-components.html#prop-validation
  */
 Join.propTypes = {
-  message: React.PropTypes.string,
+
 };
 
 /*

@@ -8,7 +8,7 @@ export default class DocumentDescription extends Component {
     const doc = atlasExample.documents[this.props.params.docId - 1];
     return (
       <div>
-        <Panel footer="dededede hdebbdjebdek jdebkjdeb jkdbekjdbe kjdbjd">
+        <Panel footer="Footer">
         <Row className="show-grid">
              <Col xs={6} md={4}>
               <Image src="/img/atlas1.jpg" src={ `/${doc.url}` } responsive />

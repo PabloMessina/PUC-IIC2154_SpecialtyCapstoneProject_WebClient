@@ -19,13 +19,14 @@ export default class Settings extends Component {
 
   static get defaultProps() {
     return {
-      message: 'Template',
+      atlases: atlasExample.documents,
     };
   }
 
   constructor(props) {
     super(props);
     this.state = {
+      atlases: props.atlases,
     };
   }
 
@@ -40,8 +41,7 @@ export default class Settings extends Component {
             </Col>
           </div>
         );
-      }
-      else {
+      } else {
         lista.push(
           <Col xs={2} md={3}>
             <AtlasThumbnail document ={doc} />

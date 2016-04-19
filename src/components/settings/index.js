@@ -17,42 +17,44 @@ export default class Settings extends Component {
 
   static get defaultProps() {
     return {
-      message: 'Template',
+
     };
   }
 
   constructor(props) {
     super(props);
     this.state = {
-      array: ['zero', 'one', 'two'],
-      something: true,
+
     };
   }
 
   render() {
     return (
-      <div style={styles.container}>
-      <Grid>
-           <Col sm={6} md={3}>
-            <h1></h1>
-            <ListGroup>
-              <ListGroupItem onClick={() => browserHistory.push('/settings')}>
-              General</ListGroupItem>
-              <ListGroupItem onClick={() => browserHistory.push('/settings/security')}>
-              Seguridad</ListGroupItem>
-              <ListGroupItem onClick={() => browserHistory.push('/settings/notifications')}>
-              Notificaciones</ListGroupItem>
-              <ListGroupItem onClick={() => browserHistory.push('/settings/payments')}>
-              Pagos</ListGroupItem>
-              <ListGroupItem onClick={() => browserHistory.push('/settings/myatlas')}>
-              Mis Atlas</ListGroupItem>
-            </ListGroup>
-           </Col>
-           <Col sm={6} md={9}>
-            {this.props.children}
-           </Col>
+      <Grid style={styles.container}>
+        <Col sm={6} md={3}>
+          <h1></h1>
+          <ListGroup>
+            <ListGroupItem onClick={() => browserHistory.push('/settings')}>
+              General
+            </ListGroupItem>
+            <ListGroupItem onClick={() => browserHistory.push('/settings/security')}>
+              Seguridad
+            </ListGroupItem>
+            <ListGroupItem onClick={() => browserHistory.push('/settings/notifications')}>
+              Notificaciones
+            </ListGroupItem>
+            <ListGroupItem onClick={() => browserHistory.push('/settings/payments')}>
+              Pagos
+            </ListGroupItem>
+            <ListGroupItem onClick={() => browserHistory.push('/settings/myatlas')}>
+              Mis Atlas
+            </ListGroupItem>
+          </ListGroup>
+        </Col>
+        <Col sm={6} md={9}>
+           {this.props.children}
+        </Col>
        </Grid>
-      </div>
     );
   }
 }

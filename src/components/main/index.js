@@ -8,7 +8,7 @@ export default class Main extends Component {
   render() {
     return (
       <div>
-        <NavigationBar title="MedApp" />
+        <NavigationBar title="App" />
         <Grid style={styles.content}>
           {this.props.children}
         </Grid>
