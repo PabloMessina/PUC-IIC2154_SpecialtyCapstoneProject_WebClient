@@ -60,7 +60,7 @@ export default class Questions extends Component {
   }
 
   render() {
-    const permission = 'editor';
+    const permission = 'reader';
     return (
       <Panel>
         <NewQuestion />
@@ -71,6 +71,7 @@ export default class Questions extends Component {
                 key={i}
                 question={question}
                 permission={permission}
+                collapsible
               />
             )
             case 'multiChoice': return (
@@ -78,6 +79,7 @@ export default class Questions extends Component {
                 key={i}
                 question={question}
                 permission={permission}
+                collapsible
               />
             )
             case 'tshort': return (
@@ -85,6 +87,7 @@ export default class Questions extends Component {
                 key={i}
                 permission={permission}
                 question={question}
+                collapsible
               />
             )
             case 'trueFalse': return (
@@ -92,6 +95,7 @@ export default class Questions extends Component {
                 key={i}
                 permission={permission}
                 question={question}
+                collapsible
               />);
             default: return null;
           }

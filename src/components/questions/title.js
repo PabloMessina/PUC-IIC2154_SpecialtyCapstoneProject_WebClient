@@ -2,7 +2,7 @@ import React from 'react';
 import { Label } from 'react-bootstrap';
 
 const Title = (props) => (
-  <div style={styles.container}>
+  <div style={styles.container} onClick={props.onClick}>
     <h3 style={styles.title}>{props.value}</h3>
     <div>
       {props.tags.map((tag, i) => <Label key={i} style={styles.tag}>{tag}</Label>)}
@@ -13,6 +13,7 @@ const Title = (props) => (
 Title.propTypes = {
   value: React.PropTypes.string,
   tags: React.PropTypes.array,
+  onClick: React.PropTypes.func,
 };
 
 Title.defaultProps = {

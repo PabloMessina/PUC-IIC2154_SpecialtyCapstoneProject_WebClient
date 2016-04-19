@@ -12,6 +12,8 @@ export default class TrueFalse extends Component {
       statement: React.PropTypes.string,
       answer: React.PropTypes.number,
       permission: React.PropTypes.string,
+      collapsible: React.PropTypes.bool,
+      open: React.PropTypes.bool,
     };
   }
 
@@ -21,6 +23,8 @@ export default class TrueFalse extends Component {
       statement: '',
       answer: 0,
       permission: 'reader',
+      collapsible: true,
+      open: false,
     };
   }
 
@@ -32,6 +36,8 @@ export default class TrueFalse extends Component {
       answer: this.props.question.fields.answer ?
         this.props.question.fields.answer : this.props.answer,
       permission: this.props.permission,
+      collapsible: this.props.collapsible,
+      open: this.props.open,
     };
     this.onClick = this.onClick.bind(this);
   }
@@ -132,7 +138,18 @@ export default class TrueFalse extends Component {
   render() {
     const { _id, tags } = this.props.question;
     return (
-      <Panel style={styles.container} header={<Title value={`Question ${_id}`} tags={tags} />}>
+      <Panel
+        style={styles.container}
+        header={
+          <Title
+            value={`Question ${_id}`}
+            tags={tags}
+            onClick={() => this.setState({ open: !this.state.open })}
+          />
+        }
+        collapsible={this.props.collapsible}
+        expanded={this.state.open}
+      >
         {this.renderQuestion(this.state.permission)}
       </Panel>
     );

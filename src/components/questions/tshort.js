@@ -3,6 +3,8 @@ import { Panel, Input, ButtonInput } from 'react-bootstrap';
 import Title from './title.js';
 import renderIf from 'render-if';
 
+import { Colors } from '../../styles';
+
 export default class TShort extends Component {
 
   // editor: can change statement and choices
@@ -15,6 +17,8 @@ export default class TShort extends Component {
       statement: React.PropTypes.string,
       responderAnswer: React.PropTypes.string,
       permission: React.PropTypes.string,
+      collapsible: React.PropTypes.bool,
+      open: React.PropTypes.bool,
     };
   }
 
@@ -25,6 +29,8 @@ export default class TShort extends Component {
       responderAnswer: '',
       statement: '',
       permission: 'reader',
+      collapsible: true,
+      open: false,
     };
   }
 
@@ -37,6 +43,8 @@ export default class TShort extends Component {
         this.props.question.fields.answers : this.props.answers,
       responderAnswer: this.props.responderAnswer,
       permission: this.props.permission,
+      collapsible: this.props.collapsible,
+      open: this.props.open,
     };
 
     this.onChange = this.onChange.bind(this);
@@ -69,7 +77,6 @@ export default class TShort extends Component {
   removeItem(e, index) {
     e.preventDefault();
     const answers = [...this.state.answers];
-    answers[index] = '';
     if (answers.length > 1) {
       answers.splice(index, 1);
     }
@@ -89,7 +96,7 @@ export default class TShort extends Component {
             value={this.state.statement}
             onChange={e => this.onChange(e, 'statement')}
           />
-          <p>Choices</p>
+          <p style={styles.instruction}>Choices</p>
           {this.state.answers.map((answer, i, arr) => (
             <div style={styles.row}>
               <Input
@@ -106,7 +113,8 @@ export default class TShort extends Component {
                   style={[styles.button, styles.remove]}
                   bsStyle="link"
                   bsSize="large"
-                  onClick={e => this.removeItem(e, 'option', i)}
+                  type="button"
+                  onClick={e => this.removeItem(e, i)}
                 >
                   -
                 </ButtonInput>
@@ -116,11 +124,11 @@ export default class TShort extends Component {
           <ButtonInput
             style={[styles.button, styles.add]}
             bsStyle="link"
-            type="submit"
+            type="button"
             value="Agregar respuesta"
             onClick={this.addItem}
           />
-      </form>
+        </form>
       );
     } else if (permission === 'responder') {
       return (
@@ -140,7 +148,7 @@ export default class TShort extends Component {
     return (
       <div>
         <p>{question.text}</p>
-        <p>Choices</p>
+        <p style={styles.instruction}>Choices</p>
         <ul>
           {this.state.answers.map((answer, index) => <li key={index}>{answer}</li>)}
         </ul>
@@ -151,7 +159,16 @@ export default class TShort extends Component {
   render() {
     const { _id, tags } = this.props.question;
     return (
-        <Panel style={styles.container} header={<Title value={`Question ${_id}`} tags={tags} />}>
+        <Panel style={styles.container} header={
+          <Title
+            value={`Question ${_id}`}
+            tags={tags}
+            onClick={() => this.setState({ open: !this.state.open })}
+          />
+          }
+          collapsible={this.props.collapsible}
+          expanded={this.state.open}
+        >
           <div>
             {this.renderQuestion(this.state.permission)}
           </div>
@@ -207,5 +224,9 @@ const styles = {
   },
   remove: {
 
+  },
+  instruction: {
+    fontSize: 14,
+    color: Colors.GRAY,
   },
 };
