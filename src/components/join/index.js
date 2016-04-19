@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { Panel, Input, Grid, Row, Col, ButtonInput } from 'react-bootstrap';
+
 /**
  * Component life-cycle:
  * https://facebook.github.io/react/docs/component-specs.html
@@ -19,6 +20,12 @@ export default class Join extends Component {
       email: '',
       password: '',
     };
+    this.onSubmit = this.onSubmit.bind(this);
+  }
+
+  onSubmit(e) {
+    // Prevent page refresh
+    e.preventDefault();
   }
 
   render() {
@@ -34,7 +41,7 @@ export default class Join extends Component {
             </Col>
             <Col md={6}>
               <Panel>
-                <form>
+                <form onSubmit={this.onSubmit}>
                   <Input type="text"
                     label="Nombre"
                     value={this.state.name}
