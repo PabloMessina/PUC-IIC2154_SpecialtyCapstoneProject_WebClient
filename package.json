@@ -19,7 +19,10 @@
     "react": "^15.0.0",
     "react-bootstrap": "^0.28.5",
     "react-dom": "^15.0.0",
+    "react-infinite-grid": "^0.4.0",
+    "react-rater": "^0.3.0",
     "react-router": "^2.0.1",
+    "react-star-rating": "^1.4.2",
     "render-if": "^0.1.1",
     "socket.io-client": "^1.4.5"
   },
