@@ -13,7 +13,7 @@ import authentication from 'feathers-authentication/client';
  * import app, { login, logout } from '../../app';
  */
 
-const host = 'http://localhost:3030';
+const host = 'https://karp.ing.puc.cl';
 const socket = io(host);
 
 // Set up Feathers client side
@@ -31,14 +31,24 @@ app.configure(authentication({ storage: window.localStorage }));
  * @param  {options.password} User password
  * @return {Promise}
  */
-export function login({ email, password }) {
-  const options = {
-    email,
-    password,
-    type: 'local',
-  };
-  return app.authenticate(options).catch(err => {
-    console.log(`Auth error for ${email}`);
+export function login(options) {
+  return app.authenticate({ type: 'local', ...options }).catch(err => {
+    console.log(`Auth error for ${options.email}`);
+    console.log(err);
+    throw err;
+  });
+}
+
+/**
+ * Create new user account
+ * @param  {options.email} User email address
+ * @param  {options.password} User password
+ * @param  {options.name} User name
+ * @return {Promise}
+ */
+export function join(options) {
+  return app.service('users').create({ type: 'local', ...options }).catch(err => {
+    console.log(`User creation error for ${options.email}`);
     console.log(err);
     throw err;
   });

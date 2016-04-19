@@ -9,7 +9,7 @@ import { Router, Route, IndexRoute, browserHistory } from 'react-router';
 import Main from './components/main';
 import Dashboard from './components/dashboard';
 import Login from './components/login/';
-import Join from './components/join/';
+import SignUp from './components/signup/';
 import Settings from './components/settings';
 import NotificationSettings from './components/settings/notifications';
 import MyAtlasSettings from './components/settings/myatlas';
@@ -28,7 +28,7 @@ const Routing = (
     <Route path="/" component={Main}>
       <IndexRoute component={Dashboard} />
       <Route path="login" component={Login} />
-      <Route path="join" component={Join} />
+      <Route path="signup" component={SignUp} />
       <Route path="documents" component={DocumentList} />
       <Route path="documents/:docId" component={DocumentDescription} />
       <Route path="settings" component={Settings} >

@@ -34,7 +34,7 @@ export default class NavigationBar extends Component {
             <NavItem eventKey={1} href="#" onClick={() => browserHistory.push('/login')}>
               Ingresa
             </NavItem>
-            <NavItem eventKey={2} href="#" onClick={() => browserHistory.push('/join')}>
+            <NavItem eventKey={2} href="#" onClick={() => browserHistory.push('/signup')}>
               Registrate
             </NavItem>
           </Nav>
