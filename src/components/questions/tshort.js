@@ -24,7 +24,7 @@ export default class TShort extends Component {
 
   static get defaultProps() {
     return {
-      question: {},
+      question: { question: { text: '' }, fields: { answers: [] } },
       answers: [''],
       responderAnswer: '',
       statement: '',
@@ -36,15 +36,14 @@ export default class TShort extends Component {
 
   constructor(props) {
     super(props);
+    debugger;
     this.state = {
-      statement: this.props.question.question.text === undefined ?
-        this.props.statement : this.props.question.question.text,
-      answers: (this.props.answers && this.props.question.fields.answers) ?
-        this.props.question.fields.answers : this.props.answers,
-      responderAnswer: this.props.responderAnswer,
-      permission: this.props.permission,
-      collapsible: this.props.collapsible,
-      open: this.props.open,
+      statement: props.question.question.text || '',
+      answers: props.question.fields.answers || props.answers,
+      responderAnswer: props.responderAnswer,
+      permission: props.permission,
+      collapsible: props.collapsible,
+      open: props.open,
     };
 
     this.onChange = this.onChange.bind(this);

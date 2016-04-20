@@ -66,7 +66,7 @@ export default class TrueFalse extends Component {
               type="textArea"
               placeholder="Add a statement"
               value={this.state.statement}
-              onChange={e => this.onChange(e, 'statement')}
+          onChange={e => this.onChange(e, 'statement')}
             />
         </form>
         <div style={styles.buttons}>

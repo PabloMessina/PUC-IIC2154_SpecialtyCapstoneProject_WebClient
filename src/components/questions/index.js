@@ -60,7 +60,7 @@ export default class Questions extends Component {
   }
 
   render() {
-    const permission = 'reader';
+    const permission = 'editor';
     return (
       <Panel>
         <NewQuestion />
