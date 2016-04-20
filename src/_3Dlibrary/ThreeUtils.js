@@ -88,7 +88,7 @@ const ThreeUtils = {
    */
   unprojectFromScreenToWorld(screenX, screenY, screenWidth, screenHeight, camera) {
     const x = (screenX / screenWidth) * 2 - 1;
-    const y = - (screenY / screenHeight) * 2 + 1;
+    const y = (screenY / screenHeight) * 2 - 1;
     const z = 1;
     const v3 = new THREE.Vector3(x, y, z);
     v3.unproject(camera);

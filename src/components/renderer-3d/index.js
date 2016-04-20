@@ -4,6 +4,10 @@ import MTLLoader from '../../_3Dlibrary/MTLLoader';
 import OBJLoader from '../../_3Dlibrary/OBJLoader';
 import ThreeUtils from '../../_3Dlibrary/ThreeUtils';
 
+const LEFT_BUTTON = 0;
+const MIDDLE_BUTTON = 1;
+const RIGH_BUTTON = 2;
+
 export default class Renderer3D extends Component {
 
   constructor(props) {
@@ -49,6 +53,9 @@ export default class Renderer3D extends Component {
     camera.position.set(0, 0, 50);
     camera.updateProjectionMatrix();
 
+    // initialize raycaster
+    const raycaster = new THREE.Raycaster();
+
     // save variables into "this" to make them
     // accessible from other functions
     this.renderer = renderer;
@@ -59,6 +66,8 @@ export default class Renderer3D extends Component {
     this.meshContainer = null;
     this.boundingBox = null;
     this.meshCenter = new THREE.Vector3();
+    this.meshDiameter = null;
+    this.raycaster = raycaster;
     this._state = {
       zoom: 1,
       updateCameraZoom: false,
@@ -68,6 +77,7 @@ export default class Renderer3D extends Component {
       mouseLeft2: { x: null, y: null },
       mouseViewportCoords: { x: null, y: null },
       updateTimerRunning: false,
+      mouseClipping: new THREE.Vector2(),
     };
 
     // run animation
@@ -261,6 +271,8 @@ export default class Renderer3D extends Component {
         .copy(this.boundingBox.min)
         .add(this.boundingBox.max)
         .multiplyScalar(0.5);
+      // compute the mesh diameter
+      this.meshDiameter = this.boundingBox.min.distanceTo(this.boundingBox.max);
       // center the camera on boundingBox
       ThreeUtils.centerCameraOnBoundingBox(
         this.camera,
@@ -328,11 +340,45 @@ export default class Renderer3D extends Component {
   handleMouseDown(event) {
     console.log("====> handleMouseDown()");
     console.log("event.button = ", event.button);
-    if (event.button === 0) {
+    if (event.button === LEFT_BUTTON) {
+      const viewport = this.refs.viewport;
       this._state.mouseLeftButtonDown = true;
-      this._state.mouseLeft1.x = event.pageX;
-      this._state.mouseLeft1.y = event.pageY;
+      this._state.mouseLeft1.x = event.pageX - viewport.offsetLeft;
+      this._state.mouseLeft1.y = viewport.offsetHeight + viewport.offsetTop - event.pageY;
       this.updateAndRenderForAWhile();
+    } else if (event.button === RIGH_BUTTON) {
+      event.preventDefault();
+      if (this.meshContainer !== null) {
+        console.log("---------");
+        console.log("right button clicked");
+        // get mouse's clipping coordinates
+        const viewport = this.refs.viewport;
+        const x = event.pageX - viewport.offsetLeft;
+        const y = viewport.offsetHeight + viewport.offsetTop - event.pageY;
+        this._state.mouseClipping.x = (x / viewport.offsetWidth) * 2 - 1;
+        this._state.mouseClipping.y = (y / viewport.offsetHeight) * 2 - 1;
+        console.log("x = ", x, " y = ", y);
+        // do raycasting
+        this.raycaster.setFromCamera(this._state.mouseClipping, this.camera);
+        const intersects = this.raycaster.intersectObjects(this.meshContainer.children);
+        console.log("intersects = ", intersects);
+        // if we picked something
+        if (intersects.length > 0) {
+          console.log("intersection detected");
+          console.log("intersects[0] = ", intersects[0]);
+          const pickedMesh = intersects[0].object;
+          const point = intersects[0].point;
+          const radius = this.meshDiameter / 200;
+          console.log("radius = ", radius);
+          console.log("point = ", point);
+          const sphereGeom = new THREE.SphereGeometry(radius, 32, 32);
+          const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+          const sphereMesh = new THREE.Mesh(sphereGeom, material);
+          sphereMesh.position.copy(point);
+          this.scene.add(sphereMesh);
+          this.updateAndRenderForAWhile();
+        }
+      }
     }
   }
 
@@ -340,11 +386,13 @@ export default class Renderer3D extends Component {
    * Handle mouse move events
    */
   handleMouseMove(event) {
-    this._state.mouseViewportCoords.x = event.pageX - this.refs.viewport.offsetLeft;
-    this._state.mouseViewportCoords.y = event.pageY - this.refs.viewport.offsetTop;
+    const viewport = this.refs.viewport;
+    this._state.mouseViewportCoords.x = event.pageX - viewport.offsetLeft;
+    this._state.mouseViewportCoords.y = viewport.offsetHeight + viewport.offsetTop - event.pageY;
+
     if (this._state.mouseLeftButtonDown) {
-      this._state.mouseLeft2.x = event.pageX;
-      this._state.mouseLeft2.y = event.pageY;
+      this._state.mouseLeft2.x = this._state.mouseViewportCoords.x;
+      this._state.mouseLeft2.y = this._state.mouseViewportCoords.y;
       this._state.updateCameraRotation = true;
       this.updateAndRenderForAWhile();
     }
@@ -356,10 +404,18 @@ export default class Renderer3D extends Component {
   handleMouseUp(event) {
     console.log("====> handleMouseUp()");
     console.log("event.button = ", event.button);
-    if (event.button === 0) {
+    if (event.button === LEFT_BUTTON) {
       this._state.mouseLeftButtonDown = false;
       this._state.updateCameraRotation = false;
     }
+  }
+
+  /**
+   * Handle Context Menu events
+   */
+  handleContextMenu(event) {
+    event.preventDefault();
+    return false;
   }
 
   render() {
@@ -369,6 +425,7 @@ export default class Renderer3D extends Component {
         <div style={styles.viewport} ref="viewport"
           onWheel={this.handleWheel} onMouseDown={this.handleMouseDown}
           onMouseMove={this.handleMouseMove} onMouseUp={this.handleMouseUp}
+          onContextMenu={this.handleContextMenu}
         >
         </div>
       </div>
