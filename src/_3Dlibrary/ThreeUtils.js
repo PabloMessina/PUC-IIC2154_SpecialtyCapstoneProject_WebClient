@@ -105,36 +105,48 @@ const ThreeUtils = {
   /**
    * [makeTextSprite : given a text and some parameters, return a sprite with the text]
    * @param  {[string]} text   [the input text]
-   * @param  {[object]} params [fontStyle, referenceLength, etc.]
+   * @param  {[object]} params [fontStyle, backgroundColor,
+   * foregroundColor, borderColor, borderThickness, worldFontHeight, etc.]
    * @return {[THREE::Sprite]}
    */
   makeTextSprite(text, params) {
     // read params
     const fontStyle = params.fontStyle || '100px Georgia';
-    const fillStyle = params.fillStyle || '#0000FF';
+    const foregroundColor = params.foregroundColor || 'rgb(0,0,255)';
+    const backgroundColor = params.backgroundColor || 'rgba(0,255,255,0.5)';
+    const borderColor = params.borderColor || 'rgb(0,0,0,0.5)';
+    const borderThickness = params.borderThickness || 1;
+    const worldFontHeight = params.worldFontHeight || 1;
     // create canvas and get its 2D context
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    // setup context
+    // setup context for text
     ctx.font = fontStyle;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillStyle = fillStyle;
+    ctx.fillStyle = foregroundColor;
     // get text's dimensions
     const textWidth = Math.ceil(ctx.measureText(text).width);
     const textHeight = getFontHeight(fontStyle);
     // resize canvas to fit text
-    canvas.width = textWidth * 1.05;
-    canvas.height = textHeight * 1.05;
-    // restore context's settings again
+    canvas.width = textWidth * 1.10;
+    canvas.height = textHeight * 1.10;
+    // restore context's settings again after resizing
     ctx.font = fontStyle;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    // draw background and text
-    ctx.fillStyle = '#FF0000';
+    // draw background
+    ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = fillStyle;
-    ctx.fillText(text, textWidth * 0.025, textHeight * 0.025);
+    // draw border
+    ctx.beginPath();
+    ctx.lineWidth = borderThickness;
+    ctx.strokeStyle = borderColor;
+    ctx.rect(0, 0, canvas.width, canvas.height);
+    ctx.stroke();
+    // draw text
+    ctx.fillStyle = foregroundColor;
+    ctx.fillText(text, textWidth * 0.05, textHeight * 0.05);
     // generate texture from canvas
     const texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;
@@ -144,8 +156,7 @@ const ThreeUtils = {
     const material = new THREE.SpriteMaterial({ map: texture });
     // generate and return sprite
     const sprite = new THREE.Sprite(material);
-    const factor = params.referenceLength ?
-      params.referenceLength / (40 * canvas.height) : 1;
+    const factor = worldFontHeight / canvas.height;
     sprite.scale.set(canvas.width * factor, canvas.height * factor, 1);
     return sprite;
   },

@@ -21,6 +21,9 @@ export default class Renderer3D extends Component {
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.updateAndRenderForAWhile = this.updateAndRenderForAWhile.bind(this);
+    this.removeLabel = this.removeLabel.bind(this);
+    this.highlightLabel = this.highlightLabel.bind(this);
+    this.unhighlightLabel = this.unhighlightLabel.bind(this);
   }
 
   componentDidMount() {
@@ -93,6 +96,7 @@ export default class Renderer3D extends Component {
       mouseViewportCoords: { x: null, y: null },
       updateTimerRunning: false,
       mouseClipping: new THREE.Vector2(),
+      selectedSphere: null,
     };
 
     // run animation
@@ -375,31 +379,60 @@ export default class Renderer3D extends Component {
           // intersect meshes
           const intersectedMeshes = this.raycaster.intersectObjects(this.meshGroup.children);
 
-          // if the sphere is closer
+          // if the sphere is closest intersected object
           if (intersectedMeshes.length === 0 ||
             intersectedSpheres[0].distance < intersectedMeshes[0].distance) {
-            // remove the sphere, the line and the sprite
+            // retrieve label
             const sphere = intersectedSpheres[0].object;
             const labelObj = this.sphereToLabelMap[sphere.uuid];
-            this.spriteGroup.remove(labelObj.sprite);
-            this.lineGroup.remove(labelObj.line);
-            this.sphereGroup.remove(labelObj.sphere);
+            const prevSphere = this._state.selectedSphere;
+
+            if (prevSphere === null) {
+              // ----------------------------------
+              // case 1: no selected sphere before
+              // ---------------------------------
+              // highlight label
+              this.highlightLabel(labelObj);
+              // set this sphere as the selectedSphere
+              this._state.selectedSphere = sphere;
+            } else if (sphere === prevSphere) {
+              // ---------------------------------------------------------
+              // case 2: this sphere and the selectedSphere are the same
+              // ---------------------------------------------------------
+              // we delete the whole label
+              this.removeLabel(labelObj);
+              this._state.selectedSphere = null;
+            } else {
+              // ---------------------------------------------------------
+              // case 3: this sphere and the selectedSphere are different
+              // ---------------------------------------------------------
+              // highlight this label
+              this.highlightLabel(labelObj);
+              // unhighlight the previously selected label
+              this.unhighlightLabel(this.sphereToLabelMap[prevSphere.uuid]);
+              // update the selected sphere
+              this._state.selectedSphere = sphere;
+            }
             pickedSphere = true;
           }
         }
 
-        // if no sphere picked, consider it a normal click for rotation
+        // if no sphere picked, consider it as a normal click for rotation
         if (!pickedSphere) {
           this._state.mouseLeftButtonDown = true;
           this._state.mouseLeft1.x = event.pageX - viewport.offsetLeft;
           this._state.mouseLeft1.y = viewport.offsetHeight + viewport.offsetTop - event.pageY;
+          // if there was an already selected sphere, we unhighlight its whole label
+          if (this._state.selectedSphere !== null) {
+            const sphereId = this._state.selectedSphere.uuid;
+            this.unhighlightLabel(this.sphereToLabelMap[sphereId]);
+            this._state.selectedSphere = null;
+          }
         }
 
         // refresh canvas
         this.updateAndRenderForAWhile();
       }
-
-
 
     } else if (event.button === RIGH_BUTTON) {
       event.preventDefault();
@@ -424,12 +457,15 @@ export default class Renderer3D extends Component {
           this.sphereGroup.add(sphere);
 
           // add label into scene
-          const text = 'COMENTARIO RANDOM';
-          const fontStyle = '100px Georgia';
+          const text = '<EMPTY LABEL>';
           const sprite = ThreeUtils.makeTextSprite(text,
             {
-              fontStyle,
-              referenceLength: this.meshDiameter,
+              fontStyle: '100px Georgia',
+              worldFontHeight: this.meshDiameter / 100,
+              borderThickness: 20,
+              borderColor: 'rgb(0,0,0)',
+              backgroundColor: 'rgba(255,255,255,0.6)',
+              foregroundColor: 'rgb(0,0,0)',
             });
           const textpos = new THREE.Vector3()
             .subVectors(point, this.meshCenter)
@@ -447,7 +483,7 @@ export default class Renderer3D extends Component {
           this.lineGroup.add(line);
 
           // keep track of the objects
-          const labelObj = { sprite, sphere, line };
+          const labelObj = { sprite, sphere, line, text };
           this.spriteToLabelMap[sprite.uuid] = labelObj;
           this.sphereToLabelMap[sphere.uuid] = labelObj;
 
@@ -456,6 +492,77 @@ export default class Renderer3D extends Component {
         }
       }
     }
+  }
+
+  /**
+   * [highlightLabel : show label as highlighted]
+   * @param  {[object]} labelObj [object with references to sphere, line, sprite and text]
+   */
+  highlightLabel(labelObj) {
+    // highlight sphere
+    labelObj.sphere.material.color.set(0xffff00);
+    // highlight line
+    labelObj.line.material.color.set(0xffff00);
+    // remove current sprite
+    this.spriteGroup.remove(labelObj.sprite);
+    delete this.spriteToLabelMap[labelObj.sprite.uuid];
+    // create a new highlighted sprite
+    const newSprite = ThreeUtils.makeTextSprite(labelObj.text,
+      {
+        fontStyle: '100px Georgia',
+        worldFontHeight: this.meshDiameter / 100,
+        borderThickness: 20,
+        borderColor: 'rgb(0,0,0)',
+        backgroundColor: 'rgba(255,255,0,0.8)',
+        foregroundColor: 'rgb(0,0,255)',
+      });
+    // copy the same position
+    newSprite.position.copy(labelObj.sprite.position);
+    // replace the old one
+    this.spriteGroup.add(newSprite);
+    this.spriteToLabelMap[newSprite.uuid] = labelObj;
+    labelObj.sprite = newSprite;
+  }
+
+  /**
+   * [unhighlightLabel : show label as non-highlighted]
+   * @param  {[object]} labelObj [object with references to sphere, line, sprite and text]
+   */
+  unhighlightLabel(labelObj) {
+    // unhighlight sphere
+    labelObj.sphere.material.color.set(0xff0000);
+    // unhighlight line
+    labelObj.line.material.color.set(0x00ffff);
+    // remove current sprite
+    this.spriteGroup.remove(labelObj.sprite);
+    delete this.spriteToLabelMap[labelObj.sprite.uuid];
+    // create a new non-highlighted sprite
+    const newSprite = ThreeUtils.makeTextSprite(labelObj.text, {
+      fontStyle: '100px Georgia',
+      worldFontHeight: this.meshDiameter / 100,
+      borderThickness: 20,
+      borderColor: 'rgb(0,0,0)',
+      backgroundColor: 'rgba(255,255,255,0.6)',
+      foregroundColor: 'rgb(0,0,0)',
+    });
+    // copy the same position
+    newSprite.position.copy(labelObj.sprite.position);
+    // replace the old one
+    this.spriteGroup.add(newSprite);
+    this.spriteToLabelMap[newSprite.uuid] = labelObj;
+    labelObj.sprite = newSprite;
+  }
+
+  /**
+   * [removeLabel : removes a label]
+   * @param  {[obj]} labelObj [wrapper for a label's data]
+   */
+  removeLabel(labelObj) {
+    this.spriteGroup.remove(labelObj.sprite);
+    this.lineGroup.remove(labelObj.line);
+    this.sphereGroup.remove(labelObj.sphere);
+    delete this.sphereToLabelMap[labelObj.sphere.uuid];
+    delete this.spriteToLabelMap[labelObj.sprite.uuid];
   }
 
   /**
