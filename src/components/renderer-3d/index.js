@@ -365,17 +365,30 @@ export default class Renderer3D extends Component {
         // if we picked something
         if (intersects.length > 0) {
           console.log("intersection detected");
-          console.log("intersects[0] = ", intersects[0]);
-          const pickedMesh = intersects[0].object;
+
+          // add sphere into scene
           const point = intersects[0].point;
           const radius = this.meshDiameter / 200;
-          console.log("radius = ", radius);
-          console.log("point = ", point);
           const sphereGeom = new THREE.SphereGeometry(radius, 32, 32);
           const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
           const sphereMesh = new THREE.Mesh(sphereGeom, material);
           sphereMesh.position.copy(point);
           this.scene.add(sphereMesh);
+
+          // add label into scene
+          const text = 'COMENTARIO RANDOM';
+          const fontStyle = '100px Georgia';
+          const sprite = ThreeUtils.makeTextSprite(text,
+            {
+              fontStyle,
+              referenceLength: this.meshDiameter,
+            });
+          const textpos = new THREE.Vector3()
+            .subVectors(point, this.meshCenter)
+            .multiplyScalar(1.2)
+            .add(this.meshCenter);
+          sprite.position.copy(textpos);
+          this.scene.add(sprite);
           this.updateAndRenderForAWhile();
         }
       }

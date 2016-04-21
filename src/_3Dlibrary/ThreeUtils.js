@@ -101,6 +101,77 @@ const ThreeUtils = {
   isZero(v3) {
     return v3.x === 0 && v3.y === 0 && v3.z === 0;
   },
+
+  /**
+   * [makeTextSprite : given a text and some parameters, return a sprite with the text]
+   * @param  {[string]} text   [the input text]
+   * @param  {[object]} params [fontStyle, referenceLength, etc.]
+   * @return {[THREE::Sprite]}
+   */
+  makeTextSprite(text, params) {
+    // read params
+    const fontStyle = params.fontStyle || '100px Georgia';
+    const fillStyle = params.fillStyle || '#0000FF';
+    // create canvas and get its 2D context
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    // setup context
+    ctx.font = fontStyle;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = fillStyle;
+    // get text's dimensions
+    const textWidth = Math.ceil(ctx.measureText(text).width);
+    const textHeight = getFontHeight(fontStyle);
+    // resize canvas to fit text
+    canvas.width = textWidth * 1.05;
+    canvas.height = textHeight * 1.05;
+    // restore context's settings again
+    ctx.font = fontStyle;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    // draw background and text
+    ctx.fillStyle = '#FF0000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = fillStyle;
+    ctx.fillText(text, textWidth * 0.025, textHeight * 0.025);
+    // generate texture from canvas
+    const texture = new THREE.Texture(canvas);
+    texture.needsUpdate = true;
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.LinearMipMapLinearFilter;
+    // generate texture
+    const material = new THREE.SpriteMaterial({ map: texture });
+    // generate and return sprite
+    const sprite = new THREE.Sprite(material);
+    const factor = params.referenceLength ?
+      params.referenceLength / (40 * canvas.height) : 1;
+    sprite.scale.set(canvas.width * factor, canvas.height * factor, 1);
+    return sprite;
+  },
 };
+
+// cache to store font heights
+const fontHeightCache = {};
+/**
+ * [getFontHeight : returns the height of a given fontStyle]
+ * @param  {[string]} fontStyle
+ * @return {[float]}  fontHeight
+ */
+function getFontHeight(fontStyle) {
+  let fontHeight = fontHeightCache[fontStyle];
+  if (!fontHeight) {
+    const body = document.getElementsByTagName('body')[0];
+    const dummy = document.createElement('div');
+    const dummyText = document.createTextNode('MÉq');
+    dummy.appendChild(dummyText);
+    dummy.setAttribute('style', 'font:' + fontStyle + ';position:absolute;top:0;left:0');
+    body.appendChild(dummy);
+    fontHeight = dummy.offsetHeight;
+    body.removeChild(dummy);
+    fontHeightCache[fontStyle] = fontHeight;
+  }
+  return fontHeight;
+}
 
 export default ThreeUtils;
