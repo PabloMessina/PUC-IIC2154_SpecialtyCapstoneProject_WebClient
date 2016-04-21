@@ -47,6 +47,14 @@ export default class Renderer3D extends Component {
     cameraLight.position.set(0, 0, 50);
     scene.add(cameraLight);
 
+    // groups (necessary for labels)
+    const spriteGroup = new THREE.Group();
+    const lineGroup = new THREE.Group();
+    const sphereGroup = new THREE.Group();
+    scene.add(spriteGroup);
+    scene.add(lineGroup);
+    scene.add(sphereGroup);
+
     // initialize camera
     const camera = new THREE.OrthographicCamera(
       width / - 2, width / 2, height / 2, height / - 2, - 500, 1000);
@@ -63,11 +71,18 @@ export default class Renderer3D extends Component {
     this.camera = camera;
     this.ambientLight = ambientLight;
     this.cameraLight = cameraLight;
-    this.meshContainer = null;
+    this.meshGroup = null;
     this.boundingBox = null;
     this.meshCenter = new THREE.Vector3();
     this.meshDiameter = null;
     this.raycaster = raycaster;
+    // label data
+    this.spriteGroup = spriteGroup;
+    this.lineGroup = lineGroup;
+    this.sphereGroup = sphereGroup;
+    this.sphereToLabelMap = {};
+    this.spriteToLabelMap = {};
+    // other state data
     this._state = {
       zoom: 1,
       updateCameraZoom: false,
@@ -87,7 +102,7 @@ export default class Renderer3D extends Component {
   // function to update the scene
   threeUpdate() {
     // if no mesh has been set yet, abort updates
-    if (this.meshContainer === null) return;
+    if (this.meshGroup === null) return;
 
     if (this._state.updateCameraZoom) {
       // get viewport's dimensions
@@ -259,13 +274,13 @@ export default class Renderer3D extends Component {
       // from OBJ file
       return OBJLoader.loadObjects(objFile, materials);
     })
-    .then((meshContainer) => {
+    .then((meshGroup) => {
       // on success, proceed to incorporte the meshes into the scene
       // and render them
       console.log("----------------------");
-      console.log("success: meshContainer = ", meshContainer);
+      console.log("success: meshGroup = ", meshGroup);
       // compute bounding box
-      this.boundingBox = ThreeUtils.getMeshesBoundingBox(meshContainer.children);
+      this.boundingBox = ThreeUtils.getMeshesBoundingBox(meshGroup.children);
       // compute the center
       this.meshCenter
         .copy(this.boundingBox.min)
@@ -284,13 +299,13 @@ export default class Renderer3D extends Component {
       this._state.zoom = this.camera.zoom; // keep the zoom up to date
 
       // remove from scene the previous meshes, if any
-      if (this.meshContainer !== null) {
-        this.scene.remove(this.meshContainer);
+      if (this.meshGroup !== null) {
+        this.scene.remove(this.meshGroup);
       }
-      // set the new meshContainer
-      this.meshContainer = meshContainer;
+      // set the new meshGroup
+      this.meshGroup = meshGroup;
       // add to scene
-      this.scene.add(meshContainer);
+      this.scene.add(meshGroup);
 
       // run animation cycle to reflect changes on the screen
       this.updateAndRenderForAWhile();
@@ -340,40 +355,73 @@ export default class Renderer3D extends Component {
   handleMouseDown(event) {
     console.log("====> handleMouseDown()");
     console.log("event.button = ", event.button);
+
+    const viewport = this.refs.viewport;
+    const screenX = event.pageX - viewport.offsetLeft;
+    const screenY = viewport.offsetHeight + viewport.offsetTop - event.pageY;
+
     if (event.button === LEFT_BUTTON) {
-      const viewport = this.refs.viewport;
-      this._state.mouseLeftButtonDown = true;
-      this._state.mouseLeft1.x = event.pageX - viewport.offsetLeft;
-      this._state.mouseLeft1.y = viewport.offsetHeight + viewport.offsetTop - event.pageY;
-      this.updateAndRenderForAWhile();
+      if (this.meshGroup !== null) {
+        this._state.mouseClipping.x = (screenX / viewport.offsetWidth) * 2 - 1;
+        this._state.mouseClipping.y = (screenY / viewport.offsetHeight) * 2 - 1;
+        // set up raycaster
+        this.raycaster.setFromCamera(this._state.mouseClipping, this.camera);
+        // intersect spheres
+        const intersectedSpheres = this.raycaster.intersectObjects(this.sphereGroup.children);
+
+        let pickedSphere = false;
+        // if we intersected at least one sphere
+        if (intersectedSpheres.length > 0) {
+          // intersect meshes
+          const intersectedMeshes = this.raycaster.intersectObjects(this.meshGroup.children);
+
+          // if the sphere is closer
+          if (intersectedMeshes.length === 0 ||
+            intersectedSpheres[0].distance < intersectedMeshes[0].distance) {
+            // remove the sphere, the line and the sprite
+            const sphere = intersectedSpheres[0].object;
+            const labelObj = this.sphereToLabelMap[sphere.uuid];
+            this.spriteGroup.remove(labelObj.sprite);
+            this.lineGroup.remove(labelObj.line);
+            this.sphereGroup.remove(labelObj.sphere);
+            pickedSphere = true;
+          }
+        }
+
+        // if no sphere picked, consider it a normal click for rotation
+        if (!pickedSphere) {
+          this._state.mouseLeftButtonDown = true;
+          this._state.mouseLeft1.x = event.pageX - viewport.offsetLeft;
+          this._state.mouseLeft1.y = viewport.offsetHeight + viewport.offsetTop - event.pageY;
+        }
+
+        // refresh canvas
+        this.updateAndRenderForAWhile();
+      }
+
+
+
     } else if (event.button === RIGH_BUTTON) {
       event.preventDefault();
-      if (this.meshContainer !== null) {
+      if (this.meshGroup !== null) {
         console.log("---------");
         console.log("right button clicked");
         // get mouse's clipping coordinates
-        const viewport = this.refs.viewport;
-        const x = event.pageX - viewport.offsetLeft;
-        const y = viewport.offsetHeight + viewport.offsetTop - event.pageY;
-        this._state.mouseClipping.x = (x / viewport.offsetWidth) * 2 - 1;
-        this._state.mouseClipping.y = (y / viewport.offsetHeight) * 2 - 1;
-        console.log("x = ", x, " y = ", y);
+        this._state.mouseClipping.x = (screenX / viewport.offsetWidth) * 2 - 1;
+        this._state.mouseClipping.y = (screenY / viewport.offsetHeight) * 2 - 1;
         // do raycasting
         this.raycaster.setFromCamera(this._state.mouseClipping, this.camera);
-        const intersects = this.raycaster.intersectObjects(this.meshContainer.children);
-        console.log("intersects = ", intersects);
+        const intersects = this.raycaster.intersectObjects(this.meshGroup.children);
         // if we picked something
         if (intersects.length > 0) {
-          console.log("intersection detected");
-
           // add sphere into scene
           const point = intersects[0].point;
           const radius = this.meshDiameter / 200;
           const sphereGeom = new THREE.SphereGeometry(radius, 32, 32);
           const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-          const sphereMesh = new THREE.Mesh(sphereGeom, material);
-          sphereMesh.position.copy(point);
-          this.scene.add(sphereMesh);
+          const sphere = new THREE.Mesh(sphereGeom, material);
+          sphere.position.copy(point);
+          this.sphereGroup.add(sphere);
 
           // add label into scene
           const text = 'COMENTARIO RANDOM';
@@ -388,7 +436,22 @@ export default class Renderer3D extends Component {
             .multiplyScalar(1.2)
             .add(this.meshCenter);
           sprite.position.copy(textpos);
-          this.scene.add(sprite);
+          this.spriteGroup.add(sprite);
+
+          // add a line connecting the sphere with the label
+          const lineGeo = new THREE.Geometry();
+          lineGeo.vertices.push(point);
+          lineGeo.vertices.push(textpos);
+          const lineMat = new THREE.LineBasicMaterial({ color: 0x00ffff });
+          const line = new THREE.Line(lineGeo, lineMat);
+          this.lineGroup.add(line);
+
+          // keep track of the objects
+          const labelObj = { sprite, sphere, line };
+          this.spriteToLabelMap[sprite.uuid] = labelObj;
+          this.sphereToLabelMap[sphere.uuid] = labelObj;
+
+          // refresh scene
           this.updateAndRenderForAWhile();
         }
       }
