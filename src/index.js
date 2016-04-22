@@ -51,8 +51,8 @@ const Routing = (
       <Route path="courses" component={Courses}>
         <Route path=":courseId" component={Course} />
       </Route>
+      <Route path="/course_create" component={CourseCreate} />
       <Route path="course_general" component={CourseNav} />
-      <Route path="course_create" component={CourseCreate} />
 
       <Route path="template" component={Template} />
     </Route>

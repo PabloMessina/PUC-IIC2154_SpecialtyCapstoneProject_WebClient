@@ -20,7 +20,7 @@ export default class Course extends Component {
         },
         {
           courseName: 'Patologías',
-          description: 'Curso para alumnos de Ciencias de la Salud para que aprendan del Pato',
+          description: 'Curso para alumnos de Ciencias de la Salud para que aprendan de Patologías',
           imageSource: 'http://www.totton.ac.uk/media/183369/HUMANITIES-ICON-2_Square%20Crop.jpg',
         },
       ],

@@ -1,9 +1,12 @@
 import React, { Component } from 'react';
 import { Button, Input } from 'react-bootstrap';
+import { Router } from 'react-router';
 
 import app from '../../app';
 
 const courseService = app.service('/courses');
+const participantService = app.service('/participants');
+const membershipService = app.service('/memberships');
 
 /**
  * Component life-cycle:
@@ -23,7 +26,7 @@ export default class CourseCreate extends Component {
       teachers: React.PropTypes.array,
       selectedTeachers: React.PropTypes.array,
       atlases: React.PropTypes.array,
-      students: React.PropTypes.array,
+      users: React.PropTypes.array,
       selectedStudents: React.PropTypes.array,
       description: React.PropTypes.string,
       associatedAtlases: React.PropTypes.array,
@@ -34,9 +37,8 @@ export default class CourseCreate extends Component {
     return {
       name: '',
       description: '',
-      teachers: [],
       selectedTeachers: [],
-      students: [],
+      users: [],
       selectedStudents: [],
       atlases: [],
       associatedAtlases: [],
@@ -48,12 +50,11 @@ export default class CourseCreate extends Component {
     this.state = {
       name: this.props.name,
       description: this.props.description,
-      teachers: this.props.teachers,
+      users: this.props.users,
+      selectedStudents: this.props.selectedStudents,
       selectedTeachers: this.props.selectedTeachers,
       atlases: this.props.atlases,
       associatedAtlases: this.props.associatedAtlases,
-      students: this.props.students,
-      selectedStudents: this.props.selectedStudents,
     };
     this.addStudent = this.addStudent.bind(this);
     this.addTeachers = this.addTeacher.bind(this);
@@ -62,8 +63,36 @@ export default class CourseCreate extends Component {
   }
 
   onSubmit(e) {
-    // Prevent page refresh
     e.preventDefault();
+    const options = {
+      name: this.state.name,
+      description: this.state.description,
+      users: this.state.users, /* pide participants */
+      /* organizationId: URL */
+    };
+
+    return courseService.create(options).then(course => {
+      console.log(course);
+    }).catch(err => {
+      console.log(err);
+    });
+  }
+
+  fetchUsers() {
+    let query = {
+      organizationId: 1,  /* URL */
+    };
+    return membershipService.find({ query }).then(result => {
+      query = {
+        id: { $in: result.data.map(row => row.userId) },
+      };
+    /*  return userService.find({ query }); */
+      return participantService.find({ query });
+    }).then(result => {
+      this.setState({ users: result.data });
+    }).catch(err => {
+      console.log("Can't fetch users", err);
+    });
   }
 
   addStudent(student) {
@@ -79,10 +108,6 @@ export default class CourseCreate extends Component {
   addAtlas(atlas) {
     const associatedAtlases = [...this.state.associatedAtlases, atlas];
     this.setState({ associatedAtlases });
-  }
-
-  buttonSubmit() {
-    return { prueba: 'hola' };
   }
 
   render() {
@@ -106,9 +131,9 @@ export default class CourseCreate extends Component {
           />
 
           <Input type="select" label="Select Teachers" multiple>
-            {this.state.teachers.map(teacher => (
-              <option value={teacher} onClick={() => this.addTeacher(teacher)}>
-                {teacher}
+            {this.state.users.map(user => (
+              <option value={user} onClick={() => this.addTeacher(user)}>
+                {user}
               </option>
             ))}
           </Input>
@@ -122,13 +147,13 @@ export default class CourseCreate extends Component {
           </Input>
 
           <Input type="select" label="Select Students" multiple >
-            {this.state.students.map(student => (
-              <option value={student} onClick={() => this.addStudent(student)}>
-                {student}
+            {this.state.users.map(user => (
+              <option value={user} onClick={() => this.addStudent(user)}>
+                {user}
               </option>
             ))}
           </Input>
-
+          <p> {this.props.location.pathname} </p>
           <Button bsStyle="primary" type="submit">Submit Course</Button>
         </form>
       </div>
