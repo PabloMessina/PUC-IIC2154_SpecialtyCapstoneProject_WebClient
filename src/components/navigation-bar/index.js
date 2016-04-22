@@ -69,8 +69,8 @@ export default class NavigationBar extends Component {
             <NavItem eventKey={1} onClick={() => browserHistory.push('/documents')}>
               Atlases
             </NavItem>
-            <NavItem eventKey={2} href="#" onClick={() => browserHistory.push('/courses')}>
-              Courses
+            <NavItem eventKey={2} href="#" onClick={() => browserHistory.push('/organizations')}>
+              Organizations
             </NavItem>
           </Nav>
 

@@ -19,7 +19,7 @@ import SecuritySettings from './components/settings/security';
 import PaymentsSettings from './components/settings/payments';
 import DocumentList from './components/document-list';
 import DocumentDescription from './components/document-description';
-import Courses from './components/courses';
+import Organizations from './components/organizations';
 import Course from './components/course/';
 import CourseNav from './components/course-nav/';
 import CourseCreate from './components/course-create/';
@@ -52,7 +52,7 @@ const Routing = (
       </Route>
 
       <Route path="organization_create" component={OrganizationCreate} />
-      <Route path="courses" component={Courses}>
+      <Route path="organizations" component={Organizations}>
         <Route path=":courseId" component={Course} />
       </Route>
       <Route path="course_general" component={CourseNav} />
