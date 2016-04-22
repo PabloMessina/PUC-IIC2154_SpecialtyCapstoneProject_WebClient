@@ -1,18 +1,11 @@
 import React, { Component } from 'react';
-import { Button, Input } from 'react-bootstrap';
+
+import { Button, Input, ButtonInput, Alert } from 'react-bootstrap';
 import renderIf from 'render-if';
+import browserHistory from 'react-router';
+import app from '../../app.js';
 
-/**
- * Component life-cycle:
- * https://facebook.github.io/react/docs/component-specs.html
- */
-
-/**
- * React + Bootstrap components:
- * https://react-bootstrap.github.io/components.html
- */
-
-export default class AddAtlas extends Component {
+export default class CreateAtlas extends Component {
 
   static get propTypes() {
     return {
@@ -38,17 +31,39 @@ export default class AddAtlas extends Component {
     this.state = {
       title: this.props.title,
       authors: this.props.authors,
+      description: this.props.description,
       cover: this.props.cover,
       imagePreviewUrl: this.props.imagePreviewUrl,
     };
 
-    // ES6 bindings
-    // See: https://facebook.github.io/react/docs/reusable-components.html#es6-classes
-    // See: https://github.com/yannickcr/eslint-plugin-react/blob/master/docs/rules/jsx-no-bind.md#es6-classes
     this._handleImageChange = this._handleImageChange.bind(this);
     this.addAuthor = this.addAuthor.bind(this);
     this.changeAuthor = this.changeAuthor.bind(this);
     this.deleteAuthor = this.deleteAuthor.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+
+  handleSubmit(e) {
+    e.preventDefault();
+
+    const newAtlas = {
+      title: this.state.title,
+      description: this.state.description,
+      cover: this.state.cover,
+    };
+
+    const atlasService = app.service('/atlases');
+
+    atlasService.create(newAtlas)
+    .then(atlas => {
+      console.log(atlas);
+      browserHistory.push(`/editor/${atlas.id}`);
+    })
+    .catch(error =>
+           {
+             console.log("HOLI");
+             this.setState({ error });
+           });
   }
 
   changeAuthor(event, index) {
@@ -92,7 +107,7 @@ export default class AddAtlas extends Component {
   render() {
     return (
       <div style={styles.container}>
-        <form onSubmit={this._handleSubmit}>
+        <form onSubmit={this.handleSubmit}>
         <h1>Create Atlas</h1>
           <div style={styles.granDiv}>
             <div>
@@ -149,7 +164,19 @@ export default class AddAtlas extends Component {
               onChange={(e) => this.setState({ description: e.target.value })}
             />
           </div>
-        </form>
+          <ButtonInput
+            type="submit"
+            bsStyle="primary"
+            value="Submit"
+          />
+
+        {renderIf(this.state.error)(() =>
+          <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
+            <h4>Oh snap! You got an error!</h4>
+            <p>{this.state.error.message}</p>
+          </Alert>
+        )}
+      </form>
       </div>
     );
   }
