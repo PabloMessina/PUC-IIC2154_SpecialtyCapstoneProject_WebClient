@@ -36,7 +36,7 @@ export default class Main extends Component {
   render() {
     return (
       <div>
-        <NavigationBar title="App" user={user()} />
+        <NavigationBar title="App" fixedTop user={user()} />
         <Grid style={styles.content}>
           {this.props.children}
         </Grid>
@@ -50,5 +50,7 @@ Main.propTypes = {
 };
 
 const styles = {
-  content: {},
+  content: {
+    paddingTop: 80,
+  },
 };

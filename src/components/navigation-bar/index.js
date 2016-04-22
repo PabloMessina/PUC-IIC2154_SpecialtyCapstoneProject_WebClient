@@ -55,13 +55,16 @@ export default class NavigationBar extends Component {
   }
 
   render() {
+    const { title, ...props } = this.props;
+
     return (
-      <Navbar style={styles.navbar}>
+      <Navbar style={styles.navbar} {...props}>
 
         <Navbar.Header>
           <Navbar.Brand>
-            <a href="#" onClick={() => browserHistory.push('/')}>{this.props.title}</a>
+            <a href="#" onClick={() => browserHistory.push('/')}>{title}</a>
           </Navbar.Brand>
+          <Navbar.Toggle />
         </Navbar.Header>
 
         <Navbar.Collapse>
