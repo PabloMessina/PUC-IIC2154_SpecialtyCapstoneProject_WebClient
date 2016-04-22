@@ -23,6 +23,8 @@ import Course from './components/course/';
 import CourseNav from './components/course-nav/';
 import CourseCreate from './components/course-create/';
 import OrganizationCreate from './components/organization-create/';
+import Tree from './components/hierarchy-navigation/';
+import Editor from './components/editor/';
 
 // Development help
 // Go to: http://localhost:3000/template
@@ -54,6 +56,8 @@ const Routing = (
       <Route path="course_general" component={CourseNav} />
       <Route path="course_create" component={CourseCreate} />
 
+      <Route path="editor" component={Editor} />
+      <Route path="tree" component={Tree} />
       <Route path="template" component={Template} />
     </Route>
   </Router>
