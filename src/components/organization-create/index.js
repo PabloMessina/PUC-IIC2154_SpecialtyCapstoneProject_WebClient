@@ -16,20 +16,16 @@ const organizationService = app.service('/organizations');
  * https://react-bootstrap.github.io/components.html
  */
 
-const SUBSCRIPTION = {
-  0: {
-    name: 'Basic Plan',
-    value: 50,
-  },
-  1: {
-    name: 'Pro Plan',
-    value: 100,
-  },
-  2: {
-    name: 'Premium',
-    value: 300,
-  },
-};
+const SUBSCRIPTION = [{
+  name: 'Basic Plan',
+  value: 50,
+}, {
+  name: 'Pro Plan',
+  value: 100,
+}, {
+  name: 'Premium',
+  value: 300,
+}];
 
 export default class OrganizationCreate extends Component {
   static get propTypes() {
@@ -45,7 +41,7 @@ export default class OrganizationCreate extends Component {
     return {
       name: '',
       address: '',
-      subscription: null,
+      subscription: 0, // Basic
       logo: '',
     };
   }
@@ -59,8 +55,6 @@ export default class OrganizationCreate extends Component {
       logo: this.props.logo,
     };
 
-    console.log(user());
-
     this.onSubmit = this.onSubmit.bind(this);
   }
 
@@ -71,6 +65,7 @@ export default class OrganizationCreate extends Component {
       description: this.state.description,
       subscription: Number(this.state.subscription),
     };
+
     return organizationService.create(options).then(organization => {
       console.log(organization);
     }).catch(err => {
@@ -100,12 +95,12 @@ export default class OrganizationCreate extends Component {
             onChange={e => this.setState({ address: e.target.value })}
           />
 
-          <Input type="select" label="Select Suscription Plan" >
-            {Object.keys(SUBSCRIPTION).map(key => SUBSCRIPTION[key]).map(sub => (
-              <option value={sub.value} onClick={() => this.setState({ subscription: sub.value })}>
-                {sub.name}
-              </option>
-            ))}
+          <Input
+            type="select"
+            label="Select Suscription Plan"
+            onChange={e => this.setState({ subscription: e.target.value })}
+          >
+            {SUBSCRIPTION.map(sub => <option value={sub.value}>{sub.name}</option>)}
           </Input>
 
           <Button
