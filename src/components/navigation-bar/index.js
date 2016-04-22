@@ -13,7 +13,7 @@ export default class NavigationBar extends Component {
 
   render() {
     return (
-      <Navbar>
+      <Navbar style={styles.navbar}>
 
         <Navbar.Header>
           <Navbar.Brand>
@@ -23,14 +23,22 @@ export default class NavigationBar extends Component {
 
         <Navbar.Collapse>
           <Nav>
-            <NavItem eventKey={1} href="#">Atlases</NavItem>
+            <NavItem eventKey={1} onClick={() => browserHistory.push('/documents')}>
+              Atlases
+            </NavItem>
+            <NavItem eventKey={2} href="#" onClick={() => browserHistory.push('/courses')}>
+              Courses
+            </NavItem>
+            <NavItem eventKey={3} onClick={() => browserHistory.push('/settings')}>
+              Configuración
+            </NavItem>
           </Nav>
           <Nav pullRight>
             <NavItem eventKey={1} href="#" onClick={() => browserHistory.push('/login')}>
-              Sign in
+              Login
             </NavItem>
-            <NavItem eventKey={2} href="#" onClick={() => browserHistory.push('/join')}>
-              Sign up
+            <NavItem eventKey={2} href="#" onClick={() => browserHistory.push('/signup')}>
+              Sign Up
             </NavItem>
           </Nav>
         </Navbar.Collapse>
@@ -42,4 +50,9 @@ export default class NavigationBar extends Component {
 
 NavigationBar.propTypes = {
   title: React.PropTypes.node,
+};
+
+const styles = {
+  navbar: {
+  },
 };

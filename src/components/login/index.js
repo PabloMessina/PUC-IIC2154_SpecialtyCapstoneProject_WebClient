@@ -3,7 +3,7 @@ import { Panel, Row, Col, Input, ButtonInput, Alert } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
 
-import app, { login } from '../../app';
+import { login } from '../../app';
 
 
 export default class Login extends Component {
@@ -19,6 +19,13 @@ export default class Login extends Component {
     // ES6 bindings
     // See: https://github.com/yannickcr/eslint-plugin-react/blob/master/docs/rules/jsx-no-bind.md#es6-classes
     this.authenticate = this.authenticate.bind(this);
+    this.onSubmit = this.onSubmit.bind(this);
+  }
+
+  onSubmit(e) {
+    // Prevent page refresh
+    e.preventDefault();
+    this.authenticate();
   }
 
   authenticate() {
@@ -27,9 +34,11 @@ export default class Login extends Component {
       password: this.state.password,
     };
 
+    // Hide error message
+    this.setState({ error: null });
+
+    // Login with credentials
     return login(options)
-      // Hide error message
-      .then(() => this.setState({ error: null }))
       // Go to root
       .then(() => browserHistory.push('/'))
       // Show and error if present
@@ -41,28 +50,26 @@ export default class Login extends Component {
       <Row className="show-grid">
         <Col xs={6} xsOffset={3}>
           <Panel>
-
-            <Input
-              type="text"
-              label="Email Address"
-              placeholder="user@email.com"
-              value={this.state.email}
-              onChange={e => this.setState({ email: e.target.value })}
-            />
-
-            <Input
-              type="password"
-              label="Password"
-              value={this.state.password}
-              onChange={e => this.setState({ password: e.target.value })}
-            />
-
-            <ButtonInput
-              type="submit"
-              bsStyle="primary"
-              value="Log in"
-              onClick={this.authenticate}
-            />
+            <form onSubmit={this.onSubmit}>
+              <Input
+                type="text"
+                label="Email Address"
+                placeholder="user@email.com"
+                value={this.state.email}
+                onChange={e => this.setState({ email: e.target.value })}
+              />
+              <Input
+                type="password"
+                label="Password"
+                value={this.state.password}
+                onChange={e => this.setState({ password: e.target.value })}
+              />
+              <ButtonInput
+                type="submit"
+                bsStyle="primary"
+                value="Log in"
+              />
+            </form>
 
             {/*
               Render only if there is an error.
