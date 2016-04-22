@@ -9,6 +9,7 @@ import { Router, Route, IndexRoute, browserHistory } from 'react-router';
 import Main from './components/main';
 import Dashboard from './components/dashboard';
 import Login from './components/login/';
+import CreateAtlas from './components/create-atlas';
 import SignUp from './components/signup/';
 import Settings from './components/settings';
 import NotificationSettings from './components/settings/notifications';
@@ -36,6 +37,7 @@ const Routing = (
       <IndexRoute component={Dashboard} />
 
       <Route path="login" component={Login} />
+      <Route path="create-atlas" component={CreateAtlas} />
       <Route path="signup" component={SignUp} />
 
       <Route path="documents" component={DocumentList} />
