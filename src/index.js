@@ -24,11 +24,11 @@ import Course from './components/course/';
 import CourseNav from './components/course-nav/';
 import CourseCreate from './components/course-create/';
 import OrganizationCreate from './components/organization-create/';
-import Tree from './components/hierarchy-navigation/';
-import Editor from './components/editor/';
+import AtlasTree from './components/atlas-tree/';
+import AtlasBook from './components/atlas-book/';
 
 // Development help
-// Go to: http://localhost:3000/template
+// Go AtlasBook: http://localhost:3000/template
 import Template from './utils/template';
 
 const Routing = (
@@ -37,7 +37,6 @@ const Routing = (
       <IndexRoute component={Dashboard} />
 
       <Route path="login" component={Login} />
-      <Route path="create-atlas" component={CreateAtlas} />
       <Route path="signup" component={SignUp} />
 
       <Route path="documents" component={DocumentList} />
@@ -58,8 +57,8 @@ const Routing = (
       <Route path="course_general" component={CourseNav} />
       <Route path="course_create" component={CourseCreate} />
 
-      <Route path="editor" component={Editor} />
-      <Route path="tree" component={Tree} />
+      <Route path="create-atlas" component={CreateAtlas} />
+      <Route path="editor/:atlasId" component={AtlasBook} />
       <Route path="template" component={Template} />
     </Route>
   </Router>

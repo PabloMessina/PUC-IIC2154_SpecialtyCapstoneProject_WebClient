@@ -8,12 +8,19 @@ import Node from './node.js';
   https://facebook.github.io/react/docs/component-specs.html
  */
 
-export default class SectionTree extends Component {
+export default class AtlasTree extends Component {
+
+  static get defaultProps() {
+    return {
+      sections: [],
+    };
+  }
 
   constructor(props) {
     super(props);
-    this.state.sections = props.sections;
-    this.handleClick = this.handleClick.bind(this);
+    this.state = {
+      sections: props.sections,
+    };
   }
 
   render() {

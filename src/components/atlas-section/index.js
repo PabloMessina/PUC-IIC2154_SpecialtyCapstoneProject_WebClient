@@ -1,13 +1,11 @@
 import React, { Component } from 'react';
 import { Panel } from 'react-bootstrap';
-import Quill from '../quill';
-import SectionTree from '../hierarchy-navigation';
+import ReactQuill from 'react-quill';
 import app from '../../app';
 
-const sectionService = app.service('sections');
-const versionService = app.service('versions');
+const sectionService = app.service('atlasSections');
 
-export default class Editor extends Component {
+export default class AtlasSection extends Component {
 
   static get propTypes() {
     return {
@@ -24,22 +22,22 @@ export default class Editor extends Component {
   }
 
   fetchSections() {
-    return Promise.all(atlas.sections.map(sectionId => sectionService.get(sectionId)))
-      .then(sections => this.setState({ sections }));
+    /*return Promise.all(atlas.sections.map(sectionId => sectionService.get(sectionId)))
+      .then(sections => this.setState({ sections }));*/
   }
 
   constructor(props) {
     super(props);
 
     this.state = {
-      sectionId: props.sectionId,
-    };
+      content: {ops: []},
+    }
     this.fetchSections = this.fetchSections.bind(this);
     this.onSelected = this.onSelected.bind(this);
     this.onTextChange = this.onTextChange.bind(this);
   }
 
-  onSelectSection(sectionId) {
+  onSelected(sectionId) {
     sectionService.get(sectionId).then((section) => {
       this.state.section = section;
     });
@@ -47,17 +45,32 @@ export default class Editor extends Component {
 
   onTextChange(value) {
     if (!this.props.static) {
-      this.setState({ text: value });
+      this.setState({ content: value });
     }
     console.log(value);
   }
 
   render() {
+    const toolbar = this.props.static ? [] : ReactQuill.Toolbar.defaultItems;
     return (
       <div style={styles.container}>
-        <SectionTree static onSelected={this.onSelected} />
 
-        <Quill sectionId={this.state.sectionId} content={this.state.content} />
+        <ReactQuill
+          theme="snow"
+          value={this.state.content}
+          readOnly={this.props.static}
+          onChange={this.onTextChange}
+        >
+
+          <ReactQuill.Toolbar
+            key="toolbar"
+            ref="toolbar"
+            items={toolbar}
+          />
+
+          <Panel key="editor" ref="editor" className="quill-contents" />
+
+        </ReactQuill>
       </div>
     );
   }

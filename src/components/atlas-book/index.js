@@ -1,12 +1,13 @@
 import React, { Component } from 'react';
 import { Panel } from 'react-bootstrap';
-import ReactQuill from 'react-quill';
-import SectionTree from '../hierarchy-navigation';
+import AtlasSection from '../atlas-section';
+import AtlasTree from '../atlas-tree';
 import app from '../../app';
 
-const sectionService = app.service('atlasSections');
+const sectionService = app.service('sections');
+const versionService = app.service('versions');
 
-export default class Quill extends Component {
+export default class AtlasBook extends Component {
 
   static get propTypes() {
     return {
@@ -30,14 +31,18 @@ export default class Quill extends Component {
   constructor(props) {
     super(props);
 
+    this.state = {
+      atlasId: props.atlasId,
+      sectionId: props.sectionId,
+    };
     this.fetchSections = this.fetchSections.bind(this);
-    this.onSelected = this.onSelected.bind(this);
+    this.onSelectSection = this.onSelectSection.bind(this);
     this.onTextChange = this.onTextChange.bind(this);
   }
 
-  onSelected(sectionId) {
+  onSelectSection(sectionId) {
     sectionService.get(sectionId).then((section) => {
-      this.state.section = section;
+      this.setState({ section });
     });
   }
 
@@ -49,29 +54,11 @@ export default class Quill extends Component {
   }
 
   render() {
-    const toolbar = this.props.static ? [] : ReactQuill.Toolbar.defaultItems;
-    const content = {};
-    content.ops = this.props.section.content;
     return (
       <div style={styles.container}>
-        <SectionTree static={this.props.static} onSelected={this.onSelected} />
+        <AtlasTree static onSelected={this.onSelected} />
 
-        <ReactQuill
-          theme="snow"
-          value={content}
-          readOnly={this.props.static}
-          onChange={this.onTextChange}
-        >
-
-          <ReactQuill.Toolbar
-            key="toolbar"
-            ref="toolbar"
-            items={toolbar}
-          />
-
-          <Panel key="editor" ref="editor" className="quill-contents" />
-
-        </ReactQuill>
+        <AtlasSection sectionId={this.state.sectionId} />
       </div>
     );
   }
