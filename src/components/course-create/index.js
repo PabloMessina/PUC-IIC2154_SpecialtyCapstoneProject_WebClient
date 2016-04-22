@@ -92,20 +92,7 @@ export default class CourseCreate extends Component {
           label="Course Name"
           onChange={e => this.setState({ name: e.target.value })}
         />
-        <Input type="select" label="Select Teachers" multiple>
-          {this.state.teachers.map(teacher => (
-            <option value={teacher} onClick={() => this.addTeacher(teacher)}>
-              {teacher}
-            </option>
-          ))}
-        </Input>
-        <Input type="select" label="Select Students" multiple >
-          {this.state.students.map(student => (
-            <option value={student} onClick={() => this.addStudent(student)}>
-              {student}
-            </option>
-          ))}
-        </Input>
+
         <Input
           type="textarea"
           label="Course Description"
@@ -113,13 +100,31 @@ export default class CourseCreate extends Component {
           focuses in the study of the human body..."
           onChange={e => this.setState({ description: e.target.value })}
         />
+
+        <Input type="select" label="Select Teachers" multiple>
+          {this.state.teachers.map(teacher => (
+            <option value={teacher} onClick={() => this.addTeacher(teacher)}>
+              {teacher}
+            </option>
+          ))}
+        </Input>
+
         <Input type="select" label="Select Asociated Atlases" multiple >
           {this.state.atlases.map(atlas => (
             <option value={atlas} onClick={() => this.addAtlas(atlas)}>
               {atlas}
             </option>
-         ))}
+          ))}
         </Input>
+
+        <Input type="select" label="Select Students" multiple >
+          {this.state.students.map(student => (
+            <option value={student} onClick={() => this.addStudent(student)}>
+              {student}
+            </option>
+          ))}
+        </Input>
+
         <Button bsStyle="primary" onclick={() => this.buttonSubmit}> Submit Course </Button>
       </div>
     );
