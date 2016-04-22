@@ -1,13 +1,12 @@
 import React, { Component } from 'react';
 import { Panel } from 'react-bootstrap';
-import Quill from '../quill';
+import ReactQuill from 'react-quill';
 import SectionTree from '../hierarchy-navigation';
 import app from '../../app';
 
-const sectionService = app.service('sections');
-const versionService = app.service('versions');
+const sectionService = app.service('atlasSections');
 
-export default class Editor extends Component {
+export default class Quill extends Component {
 
   static get propTypes() {
     return {
@@ -20,7 +19,6 @@ export default class Editor extends Component {
   static get defaultProps() {
     return {
       static: false,
-      sectionId: props.
     };
   }
 
@@ -32,15 +30,12 @@ export default class Editor extends Component {
   constructor(props) {
     super(props);
 
-    this.state = {
-      sectionId: props.sectionId,
-    };
     this.fetchSections = this.fetchSections.bind(this);
     this.onSelected = this.onSelected.bind(this);
     this.onTextChange = this.onTextChange.bind(this);
   }
 
-  onSelectSection(sectionId) {
+  onSelected(sectionId) {
     sectionService.get(sectionId).then((section) => {
       this.state.section = section;
     });
@@ -54,11 +49,29 @@ export default class Editor extends Component {
   }
 
   render() {
+    const toolbar = this.props.static ? [] : ReactQuill.Toolbar.defaultItems;
+    const content = {};
+    content.ops = this.props.section.content;
     return (
       <div style={styles.container}>
-        <SectionTree static onSelected={this.onSelected} />
+        <SectionTree static={this.props.static} onSelected={this.onSelected} />
 
-        <Quill sectionId={this.state.sectionId} content={this.state.content} />
+        <ReactQuill
+          theme="snow"
+          value={content}
+          readOnly={this.props.static}
+          onChange={this.onTextChange}
+        >
+
+          <ReactQuill.Toolbar
+            key="toolbar"
+            ref="toolbar"
+            items={toolbar}
+          />
+
+          <Panel key="editor" ref="editor" className="quill-contents" />
+
+        </ReactQuill>
       </div>
     );
   }

@@ -13,7 +13,7 @@ import authentication from 'feathers-authentication/client';
  * import app, { login, logout } from '../../app';
  */
 
-const host = 'http://localhost:3030';
+const host = 'https://karp.ing.puc.cl';
 const socket = io(host);
 
 // Set up Feathers client side

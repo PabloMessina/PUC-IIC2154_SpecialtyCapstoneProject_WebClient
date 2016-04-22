@@ -21,6 +21,7 @@ export default class Node extends Component {
       level: React.PropTypes.number,
       anidation: React.PropTypes.array,
       collapsed: React.PropTypes.bool,
+      static: React.PropTypes.bool,
     };
   }
 
@@ -74,9 +75,12 @@ export default class Node extends Component {
           <p style={substyle} onPress={this.collapse}>
             {anidation.join('.')}. {name}
           </p>
-          <p onClick={this.addSection}>
-            +
-          </p>
+          {renderIf(!this.props.static)(() => (
+            <p onClick={this.addSection}>
+              +
+            </p>
+            ))
+          }
         </div>
 
         {renderIf(hasSubtree)(() => (

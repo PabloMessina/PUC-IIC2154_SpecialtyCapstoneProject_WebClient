@@ -12,57 +12,15 @@ export default class SectionTree extends Component {
 
   constructor(props) {
     super(props);
-    this.state = {
-      sections: [{
-        name: 'Section',
-        sections: [
-          { name: 'Section' },
-          { name: 'Section' },
-          { name: 'Section' },
-        ],
-      },
-      {
-        name: 'Section',
-        sections: [
-          { name: 'Section',
-            sections: [
-              { name: 'Section' },
-              { name: 'Section' },
-            ],
-          },
-          { name: 'Section' },
-        ],
-      },
-      {
-        name: 'Section',
-        sections: [
-          { name: 'Section',
-            sections: [
-              { name: 'Section' },
-              { name: 'Section' },
-            ],
-          },
-          { name: 'Section' },
-        ],
-      },
-    ],
-    };
-
-    // ES6 bindings
-    // See: https://facebook.github.io/react/docs/reusable-components.html#es6-classes
-    // See: https://github.com/yannickcr/eslint-plugin-react/blob/master/docs/rules/jsx-no-bind.md#es6-classes
+    this.state.sections = props.sections;
     this.handleClick = this.handleClick.bind(this);
-  }
-
-  handleClick() {
-
   }
 
   render() {
     return (
       <div style={styles.container}>
         {this.state.sections.map((section, i) => (
-          <Node key={i} section={section} anidation={[i + 1]} />
+          <Node key={i} static={this.props.static} onSelected={this.props.onSelected} section={section} anidation={[i + 1]} />
           ))}
       </div>
     );
