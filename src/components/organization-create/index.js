@@ -2,6 +2,10 @@ import React, { Component } from 'react';
 import { Button, Col, Input, Combobox, MenuItem, DropdownButton, ButtonToolbar} from 'react-bootstrap';
 import renderIf from 'render-if';
 
+import app, { user } from '../../app';
+
+const organizationService = app.service('/organizations');
+
 /**
  * Component life-cycle:
  * https://facebook.github.io/react/docs/component-specs.html
@@ -12,76 +16,106 @@ import renderIf from 'render-if';
  * https://react-bootstrap.github.io/components.html
  */
 
-export default class CourseCreate extends Component {
+const SUBSCRIPTION = {
+  0: {
+    name: 'Basic Plan',
+    value: 50,
+  },
+  1: {
+    name: 'Pro Plan',
+    value: 100,
+  },
+  2: {
+    name: 'Premium',
+    value: 300,
+  },
+};
+
+export default class OrganizationCreate extends Component {
+  static get propTypes() {
+    return {
+      name: React.PropTypes.string,
+      address: React.PropTypes.string,
+      subscription: React.PropTypes.number,
+      logo: React.PropTypes.string,
+    };
+  }
+
+  static get defaultProps() {
+    return {
+      name: '',
+      address: '',
+      subscription: null,
+      logo: '',
+    };
+  }
 
   constructor(props) {
     super(props);
     this.state = {
-      name: '',
-      mail: '',
-      country: '',
-      address: '',
-      contact: '',
-      suscription: '',
-      logo: '',
+      name: this.props.name,
+      address: this.props.address,
+      subscription: this.props.subscription,
+      logo: this.props.logo,
     };
-  }
-  addAtlas(atlas) {
-    // const students = [].concat(this.state.selectedStudents);
-    // students.push(student);
-    // this.setState({selectedStudents: students});
+
+    console.log(user());
+
+    this.onSubmit = this.onSubmit.bind(this);
   }
 
-      /*  revisar https://github.com/alsoscotland/react-super-select  */
+  onSubmit(e) {
+    e.preventDefault();
+    const options = {
+      name: this.state.name,
+      description: this.state.description,
+      subscription: Number(this.state.subscription),
+    };
+    return organizationService.create(options).then(organization => {
+      console.log(organization);
+    }).catch(err => {
+      console.log(err);
+    });
+  }
+
+  /*  revisar https://github.com/alsoscotland/react-super-select  */
   render() {
     return (
       <div style={styles.container}>
-        <Input
-          type="text"
-          value={this.state.name}
-          placeholder="Ex: University of Neverland"
-          label="Enter organization name"
-          onChange={e => this.setState({ name: e.target.value })}
-        />
-        <Input
-          type="text"
-          value={this.state.mail}
-          placeholder="Ex: billing@example.com"
-          label="Enter billing mail"
-          onChange={e => this.setState({ mail: e.target.value })}
-        />
-        <Input
-          type="text"
-          value={this.state.address}
-          placeholder="Ex: Royal Avenue 53, Miami"
-          label="Billing address"
-          onChange={e => this.setState({ address: e.target.value })}
-        />
-        <Input
-          type="text"
-          value={this.state.contact}
-          placeholder="Ex: 555-12341-123"
-          label="Contact number"
-          onChange={e => this.setState({ name: e.target.value })}
-        />
-        <ButtonToolbar label= "Suscription Plan">
-          <Col xs={12} md={4}>
-            <h1>hola</h1>
-          </Col>
-          <Col xs={10} md={4}>
-            <DropdownButton title="Select Suscription Plan" id="dropdown-size-medium">
-              <MenuItem eventKey="1">Plan Estudiante</MenuItem>
-              <MenuItem eventKey="2">Plan Suscription 1</MenuItem>
-              <MenuItem eventKey="3">Plan Suscription 2</MenuItem>
-              <MenuItem divider />
-              <MenuItem eventKey="4">Separated link</MenuItem>
-            </DropdownButton>
-          </Col>
-        </ButtonToolbar>
+        <form onSubmit={this.onSubmit}>
 
+          <Input
+            type="text"
+            value={this.state.name}
+            placeholder="University of Neverland"
+            label="Enter organization name"
+            onChange={e => this.setState({ name: e.target.value })}
+          />
 
-        <Button bsStyle="primary" bsSize="large" active>Create Organization</Button>
+          <Input
+            type="text"
+            value={this.state.address}
+            placeholder="Royal Avenue 53, Miami"
+            label="Billing address"
+            onChange={e => this.setState({ address: e.target.value })}
+          />
 
+          <Input type="select" label="Select Suscription Plan" >
+            {Object.keys(SUBSCRIPTION).map(key => SUBSCRIPTION[key]).map(sub => (
+              <option value={sub.value} onClick={() => this.setState({ subscription: sub.value })}>
+                {sub.name}
+              </option>
+            ))}
+          </Input>
+
+          <Button
+            bsStyle="primary"
+            bsSize="large"
+            type="submit"
+          >
+            Create Organization
+          </Button>
+        </form>
       </div>
     );
   }

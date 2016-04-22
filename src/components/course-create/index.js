@@ -1,6 +1,10 @@
 import React, { Component } from 'react';
 import { Button, Input } from 'react-bootstrap';
 
+import app from '../../app';
+
+const courseService = app.service('/courses');
+
 /**
  * Component life-cycle:
  * https://facebook.github.io/react/docs/component-specs.html
@@ -29,18 +33,12 @@ export default class CourseCreate extends Component {
   static get defaultProps() {
     return {
       name: '',
-      teachers: ['Constanza Halabi',
-                 'Vicente Dragicevic',
-                  'Pablo Messina'],
-      selectedTeachers: [],
-      atlases: ['Anatomy First Edition',
-                '1001 Engineering Fundamental Problems',
-                'Ancient History'],
-      students: ['Diego Steinsapir',
-                  'Geraldine Monsalve',
-                  'José Bustamente'],
-      selectedStudents: [],
       description: '',
+      teachers: [],
+      selectedTeachers: [],
+      students: [],
+      selectedStudents: [],
+      atlases: [],
       associatedAtlases: [],
     };
   }
@@ -49,18 +47,23 @@ export default class CourseCreate extends Component {
     super(props);
     this.state = {
       name: this.props.name,
+      description: this.props.description,
       teachers: this.props.teachers,
       selectedTeachers: this.props.selectedTeachers,
       atlases: this.props.atlases,
+      associatedAtlases: this.props.associatedAtlases,
       students: this.props.students,
       selectedStudents: this.props.selectedStudents,
-      description: this.props.description,
-      associatedAtlases: this.props.associatedAtlases,
     };
     this.addStudent = this.addStudent.bind(this);
     this.addTeachers = this.addTeacher.bind(this);
     this.addAtlas = this.addAtlas.bind(this);
-    this.buttonSubmit = this.buttonSubmit.bind(this);
+    this.onSubmit = this.onSubmit.bind(this);
+  }
+
+  onSubmit(e) {
+    // Prevent page refresh
+    e.preventDefault();
   }
 
   addStudent(student) {
@@ -85,47 +88,49 @@ export default class CourseCreate extends Component {
   render() {
     return (
       <div style={styles.container}>
-        <Input
-          type="text"
-          value={this.state.name}
-          placeholder="Enter course name"
-          label="Course Name"
-          onChange={e => this.setState({ name: e.target.value })}
-        />
+        <form onSubmit={this.onSubmit}>
+          <Input
+            type="text"
+            value={this.state.name}
+            placeholder="Enter course name"
+            label="Course Name"
+            onChange={e => this.setState({ name: e.target.value })}
+          />
 
-        <Input
-          type="textarea"
-          label="Course Description"
-          placeholder="Example: This course
-          focuses in the study of the human body..."
-          onChange={e => this.setState({ description: e.target.value })}
-        />
+          <Input
+            type="textarea"
+            label="Course Description"
+            placeholder="Example: This course
+            focuses in the study of the human body..."
+            onChange={e => this.setState({ description: e.target.value })}
+          />
 
-        <Input type="select" label="Select Teachers" multiple>
-          {this.state.teachers.map(teacher => (
-            <option value={teacher} onClick={() => this.addTeacher(teacher)}>
-              {teacher}
-            </option>
-          ))}
-        </Input>
+          <Input type="select" label="Select Teachers" multiple>
+            {this.state.teachers.map(teacher => (
+              <option value={teacher} onClick={() => this.addTeacher(teacher)}>
+                {teacher}
+              </option>
+            ))}
+          </Input>
 
-        <Input type="select" label="Select Asociated Atlases" multiple >
-          {this.state.atlases.map(atlas => (
-            <option value={atlas} onClick={() => this.addAtlas(atlas)}>
-              {atlas}
-            </option>
-          ))}
-        </Input>
+          <Input type="select" label="Select Asociated Atlases" multiple >
+            {this.state.atlases.map(atlas => (
+              <option value={atlas} onClick={() => this.addAtlas(atlas)}>
+                {atlas}
+              </option>
+            ))}
+          </Input>
 
-        <Input type="select" label="Select Students" multiple >
-          {this.state.students.map(student => (
-            <option value={student} onClick={() => this.addStudent(student)}>
-              {student}
-            </option>
-          ))}
-        </Input>
+          <Input type="select" label="Select Students" multiple >
+            {this.state.students.map(student => (
+              <option value={student} onClick={() => this.addStudent(student)}>
+                {student}
+              </option>
+            ))}
+          </Input>
 
-        <Button bsStyle="primary" onclick={() => this.buttonSubmit}> Submit Course </Button>
+          <Button bsStyle="primary" type="submit">Submit Course</Button>
+        </form>
       </div>
     );
   }
