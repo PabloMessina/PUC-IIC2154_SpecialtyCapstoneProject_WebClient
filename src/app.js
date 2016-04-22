@@ -10,7 +10,7 @@ import authentication from 'feathers-authentication/client';
  * App singleton instance
  *
  * Usage:
- * import app, { login, logout } from '../../app';
+ * import app, { join, login, auth, logout, user } from '../../app';
  */
 
 const host = 'https://karp.ing.puc.cl';
@@ -40,6 +40,14 @@ export function login(options) {
 }
 
 /**
+ * Use local saved credentials to auth with server
+ * @return {Promise}
+ */
+export function auth() {
+  return app.authenticate();
+}
+
+/**
  * Create new user account
  * @param  {options.email} User email address
  * @param  {options.password} User password
@@ -60,6 +68,14 @@ export function join(options) {
  */
 export function logout() {
   return app.logout();
+}
+
+/**
+ * Get current user
+ * @return {Object} Current user
+ */
+export function user() {
+  return app.get('user');
 }
 
 export default app;
