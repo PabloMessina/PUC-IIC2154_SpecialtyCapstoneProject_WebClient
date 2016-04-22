@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
-import { Panel, Input, Button } from 'react-bootstrap';
-import Title from './title.js';
+import { Input, Button } from 'react-bootstrap';
 
 import { Colors } from '../../styles';
 
@@ -8,6 +7,7 @@ export default class TrueFalse extends Component {
 
   static get propTypes() {
     return {
+      _id: React.PropTypes.number,
       question: React.PropTypes.object,
       statement: React.PropTypes.string,
       answer: React.PropTypes.number,
@@ -19,7 +19,8 @@ export default class TrueFalse extends Component {
 
   static get defaultProps() {
     return {
-      question: {},
+      _id: 0,
+      question: { question: { text: '' }, fields: { answer: false } },
       statement: '',
       answer: 0,
       permission: 'reader',
@@ -31,13 +32,13 @@ export default class TrueFalse extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      statement: this.props.question.question.text === undefined ?
-      this.props.statement : this.props.question.question.text,
-      answer: this.props.question.fields.answer ?
-        this.props.question.fields.answer : this.props.answer,
-      permission: this.props.permission,
-      collapsible: this.props.collapsible,
-      open: this.props.open,
+      _id: props.question._id || props._id,
+      question: props.question,
+      statement: props.question.question.text || props.statement,
+      answer: props.question.fields.answer || 0,
+      permission: props.permission,
+      collapsible: props.collapsible,
+      open: props.open,
     };
     this.onClick = this.onClick.bind(this);
   }
@@ -54,21 +55,43 @@ export default class TrueFalse extends Component {
     this.setState({ statement: event.target.value });
   }
 
-  renderQuestion(permission) {
-    const { question } = this.props.question;
-    if (permission === 'editor') {
-      return (
-        <div>
-          <form style={styles.form}>
-          <p>Statement</p>
-            <Input
-              style={styles.textArea}
-              type="textArea"
-              placeholder="Add a statement"
-              value={this.state.statement}
-          onChange={e => this.onChange(e, 'statement')}
-            />
-        </form>
+  renderEditor() {
+    return (
+      <div>
+        <form style={styles.form}>
+        <p>Statement</p>
+          <Input
+            style={styles.textArea}
+            type="textArea"
+            placeholder="Add a statement"
+            value={this.state.statement}
+            onChange={e => this.onChange(e, 'statement')}
+          />
+      </form>
+      <div style={styles.buttons}>
+        <Button
+          bsStyle="default"
+          style={this.state.answer === 1 ? styles.buttonTrue : styles.button}
+          onClick={() => this.onClick(1)}
+        >
+          True
+        </Button>
+        <Button
+          bsStyle="default"
+          style={this.state.answer === -1 ? styles.buttonFalse : styles.button}
+          onClick={() => this.onClick(-1)}
+        >
+          False
+        </Button>
+      </div>
+    </div>
+    );
+  }
+
+  renderResponder() {
+    return (
+      <div>
+        <p>{this.state.statement}</p>
         <div style={styles.buttons}>
           <Button
             bsStyle="default"
@@ -86,33 +109,13 @@ export default class TrueFalse extends Component {
           </Button>
         </div>
       </div>
-      );
-    } else if (permission === 'responder') {
-      return (
-        <div>
-          <p>{question.text}</p>
-          <div style={styles.buttons}>
-            <Button
-              bsStyle="default"
-              style={this.state.answer === 1 ? styles.buttonTrue : styles.button}
-              onClick={() => this.onClick(1)}
-            >
-              True
-            </Button>
-            <Button
-              bsStyle="default"
-              style={this.state.answer === -1 ? styles.buttonFalse : styles.button}
-              onClick={() => this.onClick(-1)}
-            >
-              False
-            </Button>
-          </div>
-        </div>
-      );
-    }
+    );
+  }
+
+  renderReader() {
     return (
       <div>
-        <p>{question.text}</p>
+        <p>{this.state.statement}</p>
         <div style={styles.buttons}>
           <Button
             bsStyle="default"
@@ -136,22 +139,16 @@ export default class TrueFalse extends Component {
   }
 
   render() {
-    const { _id, tags } = this.props.question;
     return (
-      <Panel
-        style={styles.container}
-        header={
-          <Title
-            value={`Question ${_id}`}
-            tags={tags}
-            onClick={() => this.setState({ open: !this.state.open })}
-          />
-        }
-        collapsible={this.props.collapsible}
-        expanded={this.state.open}
-      >
-        {this.renderQuestion(this.state.permission)}
-      </Panel>
+      <div>
+        {(() => {
+          switch (this.state.permission) {
+            case 'editor': return (this.renderEditor());
+            case 'responder': return (this.renderResponder());
+            case 'reader': return (this.renderReader());
+            default: return null;
+          }})()}
+      </div>
     );
   }
 }

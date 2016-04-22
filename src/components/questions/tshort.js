@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
-import { Panel, Input, ButtonInput } from 'react-bootstrap';
-import Title from './title.js';
+import { Input, ButtonInput } from 'react-bootstrap';
 import renderIf from 'render-if';
 
 import { Colors } from '../../styles';
@@ -12,6 +11,7 @@ export default class TShort extends Component {
   // reader: only reader
   static get propTypes() {
     return {
+      _id: React.PropTypes.number,
       question: React.PropTypes.any,
       answers: React.PropTypes.array,
       statement: React.PropTypes.string,
@@ -24,6 +24,7 @@ export default class TShort extends Component {
 
   static get defaultProps() {
     return {
+      _id: 0,
       question: { question: { text: '' }, fields: { answers: [] } },
       answers: [''],
       responderAnswer: '',
@@ -36,10 +37,13 @@ export default class TShort extends Component {
 
   constructor(props) {
     super(props);
-    debugger;
     this.state = {
-      statement: props.question.question.text || '',
-      answers: props.question.fields.answers || props.answers,
+      _id: props.question._id || props._id,
+      question: props.question,
+      statement: props.question.question.text || props.statement,
+      answers: props.question.fields.answers.length
+        ? props.question.fields.answers
+        : props.answers,
       responderAnswer: props.responderAnswer,
       permission: props.permission,
       collapsible: props.collapsible,
@@ -82,71 +86,74 @@ export default class TShort extends Component {
     this.setState({ answers });
   }
 
-  renderQuestion(permission) {
-    const { question } = this.props.question;
-    if (permission === 'editor') {
-      return (
-        <form style={styles.form}>
-        <p>Statement</p>
-          <Input
-            style={styles.textArea}
-            type="textArea"
-            placeholder="Add a statement"
-            value={this.state.statement}
-            onChange={e => this.onChange(e, 'statement')}
-          />
-          <p style={styles.instruction}>Choices</p>
-          {this.state.answers.map((answer, i, arr) => (
-            <div style={styles.row}>
-              <Input
-                key={i}
-                style={styles.input}
-                type="text"
-                placeholder="Ingrese su respuesta"
-                value={answer}
-                autoFocus={arr.length - 1 === i}
-                onChange={e => this.onChange(e, 'option', i)}
-              />
-              {renderIf(i > 0)(() => (
-                <ButtonInput
-                  style={[styles.button, styles.remove]}
-                  bsStyle="link"
-                  bsSize="large"
-                  type="button"
-                  onClick={e => this.removeItem(e, i)}
-                >
-                  -
-                </ButtonInput>
-              ))}
-            </div>
-          ))}
-          <ButtonInput
-            style={[styles.button, styles.add]}
-            bsStyle="link"
-            type="button"
-            value="Agregar respuesta"
-            onClick={this.addItem}
-          />
-        </form>
-      );
-    } else if (permission === 'responder') {
-      return (
-        <form style={styles.form}>
-          <p>{question.text}</p>
-          <div style={styles.row}>
+  renderEditor() {
+    return (
+      <form style={styles.form}>
+      <p>Statement</p>
+        <Input
+          style={styles.textArea}
+          type="textArea"
+          placeholder="Add a statement"
+          value={this.state.statement}
+          onChange={e => this.onChange(e, 'statement')}
+        />
+        <p style={styles.instruction}>Choices</p>
+        {this.state.answers.map((answer, i, arr) => (
+          <div key={i} style={styles.row}>
             <Input
               style={styles.input}
               type="text"
               placeholder="Ingrese su respuesta"
-              value={this.state.responderAnswer}
-              onChange={e => this.onChange(e, permission)}
+              value={answer}
+              autoFocus={arr.length - 1 === i}
+              onChange={e => this.onChange(e, 'option', i)}
             />
+            {renderIf(i > 0)(() => (
+              <ButtonInput
+                style={[styles.button, styles.remove]}
+                bsStyle="link"
+                bsSize="large"
+                type="button"
+                onClick={e => this.removeItem(e, i)}
+              >
+                -
+              </ButtonInput>
+            ))}
           </div>
-        </form>);
-    }
+        ))}
+        <ButtonInput
+          style={[styles.button, styles.add]}
+          bsStyle="link"
+          type="button"
+          value="Agregar respuesta"
+          onClick={this.addItem}
+        />
+      </form>
+    );
+  }
+
+  renderResponder() {
+    debugger;
+    return (
+      <form style={styles.form}>
+        <p>{this.state.statement}</p>
+        <div style={styles.row}>
+          <Input
+            style={styles.input}
+            type="text"
+            placeholder="Ingrese su respuesta"
+            value={this.state.responderAnswer}
+            onChange={e => this.onChange(e, 'responder')}
+          />
+        </div>
+      </form>
+    );
+  }
+
+  renderReader() {
     return (
       <div>
-        <p>{question.text}</p>
+        <p>{this.state.statement}</p>
         <p style={styles.instruction}>Choices</p>
         <ul>
           {this.state.answers.map((answer, index) => <li key={index}>{answer}</li>)}
@@ -156,22 +163,16 @@ export default class TShort extends Component {
   }
 
   render() {
-    const { _id, tags } = this.props.question;
     return (
-        <Panel style={styles.container} header={
-          <Title
-            value={`Question ${_id}`}
-            tags={tags}
-            onClick={() => this.setState({ open: !this.state.open })}
-          />
-          }
-          collapsible={this.props.collapsible}
-          expanded={this.state.open}
-        >
-          <div>
-            {this.renderQuestion(this.state.permission)}
-          </div>
-        </Panel>
+      <div>
+        {(() => {
+          switch (this.state.permission) {
+            case 'editor': return (this.renderEditor());
+            case 'responder': return (this.renderResponder());
+            case 'reader': return (this.renderReader());
+            default: return null;
+          }})()}
+      </div>
     );
   }
 }
@@ -200,7 +201,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'flex-start',
-    alignItems: 'stretch',
+    alignItems: 'center',
   },
   input: {
     alignSelf: 'center',

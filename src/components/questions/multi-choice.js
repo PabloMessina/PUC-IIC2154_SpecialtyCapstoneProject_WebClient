@@ -11,6 +11,7 @@ export default class MultiChoice extends Component {
 
   static get propTypes() {
     return {
+      _id: React.PropTypes.number,
       question: React.PropTypes.any,
       choices: React.PropTypes.array,
       answers: React.PropTypes.array,
@@ -24,9 +25,10 @@ export default class MultiChoice extends Component {
 
   static get defaultProps() {
     return {
-      question: {},
-      choices: [],
-      answers: [],
+      _id: 0,
+      question: { question: { text: '' }, fields: { answers: [], choices: [{ text: '' }] } },
+      choices: [{ text: '' }],
+      answers: [false],
       statement: '',
       permission: 'reader',
       selectable: 1,
@@ -36,31 +38,28 @@ export default class MultiChoice extends Component {
   }
 
   constructor(props) {
+    debugger;
     super(props);
-
     const answers = Array(this.props.question.fields.choices.length).fill(false);
-    if (props.question.fields && props.question.fields.answers) {
+    if (props.question.fields.answers.length) {
       props.question.fields.answers.forEach(index => {
         answers[index] = true;
       });
     }
     this.state = {
-      question: this.props.question,
-      choices: this.props.question.fields.choices === undefined
-        ? this.props.choices
-        : this.props.question.fields.choices,
-      answers,
-      statement: this.props.question.question.text === undefined
-        ? this.props.statement
-        : this.props.question.question.text,
-      selectable: this.props.question.fields.selectable === undefined
-        ? this.props.selectable
-        : this.props.question.fields.selectable,
-      permission: this.props.permission,
-      collapsible: this.props.collapsible,
-      open: this.props.open,
+      _id: props.question._id || props._id,
+      question: props.question,
+      choices: props.question.fields.choices.length
+        && props.question.fields.choices[0].text
+        ? props.question.fields.choices
+        : props.choices,
+      answers: answers.length ? answers : props.answers,
+      statement: props.question.question.text || props.statement,
+      selectable: props.question.fields.selectable || props.selectable,
+      permission: props.permission,
+      collapsible: props.collapsible,
+      open: props.open,
     };
-
     this.onChange = this.onChange.bind(this);
     this.check = this.check.bind(this);
     this.removeItem = this.removeItem.bind(this);
@@ -78,18 +77,18 @@ export default class MultiChoice extends Component {
   }
 
   addItem(e) {
-    e.preventDefault();
     debugger;
+    e.preventDefault();
     const answers = this.state.answers;
     const choices = this.state.choices;
-    const last = choices[choices.length - 1].text;
-    if (last && last.length > 0) {
-      this.setState({ answers: [...answers, ''] });
+    if (choices.filter((choice) => choice.text === '').length < 1) {
+      this.setState({ answers: [...answers, false] });
       this.setState({ choices: [...choices, { text: '' }] });
     }
   }
 
   removeItem(e, index) {
+    debugger;
     e.preventDefault();
     const answers = [...this.state.answers];
     const choices = [...this.state.choices];
@@ -107,70 +106,69 @@ export default class MultiChoice extends Component {
     this.setState({ answers });
   }
 
-  renderQuestion(permission) {
-    if (permission === 'editor') {
-      return (
-        <form style={styles.form}>
-        <p>Statement</p>
-          <Input
-            style={styles.textArea}
-            type="textArea"
-            placeholder="Add a statement"
-            value={this.state.statement}
-            onChange={e => this.onChange(e, 'statement')}
-          />
-          <p>
-            Choices: you must select
-            {` ${this.state.selectable} `}
-            option
-            {this.state.selectable > 1 ? 's.' : '.' }
-          </p>
-          <div style={styles.body}>
-            <div style={styles.column}>
-              {this.state.choices.map((choice, i) => (
-                <div style={styles.choice}>
-                  <Input
-                    key={`choiceCheckbox${i}`}
-                    type="checkbox"
-                    label=" "
-                    checked={this.state.answers[i]}
-                    onChange={() => this.check(i)}
-                  />
-                  <Input
-                    key={`choiceText${i}`}
-                    type="text"
-                    value={choice.text}
-                    checked={this.state.answers[i]}
-                    placeholder={"placeholder"}
-                    onChange={(e) => this.onChange(e, 'choice', i)}
-                  />
-                  {renderIf(i > 0)(() => (
-                    <ButtonInput
-                      style={styles.button}
-                      bsStyle="link"
-                      bsSize="large"
-                      type="button"
-                      onClick={e => this.removeItem(e, i)}
-                    >
-                      -
-                    </ButtonInput>
-                  ))}
-                </div>
-              ))}
-              <ButtonInput
-                style={[styles.button, styles.add]}
-                bsStyle="link"
-                type="button"
-                value="Add a choice"
-                onClick={this.addItem}
-              />
-            </div>
+  renderEditor() {
+    return (
+      <form style={styles.form}>
+      <p>Statement</p>
+        <Input
+          style={styles.textArea}
+          type="textArea"
+          placeholder="Add a statement"
+          value={this.state.statement}
+          onChange={e => this.onChange(e, 'statement')}
+        />
+        <p>
+          Choices: you must select
+          {` ${this.state.selectable} `}
+          option
+          {this.state.selectable > 1 ? 's.' : '.' }
+        </p>
+        <div style={styles.body}>
+          <div style={styles.column}>
+            {this.state.choices.map((choice, i) => (
+              <div key={i} style={styles.choice}>
+                <Input
+                  type="checkbox"
+                  label=" "
+                  checked={this.state.answers[i]}
+                  onChange={() => this.check(i)}
+                />
+                <Input
+                  type="text"
+                  value={choice.text}
+                  checked={this.state.answers[i]}
+                  placeholder={"placeholder"}
+                  onChange={(e) => this.onChange(e, 'choice', i)}
+                />
+                {renderIf(i > 0)(() => (
+                  <ButtonInput
+                    style={styles.button}
+                    bsStyle="link"
+                    bsSize="large"
+                    type="button"
+                    onClick={e => this.removeItem(e, i)}
+                  >
+                    -
+                  </ButtonInput>
+                ))}
+              </div>
+            ))}
+            <ButtonInput
+              style={[styles.button, styles.add]}
+              bsStyle="link"
+              type="button"
+              value="Add a choice"
+              onClick={this.addItem}
+            />
           </div>
-        </form>
-      );
-    } else if (permission === 'responder') {
-      return (
-        <form style={styles.form}>
+        </div>
+      </form>
+    );
+  }
+
+  renderResponder() {
+    return (
+      <form style={styles.form}>
         <p>{this.state.statement}</p>
         <p>
           Choices: you must select
@@ -180,7 +178,7 @@ export default class MultiChoice extends Component {
         </p>
         <div style={styles.body}>
           <div style={styles.column}>
-             {this.state.choices.map((choice, i) => (
+            {this.state.choices.map((choice, i) => (
               <Input
                 key={i}
                 type="checkbox"
@@ -193,7 +191,9 @@ export default class MultiChoice extends Component {
         </div>
       </form>
       );
-    }
+  }
+
+  renderReader() {
     return (
       <form style={styles.form}>
       <p>{this.state.statement}</p>
@@ -222,22 +222,16 @@ export default class MultiChoice extends Component {
   }
 
   render() {
-    const { _id, tags } = this.props.question;
     return (
-      <Panel
-        style={styles.container}
-        header={
-          <Title
-            value={`Question ${_id}`}
-            tags={tags}
-            onClick={() => this.setState({ open: !this.state.open })}
-          />
-        }
-        collapsible={this.props.collapsible}
-        expanded={this.state.open}
-      >
-        {this.renderQuestion(this.state.permission)}
-      </Panel>
+      <div>
+      {(() => {
+        switch (this.state.permission) {
+          case 'editor': return (this.renderEditor());
+          case 'responder': return (this.renderResponder());
+          case 'reader': return (this.renderReader());
+          default: return null;
+        }})()}
+      </div>
     );
   }
 }

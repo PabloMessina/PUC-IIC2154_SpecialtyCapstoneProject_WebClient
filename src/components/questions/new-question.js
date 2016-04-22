@@ -1,6 +1,4 @@
-import React, { Component } from 'react';
-import { Panel, Button } from 'react-bootstrap';
-import Title from './title';
+import React, { Component, Button } from 'react';
 import Correlation from './correlation';
 import MultiChoice from './multi-choice';
 import TShort from './tshort';
@@ -15,8 +13,6 @@ export default class NewQuestion extends Component {
       question: React.PropTypes.object,
       tags: React.PropTypes.array,
       fields: React.PropTypes.object,
-      collapsible: React.PropTypes.bool,
-      open: React.PropTypes.bool,
     };
   }
 
@@ -26,8 +22,6 @@ export default class NewQuestion extends Component {
       question: {},
       tags: [],
       fields: {},
-      collapsible: true,
-      open: false,
     };
   }
 
@@ -38,8 +32,6 @@ export default class NewQuestion extends Component {
       question: this.props.question,
       tags: this.props.tags,
       fields: this.props.fields,
-      collapsible: this.props.collapsible,
-      open: this.props.open,
     };
     this.renderQuestion = this.renderQuestion.bind(this);
   }
@@ -51,19 +43,19 @@ export default class NewQuestion extends Component {
           permission={'editor'}
           open
         />
-      )
+      );
       case 'multiChoice': return (
         <MultiChoice
           permission={'editor'}
           open
         />
-      )
+      );
       case 'tshort': return (
         <TShort
           permission={'editor'}
           open
         />
-      )
+      );
       case 'trueFalse': return (
         <TrueFalse
           permission={'editor'}
@@ -75,44 +67,36 @@ export default class NewQuestion extends Component {
 
   render() {
     return (
-      <Panel
-        style={styles.container}
-        header={<Title
-          value={"New question"}
-          // tags={tags}
-          onClick={() => this.setState({ open: !this.state.open })}
-        />}
-        collapsible
-        expanded={this.state.open}
-      >
-        <div style={styles.buttons}>
-          <Button
-            style={styles.button}
-            onClick={() => this.renderQuestion('correlation')}
-          >
-            Correlation
-          </Button>
-          <Button
-            style={styles.button}
-            onClick={() => this.renderQuestion('MultiChoice')}
-          >
-            MultiChoice
-          </Button>
-          <Button
-            style={styles.button}
-            onClick={() => this.renderQuestion('trueFalse')}
-          >
-            True - False
-          </Button>
-          <Button
-            style={styles.button}
-            onClick={() => this.renderQuestion('tshort')}
-          >
-            Text
-          </Button>
-        </div>
+        <div>
+          <p>New question</p>
+          <div style={styles.buttons}>
+            <Button
+              style={styles.button}
+              onClick={() => this.renderQuestion('correlation')}
+            >
+              Correlation
+            </Button>
+            <Button
+              style={styles.button}
+              onClick={() => this.renderQuestion('MultiChoice')}
+            >
+              MultiChoice
+            </Button>
+            <Button
+              style={styles.button}
+              onClick={() => this.renderQuestion('trueFalse')}
+            >
+              True - False
+            </Button>
+            <Button
+              style={styles.button}
+              onClick={() => this.renderQuestion('tshort')}
+            >
+              Text
+            </Button>
+          </div>
         {this.renderQuestion(this.state.typeQuestion)}
-      </Panel>
+      </div>
     );
   }
 }

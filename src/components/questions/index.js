@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
-import { Panel } from 'react-bootstrap';
+import { Panel, Button } from 'react-bootstrap';
+import renderIf from 'render-if';
+
 import Correlation from './correlation';
 import MultiChoice from './multi-choice';
 import TShort from './tshort';
 import TrueFalse from './true-false';
-import NewQuestion from './new-question';
+import QuestionContainer from './question-container';
 
 
 export default class Questions extends Component {
@@ -59,47 +61,84 @@ export default class Questions extends Component {
     };
   }
 
+  constructor(props) {
+    super(props);
+    this.state = {
+      current: null,
+      questions: props.questions,
+    };
+    this.questionFactory = this.questionFactory.bind(this);
+    this.setCurrent = this.setCurrent.bind(this);
+  }
+
+  setCurrent(question, options) {
+    this.setState({ current: this.questionFactory(question, options) });
+  }
+
+  questionFactory(_type, options) {
+    debugger;
+    switch (_type) {
+      case 'trueFalse': return <TrueFalse {...options} />;
+      case 'multiChoice': return <MultiChoice {...options} />;
+      case 'tshort': return <TShort {...options} />;
+      case 'correlation': return <Correlation {...options} />;
+      default: return null;
+    }
+  }
+
   render() {
     const permission = 'editor';
+    const options = {
+      permission: 'editor',
+      open: true,
+      title: `Question ${this.state.questions.length + 1}` };
     return (
       <Panel>
-        <NewQuestion />
-        {this.props.questions.map((question, i) => {
-          switch (question._type) {
-            case 'correlation': return (
-              <Correlation
-                key={i}
-                question={question}
-                permission={permission}
-                collapsible
-              />
-            )
-            case 'multiChoice': return (
-              <MultiChoice
-                key={i}
-                question={question}
-                permission={permission}
-                collapsible
-              />
-            )
-            case 'tshort': return (
-              <TShort
-                key={i}
-                permission={permission}
-                question={question}
-                collapsible
-              />
-            )
-            case 'trueFalse': return (
-              <TrueFalse
-                key={i}
-                permission={permission}
-                question={question}
-                collapsible
-              />);
-            default: return null;
-          }
-        })}
+        <div>
+          <div style={styles.buttons}>
+            <Button
+              style={styles.button}
+              onClick={() => this.setCurrent('correlation', options)}
+            >
+              Correlation
+            </Button>
+            <Button
+              style={styles.button}
+              onClick={() => this.setCurrent('multiChoice', options)}
+            >
+              MultiChoice
+            </Button>
+            <Button
+              style={styles.button}
+              onClick={() => this.setCurrent('trueFalse', options)}
+            >
+              True - False
+            </Button>
+            <Button
+              style={styles.button}
+              onClick={() => this.setCurrent('tshort', options)}
+            >
+              Text
+            </Button>
+          </div>
+          {renderIf(this.state.current)(() =>
+            <QuestionContainer
+              component={this.state.current}
+              title={'New question'}
+            />)}
+          {this.props.questions.map((question, i) => {
+            const props = {
+              key: i,
+              collapsible: true,
+              question,
+              permission,
+            };
+            return (<QuestionContainer
+              component={this.questionFactory(question._type, props)}
+              title={`Question ${i}`}
+            />);
+          })}
+        </div>
       </Panel>
     );
   }
@@ -107,4 +146,17 @@ export default class Questions extends Component {
 
 Questions.propTypes = {
   questions: React.PropTypes.node,
+};
+
+const styles = {
+  buttons: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  button: {
+    marginLeft: 10,
+    marginRight: 10,
+  },
 };
