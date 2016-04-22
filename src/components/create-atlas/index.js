@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 
 import { Button, Input, ButtonInput, Alert } from 'react-bootstrap';
 import renderIf from 'render-if';
-import browserHistory from 'react-router';
+import { browserHistory } from 'react-router';
 import app from '../../app.js';
 
 export default class CreateAtlas extends Component {
@@ -55,15 +55,8 @@ export default class CreateAtlas extends Component {
     const atlasService = app.service('/atlases');
 
     atlasService.create(newAtlas)
-    .then(atlas => {
-      console.log(atlas);
-      browserHistory.push(`/editor/${atlas.id}`);
-    })
-    .catch(error =>
-           {
-             console.log("HOLI");
-             this.setState({ error });
-           });
+    .then(atlas => browserHistory.push(`/editor/${atlas.id}`))
+    .catch(error => this.setState({ error }));
   }
 
   changeAuthor(event, index) {
