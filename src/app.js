@@ -74,7 +74,7 @@ export function logout() {
  * Get current user
  * @return {Object} Current user
  */
-export function user() {
+export function currentUser() {
   return app.get('user');
 }
 

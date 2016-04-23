@@ -6,7 +6,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { Router, Route, IndexRoute, browserHistory } from 'react-router';
 
-import { app, user } from './app';
+import { app, currentUser } from './app';
 
 import Main from './components/main';
 import Dashboard from './components/dashboard';
@@ -34,8 +34,8 @@ import Editor from './components/editor/';
 import Template from './utils/template';
 
 function requireAuth(nextState, replace) {
-  const currentUser = user();
-  if (!currentUser) {
+  const user = currentUser();
+  if (!user) {
     replace({
       pathname: '/login',
       state: { redirection: nextState.location.pathname },
@@ -45,8 +45,8 @@ function requireAuth(nextState, replace) {
 
 function requireAnnon(nextState, replace) {
   // FIXME: this doesn't work on page reload
-  const currentUser = user();
-  if (currentUser) {
+  const user = currentUser();
+  if (user) {
     replace({
       pathname: '/',
       state: { message: 'Already logged in.' },
