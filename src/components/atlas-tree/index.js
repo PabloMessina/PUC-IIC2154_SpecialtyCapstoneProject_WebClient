@@ -12,13 +12,9 @@ export default class AtlasTree extends Component {
       static: React.PropTypes.bool,
       tree: React.PropTypes.object,
       onSelectSection: React.PropTypes.func,
+      onAddSection: React.PropTypes.func,
     };
   }
-
-  constructor(props) {
-    super(props);
-  }
-
 
   render() {
     const tree = this.props.tree;
@@ -30,6 +26,7 @@ export default class AtlasTree extends Component {
               key={i}
               static={this.props.static}
               onSelectSection={this.props.onSelectSection}
+              onAddSection={this.props.onAddSection}
               section={section}
               tree={tree}
               anidation={[i + 1]}
@@ -44,7 +41,6 @@ export default class AtlasTree extends Component {
 
 const styles = {
   container: {
-    paddingTop: 64,
     backgroundColor: 'white',
 
     // flexDirection: 'column', // row, column

@@ -1,13 +1,17 @@
 import React, { Component } from 'react';
+import Icon from 'react-fa';
 import renderIf from 'render-if';
+import app from '../../app.js';
 // import Icon from 'react-fa';
 // import Icon from 'react-native-vector-icons/FontAwesome';
 // import StyleSheet from 'react-native-debug-stylesheet';
 // import StyleSheet from 'react-native-debug-stylesheet';
 // import { Colors } from '../../styles';
 
+const sectionService = app.service('/sections');
+
 const FONT = {
-  MIN: 14,
+  MIN: 10,
   MAX: 20,
   DELTA: 2,
 };
@@ -19,6 +23,7 @@ export default class Node extends Component {
       style: React.PropTypes.any,
       tree: React.PropTypes.object,
       onSelectSection: React.PropTypes.func,
+      onAddSection: React.PropTypes.func,
       section: React.PropTypes.object,
       level: React.PropTypes.number,
       anidation: React.PropTypes.array,
@@ -54,12 +59,16 @@ export default class Node extends Component {
 
   addSection() {
     const section = this.state.section;
-    if (!section.sections) {
-      section.sections = [];
-    }
+    const newSection = {
+      versionId: section.versionId,
+      parentId: section._id,
+    };
 
-    section.sections.push({ name: 'Section' });
-    this.setState({ section });
+    sectionService.create(newSection)
+    .then(result => {
+      this.props.onAddSection(result);
+    })
+    .catch(error => console.log(error));
   }
 
   render() {
@@ -78,14 +87,12 @@ export default class Node extends Component {
     return (
       <div style={styles.container}>
 
-        <div >
-          <p style={substyle} onClick={onSelectSection}>
+        <div style={substyle}>
+          <p onClick={onSelectSection}>
             {anidation.join('.')}. {title}
           </p>
           {renderIf(!this.props.static)(() => (
-            <p onClick={this.addSection}>
-              +
-            </p>
+            <Icon name="plus" onClick={this.addSection}/>
             ))
           }
         </div>
@@ -97,14 +104,14 @@ export default class Node extends Component {
                 key={i}
                 static={this.props.static}
                 onSelectSection={this.props.onSelectSection}
+                onAddSection={this.props.onAddSection}
                 section={section}
                 tree={this.props.tree}
-                anidation={[i + 1]}
+                anidation={[...anidation, i + 1]}
               />
               ))}
+            </div>
             ))}
-          </div>
-        ))}
 
       </div>
     );
@@ -118,6 +125,7 @@ const styles = {
     marginTop: 3,
     marginBottom: 3,
     marginLeft: 15,
+    marginRight: 15,
   },
   texts: {
     borderBottomWidth: 0.5,
@@ -131,5 +139,9 @@ const styles = {
   subtree: {
     // height: 30,
   },
+  addSection: {
+
+
+  }
 };
 

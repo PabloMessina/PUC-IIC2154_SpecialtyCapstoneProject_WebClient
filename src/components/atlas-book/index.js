@@ -31,6 +31,7 @@ export default class AtlasBook extends Component {
 
     this.fetchTree = this.fetchTree.bind(this);
     this.onSelectSection = this.onSelectSection.bind(this);
+    this.onAddSection = this.onAddSection.bind(this);
     this.onChangeContent = this.onChangeContent.bind(this);
   }
 
@@ -56,8 +57,15 @@ export default class AtlasBook extends Component {
     });
   }
 
-  onAddSection() {
-    this.fetchTree();
+  onAddSection(section) {
+    const tree = this.state.tree;
+    const parentId = section.parentId;
+
+    tree[parentId] = tree[parentId] || [];
+    tree[parentId].push(section);
+    this.setState({
+      tree,
+    });
   }
 
 
@@ -86,9 +94,9 @@ export default class AtlasBook extends Component {
     return (
       <div style={styles.container}>
         <AtlasTree
-          static
           tree={this.state.tree}
           onSelectSection={this.onSelectSection}
+          onAddSection={this.onAddSection}
         />
         <AtlasSection
           content={content}
