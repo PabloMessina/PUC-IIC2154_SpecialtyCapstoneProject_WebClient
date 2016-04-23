@@ -2,6 +2,7 @@
 
 import React, { Component } from 'react';
 import { Grid } from 'react-bootstrap';
+import Icon from 'react-fa'
 
 import { user, auth } from '../../app';
 import NavigationBar from '../navigation-bar';
@@ -54,7 +55,7 @@ export default class Main extends Component {
         <footer className="footer">
           <div className="container">
             <p className="text-muted" style={styles.footer}>
-              From team5.js with love
+              From team5.js with <Icon name="heart" />
             </p>
           </div>
         </footer>
