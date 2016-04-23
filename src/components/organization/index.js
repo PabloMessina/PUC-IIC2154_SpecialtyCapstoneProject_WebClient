@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Grid, Image, Row, Col } from 'react-bootstrap';
+import { Grid, Tabs, Tab, Row, Col, Panel, Image, NavItem, Nav } from 'react-bootstrap';
 // import { Button } from 'react-bootstrap';
 
 import { Colors } from '../../styles';
@@ -20,6 +20,7 @@ export default class Organization extends Component {
     super(props);
     this.state = {
       organization: null,
+      tab: 0,
     };
     this.fetch(this.props.params.organizationId);
   }
@@ -27,6 +28,31 @@ export default class Organization extends Component {
   fetch(organizationId) {
     return organizationService.get(organizationId)
       .then(organization => this.setState({ organization }));
+  }
+
+  navigationTabBar() {
+    // TODO: fix highligth color and background color when stacked
+    const titles = ['Courses', 'Atlases', 'Users', 'Settings'];
+    return (
+      <Tabs style={styles.tabs} activeKey={this.state.tab} onSelect={key => this.setState({ tab: key })}>
+        {titles.map((title, i) => (
+          <Tab key={i} eventKey={i} title={title}>
+            <Grid style={styles.tabContent}>
+              <Col xs={9}>
+                <p>Content</p>
+              </Col>
+              <Col xs={3}>
+                <Panel>
+                  <h5>Looking for help?</h5>
+                  <hr />
+                  <p>Take a look at our showcase or contact us.</p>
+                </Panel>
+              </Col>
+            </Grid>
+          </Tab>
+        ))}
+      </Tabs>
+    );
   }
 
   render() {
@@ -41,6 +67,7 @@ export default class Organization extends Component {
         <Row style={styles.header}>
           <Col xs={12}>
             <Grid style={styles.content}>
+
               <Row style={styles.banner}>
                 <Col xsOffset={0} xs={12} smOffset={0} sm={11} style={styles.information}>
                   <Image style={styles.logo} src={logo} rounded />
@@ -48,6 +75,12 @@ export default class Organization extends Component {
                     <h1 style={styles.name}>{name}</h1>
                     <p style={styles.description}>{description || 'No description'}</p>
                   </div>
+                </Col>
+              </Row>
+
+              <Row>
+                <Col xs={12}>
+                  {this.navigationTabBar()}
                 </Col>
               </Row>
             </Grid>
@@ -67,11 +100,11 @@ const styles = {
   },
   header: {
     width: '100% auto',
-    height: 250,
+    height: 250, // hardcoded
     minHeight: 150,
     padding: 0,
     margin: 0,
-    backgroundImage: 'url("/img/covers/3.jpg")',
+    backgroundImage: 'url("/img/covers/default.jpg")',
     backgroundRepeat: 'no-repeat',
     backgroundSize: 'cover',
     backgroundPosition: 'center top',
@@ -110,5 +143,11 @@ const styles = {
     minHeight: 160,
     minWidth: 160,
     marginRight: 24,
+  },
+  tabs: {
+    paddingTop: 15,
+  },
+  tabContent: {
+    marginTop: 20,
   },
 };
