@@ -109,7 +109,7 @@ export default class OrganizationCreate extends Component {
         <h2>New Organization</h2>
         <Row>
 
-          <Col xs={12} md={8}>
+          <Col xs={12} sm={8}>
             <p>An organization is a community of students and teachers from a common institution.</p>
             <ul>
               <li>Create courses and keep a store of questions.</li>
@@ -175,15 +175,13 @@ export default class OrganizationCreate extends Component {
                 </FormControl>
               </FormGroup>
 
-              <br />
-
               <Button bsStyle="primary" type="submit" disabled={this.state.submiting}>
                 Create Organization
               </Button>
             </form>
           </Col>
 
-          <Col md={4}>
+          <Col xs={12} sm={4}>
             <Panel>
               <h5>Looking for help?</h5>
               <hr />

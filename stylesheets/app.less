@@ -36,3 +36,11 @@ body {
   height: 44;
   background-color: #f5f5f5;
 }
+
+// Column wrap stacking button margin problem fix
+// Source: http://stackoverflow.com/a/19822503
+@media (max-width: 768px) {
+  [class*="col-"]{
+      margin-bottom: 15px;
+  }
+}
