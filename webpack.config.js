@@ -7,7 +7,8 @@ module.exports = {
   entry: [
     'webpack-dev-server/client?http://localhost:3000',
     'webpack/hot/only-dev-server',
-    './src/index',
+    './src/index.js',
+    './stylesheets/app.less',
   ],
   output: {
     path: path.join(__dirname, 'dist'),
@@ -16,7 +17,7 @@ module.exports = {
   },
   plugins: [
     new webpack.HotModuleReplacementPlugin(),
-    new ExtractTextPlugin('bundle.css'),
+    new ExtractTextPlugin('styles.css'),
   ],
   module: {
     noParse: /node_modules\/quill\/dist/,
@@ -29,6 +30,10 @@ module.exports = {
       {
         test: /\.css$/,
         loader: ExtractTextPlugin.extract('style-loader', 'css-loader'),
+      },
+      {
+        test: /\.less$/,
+        loader: ExtractTextPlugin.extract('css?sourceMap!less?sourceMap'),
       },
       {
         test: /\.json$/,

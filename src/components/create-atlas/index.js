@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-import { Button, Input, ButtonInput, Alert } from 'react-bootstrap';
+import { Grid, Button, Input, ButtonInput, Alert } from 'react-bootstrap';
 import renderIf from 'render-if';
 import { browserHistory } from 'react-router';
 import app from '../../app.js';
@@ -99,9 +99,9 @@ export default class CreateAtlas extends Component {
 
   render() {
     return (
-      <div style={styles.container}>
+      <Grid style={styles.container}>
         <form onSubmit={this.handleSubmit}>
-        <h1>Create Atlas</h1>
+          <h1>Create Atlas</h1>
           <div style={styles.granDiv}>
             <div>
               <div style={styles.item}>
@@ -120,7 +120,7 @@ export default class CreateAtlas extends Component {
                       type="text"
                       style={styles.inputAuthor}
                       value={author}
-                      onChange= {e => this.changeAuthor(e, i)}
+                      onChange={e => this.changeAuthor(e, i)}
                     />
                     <Button
                       type="button"
@@ -169,8 +169,8 @@ export default class CreateAtlas extends Component {
             <p>{this.state.error.message}</p>
           </Alert>
         )}
-      </form>
-      </div>
+        </form>
+      </Grid>
     );
   }
 }
