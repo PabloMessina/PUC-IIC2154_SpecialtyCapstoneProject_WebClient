@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
-import { Navbar, Nav, NavItem, NavDropdown, MenuItem } from 'react-bootstrap';
+import { Navbar, Nav, NavItem, NavDropdown, MenuItem, Glyphicon } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
+import renderIf from 'render-if';
 
 import { logout } from '../../app';
 
@@ -11,6 +12,7 @@ export default class NavigationBar extends Component {
     return {
       title: 'Title',
       user: null,
+      organizations: [],
     };
   }
 
@@ -54,6 +56,30 @@ export default class NavigationBar extends Component {
     );
   }
 
+  organizationsDropdown() {
+    return (
+      <NavDropdown eventKey={2} title="Organizations" id="organizations-dropdown">
+        {this.props.organizations.map((organization, i) => {
+          const name = organization.name;
+          const eventKey = 2 + i * 0.1;
+          const url = `/organizations/show/${organization.id}`;
+          return (
+            <MenuItem key={i} eventKey={eventKey} onSelect={() => browserHistory.push(url)}>
+              {name}
+            </MenuItem>
+          );
+        })}
+        {renderIf(this.props.organizations.length === 0)(() => (
+          <MenuItem eventKey={2.1} disabled>None</MenuItem>
+        ))}
+        <MenuItem divider />
+        <MenuItem eventKey={3} onSelect={() => browserHistory.push('/organizations/create')}>
+          <Glyphicon glyph="plus" /> Create organization
+        </MenuItem>
+      </NavDropdown>
+    );
+  }
+
   render() {
     const { title, ...props } = this.props;
 
@@ -69,12 +95,13 @@ export default class NavigationBar extends Component {
 
         <Navbar.Collapse>
           <Nav>
+
             <NavItem eventKey={1} onClick={() => browserHistory.push('/documents')}>
               Atlases
             </NavItem>
-            <NavItem eventKey={2} href="#" onClick={() => browserHistory.push('/organizations')}>
-              Organizations
-            </NavItem>
+
+            {this.organizationsDropdown()}
+
           </Nav>
 
           {this.rightNavigation()}
@@ -89,6 +116,7 @@ export default class NavigationBar extends Component {
 NavigationBar.propTypes = {
   title: React.PropTypes.node,
   user: React.PropTypes.any,
+  organizations: React.PropTypes.array,
 };
 
 const styles = {
