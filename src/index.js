@@ -6,9 +6,12 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { Router, Route, IndexRoute, browserHistory } from 'react-router';
 
+import { app, user } from './app';
+
 import Main from './components/main';
 import Dashboard from './components/dashboard';
 import Login from './components/login/';
+import CreateAtlas from './components/create-atlas';
 import SignUp from './components/signup/';
 import Settings from './components/settings';
 import NotificationSettings from './components/settings/notifications';
@@ -18,25 +21,50 @@ import SecuritySettings from './components/settings/security';
 import PaymentsSettings from './components/settings/payments';
 import DocumentList from './components/document-list';
 import DocumentDescription from './components/document-description';
-import Courses from './components/courses';
+import Organizations from './components/organizations';
 import Course from './components/course/';
 import CourseNav from './components/course-nav/';
 import CourseCreate from './components/course-create/';
 import OrganizationCreate from './components/organization-create/';
+import Tree from './components/hierarchy-navigation/';
+import Editor from './components/editor/';
 
 // Development help
 // Go to: http://localhost:3000/template
 import Template from './utils/template';
 
+function requireAuth(nextState, replace) {
+  const currentUser = user();
+  if (!currentUser) {
+    replace({
+      pathname: '/login',
+      state: { redirection: nextState.location.pathname },
+    });
+  }
+}
+
+function requireAnnon(nextState, replace) {
+  // FIXME: this doesn't work on page reload
+  const currentUser = user();
+  if (currentUser) {
+    replace({
+      pathname: '/',
+      state: { message: 'Already logged in.' },
+    });
+  }
+}
+
 const Routing = (
   <Router history={browserHistory}>
-    <Route path="/" component={Main}>
+    <Route path="/" component={Main} title="App">
       <IndexRoute component={Dashboard} />
 
-      <Route path="login" component={Login} />
-      <Route path="signup" component={SignUp} />
+      <Route path="login" component={Login} onEnter={requireAnnon} />
+      <Route path="signup" component={SignUp} onEnter={requireAnnon} />
 
-      <Route path="documents" component={DocumentList} />
+      <Route path="create-atlas" component={CreateAtlas} />
+
+      <Route path="documents" component={DocumentList} onEnter={requireAuth} />
       <Route path="documents/:docId" component={DocumentDescription} />
 
       <Route path="settings" component={Settings} >
@@ -48,12 +76,14 @@ const Routing = (
       </Route>
 
       <Route path="organization_create" component={OrganizationCreate} />
-      <Route path="courses" component={Courses}>
+      <Route path="organizations" component={Organizations}>
         <Route path=":courseId" component={Course} />
       </Route>
       <Route path="/course_create" component={CourseCreate} />
       <Route path="course_general" component={CourseNav} />
 
+      <Route path="editor" component={Editor} />
+      <Route path="tree" component={Tree} />
       <Route path="template" component={Template} />
     </Route>
   </Router>

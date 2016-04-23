@@ -54,7 +54,7 @@ export default class Organizations extends Component {
           <Col sm={6} md={3}>
             <ListGroup>
               {this.state.organizations.map((org, i) => (
-                <ListGroupItem key={i} onClick={() => browserHistory.push(`/courses/${org._id}`)}>
+                <ListGroupItem key={i} onClick={() => browserHistory.push(`/organizations/${org._id}`)}>
                   {org.title}
                 </ListGroupItem>
               ))}
