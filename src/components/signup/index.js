@@ -56,51 +56,49 @@ export default class SignUp extends Component {
 
   render() {
     return (
-      <div style={styles.container}>
-        <Grid>
-          <Row>
-            <Col md={6}>
-              <h1>
-                Crear Cuenta
-              </h1>
-              <p>Descripcion de la aplicación</p>
-            </Col>
-            <Col md={6}>
-              <Panel>
-                <form onSubmit={this.onSubmit}>
-                  <Input
-                    type="text"
-                    label="Nombre"
-                    value={this.state.name}
-                    onChange={e => this.setState({ name: e.target.value })}
-                  />
-                  <Input
-                    type="email"
-                    label="Email"
-                    value={this.state.email}
-                    onChange={e => this.setState({ email: e.target.value })}
-                  />
-                  <Input
-                    type="password"
-                    label="Clave"
-                    value={this.state.password}
-                    onChange={e => this.setState({ password: e.target.value })}
-                  />
-                  <ButtonInput bsStyle="primary" type="submit" value="Siguiente" />
-                </form>
+      <Grid style={styles.container}>
+        <Row>
+          <Col md={6}>
+            <h1>
+              Crear Cuenta
+            </h1>
+            <p>Descripcion de la aplicación</p>
+          </Col>
+          <Col md={6}>
+            <Panel>
+              <form onSubmit={this.onSubmit}>
+                <Input
+                  type="text"
+                  label="Nombre"
+                  value={this.state.name}
+                  onChange={e => this.setState({ name: e.target.value })}
+                />
+                <Input
+                  type="email"
+                  label="Email"
+                  value={this.state.email}
+                  onChange={e => this.setState({ email: e.target.value })}
+                />
+                <Input
+                  type="password"
+                  label="Clave"
+                  value={this.state.password}
+                  onChange={e => this.setState({ password: e.target.value })}
+                />
+                <ButtonInput bsStyle="primary" type="submit" value="Siguiente" />
+              </form>
 
-                {renderIf(this.state.error)(() =>
-                  <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
-                    <h4>Oh snap! You got an error!</h4>
-                    <p>{this.state.error.message}</p>
-                  </Alert>
-                )}
+              {renderIf(this.state.error)(() =>
+                <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
+                  <h4>Oh snap! You got an error!</h4>
+                  <p>{this.state.error.message}</p>
+                </Alert>
+              )}
 
-              </Panel>
-            </Col>
-          </Row>
-        </Grid>
-      </div>
+            </Panel>
+          </Col>
+        </Row>
+      </Grid>
     );
   }
 }

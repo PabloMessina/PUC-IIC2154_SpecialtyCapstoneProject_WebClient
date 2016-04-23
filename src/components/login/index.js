@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Panel, Row, Col, Input, ButtonInput, Alert } from 'react-bootstrap';
+import { Panel, Grid, Col, Input, ButtonInput, Alert } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
 
@@ -60,7 +60,7 @@ export default class Login extends Component {
 
   render() {
     return (
-      <Row>
+      <Grid>
         <Col xs={12} xsOffset={0} md={6} mdOffset={3}>
           <Panel>
             <form onSubmit={this.onSubmit}>
@@ -97,7 +97,7 @@ export default class Login extends Component {
 
           </Panel>
         </Col>
-      </Row>
+      </Grid>
     );
   }
 }

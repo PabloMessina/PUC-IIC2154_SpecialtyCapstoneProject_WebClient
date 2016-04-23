@@ -21,7 +21,8 @@ import SecuritySettings from './components/settings/security';
 import PaymentsSettings from './components/settings/payments';
 import DocumentList from './components/document-list';
 import DocumentDescription from './components/document-description';
-import Organizations from './components/organizations';
+// import Organizations from './components/organizations';
+import Organization from './components/organization';
 import Course from './components/course/';
 import CourseNav from './components/course-nav/';
 import CourseCreate from './components/course-create/';
@@ -75,10 +76,11 @@ const Routing = (
         <Route path="myatlas" component={MyAtlasSettings} />
       </Route>
 
-      <Route path="organization_create" component={OrganizationCreate} />
-      <Route path="organizations" component={Organizations}>
+      <Route path="organizations/create" component={OrganizationCreate} />
+      <Route path="organizations/show/:organizationId" component={Organization}>
         <Route path=":courseId" component={Course} />
       </Route>
+
       <Route path="/course_create" component={CourseCreate} />
       <Route path="course_general" component={CourseNav} />
 

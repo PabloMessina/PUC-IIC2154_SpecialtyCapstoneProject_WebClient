@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Col, Row, ListGroup, ListGroupItem, Input, ButtonInput, Label } from 'react-bootstrap';
+import { Grid, Col, Row, ListGroup, ListGroupItem, Input, ButtonInput, Label } from 'react-bootstrap';
 import AtlasThumbnail from './atlas-thumbnail';
 import atlasExample from '../../atlas-example.js';
 
@@ -37,62 +37,63 @@ export default class Settings extends Component {
         lista.push(
           <div>
             <Col xs={2} md={3}>
-              <AtlasThumbnail id={ doc.id} document ={doc} />
+              <AtlasThumbnail id={doc.id} document={doc} />
             </Col>
           </div>
         );
       } else {
         lista.push(
           <Col xs={2} md={3}>
-            <AtlasThumbnail document ={doc} />
+            <AtlasThumbnail document={doc} />
           </Col>
         );
       }
     });
     return (
-      <div>
-      <Row>
-        <Col md={2} style={styles.filter}>
-          <p style={styles.title}>Tags</p>
-          <ListGroup style={styles.list}>
-            <ListGroupItem href="#" style={styles.borderRadius}>
-              <h4><Label bsStyle="primary">Anatomia</Label></h4>
-            </ListGroupItem>
-            <ListGroupItem href="#">
-              <h4><Label bsStyle="info">Tag2</Label></h4></ListGroupItem>
-            <ListGroupItem href="#">
-              <h4><Label bsStyle="info">Tag3</Label></h4>
-            </ListGroupItem>
-            <ListGroupItem href="#">
-              <h4><Label bsStyle="success">Tag4</Label></h4>
-            </ListGroupItem>
-            <ListGroupItem href="#" style={styles.borderRadius}>
-              <h4><Label bsStyle="success">Tag5</Label></h4>
-            </ListGroupItem>
-          </ListGroup>
-        </Col>
-        <Col md={10} style={styles.scroll}>
-        <h1>Atlas</h1>
-          <Row>
-            <form>
-              <Col sm={6} md={5}>
-                <Input type="text"
-                  ref="input"
-                  onChange={this.handleChange}
-                  style={styles.borderRadius}
-                />
-              </Col>
-              <Col sm={6} md={2}>
-                <ButtonInput bsSize="small" style={styles.borderRadius}>Search</ButtonInput>
-              </Col>
-            </form>
-          </Row>
-          <Row className="show-grid">
-          {lista}
-          </Row>
-        </Col>
-      </Row>
-      </div>
+      <Grid>
+        <Row>
+          <Col md={2} style={styles.filter}>
+            <p style={styles.title}>Tags</p>
+            <ListGroup style={styles.list}>
+              <ListGroupItem href="#" style={styles.borderRadius}>
+                <h4><Label bsStyle="primary">Anatomia</Label></h4>
+              </ListGroupItem>
+              <ListGroupItem href="#">
+                <h4><Label bsStyle="info">Tag2</Label></h4></ListGroupItem>
+              <ListGroupItem href="#">
+                <h4><Label bsStyle="info">Tag3</Label></h4>
+              </ListGroupItem>
+              <ListGroupItem href="#">
+                <h4><Label bsStyle="success">Tag4</Label></h4>
+              </ListGroupItem>
+              <ListGroupItem href="#" style={styles.borderRadius}>
+                <h4><Label bsStyle="success">Tag5</Label></h4>
+              </ListGroupItem>
+            </ListGroup>
+          </Col>
+          <Col md={10} style={styles.scroll}>
+            <h1>Atlas</h1>
+            <Row>
+              <form>
+                <Col sm={6} md={5}>
+                  <Input
+                    type="text"
+                    ref="input"
+                    onChange={this.handleChange}
+                    style={styles.borderRadius}
+                  />
+                </Col>
+                <Col sm={6} md={2}>
+                  <ButtonInput bsSize="small" style={styles.borderRadius}>Search</ButtonInput>
+                </Col>
+              </form>
+            </Row>
+            <Row className="show-grid">
+            {lista}
+            </Row>
+          </Col>
+        </Row>
+      </Grid>
     );
   }
 }

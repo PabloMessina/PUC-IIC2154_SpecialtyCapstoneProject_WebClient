@@ -1,7 +1,7 @@
 /* eslint no-console: 0 */
 
 import React, { Component } from 'react';
-import { Grid } from 'react-bootstrap';
+// import { Grid } from 'react-bootstrap';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
 
@@ -54,10 +54,10 @@ export default class Main extends Component {
         <NavigationBar title={title} fixedTop user={user} />
 
         {/* Render content only if the user is annon or is authed */}
-        {renderIf(!user || this.state.state === STATES.AUTHED)(() => (
-          <Grid style={styles.content} {...props}>
+        {renderIf(this.state.state === STATES.ANNON || this.state.state === STATES.AUTHED)(() => (
+          <div style={styles.content} {...props}>
             {this.props.children}
-          </Grid>
+          </div>
         ))}
 
         <footer className="footer">

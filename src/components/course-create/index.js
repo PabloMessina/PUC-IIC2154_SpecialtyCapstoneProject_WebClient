@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
-import { Button, Input } from 'react-bootstrap';
-import { Router } from 'react-router';
+import { Grid, Button, Input } from 'react-bootstrap';
 
 import app from '../../app';
 
@@ -112,7 +111,7 @@ export default class CourseCreate extends Component {
 
   render() {
     return (
-      <div style={styles.container}>
+      <Grid style={styles.container}>
         <form onSubmit={this.onSubmit}>
           <Input
             type="text"
@@ -153,10 +152,9 @@ export default class CourseCreate extends Component {
               </option>
             ))}
           </Input>
-          <p> {this.props.location.pathname} </p>
           <Button bsStyle="primary" type="submit">Submit Course</Button>
         </form>
-      </div>
+      </Grid>
     );
   }
 }

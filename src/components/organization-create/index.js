@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import {
   Button,
+  Grid,
   Row,
   Col,
   Panel,
@@ -105,7 +106,7 @@ export default class OrganizationCreate extends Component {
   /*  revisar https://github.com/alsoscotland/react-super-select  */
   render() {
     return (
-      <div style={styles.container}>
+      <Grid style={styles.container}>
         <h2>New Organization</h2>
         <Row>
 
@@ -190,7 +191,7 @@ export default class OrganizationCreate extends Component {
           </Col>
 
         </Row>
-      </div>
+      </Grid>
     );
   }
 }
