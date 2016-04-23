@@ -2,9 +2,10 @@
 
 import React, { Component } from 'react';
 import { Grid } from 'react-bootstrap';
-import Icon from 'react-fa'
+import Icon from 'react-fa';
+import renderIf from 'render-if';
 
-import { user, auth } from '../../app';
+import { currentUser, auth } from '../../app';
 import NavigationBar from '../navigation-bar';
 
 const STATES = {
@@ -34,7 +35,7 @@ export default class Main extends Component {
 
   auth() {
     return auth().then(() => {
-      console.log('Logged as:', user().name);
+      console.log('Logged as:', currentUser().name);
       this.setState({ state: STATES.AUTHED });
     }).catch(err => {
       console.log('Auth error:', err);
@@ -45,13 +46,20 @@ export default class Main extends Component {
   render() {
     const { route, ...props } = this.props;
     const { title } = route;
+    const user = currentUser();
 
     return (
       <div>
-        <NavigationBar title={title} fixedTop user={user()} />
-        <Grid style={styles.content} {...props}>
-          {this.props.children}
-        </Grid>
+
+        <NavigationBar title={title} fixedTop user={user} />
+
+        {/* Render content only if the user is annon or is authed */}
+        {renderIf(!user || this.state.state === STATES.AUTHED)(() => (
+          <Grid style={styles.content} {...props}>
+            {this.props.children}
+          </Grid>
+        ))}
+
         <footer className="footer">
           <div className="container">
             <p className="text-muted" style={styles.footer}>
@@ -59,6 +67,7 @@ export default class Main extends Component {
             </p>
           </div>
         </footer>
+
       </div>
     );
   }
