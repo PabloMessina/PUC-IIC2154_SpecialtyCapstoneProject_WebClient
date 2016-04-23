@@ -1,11 +1,14 @@
 import React, { Component } from 'react';
-import { Grid, Tabs, Tab, Row, Col, Panel, Image, NavItem, Nav } from 'react-bootstrap';
+import { Grid, Tabs, Tab, Row, Col, Image, Glyphicon } from 'react-bootstrap';
 // import { Button } from 'react-bootstrap';
+
+import CourseTab from './courses';
 
 import { Colors } from '../../styles';
 import app from '../../app';
 
 const organizationService = app.service('/organizations');
+
 
 export default class Organization extends Component {
 
@@ -22,6 +25,9 @@ export default class Organization extends Component {
       organization: null,
       tab: 0,
     };
+    this.navigationTabBar = this.navigationTabBar.bind(this);
+    this.renderTabContent = this.renderTabContent.bind(this);
+    this.fetch = this.fetch.bind(this);
     this.fetch(this.props.params.organizationId);
   }
 
@@ -31,28 +37,27 @@ export default class Organization extends Component {
   }
 
   navigationTabBar() {
-    // TODO: fix highligth color and background color when stacked
-    const titles = ['Courses', 'Atlases', 'Users', 'Settings'];
+    const titles = ['Courses', 'Atlases', 'Members', 'Settings'];
+    const icons = ['education', 'book', 'user', 'cog'];
+
     return (
-      <Tabs style={styles.tabs} activeKey={this.state.tab} onSelect={key => this.setState({ tab: key })}>
+      <Tabs style={styles.tabs} activeKey={this.state.tab} id="tabs" onSelect={key => this.setState({ tab: key })}>
         {titles.map((title, i) => (
-          <Tab key={i} eventKey={i} title={title}>
-            <Grid style={styles.tabContent}>
-              <Col xs={9}>
-                <p>Content</p>
-              </Col>
-              <Col xs={3}>
-                <Panel>
-                  <h5>Looking for help?</h5>
-                  <hr />
-                  <p>Take a look at our showcase or contact us.</p>
-                </Panel>
-              </Col>
-            </Grid>
+          <Tab key={i} eventKey={i} title={<span><Glyphicon glyph={icons[i]} /> {title}</span>}>
+            <div style={styles.tabContent}>
+              {this.renderTabContent(i)}
+            </div>
           </Tab>
         ))}
       </Tabs>
     );
+  }
+
+  renderTabContent(index) {
+    switch (index) {
+      case 0: return <CourseTab organization={this.state.organization} />;
+      default: return null;
+    }
   }
 
   render() {
