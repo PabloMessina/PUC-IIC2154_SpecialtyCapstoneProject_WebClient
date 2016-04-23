@@ -9,7 +9,7 @@ export default class NavigationBar extends Component {
 
   static get defaultProps() {
     return {
-      title: 'App',
+      title: 'Title',
       user: null,
     };
   }

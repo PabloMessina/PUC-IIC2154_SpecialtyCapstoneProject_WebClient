@@ -56,7 +56,7 @@ function requireAnnon(nextState, replace) {
 
 const Routing = (
   <Router history={browserHistory}>
-    <Route path="/" component={Main}>
+    <Route path="/" component={Main} title="App">
       <IndexRoute component={Dashboard} />
 
       <Route path="login" component={Login} onEnter={requireAnnon} />

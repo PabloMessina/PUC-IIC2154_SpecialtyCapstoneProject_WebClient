@@ -14,6 +14,14 @@ const STATES = {
 
 export default class Main extends Component {
 
+  static get propTypes() {
+    return {
+      title: React.PropTypes.string,
+      route: React.PropTypes.any,
+      children: React.PropTypes.object,
+    };
+  }
+
   constructor(props) {
     super(props);
     this.state = {
@@ -34,23 +42,32 @@ export default class Main extends Component {
   }
 
   render() {
+    const { route, ...props } = this.props;
+    const { title } = route;
+
     return (
       <div>
-        <NavigationBar title="App" fixedTop user={user()} />
-        <Grid style={styles.content}>
+        <NavigationBar title={title} fixedTop user={user()} />
+        <Grid style={styles.content} {...props}>
           {this.props.children}
         </Grid>
+        <footer className="footer">
+          <div className="container">
+            <p className="text-muted" style={styles.footer}>
+              From team5.js with love
+            </p>
+          </div>
+        </footer>
       </div>
     );
   }
 }
 
-Main.propTypes = {
-  children: React.PropTypes.object,
-};
-
 const styles = {
   content: {
     paddingTop: 80,
+  },
+  footer: {
+    margin: 12,
   },
 };
