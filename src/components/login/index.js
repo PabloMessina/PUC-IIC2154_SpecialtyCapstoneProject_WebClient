@@ -8,6 +8,13 @@ import { login } from '../../app';
 
 export default class Login extends Component {
 
+  static get propTypes() {
+    return {
+      redirection: React.PropTypes.string,
+      location: React.PropTypes.any,
+    };
+  }
+
   constructor(props) {
     super(props);
     this.state = {
@@ -40,15 +47,21 @@ export default class Login extends Component {
     // Login with credentials
     return login(options)
       // Go to root
-      .then(() => browserHistory.push('/'))
+      .then(() => {
+        const { location } = this.props;
+        if (location.state && location.state.redirection) {
+          return browserHistory.push(location.state.redirection);
+        }
+        return browserHistory.push('/');
+      })
       // Show and error if present
       .catch(err => this.setState({ error: err }));
   }
 
   render() {
     return (
-      <Row className="show-grid">
-        <Col xs={6} xsOffset={3}>
+      <Row>
+        <Col xs={12} xsOffset={0} md={6} mdOffset={3}>
           <Panel>
             <form onSubmit={this.onSubmit}>
               <Input

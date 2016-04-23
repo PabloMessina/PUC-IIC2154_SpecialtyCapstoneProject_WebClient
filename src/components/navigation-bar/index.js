@@ -43,7 +43,7 @@ export default class NavigationBar extends Component {
       );
     }
     return (
-      <Nav pullRight>
+      <Nav pullRight activeKey={2}>
         <NavItem eventKey={1} href="#" onClick={() => browserHistory.push('/login')}>
           Login
         </NavItem>

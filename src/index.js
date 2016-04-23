@@ -6,6 +6,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { Router, Route, IndexRoute, browserHistory } from 'react-router';
 
+import { app, user } from './app';
+
 import Main from './components/main';
 import Dashboard from './components/dashboard';
 import Login from './components/login/';
@@ -31,16 +33,38 @@ import Editor from './components/editor/';
 // Go to: http://localhost:3000/template
 import Template from './utils/template';
 
+function requireAuth(nextState, replace) {
+  const currentUser = user();
+  if (!currentUser) {
+    replace({
+      pathname: '/login',
+      state: { redirection: nextState.location.pathname },
+    });
+  }
+}
+
+function requireAnnon(nextState, replace) {
+  // FIXME: this doesn't work on page reload
+  const currentUser = user();
+  if (currentUser) {
+    replace({
+      pathname: '/',
+      state: { message: 'Already logged in.' },
+    });
+  }
+}
+
 const Routing = (
   <Router history={browserHistory}>
     <Route path="/" component={Main}>
       <IndexRoute component={Dashboard} />
 
-      <Route path="login" component={Login} />
-      <Route path="create-atlas" component={CreateAtlas} />
-      <Route path="signup" component={SignUp} />
+      <Route path="login" component={Login} onEnter={requireAnnon} />
+      <Route path="signup" component={SignUp} onEnter={requireAnnon} />
 
-      <Route path="documents" component={DocumentList} />
+      <Route path="create-atlas" component={CreateAtlas} />
+
+      <Route path="documents" component={DocumentList} onEnter={requireAuth} />
       <Route path="documents/:docId" component={DocumentDescription} />
 
       <Route path="settings" component={Settings} >
