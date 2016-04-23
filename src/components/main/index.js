@@ -75,7 +75,7 @@ export default class Main extends Component {
 
 const styles = {
   content: {
-    paddingTop: 80,
+    paddingTop: 66,
     marginBottom: 100,
   },
   footer: {
