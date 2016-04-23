@@ -65,8 +65,10 @@ export default class Node extends Component {
   render() {
     const { anidation } = this.props;
     const { collapsed } = this.state;
-    const { id, name } = this.state.section;
-    const sections = this.state.tree[id];
+    const section = this.state.section;
+    const { _id, title, content } = section;
+    const sections = this.state.tree[_id];
+    const onSelectSection = () => this.props.onSelectSection(section);
 
     const hasSubtree = sections && sections.length > 0 && !collapsed;
     const substyle = {
@@ -77,8 +79,8 @@ export default class Node extends Component {
       <div style={styles.container}>
 
         <div >
-          <p style={substyle} onPress={() => this.props.onSelectSection(this.state.section)}>
-            {anidation.join('.')}. {name}
+          <p style={substyle} onClick={onSelectSection}>
+            {anidation.join('.')}. {title}
           </p>
           {renderIf(!this.props.static)(() => (
             <p onClick={this.addSection}>
@@ -94,11 +96,12 @@ export default class Node extends Component {
               <Node
                 key={i}
                 static={this.props.static}
-                onSelected={this.props.onSelectSection}
+                onSelectSection={this.props.onSelectSection}
                 section={section}
-                tree={this.state.tree}
+                tree={this.props.tree}
                 anidation={[i + 1]}
               />
+              ))}
             ))}
           </div>
         ))}

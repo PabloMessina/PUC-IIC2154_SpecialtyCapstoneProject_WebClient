@@ -26,12 +26,12 @@ export default class AtlasBook extends Component {
     super(props);
     this.state = {
       tree: {},
-      content: [],
+      section: { content: [] },
     };
 
     this.fetchTree = this.fetchTree.bind(this);
     this.onSelectSection = this.onSelectSection.bind(this);
-    this.onTextChange = this.onTextChange.bind(this);
+    this.onChangeContent = this.onChangeContent.bind(this);
   }
 
   componentDidMount() {
@@ -39,17 +39,27 @@ export default class AtlasBook extends Component {
   }
 
   onSelectSection(section) {
+    // sectionService.update(this.state.section)
     this.setState({
-      content: section.content,
+      section,
     });
   }
 
-  onTextChange(value) {
-    if (!this.props.static) {
-      this.setState({ text: value });
+  onChangeContent(value) {
+    const section = this.state.section;
+    if (!section) {
+      return;
     }
-    console.log(value);
+    section.content = value;
+    this.setState({
+      section,
+    });
   }
+
+  onAddSection() {
+    this.fetchTree();
+  }
+
 
   fetchTree() {
     const query = {
@@ -59,26 +69,20 @@ export default class AtlasBook extends Component {
 
     return versionService.find({ query })
       .then(results => {
-        console.log(results.data[0].id)
-        const query2 = {
-          versionId: results.data[0].id,
-          $sort: { createdAt: 1 },
-        };
         // Get section's tree
         return treeService.get(results.data[0].id)
         .then(tree => {
-          console.log(tree)
           this.setState({
             tree,
-            content: tree.undefined[0].content, // Select first section on start
+            section: tree.undefined[0], // Select first section on start
           });
         });
-
       });
   }
 
 
   render() {
+    const content = this.state.section.content;
     return (
       <div style={styles.container}>
         <AtlasTree
@@ -86,7 +90,10 @@ export default class AtlasBook extends Component {
           tree={this.state.tree}
           onSelectSection={this.onSelectSection}
         />
-        <AtlasSection content={this.state.content} />
+        <AtlasSection
+          content={content}
+          onChangeContent={this.onChangeContent}
+        />
       </div>
     );
   }

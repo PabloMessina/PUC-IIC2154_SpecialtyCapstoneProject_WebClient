@@ -10,31 +10,28 @@ export default class AtlasTree extends Component {
   static get propTypes() {
     return {
       static: React.PropTypes.bool,
-      atlasId: React.PropTypes.string,
+      tree: React.PropTypes.object,
       onSelectSection: React.PropTypes.func,
     };
   }
 
   constructor(props) {
     super(props);
-    this.state = {
-      tree: props.tree,
-    };
-    console.log(props.tree)
   }
 
 
   render() {
+    const tree = this.props.tree;
     return (
       <div style={styles.container}>
-        {renderIf(this.state.tree)(() => (
-          this.state.tree.undefined.map((section, i) => (
+        {renderIf(tree.undefined)(() => (
+          tree.undefined.map((section, i) => (
             <Node
               key={i}
               static={this.props.static}
-              onSelected={this.props.onSelectSection}
+              onSelectSection={this.props.onSelectSection}
               section={section}
-              tree={this.state.tree}
+              tree={tree}
               anidation={[i + 1]}
             />
             ))

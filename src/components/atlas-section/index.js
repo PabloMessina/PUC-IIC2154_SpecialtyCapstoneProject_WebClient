@@ -10,8 +10,9 @@ export default class AtlasSection extends Component {
   static get propTypes() {
     return {
       static: React.PropTypes.bool,
-      section: React.PropTypes.object,
+      content: React.PropTypes.array,
       atlasId: React.PropTypes.number,
+      onChangeContent: React.PropTypes.func,
     };
   }
 
@@ -21,33 +22,23 @@ export default class AtlasSection extends Component {
     };
   }
 
-  fetchSections() {
-    /*return Promise.all(atlas.sections.map(sectionId => sectionService.get(sectionId)))
-      .then(sections => this.setState({ sections }));*/
-  }
-
   constructor(props) {
     super(props);
-
     this.state = {
-      content: {ops: []},
-    }
-    this.fetchSections = this.fetchSections.bind(this);
-    this.onSelected = this.onSelected.bind(this);
-    this.onTextChange = this.onTextChange.bind(this);
+      content: { ops: props.content },
+    };
+    this.onChange = this.onChange.bind(this);
   }
 
-  onSelected(sectionId) {
-    sectionService.get(sectionId).then((section) => {
-      this.state.section = section;
+  shouldComponentUpdate(nextProps) {
+    return JSON.stringify(nextProps.content) !== JSON.stringify(this.state.content.ops);
+  }
+
+  onChange(content) {
+    this.setState({
+      content,
     });
-  }
-
-  onTextChange(value) {
-    if (!this.props.static) {
-      this.setState({ content: value });
-    }
-    console.log(value);
+    this.props.onChangeContent(content.ops);
   }
 
   render() {
@@ -59,7 +50,7 @@ export default class AtlasSection extends Component {
           theme="snow"
           value={this.state.content}
           readOnly={this.props.static}
-          onChange={this.onTextChange}
+          onChange={this.onChange}
         >
 
           <ReactQuill.Toolbar

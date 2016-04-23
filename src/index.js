@@ -62,8 +62,6 @@ const Routing = (
       <Route path="login" component={Login} onEnter={requireAnnon} />
       <Route path="signup" component={SignUp} onEnter={requireAnnon} />
 
-      <Route path="create-atlas" component={CreateAtlas} />
-
       <Route path="documents" component={DocumentList} onEnter={requireAuth} />
       <Route path="documents/:docId" component={DocumentDescription} />
 
