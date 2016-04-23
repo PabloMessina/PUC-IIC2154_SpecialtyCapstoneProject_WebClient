@@ -24,7 +24,6 @@ import Course from './components/course/';
 import CourseNav from './components/course-nav/';
 import CourseCreate from './components/course-create/';
 import OrganizationCreate from './components/organization-create/';
-import AtlasTree from './components/atlas-tree/';
 import AtlasBook from './components/atlas-book/';
 
 // Development help

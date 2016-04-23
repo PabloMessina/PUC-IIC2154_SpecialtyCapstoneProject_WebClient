@@ -17,6 +17,8 @@ export default class Node extends Component {
   static get propTypes() {
     return {
       style: React.PropTypes.any,
+      tree: React.PropTypes.object,
+      onSelectSection: React.PropTypes.func,
       section: React.PropTypes.object,
       level: React.PropTypes.number,
       anidation: React.PropTypes.array,
@@ -36,6 +38,7 @@ export default class Node extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      tree: props.tree,
       collapsed: props.collapsed,
       section: props.section,
     };
@@ -47,6 +50,7 @@ export default class Node extends Component {
   collapse() {
     this.setState({ collapsed: !this.state.collapsed });
   }
+
 
   addSection() {
     const section = this.state.section;
@@ -61,7 +65,8 @@ export default class Node extends Component {
   render() {
     const { anidation } = this.props;
     const { collapsed } = this.state;
-    const { name, sections } = this.state.section;
+    const { id, name } = this.state.section;
+    const sections = this.state.tree[id];
 
     const hasSubtree = sections && sections.length > 0 && !collapsed;
     const substyle = {
@@ -72,7 +77,7 @@ export default class Node extends Component {
       <div style={styles.container}>
 
         <div >
-          <p style={substyle} onPress={this.collapse}>
+          <p style={substyle} onPress={() => this.props.onSelectSection(this.state.section)}>
             {anidation.join('.')}. {name}
           </p>
           {renderIf(!this.props.static)(() => (
@@ -85,11 +90,14 @@ export default class Node extends Component {
 
         {renderIf(hasSubtree)(() => (
           <div style={styles.subtree}>
-            {sections.map((sec, i) => (
+            {sections.map((section, i) => (
               <Node
                 key={i}
-                section={sec}
-                anidation={[...anidation, i + 1]}
+                static={this.props.static}
+                onSelected={this.props.onSelectSection}
+                section={section}
+                tree={this.state.tree}
+                anidation={[i + 1]}
               />
             ))}
           </div>

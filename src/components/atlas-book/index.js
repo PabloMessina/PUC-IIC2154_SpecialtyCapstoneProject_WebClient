@@ -1,19 +1,18 @@
 import React, { Component } from 'react';
-import { Panel } from 'react-bootstrap';
 import AtlasSection from '../atlas-section';
 import AtlasTree from '../atlas-tree';
 import app from '../../app';
 
-const sectionService = app.service('sections');
-const versionService = app.service('versions');
+const sectionService = app.service('/sections');
+const versionService = app.service('/versions');
+const treeService = app.service('/section-tree');
 
 export default class AtlasBook extends Component {
 
   static get propTypes() {
     return {
       static: React.PropTypes.bool,
-      section: React.PropTypes.object,
-      atlasId: React.PropTypes.number,
+      atlasId: React.PropTypes.string,
     };
   }
 
@@ -23,26 +22,25 @@ export default class AtlasBook extends Component {
     };
   }
 
-  fetchSections() {
-    return Promise.all(atlas.sections.map(sectionId => sectionService.get(sectionId)))
-      .then(sections => this.setState({ sections }));
-  }
-
   constructor(props) {
     super(props);
-
     this.state = {
-      atlasId: props.atlasId,
-      sectionId: props.sectionId,
+      tree: {},
+      content: [],
     };
-    this.fetchSections = this.fetchSections.bind(this);
+
+    this.fetchTree = this.fetchTree.bind(this);
     this.onSelectSection = this.onSelectSection.bind(this);
     this.onTextChange = this.onTextChange.bind(this);
   }
 
-  onSelectSection(sectionId) {
-    sectionService.get(sectionId).then((section) => {
-      this.setState({ section });
+  componentDidMount() {
+    this.fetchTree();
+  }
+
+  onSelectSection(section) {
+    this.setState({
+      content: section.content,
     });
   }
 
@@ -53,12 +51,42 @@ export default class AtlasBook extends Component {
     console.log(value);
   }
 
+  fetchTree() {
+    const query = {
+      atlasId: this.props.params.atlasId,
+      version: 'latest',
+    };
+
+    return versionService.find({ query })
+      .then(results => {
+        console.log(results.data[0].id)
+        const query2 = {
+          versionId: results.data[0].id,
+          $sort: { createdAt: 1 },
+        };
+        // Get section's tree
+        return treeService.get(results.data[0].id)
+        .then(tree => {
+          console.log(tree)
+          this.setState({
+            tree,
+            content: tree.undefined[0].content, // Select first section on start
+          });
+        });
+
+      });
+  }
+
+
   render() {
     return (
       <div style={styles.container}>
-        <AtlasTree static onSelected={this.onSelected} />
-
-        <AtlasSection sectionId={this.state.sectionId} />
+        <AtlasTree
+          static
+          tree={this.state.tree}
+          onSelectSection={this.onSelectSection}
+        />
+        <AtlasSection content={this.state.content} />
       </div>
     );
   }

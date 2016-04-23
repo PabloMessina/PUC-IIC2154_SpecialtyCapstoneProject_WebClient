@@ -2,33 +2,43 @@ import React, { Component } from 'react';
 // import Button from 'react-native-button';
 // import renderIf from 'render-if';
 import Node from './node.js';
+import renderIf from 'render-if';
 
-/*
-  Component life-cycle:
-  https://facebook.github.io/react/docs/component-specs.html
- */
 
 export default class AtlasTree extends Component {
 
-  static get defaultProps() {
+  static get propTypes() {
     return {
-      sections: [],
+      static: React.PropTypes.bool,
+      atlasId: React.PropTypes.string,
+      onSelectSection: React.PropTypes.func,
     };
   }
 
   constructor(props) {
     super(props);
     this.state = {
-      sections: props.sections,
+      tree: props.tree,
     };
+    console.log(props.tree)
   }
+
 
   render() {
     return (
       <div style={styles.container}>
-        {this.state.sections.map((section, i) => (
-          <Node key={i} static={this.props.static} onSelected={this.props.onSelected} section={section} anidation={[i + 1]} />
-          ))}
+        {renderIf(this.state.tree)(() => (
+          this.state.tree.undefined.map((section, i) => (
+            <Node
+              key={i}
+              static={this.props.static}
+              onSelected={this.props.onSelectSection}
+              section={section}
+              tree={this.state.tree}
+              anidation={[i + 1]}
+            />
+            ))
+        ))}
       </div>
     );
   }
@@ -39,6 +49,7 @@ const styles = {
   container: {
     paddingTop: 64,
     backgroundColor: 'white',
+
     // flexDirection: 'column', // row, column
     // flexWrap: 'nowrap' // wrap, nowrap
     // alignItems: 'center', // flex-start, flex-end, center, stretch
