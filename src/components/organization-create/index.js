@@ -1,8 +1,18 @@
 import React, { Component } from 'react';
-import { Button, Col, Input, Combobox, MenuItem, DropdownButton, ButtonToolbar} from 'react-bootstrap';
-import renderIf from 'render-if';
+import {
+  Button,
+  Row,
+  Col,
+  Panel,
+  Input,
+  FormGroup,
+  ControlLabel,
+  FormControl,
+  HelpBlock,
+} from 'react-bootstrap';
+// import renderIf from 'render-if';
 
-import app, { user } from '../../app';
+import app from '../../app';
 
 const organizationService = app.service('/organizations');
 
@@ -16,6 +26,7 @@ const organizationService = app.service('/organizations');
  * https://react-bootstrap.github.io/components.html
  */
 
+const MIN_LENGTH = 5;
 const SUBSCRIPTION = [{
   name: 'Basic Plan',
   value: 50,
@@ -40,6 +51,7 @@ export default class OrganizationCreate extends Component {
   static get defaultProps() {
     return {
       name: '',
+      nameValidation: null,
       address: '',
       subscription: 0, // Basic
       logo: '',
@@ -53,13 +65,19 @@ export default class OrganizationCreate extends Component {
       address: this.props.address,
       subscription: this.props.subscription,
       logo: this.props.logo,
+      didSubmit: false,
+      submiting: false,
     };
 
     this.onSubmit = this.onSubmit.bind(this);
+    this.setName = this.setName.bind(this);
+    this.validateName = this.validateName.bind(this);
   }
 
   onSubmit(e) {
     e.preventDefault();
+    this.setState({ submiting: true, didSubmit: true });
+
     const options = {
       name: this.state.name,
       description: this.state.description,
@@ -73,44 +91,100 @@ export default class OrganizationCreate extends Component {
     });
   }
 
+  setName(value) {
+    const name = value || '';
+    this.setState({ name, nameValidation: this.validateName(name) });
+  }
+
+  validateName(name) {
+    if (name && name.length > MIN_LENGTH) return 'success';
+    else if (this.state.didSubmit) return null;
+    return null;
+  }
+
   /*  revisar https://github.com/alsoscotland/react-super-select  */
   render() {
     return (
       <div style={styles.container}>
-        <form onSubmit={this.onSubmit}>
+        <h2>New Organization</h2>
+        <Row>
 
-          <Input
-            type="text"
-            value={this.state.name}
-            placeholder="University of Neverland"
-            label="Enter organization name"
-            onChange={e => this.setState({ name: e.target.value })}
-          />
+          <Col xs={12} md={8}>
+            <p>An organization is a community of students and teachers from a common institution.</p>
+            <ul>
+              <li>Create courses and keep a store of questions.</li>
+              <li>Manage students and teachers.</li>
+              <li>Create real-time quizzes and grade statistical analytics.</li>
+            </ul>
+            <p>Any participant can be student or teacher for different courses.</p>
 
-          <Input
-            type="text"
-            value={this.state.address}
-            placeholder="Royal Avenue 53, Miami"
-            label="Billing address"
-            onChange={e => this.setState({ address: e.target.value })}
-          />
+            <hr />
 
-          <Input
-            type="select"
-            label="Select Suscription Plan"
-            onChange={e => this.setState({ subscription: e.target.value })}
-          >
-            {SUBSCRIPTION.map(sub => <option value={sub.value}>{sub.name}</option>)}
-          </Input>
+            <form onSubmit={this.onSubmit}>
 
-          <Button
-            bsStyle="primary"
-            bsSize="large"
-            type="submit"
-          >
-            Create Organization
-          </Button>
-        </form>
+              <FormGroup controlId="name" validationState={this.state.nameValidation}>
+                <ControlLabel>Organization name</ControlLabel>
+                <FormControl
+                  type="text"
+                  value={this.state.name}
+                  placeholder="University of Neverland"
+                  label="Organization name"
+                  onChange={e => this.setName(e.target.value)}
+                />
+                <FormControl.Feedback />
+                <HelpBlock>Must be unique and not too short.</HelpBlock>
+              </FormGroup>
+
+              <FormGroup controlId="description">
+                <ControlLabel>Description</ControlLabel>
+                <FormControl
+                  componentClass="textarea"
+                  value={this.state.description}
+                  placeholder="Organization description..."
+                  onChange={e => this.setState({ description: e.target.value })}
+                />
+              </FormGroup>
+
+              <FormGroup controlId="address">
+                <ControlLabel>Address</ControlLabel>
+                <FormControl
+                  type="text"
+                  value={this.state.address}
+                  placeholder="Royal Avenue 53, Miami"
+                  label="Address"
+                  onChange={e => this.setState({ address: e.target.value })}
+                />
+                <HelpBlock>Optional</HelpBlock>
+              </FormGroup>
+
+              <FormGroup controlId="subscription">
+                <ControlLabel>Suscription Plan</ControlLabel>
+                <FormControl
+                  componentClass="select"
+                  placeholder="Select subscription plan"
+                  onChange={e => this.setState({ subscription: e.target.value })}
+                >
+                  {SUBSCRIPTION.map(sub => <option value={sub.value}>{sub.name}</option>)}
+                </FormControl>
+              </FormGroup>
+
+              <br />
+
+              <Button bsStyle="primary" type="submit">
+                Create Organization
+              </Button>
+            </form>
+          </Col>
+
+          <Col md={4}>
+            <Panel>
+              <h5>Looking for help?</h5>
+              <hr />
+              <p>Take a look at our showcase or contact us.</p>
+            </Panel>
+          </Col>
+
+        </Row>
       </div>
     );
   }
