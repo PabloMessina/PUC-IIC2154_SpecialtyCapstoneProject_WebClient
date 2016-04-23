@@ -4,13 +4,14 @@ import {
   Row,
   Col,
   Panel,
-  Input,
   FormGroup,
   ControlLabel,
   FormControl,
   HelpBlock,
+  Alert,
 } from 'react-bootstrap';
-// import renderIf from 'render-if';
+import { browserHistory } from 'react-router';
+import renderIf from 'render-if';
 
 import app from '../../app';
 
@@ -67,6 +68,7 @@ export default class OrganizationCreate extends Component {
       logo: this.props.logo,
       didSubmit: false,
       submiting: false,
+      error: null,
     };
 
     this.onSubmit = this.onSubmit.bind(this);
@@ -84,11 +86,9 @@ export default class OrganizationCreate extends Component {
       subscription: Number(this.state.subscription),
     };
 
-    return organizationService.create(options).then(organization => {
-      console.log(organization);
-    }).catch(err => {
-      console.log(err);
-    });
+    return organizationService.create(options)
+      .then(organization => browserHistory.push(`/organizations/show/${organization.id}`))
+      .catch(err => this.setState({ submiting: false, error: err }));
   }
 
   setName(value) {
@@ -119,6 +119,13 @@ export default class OrganizationCreate extends Component {
             <p>Any participant can be student or teacher for different courses.</p>
 
             <hr />
+
+            {renderIf(this.state.error)(() =>
+              <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
+                <h4>Oh snap! You got an error!</h4>
+                <p>{this.state.error.message}</p>
+              </Alert>
+            )}
 
             <form onSubmit={this.onSubmit}>
 
@@ -170,7 +177,7 @@ export default class OrganizationCreate extends Component {
 
               <br />
 
-              <Button bsStyle="primary" type="submit">
+              <Button bsStyle="primary" type="submit" disabled={this.state.submiting}>
                 Create Organization
               </Button>
             </form>
