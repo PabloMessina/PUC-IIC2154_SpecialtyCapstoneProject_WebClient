@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Grid, Row, Col } from 'react-bootstrap';
-
+import Questions from './questions';
 
 export default class EvaluationCreate extends Component {
 
@@ -16,7 +16,7 @@ export default class EvaluationCreate extends Component {
       <Grid style={styles.container}>
         <Row>
           <Col xs={12}>
-            {this.props.children}
+            <Questions />
           </Col>
         </Row>
       </Grid>
