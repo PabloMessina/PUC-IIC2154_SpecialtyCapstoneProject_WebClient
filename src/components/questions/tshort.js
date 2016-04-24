@@ -69,12 +69,13 @@ export default class TShort extends Component {
   }
 
   addItem(e) {
+    debugger;
     e.preventDefault();
     const answers = this.state.answers;
-    const last = answers[answers.length - 1];
-    if (last && last.length > 0) {
+    //const last = answers[answers.length - 1];
+    //if (last && last.length > 0) {
       this.setState({ answers: [...answers, ''] });
-    }
+    //}
   }
 
   removeItem(e, index) {

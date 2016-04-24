@@ -26,6 +26,7 @@ export default class questionContainer extends Component {
   }
 
   constructor(props) {
+    debugger;
     super(props);
     this.state = {
       title: props.title,

@@ -11,6 +11,7 @@ import Dashboard from './components/dashboard';
 import Login from './components/login/';
 import Join from './components/join/';
 import Questions from './components/questions/';
+import Evaluations from './components/evaluations/';
 
 // Development help
 // Go to: http://localhost:3000/template
@@ -26,6 +27,7 @@ const Routing = (
 
       <Route path="template" component={Template} />
       <Route path="questions" component={Questions} />
+      <Route path="evaluations" component={Evaluations} />
     </Route>
   </Router>
 );
