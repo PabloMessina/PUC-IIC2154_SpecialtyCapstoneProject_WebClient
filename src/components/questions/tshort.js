@@ -190,7 +190,7 @@ export default class TShort extends Component {
         <p>{this.state.statement}</p>
         <p style={styles.instruction}>Choices</p>
         <ul>
-          {this.state.answers.map((answer, index) => <li key={index}>{answer}</li>)}
+          {this.state.answers.map((answer, index) => <li key={index} style={styles.input}>{answer}</li>)}
         </ul>
       </div>
     );
@@ -239,7 +239,6 @@ const styles = {
   },
   input: {
     alignSelf: 'center',
-
   },
   textArea: {
     alignSelf: 'center',
@@ -252,12 +251,6 @@ const styles = {
   },
   button: {
     textDecoration: 'none',
-  },
-  add: {
-
-  },
-  remove: {
-
   },
   instruction: {
     fontSize: 14,

@@ -26,7 +26,9 @@ export default class Questions extends Component {
       }, {
         _id: 2,
         _type: 'correlation',
-        question: { text: ' Phasellus nec tortor vel dui ultrices facilisis. Vestibulum nec turpis vitae est interdum porttitor sed nec enim. Curabitur vel viverra mi, tempor aliquet nisl.' },
+        question: { text: ' Phasellus nec tortor vel dui ultrices facilisis.' +
+          'Vestibulum nec turpis vitae est interdum porttitor sed nec enim.' +
+          'Curabitur vel viverra mi, tempor aliquet nisl.' },
         tags: ['Tag 1'],
         fields: {
           keys: [{ text: 'Option1' }, { text: 'Option2' }],
@@ -36,7 +38,9 @@ export default class Questions extends Component {
       }, {
         _id: 3,
         _type: 'tshort',
-        question: { text: 'Aliquam tempor risus dui, non sodales velit tempor quis. Quisque eleifend diam purus, eu porttitor mauris tempor vel. Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
+        question: { text: 'Aliquam tempor risus dui, non sodales velit tempor quis.' +
+          'Quisque eleifend diam purus, eu porttitor mauris tempor vel' +
+          'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
         tags: ['Tag 2', 'Tag 3', 'Tag 4'],
         fields: {
           answers: ['Answ 1', 'Answ 2', 'Answ 3'],
@@ -44,7 +48,8 @@ export default class Questions extends Component {
       }, {
         _id: 4,
         _type: 'tshort',
-        question: { text: 'Quisque eleifend diam purus, eu porttitor mauris tempor vel. Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
+        question: { text: 'Quisque eleifend diam purus, eu porttitor mauris tempor vel.' +
+        'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
         tags: ['Tag 2', 'Tag 3', 'Tag 4'],
         fields: {
           answers: ['Answ 1', 'Answ 2'],
@@ -52,7 +57,8 @@ export default class Questions extends Component {
       }, {
         _id: 5,
         _type: 'trueFalse',
-        question: { text: 'Quisque eleifend diam purus, eu porttitor mauris tempor vel. Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
+        question: { text: 'Quisque eleifend diam purus, eu porttitor mauris tempor vel.' +
+        'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
         tags: ['Tag 1'],
         fields: {
           answer: 1,

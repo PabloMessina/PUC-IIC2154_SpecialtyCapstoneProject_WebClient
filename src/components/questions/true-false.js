@@ -41,6 +41,9 @@ export default class TrueFalse extends Component {
       open: props.open,
     };
     this.onClick = this.onClick.bind(this);
+    this.renderEditor = this.renderEditor.bind(this);
+    this.renderResponder = this.renderResponder.bind(this);
+    this.renderReader = this.renderReader.bind(this);
   }
 
   onClick(value) {
