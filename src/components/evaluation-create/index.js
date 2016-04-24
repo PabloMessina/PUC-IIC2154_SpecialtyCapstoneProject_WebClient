@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Grid, Row, Col, ButtonToolbar, ButtonGroup, Button } from 'react-bootstrap';
+import { Row, Col, ButtonGroup, Button } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 
 
