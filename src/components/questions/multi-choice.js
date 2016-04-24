@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
-import { Panel, Input, ButtonInput } from 'react-bootstrap';
-import Title from './title.js';
+import { Input, ButtonInput } from 'react-bootstrap';
 import renderIf from 'render-if';
 
 import { Colors } from '../../styles';
@@ -38,7 +37,6 @@ export default class MultiChoice extends Component {
   }
 
   constructor(props) {
-    debugger;
     super(props);
     const answers = Array(this.props.question.fields.choices.length).fill(false);
     if (props.question.fields.answers.length) {
@@ -77,7 +75,6 @@ export default class MultiChoice extends Component {
   }
 
   addItem(e) {
-    debugger;
     e.preventDefault();
     const answers = this.state.answers;
     const choices = this.state.choices;
@@ -88,7 +85,6 @@ export default class MultiChoice extends Component {
   }
 
   removeItem(e, index) {
-    debugger;
     e.preventDefault();
     const answers = [...this.state.answers];
     const choices = [...this.state.choices];

@@ -1,5 +1,11 @@
 import React, { Component } from 'react';
-import { Input, ButtonInput } from 'react-bootstrap';
+import {
+  Input,
+  Button,
+  FormControl,
+  ControlLabel,
+  FormGroup,
+} from 'react-bootstrap';
 import renderIf from 'render-if';
 
 import { Colors } from '../../styles';
@@ -19,6 +25,7 @@ export default class TShort extends Component {
       permission: React.PropTypes.string,
       collapsible: React.PropTypes.bool,
       open: React.PropTypes.bool,
+      validateAnswers: React.PropTypes.any,
     };
   }
 
@@ -27,6 +34,7 @@ export default class TShort extends Component {
       _id: 0,
       question: { question: { text: '' }, fields: { answers: [] } },
       answers: [''],
+      validateAnswers: [''],
       responderAnswer: '',
       statement: '',
       permission: 'reader',
@@ -44,6 +52,9 @@ export default class TShort extends Component {
       answers: props.question.fields.answers.length
         ? props.question.fields.answers
         : props.answers,
+      validateAnswers: props.question.fields.answers.length
+        ? Array(props.question.fields.answers.length).fill('')
+        : props.validateAnswers,
       responderAnswer: props.responderAnswer,
       permission: props.permission,
       collapsible: props.collapsible,
@@ -61,80 +72,102 @@ export default class TShort extends Component {
       this.setState({ statement: e.target.value });
     } else if (option === 'option') {
       const answers = [...this.state.answers];
+      const validateAnswers = [...this.state.validateAnswers];
       answers[index] = e.target.value;
-      this.setState({ answers });
+      validateAnswers[index] = answers[index].length > 0 ? '  ' : 'error';
+      this.setState({ answers, validateAnswers });
     } else if (option === 'responder') {
       this.setState({ responderAnswer: e.target.value });
     }
   }
 
   addItem(e) {
-    debugger;
     e.preventDefault();
     const answers = this.state.answers;
-    //const last = answers[answers.length - 1];
-    //if (last && last.length > 0) {
-      this.setState({ answers: [...answers, ''] });
-    //}
+    const validateAnswers = this.state.validateAnswers;
+    // const last = answers[answers.length - 1];
+    // if (last && last.length > 0) {
+    this.setState({
+      answers: [...answers, ''],
+      validateAnswers: [...validateAnswers, ''],
+    });
+    // }
   }
 
   removeItem(e, index) {
     e.preventDefault();
     const answers = [...this.state.answers];
+    const validateAnswers = [...this.state.validateAnswers];
     if (answers.length > 1) {
       answers.splice(index, 1);
+      validateAnswers.splice(index, 1);
     }
-    this.setState({ answers });
+    this.setState({ answers, validateAnswers });
   }
 
   renderEditor() {
     return (
       <form style={styles.form}>
-      <p>Statement</p>
-        <Input
-          style={styles.textArea}
-          type="textArea"
-          placeholder="Add a statement"
-          value={this.state.statement}
-          onChange={e => this.onChange(e, 'statement')}
-        />
-        <p style={styles.instruction}>Choices</p>
-        {this.state.answers.map((answer, i, arr) => (
-          <div key={i} style={styles.row}>
-            <Input
-              style={styles.input}
-              type="text"
-              placeholder="Ingrese su respuesta"
-              value={answer}
-              autoFocus={arr.length - 1 === i}
-              onChange={e => this.onChange(e, 'option', i)}
-            />
-            {renderIf(i > 0)(() => (
-              <ButtonInput
-                style={[styles.button, styles.remove]}
-                bsStyle="link"
-                bsSize="large"
-                type="button"
-                onClick={e => this.removeItem(e, i)}
-              >
-                -
-              </ButtonInput>
-            ))}
-          </div>
-        ))}
-        <ButtonInput
+        <FormGroup>
+          <ControlLabel>Statement</ControlLabel>
+          <FormControl
+            style={styles.textArea}
+            componentClass="textarea"
+            placeholder="Add a statement"
+            value={this.state.statement}
+            onChange={e => this.onChange(e, 'statement')}
+          />
+        </FormGroup>
+        <FormGroup>
+        {(() => {
+          if (this.state.validateAnswers.filter((item) =>
+          item === 'error').length > 0) {
+            return (
+              <ControlLabel style={styles.instruction}>
+                Choices must not be empty
+              </ControlLabel>
+            );
+          }
+          return (<ControlLabel style={styles.instruction}>Choices </ControlLabel>);
+        })()}
+          {this.state.answers.map((answer, i, arr) => (
+            <FormGroup key={i} style={styles.row} validationState={this.state.validateAnswers[i]}>
+              <FormControl
+                style={styles.input}
+                type="text"
+                placeholder="Ingrese su respuesta"
+                value={answer}
+                autoFocus={arr.length - 1 === i}
+                onChange={e => this.onChange(e, 'option', i)}
+              />
+              {renderIf(i > 0)(() => (
+                <Button
+                  style={[styles.button, styles.remove]}
+                  bsStyle="link"
+                  bsSize="large"
+                  type="button"
+                  onClick={e => this.removeItem(e, i)}
+                >
+                  -
+                </Button>
+              ))}
+            </FormGroup>
+          ))}
+        </FormGroup>
+        <Button
           style={[styles.button, styles.add]}
           bsStyle="link"
           type="button"
           value="Agregar respuesta"
           onClick={this.addItem}
-        />
+        >
+          Agregar respuesta
+        </Button>
       </form>
     );
   }
 
   renderResponder() {
-    debugger;
     return (
       <form style={styles.form}>
         <p>{this.state.statement}</p>

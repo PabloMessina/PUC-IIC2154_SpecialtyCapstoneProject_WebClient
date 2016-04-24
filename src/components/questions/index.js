@@ -76,7 +76,6 @@ export default class Questions extends Component {
   }
 
   questionFactory(_type, options) {
-    debugger;
     switch (_type) {
       case 'trueFalse': return <TrueFalse {...options} />;
       case 'multiChoice': return <MultiChoice {...options} />;

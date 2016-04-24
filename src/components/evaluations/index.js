@@ -2,8 +2,6 @@ import React, { Component } from 'react';
 import {
   Button,
   ButtonToolbar,
-  DropdownButton,
-  MenuItem,
 } from 'react-bootstrap';
 
 import { Colors } from '../../styles';

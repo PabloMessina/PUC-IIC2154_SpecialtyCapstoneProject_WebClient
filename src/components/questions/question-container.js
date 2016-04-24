@@ -26,7 +26,6 @@ export default class questionContainer extends Component {
   }
 
   constructor(props) {
-    debugger;
     super(props);
     this.state = {
       title: props.title,
@@ -47,7 +46,6 @@ export default class questionContainer extends Component {
   }
 
   render() {
-    debugger;
     return (
       <Panel
         style={styles.container}

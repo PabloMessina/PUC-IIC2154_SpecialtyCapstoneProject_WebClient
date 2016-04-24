@@ -72,7 +72,6 @@ export default class NewQuestion extends Component {
   }
 
   questionFactory(_type, options) {
-    debugger;
     switch (_type) {
       case 'trueFalse': return <TrueFalse {...options} />;
       case 'multiChoice': return <MultiChoice {...options} />;
@@ -83,7 +82,6 @@ export default class NewQuestion extends Component {
   }
 
   selectTag(e) {
-    debugger;
     const tag = e.target.firstChild.data;
     const index = this.state.tags.findIndex((elem) => elem === tag);
     let tags = this.state.tags;
@@ -117,7 +115,6 @@ export default class NewQuestion extends Component {
   }
 
   render() {
-    debugger;
     return (
       <div style={styles.container}>
         <ButtonToolbar style={styles.buttonToolbar}>
