@@ -5,8 +5,11 @@ import React, { Component } from 'react';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
 
-import { currentUser, auth } from '../../app';
+import app, { currentUser, auth } from '../../app';
 import NavigationBar from '../navigation-bar';
+
+const organizationService = app.service('/organizations');
+const membershipService = app.service('/memberships');
 
 const STATES = {
   LOADING: 'LOADING',
@@ -30,7 +33,7 @@ export default class Main extends Component {
       state: STATES.LOADING,
       error: null,
     };
-    this.auth();
+    this.auth().then(() => this.fetchOrganizations());
   }
 
   auth() {
@@ -43,18 +46,35 @@ export default class Main extends Component {
     });
   }
 
+  fetchOrganizations() {
+    let query = {
+      userId: currentUser().id,
+    };
+    return membershipService.find({ query })
+      .then(result => result.data)
+      .then(memberships => {
+        query = {
+          id: { $in: memberships.map(membership => membership.organizationId) },
+        };
+        return organizationService.find({ query });
+      })
+      .then(result => result.data)
+      .then(organizations => this.setState({ organizations }));
+  }
+
   render() {
     const { route, ...props } = this.props;
     const { title } = route;
+    const { state, organizations } = this.state;
     const user = currentUser();
 
     return (
       <div>
 
-        <NavigationBar title={title} fixedTop user={user} />
+        <NavigationBar title={title} fixedTop user={user} organizations={organizations} />
 
         {/* Render content only if the user is annon or is authed */}
-        {renderIf(this.state.state === STATES.ANNON || this.state.state === STATES.AUTHED)(() => (
+        {renderIf(state === STATES.ANNON || state === STATES.AUTHED)(() => (
           <div style={styles.content} {...props}>
             {this.props.children}
           </div>
@@ -75,7 +95,7 @@ export default class Main extends Component {
 
 const styles = {
   content: {
-    paddingTop: 80,
+    paddingTop: 66,
     marginBottom: 100,
   },
   footer: {

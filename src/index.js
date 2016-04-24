@@ -24,7 +24,6 @@ import DocumentDescription from './components/document-description';
 // import Organizations from './components/organizations';
 import Organization from './components/organization';
 import Course from './components/course/';
-import CourseNav from './components/course-nav/';
 import CourseCreate from './components/course-create/';
 import OrganizationCreate from './components/organization-create/';
 import Tree from './components/hierarchy-navigation/';
@@ -77,12 +76,12 @@ const Routing = (
       </Route>
 
       <Route path="organizations/create" component={OrganizationCreate} />
-      <Route path="organizations/show/:organizationId" component={Organization}>
-        <Route path=":courseId" component={Course} />
-      </Route>
+      <Route path="organizations/show/:organizationId" component={Organization} />
+      <Route path="organizations/show/:organizationId/courses/create" component={CourseCreate} />
 
-      <Route path="/course_create" component={CourseCreate} />
-      <Route path="course_general" component={CourseNav} />
+      <Route path="courses/show/:courseId" component={Course}>
+        {/* Sub routes */}
+      </Route>
 
       <Route path="editor" component={Editor} />
       <Route path="tree" component={Tree} />

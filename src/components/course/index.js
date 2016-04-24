@@ -1,52 +1,53 @@
 import React, { Component } from 'react';
-import { Grid, Col, ListGroup, ListGroupItem } from 'react-bootstrap';
+import { Grid, Col, Row, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 
+/**
+ * Component life-cycle:
+ * https://facebook.github.io/react/docs/component-specs.html
+ */
+
+/**
+ * React + Bootstrap components:
+ * https://react-bootstrap.github.io/components.html
+ */
 
 export default class Course extends Component {
 
-  static get defaultProps() {
-    return {
-      courses: [
+  constructor(props) {
+    super(props);
+    this.state = {
+      elements: [
         {
-          courseName: 'Anatomia',
-          description: 'Curso para alumnos de Ciencias de la Salud para que aprendan del cuerpo humano',
-          imageSource: 'http://www.totton.ac.uk/media/183369/HUMANITIES-ICON-2_Square%20Crop.jpg',
-        },
-        {
-          courseName: 'Salud Publica',
-          description: 'Curso para alumnos de Ciencias de la Salud para que aprendan de Salud Pública',
-          imageSource: 'http://www.totton.ac.uk/media/183369/HUMANITIES-ICON-2_Square%20Crop.jpg',
-        },
-        {
-          courseName: 'Patologías',
-          description: 'Curso para alumnos de Ciencias de la Salud para que aprendan de Patologías',
-          imageSource: 'http://www.totton.ac.uk/media/183369/HUMANITIES-ICON-2_Square%20Crop.jpg',
+          path: 'Evaluations',
+        }, {
+          path: 'Students',
+        }, {
+          path: 'Analytics',
         },
       ],
     };
   }
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      courses: props.courses,
-    };
-  }
-
   render() {
     return (
-      <div className="container-fluid">
-        {this.state.courses.map(course => (
-          <div className="jumbotron jumbotron-fluid col-xs-12">
-            <img className="col-xs-3 img-circle" src={course.imageSource} alt="no disp" />
-            <div className="container col-xs-8">
-              <h3 className="display-1">{course.courseName}</h3>
-              <p className="lead">{course.description}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      <Grid style={styles.container}>
+        <h1>{this.props.params.courseId}</h1>
+        <Row>
+          <Col xs={12} sm={6} md={3}>
+            <ListGroup>
+              {this.state.elements.map((ele, i) => (
+                <ListGroupItem key={i} onClick={() => browserHistory.push(`/course_general/${ele.path}`)}>
+                  {ele.path}
+                </ListGroupItem>
+              ))}
+            </ListGroup>
+          </Col>
+          <Col xs={12} sm={6} md={9}>
+           {this.props.children}
+          </Col>
+        </Row>
+      </Grid>
     );
   }
 }
@@ -55,7 +56,9 @@ export default class Course extends Component {
   See: https://facebook.github.io/react/docs/reusable-components.html#prop-validation
  */
 Course.propTypes = {
-  courses: React.PropTypes.array,
+  children: React.PropTypes.any,
+  // React Router
+  params: React.PropTypes.object,
 };
 
 /*
