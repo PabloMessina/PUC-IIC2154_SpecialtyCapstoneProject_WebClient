@@ -29,6 +29,13 @@ import OrganizationCreate from './components/organization-create/';
 import Tree from './components/hierarchy-navigation/';
 import Editor from './components/editor/';
 
+import EvaluationCreate from './components/evaluation-create';
+import EvaluationCreateDescripction from './components/evaluation-create/description';
+import EvaluationCreateQuestions from './components/evaluation-create/questions';
+import EvaluationCreateStudents from './components/evaluation-create/students';
+import EvaluationCreateResults from './components/evaluation-create/results';
+import EvaluationCreateRecorrection from './components/evaluation-create/recorrection';
+
 // Development help
 // Go to: http://localhost:3000/template
 import Template from './utils/template';
@@ -80,7 +87,13 @@ const Routing = (
       <Route path="organizations/show/:organizationId/courses/create" component={CourseCreate} />
 
       <Route path="courses/show/:courseId" component={Course}>
-        {/* Sub routes */}
+        <Route path="evaluations/create" component={EvaluationCreate}>
+          <Route path="description" component={EvaluationCreateDescripction} />
+          <Route path="questions" component={EvaluationCreateQuestions} />
+          <Route path="students" component={EvaluationCreateStudents} />
+          <Route path="results" component={EvaluationCreateResults} />
+          <Route path="recorrection" component={EvaluationCreateRecorrection} />
+        </Route>
       </Route>
 
       <Route path="editor" component={Editor} />
