@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Button } from 'react-bootstrap';
+import { Grid, Row, Col, Button } from 'react-bootstrap';
 import renderIf from 'render-if';
 
 /**
@@ -39,25 +39,29 @@ export default class TemplateComponent extends Component {
 
   render() {
     return (
-      <div style={styles.container}>
+      <Grid style={styles.container}>
 
         <h1>{this.props.message}</h1>
 
-        {/* Map array to text components */}
-        <ul>
-          {this.state.array.map((item, i) => (
-            <li key={i}>{item}</li>
-          ))}
-        </ul>
+        <Row>
+          <Col xs={12}>
+            {/* Map array to text components */}
+            <ul>
+              {this.state.array.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
 
-        <Button bsStyle="primary" onClick={this.handleClick}>Press me</Button>
+            <Button bsStyle="primary" onClick={this.handleClick}>Press me</Button>
 
-        {/* Conditional rendenring (https://github.com/mrpatiwi/render-if) */}
-        {renderIf(this.state.something)(() => (
-          <h4>This is rendered if <code>something</code> is true</h4>
-        ))}
+            {/* Conditional rendenring (https://github.com/mrpatiwi/render-if) */}
+            {renderIf(this.state.something)(() => (
+              <h4>This is rendered if <code>something</code> is true</h4>
+            ))}
+          </Col>
+        </Row>
 
-      </div>
+      </Grid>
     );
   }
 }
