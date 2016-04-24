@@ -2,13 +2,38 @@ import React, { Component } from 'react';
 import {
   Row,
   Col,
-  Panel,
+  Radio,
+  Checkbox,
   FormGroup,
   ControlLabel,
   FormControl,
-  Alert,
+  HelpBlock,
 } from 'react-bootstrap';
 
+
+const ATTENDANCES = [
+  {
+    value: 'none',
+    name: 'Not required',
+    description: 'Do not take assistance.',
+  },
+  {
+    value: 'optional',
+    name: 'Optional',
+    description: 'Can take attendance, but it has no effect.',
+  },
+  {
+    value: 'obligatory',
+    name: 'Obligatory',
+    description: 'Ausent students will fail this evaluation.',
+  },
+];
+
+const PRIVACY = {
+  PRIVATE: 'This is a secret evaluation.',
+  PUBLIC: `This evaluation will be scheduled as soon as posible to all the participan students,
+but they will not be able to see the questions inside it.`,
+};
 
 export default class MinTemplate extends Component {
 
@@ -17,6 +42,8 @@ export default class MinTemplate extends Component {
     this.state = {
       title: '',
       description: '',
+      attendance: 0,
+      public: true,
     };
   }
 
@@ -49,13 +76,26 @@ export default class MinTemplate extends Component {
                 />
               </FormGroup>
 
-              <FormGroup controlId="attendance">
-                <ControlLabel>Attendance</ControlLabel>
-                <FormControl componentClass="select" placeholder="select">
-                  <option value="none">Not required</option>
-                  <option value="optional">Optional attendance</option>
-                  <option value="obligatory">Obligatory attendance</option>
-                </FormControl>
+              <FormGroup>
+                <ControlLabel>Attendance restriction</ControlLabel>
+                {ATTENDANCES.map((sub, i) => (
+                  <Radio
+                    key={i}
+                    checked={this.state.attendance === i}
+                    onChange={() => this.setState({ attendance: i })}
+                  >
+                    {sub.name}
+                  </Radio>)
+                )}
+                <HelpBlock>{ATTENDANCES[this.state.attendance].description}</HelpBlock>
+              </FormGroup>
+
+              <FormGroup>
+                <ControlLabel>Visibility</ControlLabel>
+                <Checkbox checked={this.state.public} onChange={() => this.setState({ public: !this.state.public })}>
+                  Public evaluation
+                </Checkbox>
+                <HelpBlock>{this.state.public ? PRIVACY.PUBLIC : PRIVACY.PRIVATE}</HelpBlock>
               </FormGroup>
 
             </form>
