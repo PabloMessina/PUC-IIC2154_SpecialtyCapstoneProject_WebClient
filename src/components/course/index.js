@@ -103,13 +103,13 @@ export default class Course extends Component {
         <hr />
 
         <Row>
-          <Col xs={12} sm={6} md={3}>
+          <Col xs={12} sm={3} md={3}>
             <ListGroup>
               {this.state.elements.map((element, i) => this.renderListElement(element, i))}
             </ListGroup>
           </Col>
 
-          <Col xs={12} sm={6} md={9}>
+          <Col xs={12} sm={9} md={9}>
            {this.props.children}
           </Col>
         </Row>

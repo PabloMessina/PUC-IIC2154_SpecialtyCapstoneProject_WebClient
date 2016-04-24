@@ -11,7 +11,6 @@ import {
   Alert,
 } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
-
 import renderIf from 'render-if';
 
 import app from '../../app';
