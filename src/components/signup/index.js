@@ -67,14 +67,12 @@ export default class SignUp extends Component {
     this.setState({ password, passwordValidation: this.validatePassword(password) });
   }
 
-  // aquí se debería verificar que {email} no está registrado en la base de datos
   validateEmail(email) {
     const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     if (re.test(email)) return 'success';
     return 'error';
   }
 
-  // aquí se debería verificar que {name} no está registrado en la base de datos
   validateName(name) {
     if (name && name.length > 3) return 'success';
     return 'error';
