@@ -31,6 +31,12 @@ export default class Organization extends Component {
     this.fetch(this.props.params.organizationId);
   }
 
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.params && nextProps.params.organizationId) {
+      this.fetch(nextProps.params.organizationId);
+    }
+  }
+
   fetch(organizationId) {
     return organizationService.get(organizationId)
       .then(organization => this.setState({ organization }));

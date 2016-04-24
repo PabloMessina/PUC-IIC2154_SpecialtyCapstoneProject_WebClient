@@ -22,12 +22,18 @@ export default class CourseTab extends Component {
     };
     this.createCourse = this.createCourse.bind(this);
     this.fetch = this.fetch.bind(this);
-    this.fetch();
+    this.fetch(this.props.organization.id);
   }
 
-  fetch() {
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.organization) {
+      this.fetch(nextProps.organization.id);
+    }
+  }
+
+  fetch(organizationId) {
     const query = {
-      organizationId: this.props.organization.id,
+      organizationId,
     };
     return courseService.find({ query })
       .then(result => result.data)
