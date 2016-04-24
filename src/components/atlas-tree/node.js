@@ -80,21 +80,20 @@ export default class Node extends Component {
     const onSelectSection = () => this.props.onSelectSection(section);
 
     const hasSubtree = sections && sections.length > 0 && !collapsed;
-    const substyle = {
-      fontSize: Math.max(FONT.MAX - (FONT.DELTA * anidation.length), FONT.MIN),
-    };
+    //const fontSize = Math.max(FONT.MAX - (FONT.DELTA * anidation.length), FONT.MIN);
 
     return (
       <div style={styles.container}>
 
-        <div style={substyle}>
-          <p onClick={onSelectSection}>
-            {anidation.join('.')}. {title}
-          </p>
-          {renderIf(!this.props.static)(() => (
-            <Icon name="plus" onClick={this.addSection}/>
-            ))
-          }
+        <div style={styles.sectionNav}>
+            <p onClick={onSelectSection}>
+              {anidation.join('.')}. {title}
+            </p>
+
+            {renderIf(!this.props.static)(() => (
+              <Icon name="plus" style={styles.plusIcon} onClick={this.addSection} />
+              ))
+            }
         </div>
 
         {renderIf(hasSubtree)(() => (
@@ -142,6 +141,17 @@ const styles = {
   addSection: {
 
 
-  }
+  },
+  plusIcon: {
+    marginLeft: 10,
+    fontSize: 12,
+    alignSelf: 'center',
+    alignItems: 'center',
+  },
+  sectionNav: {
+    alignItems: 'center',
+    display: 'inline-flex',
+    fontSize: 18,
+  },
 };
 

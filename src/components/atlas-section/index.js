@@ -48,7 +48,7 @@ export default class AtlasSection extends Component {
 
         <ReactQuill
           theme="snow"
-          value={this.state.content}
+          value={{ ops: this.props.content }}
           readOnly={this.props.static}
           onChange={this.onChange}
         >
