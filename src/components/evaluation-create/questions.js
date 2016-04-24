@@ -1,13 +1,11 @@
 import React, { Component } from 'react';
+import Select from 'react-select';
 import {
   DropdownButton,
   MenuItem,
   FormControl,
   FormGroup,
-  Grid,
-  Row,
   Form,
-  Col,
 } from 'react-bootstrap';
 
 export default class Questions extends Component {
@@ -16,6 +14,8 @@ export default class Questions extends Component {
     return {
       mode: React.PropTypes.string,
       numberRandomQuestions: React.PropTypes.number,
+      tags: React.PropTypes.array,
+      allTags: React.PropTypes.array,
     };
   }
 
@@ -23,6 +23,8 @@ export default class Questions extends Component {
     return {
       mode: 'random',
       numberRandomQuestions: 1,
+      tags: [],
+      allTags: [{ label: 't1', value: 't1' }, { label: 'soyunsupertag', value: 'soyunsupertag' }],
     };
   }
   constructor(props) {
@@ -30,10 +32,25 @@ export default class Questions extends Component {
     this.state = {
       mode: props.mode,
       numberRandomQuestions: props.numberRandomQuestions,
+      tags: props.tags,
+      allTags: props.allTags,
     };
     this.renderRandom = this.renderRandom.bind(this);
     this.changeMode = this.changeMode.bind(this);
     this.changeNumberRandomQuestions = this.changeNumberRandomQuestions.bind(this);
+    this.handleSelectChange = this.handleSelectChange.bind(this);
+  }
+
+  handleSelectChange(value) {
+    debugger;
+    const index = this.state.tags.findIndex((elem) => elem === value);
+    let tags = this.state.tags;
+    if (index > -1) {
+      tags.splice(index, 1);
+    } else {
+      tags = [...this.state.tags, value];
+    }
+    this.setState({ tags });
   }
 
   changeMode(e) {
@@ -79,6 +96,17 @@ export default class Questions extends Component {
   render() {
     return (
       <div style={styles.container}>
+        <Select
+          multi
+          simpleValue
+          disabled={false}
+          value={this.state.tags}
+          options={this.state.allTags}
+          onChange={this.handleSelectChange}
+          placeholder={'hola'}
+          style={styles.selectTags}
+        />
+        {/*
         {(() => {
           switch (this.state.mode) {
             case 'random': return (this.renderRandom());
@@ -86,6 +114,7 @@ export default class Questions extends Component {
             case 'create': return (this.renderCreate());
             default: return null;
           }})()}
+          */}
       </div>
     );
   }
@@ -112,5 +141,8 @@ const styles = {
   formRandom: {
     display: 'flex',
     flexDirection: 'row',
+  },
+  selectTags: {
+    width: 500,
   },
 };
