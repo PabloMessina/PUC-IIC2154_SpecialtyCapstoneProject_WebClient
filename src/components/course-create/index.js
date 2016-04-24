@@ -1,11 +1,22 @@
 import React, { Component } from 'react';
-import { Grid, Button, Input } from 'react-bootstrap';
+import {
+  Button,
+  Grid,
+  Row,
+  Col,
+  Panel,
+  FormGroup,
+  ControlLabel,
+  FormControl,
+  Alert,
+} from 'react-bootstrap';
+import { browserHistory } from 'react-router';
+
+import renderIf from 'render-if';
 
 import app from '../../app';
 
 const courseService = app.service('/courses');
-const participantService = app.service('/participants');
-const membershipService = app.service('/memberships');
 
 /**
  * Component life-cycle:
@@ -22,13 +33,9 @@ export default class CourseCreate extends Component {
   static get propTypes() {
     return {
       name: React.PropTypes.string,
-      teachers: React.PropTypes.array,
-      selectedTeachers: React.PropTypes.array,
-      atlases: React.PropTypes.array,
-      users: React.PropTypes.array,
-      selectedStudents: React.PropTypes.array,
       description: React.PropTypes.string,
-      associatedAtlases: React.PropTypes.array,
+      // From react-router
+      params: React.PropTypes.object,
     };
   }
 
@@ -36,11 +43,6 @@ export default class CourseCreate extends Component {
     return {
       name: '',
       description: '',
-      selectedTeachers: [],
-      users: [],
-      selectedStudents: [],
-      atlases: [],
-      associatedAtlases: [],
     };
   }
 
@@ -49,111 +51,84 @@ export default class CourseCreate extends Component {
     this.state = {
       name: this.props.name,
       description: this.props.description,
-      users: this.props.users,
-      selectedStudents: this.props.selectedStudents,
-      selectedTeachers: this.props.selectedTeachers,
-      atlases: this.props.atlases,
-      associatedAtlases: this.props.associatedAtlases,
+      error: null,
+      submiting: false,
     };
-    this.addStudent = this.addStudent.bind(this);
-    this.addTeachers = this.addTeacher.bind(this);
-    this.addAtlas = this.addAtlas.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
   }
 
   onSubmit(e) {
     e.preventDefault();
+    this.setState({ submiting: true, didSubmit: true });
+
     const options = {
       name: this.state.name,
       description: this.state.description,
-      users: this.state.users, /* pide participants */
-      /* organizationId: URL */
+      organizationId: this.props.params.organizationId,
     };
 
-    return courseService.create(options).then(course => {
-      console.log(course);
-    }).catch(err => {
-      console.log(err);
-    });
-  }
-
-  fetchUsers() {
-    let query = {
-      organizationId: 1,  /* URL */
-    };
-    return membershipService.find({ query }).then(result => {
-      query = {
-        id: { $in: result.data.map(row => row.userId) },
-      };
-    /*  return userService.find({ query }); */
-      return participantService.find({ query });
-    }).then(result => {
-      this.setState({ users: result.data });
-    }).catch(err => {
-      console.log("Can't fetch users", err);
-    });
-  }
-
-  addStudent(student) {
-    const selectedStudents = [...this.state.selectedStudents, student];
-    this.setState({ selectedStudents });
-  }
-
-  addTeacher(teacher) {
-    const selectedTeachers = [...this.state.selectedTeachers, teacher];
-    this.setState({ selectedTeachers });
-  }
-
-  addAtlas(atlas) {
-    const associatedAtlases = [...this.state.associatedAtlases, atlas];
-    this.setState({ associatedAtlases });
+    return courseService.create(options)
+      .then(course => browserHistory.push(`/courses/show/${course.id}`))
+      .catch(err => this.setState({ submiting: false, error: err }));
   }
 
   render() {
     return (
       <Grid style={styles.container}>
-        <form onSubmit={this.onSubmit}>
-          <Input
-            type="text"
-            value={this.state.name}
-            placeholder="Enter course name"
-            label="Course Name"
-            onChange={e => this.setState({ name: e.target.value })}
-          />
+        <h2>New Course</h2>
+        <Row>
+          <Col xs={12} sm={8}>
+            <p>Message</p>
 
-          <Input
-            type="textarea"
-            label="Course Description"
-            placeholder="Example: This course
-            focuses in the study of the human body..."
-            onChange={e => this.setState({ description: e.target.value })}
-          />
+            <hr />
 
-          <Input type="select" label="Select Teachers" multiple>
-            {this.state.users.map(user => (
-              <option value={user} onClick={() => this.addTeacher(user)}>
-                {user}
-              </option>
-            ))}
-          </Input>
+            {renderIf(this.state.error)(() =>
+              <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
+                <h4>Oh snap! You got an error!</h4>
+                <p>{this.state.error.message}</p>
+              </Alert>
+            )}
 
-          <Input type="select" label="Select Asociated Atlases" multiple >
-            {this.state.atlases.map(atlas => (
-              <option value={atlas} onClick={() => this.addAtlas(atlas)}>
-                {atlas}
-              </option>
-            ))}
-          </Input>
+            <form onSubmit={this.onSubmit}>
 
-          <Input type="select" label="Select Students" multiple >
-            {this.state.users.map(user => (
-              <option value={user} onClick={() => this.addStudent(user)}>
-                {user}
-              </option>
-            ))}
-          </Input>
-          <Button bsStyle="primary" type="submit">Submit Course</Button>
-        </form>
+              <FormGroup controlId="name">
+                <ControlLabel>Course name</ControlLabel>
+                <FormControl
+                  type="text"
+                  value={this.state.name}
+                  placeholder="Introduction to Psicology"
+                  label="Organization name"
+                  onChange={e => this.setState({ name: e.target.value })}
+                />
+                <FormControl.Feedback />
+              </FormGroup>
+
+              <FormGroup controlId="description">
+                <ControlLabel>Description</ControlLabel>
+                <FormControl
+                  componentClass="textarea"
+                  value={this.state.description}
+                  placeholder="Course description..."
+                  onChange={e => this.setState({ description: e.target.value })}
+                />
+              </FormGroup>
+
+              <Button bsStyle="primary" type="submit" disabled={this.state.submiting}>
+                Create Course
+              </Button>
+
+            </form>
+          </Col>
+
+          <Col xs={12} sm={4}>
+            <Panel>
+              <h5>Looking for help?</h5>
+              <hr />
+              <p>Take a look at our showcase or contact us.</p>
+            </Panel>
+          </Col>
+
+        </Row>
       </Grid>
     );
   }

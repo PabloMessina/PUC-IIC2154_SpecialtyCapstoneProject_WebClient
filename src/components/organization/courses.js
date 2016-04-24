@@ -35,7 +35,7 @@ export default class CourseTab extends Component {
   }
 
   createCourse() {
-    const url = `organizations/show/${this.props.organization.id}/courses/create`;
+    const url = `/organizations/show/${this.props.organization.id}/courses/create`;
     return browserHistory.push(url);
   }
 
@@ -45,6 +45,13 @@ export default class CourseTab extends Component {
 
         <Col xs={12} md={9}>
           <CourseList courses={this.state.courses} />
+        </Col>
+
+        {/* TODO: delete this button list */}
+        <Col xs={12} md={9}>
+          {this.state.courses.map((course, i) => (
+            <Button key={i} onClick={() => browserHistory.push(`/courses/show/${course.id}`)}>{course.name}</Button>
+          ))}
         </Col>
 
         <Col xs={12} md={3}>

@@ -15,7 +15,7 @@
     "bootstrap": "^3.3.6",
     "bootswatch": "^3.3.6",
     "feathers": "^2.0.0",
-    "feathers-authentication": "^0.7.4",
+    "feathers-authentication": "^0.7.5",
     "feathers-hooks": "^1.5.2",
     "feathers-socketio": "^1.3.4",
     "react": "^15.0.1",
@@ -26,6 +26,7 @@
     "react-quill": "git+https://github.com/vdrg/react-quill.git",
     "react-rater": "^0.3.0",
     "react-router": "^2.3.0",
+    "react-select": "^1.0.0-beta12",
     "react-star-rating": "^1.4.2",
     "render-if": "^0.1.1",
     "socket.io-client": "^1.4.5"

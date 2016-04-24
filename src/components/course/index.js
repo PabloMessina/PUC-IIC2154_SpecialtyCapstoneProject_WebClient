@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Grid, Col, ListGroup, ListGroupItem } from 'react-bootstrap';
+import { Grid, Col, Row, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 
 /**
@@ -12,14 +12,14 @@ import { browserHistory } from 'react-router';
  * https://react-bootstrap.github.io/components.html
  */
 
-export default class CourseNav extends Component {
+export default class Course extends Component {
 
   constructor(props) {
     super(props);
     this.state = {
       elements: [
         {
-          path: 'Calendar',
+          path: 'Evaluations',
         }, {
           path: 'Students',
         }, {
@@ -31,9 +31,10 @@ export default class CourseNav extends Component {
 
   render() {
     return (
-      <div style={styles.container}>
-        <Grid>
-          <Col sm={6} md={3}>
+      <Grid style={styles.container}>
+        <h1>{this.props.params.courseId}</h1>
+        <Row>
+          <Col xs={12} sm={6} md={3}>
             <ListGroup>
               {this.state.elements.map((ele, i) => (
                 <ListGroupItem key={i} onClick={() => browserHistory.push(`/course_general/${ele.path}`)}>
@@ -41,12 +42,12 @@ export default class CourseNav extends Component {
                 </ListGroupItem>
               ))}
             </ListGroup>
-            </Col>
-            <Col sm={6} md={9}>
-             {this.props.children}
-            </Col>
-        </Grid>
-       </div>
+          </Col>
+          <Col xs={12} sm={6} md={9}>
+           {this.props.children}
+          </Col>
+        </Row>
+      </Grid>
     );
   }
 }
@@ -54,8 +55,10 @@ export default class CourseNav extends Component {
 /*
   See: https://facebook.github.io/react/docs/reusable-components.html#prop-validation
  */
-CourseNav.propTypes = {
+Course.propTypes = {
   children: React.PropTypes.any,
+  // React Router
+  params: React.PropTypes.object,
 };
 
 /*

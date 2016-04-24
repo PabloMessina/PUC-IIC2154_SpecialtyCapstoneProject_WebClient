@@ -172,7 +172,7 @@ export default class OrganizationCreate extends Component {
                   placeholder="Select subscription plan"
                   onChange={e => this.setState({ subscription: e.target.value })}
                 >
-                  {SUBSCRIPTION.map(sub => <option value={sub.value}>{sub.name}</option>)}
+                  {SUBSCRIPTION.map((sub, i) => <option key={i} value={sub.value}>{sub.name}</option>)}
                 </FormControl>
               </FormGroup>
 
