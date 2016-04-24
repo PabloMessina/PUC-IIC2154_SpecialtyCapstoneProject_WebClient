@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import { Row, Col, ButtonGroup, Button } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 
-
 const SECTIONS = [
   {
     name: 'Information',

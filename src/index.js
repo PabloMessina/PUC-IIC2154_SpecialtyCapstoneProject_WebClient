@@ -29,6 +29,9 @@ import OrganizationCreate from './components/organization-create/';
 import Tree from './components/hierarchy-navigation/';
 import Editor from './components/editor/';
 
+import CourseStudents from './components/course-students/';
+import CourseEvaluations from './components/course-evaluations/';
+
 import EvaluationCreate from './components/evaluation-create';
 import EvaluationCreateDescripction from './components/evaluation-create/description';
 import EvaluationCreateQuestions from './components/evaluation-create/questions';
@@ -87,6 +90,9 @@ const Routing = (
       <Route path="organizations/show/:organizationId/courses/create" component={CourseCreate} />
 
       <Route path="courses/show/:courseId" component={Course}>
+        <Route path="students" component={CourseStudents} />
+        <Route path="analytics" component={CourseStudents} />
+        <Route path="evaluations" component={CourseEvaluations} />
         <Route path="evaluations/create" component={EvaluationCreate}>
           <Route path="description" component={EvaluationCreateDescripction} />
           <Route path="questions" component={EvaluationCreateQuestions} />

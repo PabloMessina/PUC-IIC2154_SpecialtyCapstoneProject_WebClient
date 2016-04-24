@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { Row, Col } from 'react-bootstrap';
 
 
-export default class MinTemplate extends Component {
+export default class CourseStudents extends Component {
 
   constructor(props) {
     super(props);
@@ -16,7 +16,7 @@ export default class MinTemplate extends Component {
       <div style={styles.container}>
         <Row>
           <Col xs={12}>
-            <p>Hello world</p>
+            <p>Course evaluations</p>
           </Col>
         </Row>
       </div>
