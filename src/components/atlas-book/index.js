@@ -9,7 +9,6 @@ const treeService = app.service('/section-tree');
 
 export default class AtlasBook extends Component {
 
-  
   static get propTypes() {
     return {
       static: React.PropTypes.bool,
@@ -32,7 +31,9 @@ export default class AtlasBook extends Component {
 
     // Subscribe to events.
     sectionService.on('patched', section => {
-      this.setState({ section });
+      if (this.state.section._id == section._id) {
+        this.setState({ section });
+      }
     });
 
     // Patch section every 3 seconds.
