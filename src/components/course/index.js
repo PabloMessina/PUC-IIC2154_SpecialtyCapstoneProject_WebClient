@@ -72,8 +72,8 @@ export default class Course extends Component {
   }
 
   render() {
-    const { course } = this.state;
-    if (!course) return <p>Loading...</p>;
+    const { course, organization } = this.state;
+    if (!course || !organization) return <p>Loading...</p>;
 
     const { name, description } = course;
 
@@ -86,8 +86,8 @@ export default class Course extends Component {
           <Breadcrumb.Item>
             Organizations
           </Breadcrumb.Item>
-          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${this.state.organization.id}`)}>
-            {this.state.organization ? this.state.organization.name : 'Loading...'}
+          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
+            {organization.name}
           </Breadcrumb.Item>
           <Breadcrumb.Item>
             Courses
@@ -110,7 +110,7 @@ export default class Course extends Component {
           </Col>
 
           <Col xs={12} sm={9} md={9}>
-           {this.props.children}
+            {React.cloneElement(this.props.children, { course, organization })}
           </Col>
         </Row>
       </Grid>

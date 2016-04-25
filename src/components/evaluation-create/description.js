@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import {
   Row,
   Col,
+  Panel,
   Radio,
   Checkbox,
   FormGroup,
@@ -51,7 +52,7 @@ export default class MinTemplate extends Component {
     return (
       <div style={styles.container}>
         <Row>
-          <Col xs={12}>
+          <Col xs={12} sm={9}>
             <form onSubmit={this.onSubmit}>
 
               <FormGroup controlId="title">
@@ -99,6 +100,14 @@ export default class MinTemplate extends Component {
               </FormGroup>
 
             </form>
+          </Col>
+          <Col xs={12} sm={3}>
+            <Panel>
+              <h4>Evaluation settings</h4>
+              <p>Make sure to setup the evaluation with the correct parameters</p>
+              <hr />
+              <p>Go to the next tab when you are ready</p>
+            </Panel>
           </Col>
         </Row>
       </div>

@@ -1,8 +1,10 @@
 import React, { Component } from 'react';
-import { Row, Col, ButtonGroup, Button } from 'react-bootstrap';
+import { Grid, Row, Col, ButtonGroup, Button, Breadcrumb } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 
-import Questions from './questions';
+import app from '../../app';
+
+const courseService = app.service('/courses');
 
 const SECTIONS = [
   {
@@ -47,8 +49,22 @@ export default class EvaluationCreate extends Component {
     this.state = {
       selected: 0,
       tabStates: Array(SECTIONS.length).fill('default'),
+      course: null,
     };
     this.renderSection = this.renderSection.bind(this);
+    this.fetchCourse = this.fetchCourse.bind(this);
+    this.fetchCourse(this.props.params.courseId);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.params && nextProps.params.courseId) {
+      this.fetchCourse(nextProps.params.courseId);
+    }
+  }
+
+  fetchCourse(courseId) {
+    return courseService.get(courseId)
+      .then(course => this.setState({ course }));
   }
 
   renderSection(section, i) {
@@ -74,7 +90,31 @@ export default class EvaluationCreate extends Component {
 
   render() {
     return (
-      <div style={styles.container}>
+      <Grid style={styles.container}>
+
+        <br />
+
+        <Breadcrumb>
+          <Breadcrumb.Item>
+            Organizations
+          </Breadcrumb.Item>
+          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${this.state.organization.id}`)}>
+            {this.state.organization ? this.state.organization.name : 'Loading...'}
+          </Breadcrumb.Item>
+          <Breadcrumb.Item>
+            Courses
+          </Breadcrumb.Item>
+          <Breadcrumb.Item onClick={() => browserHistory.push(`/courses/show/${this.state.course.id}`)}>
+            {this.state.course ? this.state.course.name : 'Loading...'}
+          </Breadcrumb.Item>
+          <Breadcrumb.Item>
+            Evaluations
+          </Breadcrumb.Item>
+          <Breadcrumb.Item active>
+            Create
+          </Breadcrumb.Item>
+        </Breadcrumb>
+
         <h2>Evaluation</h2>
         <Row>
           <Col style={styles.bar} xsOffset={0} xs={12}>
@@ -86,10 +126,10 @@ export default class EvaluationCreate extends Component {
         <hr />
         <Row>
           <Col xs={12}>
-            <Questions />
+            {this.props.children}
           </Col>
         </Row>
-      </div>
+      </Grid>
     );
   }
 }

@@ -4,7 +4,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Router, Route, IndexRoute, browserHistory } from 'react-router';
+import { Router, Route, IndexRoute, IndexRedirect, browserHistory } from 'react-router';
 
 import { app, currentUser } from './app';
 
@@ -90,16 +90,19 @@ const Routing = (
       <Route path="organizations/show/:organizationId/courses/create" component={CourseCreate} />
 
       <Route path="courses/show/:courseId" component={Course}>
+        <IndexRedirect to="evaluations" />
         <Route path="students" component={CourseStudents} />
         <Route path="analytics" component={CourseStudents} />
         <Route path="evaluations" component={CourseEvaluations} />
-        <Route path="evaluations/create" component={EvaluationCreate}>
-          <Route path="description" component={EvaluationCreateDescripction} />
-          <Route path="questions" component={EvaluationCreateQuestions} />
-          <Route path="students" component={EvaluationCreateStudents} />
-          <Route path="results" component={EvaluationCreateResults} />
-          <Route path="recorrection" component={EvaluationCreateRecorrection} />
-        </Route>
+      </Route>
+
+      <Route path="courses/show/:courseId/evaluations/create" component={EvaluationCreate}>
+        <IndexRedirect to="description" />
+        <Route path="description" component={EvaluationCreateDescripction} />
+        <Route path="questions" component={EvaluationCreateQuestions} />
+        <Route path="students" component={EvaluationCreateStudents} />
+        <Route path="results" component={EvaluationCreateResults} />
+        <Route path="recorrection" component={EvaluationCreateRecorrection} />
       </Route>
 
       <Route path="editor" component={Editor} />

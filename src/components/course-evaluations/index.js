@@ -14,6 +14,8 @@ export default class CourseStudents extends Component {
     return {
       // React Router
       params: React.PropTypes.object,
+      course: React.PropTypes.object,
+      organization: React.PropTypes.object,
       evaluations: React.PropTypes.array,
     };
   }
@@ -29,23 +31,23 @@ export default class CourseStudents extends Component {
     this.state = {
       evaluations: props.evaluations,
     };
-    this.fetch = this.fetch.bind(this);
     this.createEvaluation = this.createEvaluation.bind(this);
-    this.fetch(props.params.courseId);
+    this.fetchEvaluation = this.fetchEvaluation.bind(this);
+    this.fetchEvaluation(props.course.id);
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.params && nextProps.params.courseId) {
-      this.fetch(nextProps.params.courseId);
+    if (nextProps.course) {
+      this.fetchEvaluation(nextProps.course.id);
     }
   }
 
   createEvaluation() {
-    const url = `/courses/show/${this.props.params.coursesId}/evaluations/create`;
+    const url = `/courses/show/${this.props.course.id}/evaluations/create`;
     return browserHistory.push(url);
   }
 
-  fetch(courseId) {
+  fetchEvaluation(courseId) {
     const query = {
       courseId,
     };
