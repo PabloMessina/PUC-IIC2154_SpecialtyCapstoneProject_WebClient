@@ -86,14 +86,14 @@ export default class Node extends Component {
       <div style={styles.container}>
 
         <div style={styles.sectionNav}>
-            <p onClick={onSelectSection}>
-              {anidation.join('.')}. {title}
-            </p>
+          <p onClick={onSelectSection}>
+            {anidation.join('.')}. {title}
+          </p>
 
-            {renderIf(!this.props.static)(() => (
-              <Icon name="plus" style={styles.plusIcon} onClick={this.addSection} />
-              ))
-            }
+          {renderIf(!this.props.static)(() => (
+            <Icon name="plus" style={styles.plusIcon} onClick={this.addSection} />
+            ))
+          }
         </div>
 
         {renderIf(hasSubtree)(() => (
@@ -109,9 +109,8 @@ export default class Node extends Component {
                 anidation={[...anidation, i + 1]}
               />
               ))}
-            </div>
-            ))}
-
+          </div>
+        ))}
       </div>
     );
   }

@@ -9,6 +9,7 @@ const treeService = app.service('/section-tree');
 
 export default class AtlasBook extends Component {
 
+  
   static get propTypes() {
     return {
       static: React.PropTypes.bool,
@@ -29,7 +30,20 @@ export default class AtlasBook extends Component {
       section: { content: [] },
     };
 
+    // Subscribe to events.
+    sectionService.on('patched', section => {
+      this.setState({ section });
+    });
+
+    // Patch section every 3 seconds.
+    this.patchTimer = setInterval(() => this.tryPatchSection(), 3000);
+
+    // Wether it should send a request to the
+    // server to patch the current section.
+    this.shouldPatchSection = false;
+
     this.fetchTree = this.fetchTree.bind(this);
+    this.tryPatchSection = this.tryPatchSection.bind(this);
     this.onSelectSection = this.onSelectSection.bind(this);
     this.onAddSection = this.onAddSection.bind(this);
     this.onChangeContent = this.onChangeContent.bind(this);
@@ -39,8 +53,12 @@ export default class AtlasBook extends Component {
     this.fetchTree();
   }
 
+  componentWillUnmount() {
+    clearInterval(this.patchTimer);
+  }
+
   onSelectSection(section) {
-    // sectionService.update(this.state.section)
+    this.tryPatchSection();
     this.setState({
       section,
     });
@@ -55,6 +73,7 @@ export default class AtlasBook extends Component {
     this.setState({
       section,
     });
+    this.shouldPatchSection = true;
   }
 
   onAddSection(section) {
@@ -67,7 +86,6 @@ export default class AtlasBook extends Component {
       tree,
     });
   }
-
 
   fetchTree() {
     const query = {
@@ -86,6 +104,22 @@ export default class AtlasBook extends Component {
           });
         });
       });
+  }
+
+
+  /**
+   * Update section contents on server
+   *
+   * @param section
+   * @returns {undefined}
+   */
+  tryPatchSection() {
+    if (!this.shouldPatchSection) return;
+
+    const section = this.state.section;
+    const content = { content: section.content };
+    sectionService.patch(section._id, content);
+    this.shouldPatchSection = false;
   }
 
 

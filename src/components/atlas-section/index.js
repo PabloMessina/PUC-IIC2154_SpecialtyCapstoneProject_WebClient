@@ -1,9 +1,6 @@
 import React, { Component } from 'react';
 import { Panel } from 'react-bootstrap';
 import ReactQuill from 'react-quill';
-import app from '../../app';
-
-const sectionService = app.service('atlasSections');
 
 export default class AtlasSection extends Component {
 
@@ -11,7 +8,6 @@ export default class AtlasSection extends Component {
     return {
       static: React.PropTypes.bool,
       content: React.PropTypes.array,
-      atlasId: React.PropTypes.number,
       onChangeContent: React.PropTypes.func,
     };
   }
