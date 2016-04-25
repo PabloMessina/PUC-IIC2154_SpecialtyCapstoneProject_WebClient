@@ -55,7 +55,12 @@ export default class AtlasSection extends Component {
             items={toolbar}
           />
 
-          <Panel key="editor" ref="editor" className="quill-contents" />
+          <div
+            style={styles.editor}
+            key="editor"
+            ref="editor"
+            className="quill-contents"
+          />
 
         </ReactQuill>
       </div>
@@ -66,7 +71,9 @@ export default class AtlasSection extends Component {
 const styles = {
   container: {
     display: 'flex',
-    flexWrap: 'nowrap',
-    flexDirection: 'row',
+    height: '100%',
+  },
+  editor: {
+    overflow: 'scroll',
   },
 };

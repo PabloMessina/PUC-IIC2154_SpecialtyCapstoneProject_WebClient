@@ -31,7 +31,7 @@ export default class AtlasBook extends Component {
 
     // Subscribe to events.
     sectionService.on('patched', section => {
-      if (this.state.section._id == section._id) {
+      if (this.state.section._id === section._id) {
         this.setState({ section });
       }
     });
