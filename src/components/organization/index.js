@@ -1,13 +1,8 @@
 import React, { Component } from 'react';
 import { Grid, Tabs, Tab, Row, Col, Image, Glyphicon } from 'react-bootstrap';
-// import { Button } from 'react-bootstrap';
 
 import CourseTab from './courses';
-
 import { Colors } from '../../styles';
-import app from '../../app';
-
-const organizationService = app.service('/organizations');
 
 
 export default class Organization extends Component {
@@ -22,24 +17,19 @@ export default class Organization extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      organization: null,
+      organization: props.params.organization,
       tab: 0,
     };
     this.navigationTabBar = this.navigationTabBar.bind(this);
     this.renderTabContent = this.renderTabContent.bind(this);
-    this.fetch = this.fetch.bind(this);
-    this.fetch(this.props.params.organizationId);
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.params && nextProps.params.organizationId) {
-      this.fetch(nextProps.params.organizationId);
+    // Because router onEnter is not called when navigation between childrens.
+    const organization = nextProps.params.organization;
+    if (organization && organization.id !== this.state.organization.id) {
+      this.setState({ organization });
     }
-  }
-
-  fetch(organizationId) {
-    return organizationService.get(organizationId)
-      .then(organization => this.setState({ organization }));
   }
 
   navigationTabBar() {
@@ -60,16 +50,17 @@ export default class Organization extends Component {
   }
 
   renderTabContent(index) {
+    const options = {
+      organization: this.state.organization,
+    };
     switch (index) {
-      case 0: return <CourseTab organization={this.state.organization} />;
+      case 0: return <CourseTab {...options} />;
       default: return null;
     }
   }
 
   render() {
-    const { organization } = this.state;
-    if (!organization) return <p>Loading...</p>;
-
+    const organization = this.state.organization;
     let { name, description, logo } = organization;
     logo = logo || 'https://d3njjcbhbojbot.cloudfront.net/api/utilities/v1/imageproxy/https://coursera-university-assets.s3.amazonaws.com/89/d0ddf06ad611e4b53d95ff03ce5aa7/360px.png';
 

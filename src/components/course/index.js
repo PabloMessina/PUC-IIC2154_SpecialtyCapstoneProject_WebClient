@@ -4,7 +4,6 @@ import { browserHistory } from 'react-router';
 
 import app from '../../app';
 
-const courseService = app.service('/courses');
 const organizationService = app.service('/organizations');
 
 /**
@@ -23,7 +22,7 @@ export default class Course extends Component {
     super(props);
     this.state = {
       organization: null,
-      course: null,
+      course: props.params.course,
       elements: [
         {
           name: 'Evaluations',
@@ -37,24 +36,19 @@ export default class Course extends Component {
         },
       ],
     };
-    this.fetchCourse = this.fetchCourse.bind(this);
     this.fetchOrganization = this.fetchOrganization.bind(this);
-    this.fetchCourse(props.params.courseId);
+
+    // Fetch organization
+    this.fetchOrganization(this.state.course.organizationId);
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.params && nextProps.params.courseId) {
-      this.fetchCourse(nextProps.params.courseId);
+    // Because router onEnter is not called when navigation between childrens.
+    const course = nextProps.params.course;
+    if (course && course.id !== this.state.course.id) {
+      this.setState({ course });
+      this.fetchOrganization(course.organizationId);
     }
-  }
-
-  fetchCourse(courseId) {
-    return courseService.get(courseId)
-      .then(course => {
-        this.setState({ course });
-        return course;
-      })
-      .then(course => this.fetchOrganization(course.organizationId));
   }
 
   fetchOrganization(organizationId) {
@@ -63,7 +57,8 @@ export default class Course extends Component {
   }
 
   renderListElement(element, i) {
-    const url = `/courses/show/${this.props.params.courseId}/${element.path}`;
+    const course = this.state.course;
+    const url = `/courses/show/${course.id}/${element.path}`;
     return (
       <ListGroupItem key={i} onClick={() => browserHistory.push(url)}>
         {element.name}
@@ -72,10 +67,8 @@ export default class Course extends Component {
   }
 
   render() {
-    const { course, organization } = this.state;
-    if (!course || !organization) return <p>Loading...</p>;
-
-    const { name, description } = course;
+    const course = this.state.course;
+    const organization = this.state.organization;
 
     return (
       <Grid style={styles.container}>
@@ -87,18 +80,18 @@ export default class Course extends Component {
             Organizations
           </Breadcrumb.Item>
           <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
-            {organization.name}
+            {organization ? organization.name : 'Loading...'}
           </Breadcrumb.Item>
           <Breadcrumb.Item>
             Courses
           </Breadcrumb.Item>
           <Breadcrumb.Item active>
-            {name}
+            {course.name}
           </Breadcrumb.Item>
         </Breadcrumb>
 
-        <h1 style={styles.title}>{name}</h1>
-        <p>{description}</p>
+        <h1 style={styles.title}>{course.name}</h1>
+        <p>{course.description}</p>
 
         <hr />
 

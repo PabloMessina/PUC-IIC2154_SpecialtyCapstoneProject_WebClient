@@ -1,4 +1,4 @@
-/* eslint strict:0 */
+/* eslint strict:0 no-param-reassign: 0 */
 
 'use strict';
 
@@ -6,7 +6,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { Router, Route, IndexRoute, IndexRedirect, browserHistory } from 'react-router';
 
-import { app, currentUser } from './app';
+import app, { auth, currentUser } from './app';
 
 import Main from './components/main';
 import Dashboard from './components/dashboard';
@@ -64,6 +64,31 @@ function requireAnnon(nextState, replace) {
   }
 }
 
+function populate(...names) {
+  return function func(nextState, replace, next) {
+    // Auth if user is not present
+    const user = currentUser() ? Promise.resolve(true) : auth();
+
+    // Auth user (if needed) then perform parallel requests to the server
+    const requests = user.then(() => {
+      const promises = names.map(({ field, to, service }) => {
+        // Get object in params if present
+        const param = nextState.params[to];
+        if (param) return param;
+
+        // Get object from Web API
+        const identifier = nextState.params[field];
+        return app.service(service || `/${to}s`).get(identifier)
+          .then(object => (nextState.params[to] = object));
+      });
+      return Promise.all(promises);
+    });
+
+    // Finish hook
+    return requests.then(() => next());
+  };
+}
+
 const Routing = (
   <Router history={browserHistory}>
     <Route path="/" component={Main} title="App">
@@ -86,17 +111,34 @@ const Routing = (
       </Route>
 
       <Route path="organizations/create" component={OrganizationCreate} />
-      <Route path="organizations/show/:organizationId" component={Organization} />
-      <Route path="organizations/show/:organizationId/courses/create" component={CourseCreate} />
 
-      <Route path="courses/show/:courseId" component={Course}>
+      <Route
+        path="organizations/show/:organizationId"
+        component={Organization}
+        onEnter={populate({ field: 'organizationId', to: 'organization' })}
+      />
+      <Route
+        path="organizations/show/:organizationId/courses/create"
+        component={CourseCreate}
+        onEnter={populate('organization')}
+      />
+
+      <Route
+        path="courses/show/:courseId"
+        component={Course}
+        onEnter={populate({ field: 'courseId', to: 'course' })}
+      >
         <IndexRedirect to="evaluations" />
         <Route path="students" component={CourseStudents} />
         <Route path="analytics" component={CourseStudents} />
         <Route path="evaluations" component={CourseEvaluations} />
       </Route>
 
-      <Route path="courses/show/:courseId/evaluations/create" component={EvaluationCreate}>
+      <Route
+        path="courses/show/:courseId/evaluations/create"
+        component={EvaluationCreate}
+        onEnter={populate({ field: 'courseId', to: 'course' })}
+      >
         <IndexRedirect to="description" />
         <Route path="description" component={EvaluationCreateDescripction} />
         <Route path="questions" component={EvaluationCreateQuestions} />

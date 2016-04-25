@@ -4,7 +4,7 @@ import { browserHistory } from 'react-router';
 
 import app from '../../app';
 
-const courseService = app.service('/courses');
+const organizationService = app.service('/organizations');
 
 const SECTIONS = [
   {
@@ -49,27 +49,34 @@ export default class EvaluationCreate extends Component {
     this.state = {
       selected: 0,
       tabStates: Array(SECTIONS.length).fill('default'),
-      course: null,
+      course: props.params.course,
+      organization: null,
     };
     this.renderSection = this.renderSection.bind(this);
-    this.fetchCourse = this.fetchCourse.bind(this);
-    this.fetchCourse(this.props.params.courseId);
+    this.fetchOrganization = this.fetchOrganization.bind(this);
+
+    // Get organization
+    this.fetchOrganization(this.state.course.organizationId);
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.params && nextProps.params.courseId) {
-      this.fetchCourse(nextProps.params.courseId);
+    // Because router onEnter is not called when navigation between childrens.
+    const course = nextProps.params.course;
+    if (course && course.id !== this.state.course.id) {
+      this.setState({ course });
+      this.fetchOrganization(course.organizationId);
     }
   }
 
-  fetchCourse(courseId) {
-    return courseService.get(courseId)
-      .then(course => this.setState({ course }));
+  fetchOrganization(organizationId) {
+    return organizationService.get(organizationId)
+      .then(organization => this.setState({ organization }));
   }
 
   renderSection(section, i) {
+    const course = this.state.course;
     const { name, description, path } = section;
-    const url = `/courses/show/${this.props.params.courseId}/evaluations/create/${path}`;
+    const url = `/courses/show/${course.id}/evaluations/create/${path}`;
     return (
       <Button
         style={styles.tab}
@@ -89,6 +96,9 @@ export default class EvaluationCreate extends Component {
   }
 
   render() {
+    const course = this.state.course;
+    const organization = this.state.organization;
+
     return (
       <Grid style={styles.container}>
 
@@ -98,14 +108,14 @@ export default class EvaluationCreate extends Component {
           <Breadcrumb.Item>
             Organizations
           </Breadcrumb.Item>
-          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${this.state.organization.id}`)}>
-            {this.state.organization ? this.state.organization.name : 'Loading...'}
+          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
+            {organization ? organization.name : 'Loading...'}
           </Breadcrumb.Item>
           <Breadcrumb.Item>
             Courses
           </Breadcrumb.Item>
-          <Breadcrumb.Item onClick={() => browserHistory.push(`/courses/show/${this.state.course.id}`)}>
-            {this.state.course ? this.state.course.name : 'Loading...'}
+          <Breadcrumb.Item onClick={() => browserHistory.push(`/courses/show/${course.id}`)}>
+            {course.name}
           </Breadcrumb.Item>
           <Breadcrumb.Item>
             Evaluations
@@ -116,6 +126,7 @@ export default class EvaluationCreate extends Component {
         </Breadcrumb>
 
         <h2>Evaluation</h2>
+
         <Row>
           <Col style={styles.bar} xsOffset={0} xs={12}>
             <ButtonGroup justified>
