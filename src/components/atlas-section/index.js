@@ -20,21 +20,17 @@ export default class AtlasSection extends Component {
 
   constructor(props) {
     super(props);
-    this.state = {
-      content: { ops: props.content },
-    };
     this.onChange = this.onChange.bind(this);
   }
 
   shouldComponentUpdate(nextProps) {
-    return JSON.stringify(nextProps.content) !== JSON.stringify(this.state.content.ops);
+    return JSON.stringify(nextProps.content) !== JSON.stringify(this.props.content);
   }
 
   onChange(content) {
-    this.setState({
-      content,
-    });
-    this.props.onChangeContent(content.ops);
+    if (JSON.stringify(content.ops) !== JSON.stringify(this.props.content)) {
+      this.props.onChangeContent(content.ops);
+    }
   }
 
   render() {

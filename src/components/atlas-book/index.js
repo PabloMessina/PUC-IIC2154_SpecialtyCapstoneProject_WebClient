@@ -30,11 +30,11 @@ export default class AtlasBook extends Component {
     };
 
     // Subscribe to events.
-    sectionService.on('patched', section => {
+    /*sectionService.on('patched', section => {
       if (this.state.section._id === section._id) {
         this.setState({ section });
       }
-    });
+      });*/
 
     // Patch section every 3 seconds.
     this.patchTimer = setInterval(() => this.tryPatchSection(), 3000);
@@ -67,9 +67,6 @@ export default class AtlasBook extends Component {
 
   onChangeContent(value) {
     const section = this.state.section;
-    if (!section) {
-      return;
-    }
     section.content = value;
     this.setState({
       section,
