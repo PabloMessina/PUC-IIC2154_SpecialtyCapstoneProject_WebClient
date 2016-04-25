@@ -14,6 +14,58 @@ import QuestionContainer from '../questions/question-container';
 import renderIf from 'render-if';
 
 // import { Colors } from '../../styles';
+const defaultQuestions = [
+  {
+    _id: 1,
+    _type: 'multiChoice',
+    question: { text: '¿Sed ut posuere velit?' },
+    tags: ['Tag 1', 'Tag 2'],
+    fields: {
+      selectable: 1,
+      choices: [{ text: 'Option 1' }, { text: 'Option 2' }],
+      answers: [1],
+    },
+  }, {
+    _id: 2,
+    _type: 'correlation',
+    question: { text: ' Phasellus nec tortor vel dui ultrices facilisis.' +
+      'Vestibulum nec turpis vitae est interdum porttitor sed nec enim.' +
+      'Curabitur vel viverra mi, tempor aliquet nisl.' },
+    tags: ['Tag 1'],
+    fields: {
+      keys: [{ text: 'Option1' }, { text: 'Option2' }],
+      values: [{ text: 'A' }, { text: 'B' }, { text: 'C' }, { text: 'D' }],
+      answers: [[0, 1], [1, 2], [1, 3]],
+    },
+  }, {
+    _id: 3,
+    _type: 'tshort',
+    question: { text: 'Aliquam tempor risus dui, non sodales velit tempor quis.' +
+      'Quisque eleifend diam purus, eu porttitor mauris tempor vel.' +
+      'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
+    tags: ['Tag 2', 'Tag 3', 'Tag 4'],
+    fields: {
+      answers: ['Answ 1', 'Answ 2', 'Answ 3'],
+    },
+  }, {
+    _id: 4,
+    _type: 'tshort',
+    question: { text: 'Quisque eleifend diam purus, eu porttitor mauris tempor vel.' +
+      'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
+    tags: ['Tag 2', 'Tag 3', 'Tag 4'],
+    fields: {
+      answers: ['Answ 1', 'Answ 2'],
+    },
+  }, {
+    _id: 5,
+    _type: 'trueFalse',
+    question: { text: 'Quisque eleifend diam purus, eu porttitor mauris tempor vel.' +
+    'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
+    tags: ['Tag 5'],
+    fields: {
+      answer: 1,
+    },
+  }];
 
 export default class Questions extends Component {
 
@@ -24,7 +76,6 @@ export default class Questions extends Component {
       tags: React.PropTypes.array,
       allTags: React.PropTypes.array,
       questions: React.PropTypes.array,
-      allQuestions: React.PropTypes.array,
     };
   }
 
@@ -41,80 +92,46 @@ export default class Questions extends Component {
         { label: 'Tag 4', value: 'Tag 4' },
         { label: 'Tag 5', value: 'Tag 5' },
       ],
-      allQuestions: [
-        {
-          _id: 1,
-          _type: 'multiChoice',
-          question: { text: '¿Sed ut posuere velit?' },
-          tags: ['Tag 1', 'Tag 2'],
-          fields: {
-            selectable: 1,
-            choices: [{ text: 'Option 1' }, { text: 'Option 2' }],
-            answers: [1],
-          },
-        }, {
-          _id: 2,
-          _type: 'correlation',
-          question: { text: ' Phasellus nec tortor vel dui ultrices facilisis.' +
-            'Vestibulum nec turpis vitae est interdum porttitor sed nec enim.' +
-            'Curabitur vel viverra mi, tempor aliquet nisl.' },
-          tags: ['Tag 1'],
-          fields: {
-            keys: [{ text: 'Option1' }, { text: 'Option2' }],
-            values: [{ text: 'A' }, { text: 'B' }, { text: 'C' }, { text: 'D' }],
-            answers: [[0, 1], [1, 2], [1, 3]],
-          },
-        }, {
-          _id: 3,
-          _type: 'tshort',
-          question: { text: 'Aliquam tempor risus dui, non sodales velit tempor quis.' +
-            'Quisque eleifend diam purus, eu porttitor mauris tempor vel.' +
-            'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
-          tags: ['Tag 2', 'Tag 3', 'Tag 4'],
-          fields: {
-            answers: ['Answ 1', 'Answ 2', 'Answ 3'],
-          },
-        }, {
-          _id: 4,
-          _type: 'tshort',
-          question: { text: 'Quisque eleifend diam purus, eu porttitor mauris tempor vel.' +
-            'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
-          tags: ['Tag 2', 'Tag 3', 'Tag 4'],
-          fields: {
-            answers: ['Answ 1', 'Answ 2'],
-          },
-        }, {
-          _id: 5,
-          _type: 'trueFalse',
-          question: { text: 'Quisque eleifend diam purus, eu porttitor mauris tempor vel.' +
-          'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
-          tags: ['Tag 5'],
-          fields: {
-            answer: 1,
-          },
-        }],
     };
   }
   constructor(props) {
     super(props);
+    const components = [];
+    defaultQuestions.forEach((question, index) => {
+      const options = {
+        question,
+        permission: 'reader',
+      };
+      components[question._id] = (<QuestionContainer
+        component={this.questionFactory(question._type, options)}
+        title={`Question ${question._id}`}
+        tags={question.tags}
+        key={index}
+        open
+        collapsible
+      />);
+    });
+
     this.state = {
       mode: props.mode,
       numberRandomQuestions: props.numberRandomQuestions,
       tags: props.tags,
       allTags: props.allTags,
       questions: props.questions,
-      allQuestions: props.allQuestions,
+      allQuestions: defaultQuestions,
+      allQuestionsComponents: components,
     };
-    // this.renderRandom = this.renderRandom.bind(this);
     this.changeMode = this.changeMode.bind(this);
     this.changeNumberRandomQuestions = this.changeNumberRandomQuestions.bind(this);
     this.handleSelectChange = this.handleSelectChange.bind(this);
     this.questionFactory = this.questionFactory.bind(this);
     this.matchQuestions = this.matchQuestions.bind(this);
+    this.renderQuestions = this.renderQuestions.bind(this);
   }
 
+
   handleSelectChange(value, tags) {
-    console.log(value, JSON.stringify(tags));
+    this.forceUpdate();
     return this.setState({ tags });
   }
 
@@ -152,9 +169,19 @@ export default class Questions extends Component {
       .filter(question => tags.every(tag => question.tags.indexOf(tag.label) > -1));
   }
 
+  renderQuestions(mquestions) {
+    if (this.state.mode !== 'create') {
+      const returns = [];
+      mquestions.forEach((question) => {
+        returns.push(this.state.allQuestionsComponents[question._id]);
+      });
+      return returns;
+    }
+    return null;
+  }
+
   render() {
     const mquestions = this.matchQuestions();
-    console.log(mquestions);
     return (
       <div style={styles.container}>
         <Form style={styles.optionBar}>
@@ -190,22 +217,9 @@ export default class Questions extends Component {
           </div>
         </Form>
         <div style={styles.preview}>
-          {mquestions.map((question, index) => {
-            const options = {
-              question,
-              permission: 'reader',
-            };
-            return (<QuestionContainer
-              component={this.questionFactory(question._type, options)}
-              title={`Question ${question._id}`}
-              tags={question.tags}
-              key={index}
-              open
-              collapsible
-            />);
-          })}
+          {this.renderQuestions(mquestions)}
           {renderIf(mquestions.length < 1)(() =>
-            <p>No questions found :(</p>
+            <p>No questions found :c</p>
           )}
         </div>
       </div>
