@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import { Row, Col, ButtonGroup, Button } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 
+import Questions from './questions';
+
 const SECTIONS = [
   {
     name: 'Information',
@@ -84,7 +86,7 @@ export default class EvaluationCreate extends Component {
         <hr />
         <Row>
           <Col xs={12}>
-            {this.props.children}
+            <Questions />
           </Col>
         </Row>
       </div>

@@ -26,7 +26,7 @@
     "react-quill": "git+https://github.com/vdrg/react-quill.git",
     "react-rater": "^0.3.0",
     "react-router": "^2.3.0",
-    "react-select": "^1.0.0-beta12",
+    "react-select": "^0.9.1",
     "react-star-rating": "^1.4.2",
     "render-if": "^0.1.1",
     "socket.io-client": "^1.4.5"
