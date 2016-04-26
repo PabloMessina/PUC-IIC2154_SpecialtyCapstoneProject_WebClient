@@ -4,9 +4,18 @@ import MTLLoader from '../../_3Dlibrary/MTLLoader';
 import OBJLoader from '../../_3Dlibrary/OBJLoader';
 import ThreeUtils from '../../_3Dlibrary/ThreeUtils';
 
+// button constants
 const LEFT_BUTTON = 0;
 const MIDDLE_BUTTON = 1;
 const RIGH_BUTTON = 2;
+
+// direction vector constants
+const LEFT_VECTOR = new THREE.Vector3(-1, 0, 0);
+const RIGHT_VECTOR = new THREE.Vector3(1, 0, 0);
+const UP_VECTOR = new THREE.Vector3(0, 1, 0);
+const DOWN_VECTOR = new THREE.Vector3(0, -1, 0);
+const FAR_VECTOR = new THREE.Vector3(0, 0, -1);
+const NEAR_VECTOR = new THREE.Vector3(0, 0, 1);
 
 export default class Renderer3D extends Component {
 
@@ -20,10 +29,12 @@ export default class Renderer3D extends Component {
     this.handleMouseUp = this.handleMouseUp.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
-    this.updateAndRenderForAWhile = this.updateAndRenderForAWhile.bind(this);
+    this.animateForAWhile = this.animateForAWhile.bind(this);
     this.removeLabel = this.removeLabel.bind(this);
     this.highlightLabel = this.highlightLabel.bind(this);
     this.unhighlightLabel = this.unhighlightLabel.bind(this);
+    this.updateSelectedLabel = this.updateSelectedLabel.bind(this);
+    this.moveLabel = this.moveLabel.bind(this);
   }
 
   componentDidMount() {
@@ -100,7 +111,7 @@ export default class Renderer3D extends Component {
     };
 
     // run animation
-    this.updateAndRenderForAWhile();
+    this.animateForAWhile();
   }
 
   // function to update the scene
@@ -205,11 +216,16 @@ export default class Renderer3D extends Component {
     }
   }
 
-  // function to render the scene
+  /**
+   * [threeRender : renders the scene]
+   */
   threeRender() {
     this.renderer.render(this.scene, this.camera);
   }
 
+  /**
+   * [threeAnimate : updates and renders the scene]
+   */
   threeAnimate() {
     if (this._state.updateTimerRunning) {
       requestAnimationFrame(this.threeAnimate);
@@ -312,7 +328,7 @@ export default class Renderer3D extends Component {
       this.scene.add(meshGroup);
 
       // run animation cycle to reflect changes on the screen
-      this.updateAndRenderForAWhile();
+      this.animateForAWhile();
     })
     .catch((error) => {
       console.log("-----------------------");
@@ -327,7 +343,7 @@ export default class Renderer3D extends Component {
    * The purpose is to ensure that updates and rendering are performed
    * only when it's necessary, and not all the time
    */
-  updateAndRenderForAWhile(milliseconds = 500) {
+  animateForAWhile(milliseconds = 500) {
     if (this._state.updateTimerRunning) return; // already running? ignore
     this._state.updateTimerRunning = true;
     // start the animation cycle
@@ -350,7 +366,7 @@ export default class Renderer3D extends Component {
       if (this._state.zoom < 0.01) this._state.zoom = 0.01;
     }
     this._state.updateCameraZoom = true;
-    this.updateAndRenderForAWhile();
+    this.animateForAWhile();
   }
 
   /**
@@ -422,16 +438,18 @@ export default class Renderer3D extends Component {
           this._state.mouseLeftButtonDown = true;
           this._state.mouseLeft1.x = event.pageX - viewport.offsetLeft;
           this._state.mouseLeft1.y = viewport.offsetHeight + viewport.offsetTop - event.pageY;
+          /*
           // if there was an already selected sphere, we unhighlight its whole label
           if (this._state.selectedSphere !== null) {
             const sphereId = this._state.selectedSphere.uuid;
             this.unhighlightLabel(this.sphereToLabelMap[sphereId]);
             this._state.selectedSphere = null;
           }
+          */
         }
 
         // refresh canvas
-        this.updateAndRenderForAWhile();
+        this.animateForAWhile();
       }
 
     } else if (event.button === RIGH_BUTTON) {
@@ -488,14 +506,14 @@ export default class Renderer3D extends Component {
           this.sphereToLabelMap[sphere.uuid] = labelObj;
 
           // refresh scene
-          this.updateAndRenderForAWhile();
+          this.animateForAWhile();
         }
       }
     }
   }
 
   /**
-   * [highlightLabel : show label as highlighted]
+   * [highlightLabel : shows label as highlighted]
    * @param  {[object]} labelObj [object with references to sphere, line, sprite and text]
    */
   highlightLabel(labelObj) {
@@ -525,7 +543,7 @@ export default class Renderer3D extends Component {
   }
 
   /**
-   * [unhighlightLabel : show label as non-highlighted]
+   * [unhighlightLabel : shows label as non-highlighted]
    * @param  {[object]} labelObj [object with references to sphere, line, sprite and text]
    */
   unhighlightLabel(labelObj) {
@@ -577,7 +595,7 @@ export default class Renderer3D extends Component {
       this._state.mouseLeft2.x = this._state.mouseViewportCoords.x;
       this._state.mouseLeft2.y = this._state.mouseViewportCoords.y;
       this._state.updateCameraRotation = true;
-      this.updateAndRenderForAWhile();
+      this.animateForAWhile();
     }
   }
 
@@ -601,10 +619,65 @@ export default class Renderer3D extends Component {
     return false;
   }
 
+  /**
+   * [updateSelectedLabel : updates currently selected label in the scene
+   * with the changes made to it]
+   */
+  updateSelectedLabel() {
+    const text = this.refs.labelTextInput.value;
+    const sphere = this._state.selectedSphere;
+    if (sphere) {
+      const labelObj = this.sphereToLabelMap[sphere.uuid];
+      labelObj.text = text || '<EMPTY>';
+      this.highlightLabel(labelObj);
+      this.animateForAWhile();
+    }
+  }
+
+  moveLabel(dirV) {
+    // check we have a selected sphere
+    const sphere = this._state.selectedSphere;
+    if (sphere) {
+      const labelObj = this.sphereToLabelMap[sphere.uuid];
+      // compute distance to move
+      const width = this.refs.viewport.offsetWidth;
+      const height = this.refs.viewport.offsetHeight;
+      const v1 = ThreeUtils.unprojectFromScreenToWorld(0, 0, width, height, this.camera);
+      const v2 = ThreeUtils.unprojectFromScreenToWorld(width / 30, 0, width, height, this.camera);
+      const dist = v1.distanceTo(v2);
+      // move sprite in the direction provided
+      const dir = new THREE.Vector3()
+        .copy(dirV)
+        .applyMatrix4(this.camera.matrixWorld)
+        .sub(this.camera.position)
+        .normalize();
+      const sprite = labelObj.sprite;
+      sprite.position.addScaledVector(dir, dist);
+      // update line
+      const line = labelObj.line;
+      line.geometry.dynamic = true;
+      line.geometry.vertices.length = 0;
+      line.geometry.vertices.push(sphere.position);
+      line.geometry.vertices.push(sprite.position);
+      line.geometry.verticesNeedUpdate = true;
+      // refresh scene
+      this.animateForAWhile();
+    }
+  }
+
   render() {
     return (
       <div>
         <input ref="filesInput" type="file" onChange={this.read3DFiles} multiple></input>
+        <div>
+          <input ref="labelTextInput" type="text" onChange={this.updateSelectedLabel}></input>
+          <button onClick={() => this.moveLabel(UP_VECTOR)}>^</button>
+          <button onClick={() => this.moveLabel(DOWN_VECTOR)}>v</button>
+          <button onClick={() => this.moveLabel(LEFT_VECTOR)}>{'<'}</button>
+          <button onClick={() => this.moveLabel(RIGHT_VECTOR)}>{'>'}</button>
+          <button onClick={() => this.moveLabel(FAR_VECTOR)}>far</button>
+          <button onClick={() => this.moveLabel(NEAR_VECTOR)}>near</button>
+        </div>
         <div style={styles.viewport} ref="viewport"
           onWheel={this.handleWheel} onMouseDown={this.handleMouseDown}
           onMouseMove={this.handleMouseMove} onMouseUp={this.handleMouseUp}
