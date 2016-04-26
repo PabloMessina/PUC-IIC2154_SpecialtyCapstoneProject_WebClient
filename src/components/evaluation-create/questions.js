@@ -153,7 +153,6 @@ export default class Questions extends Component {
   }
 
   matchQuestions() {
-    debugger;
     const tags = this.state.tags;
     return this.props.allQuestions
       .filter(question => tags.every(tag => question.tags.indexOf(tag.label) > -1));
