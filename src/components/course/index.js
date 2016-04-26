@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Grid, Col, Row, ListGroup, ListGroupItem, Breadcrumb } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
+import Icon from 'react-fa';
 
 import app from '../../app';
 
@@ -26,12 +27,15 @@ export default class Course extends Component {
       elements: [
         {
           name: 'Evaluations',
+          icon: 'file-text-o ',
           path: 'evaluations',
         }, {
           name: 'Students',
+          icon: 'users',
           path: 'students',
         }, {
           name: 'Analytics',
+          icon: 'bar-chart ',
           path: 'analytics',
         },
       ],
@@ -61,7 +65,7 @@ export default class Course extends Component {
     const url = `/courses/show/${course.id}/${element.path}`;
     return (
       <ListGroupItem key={i} onClick={() => browserHistory.push(url)}>
-        {element.name}
+        <Icon style={styles.icon} name={element.icon} /> {element.name}
       </ListGroupItem>
     );
   }
@@ -131,5 +135,8 @@ const styles = {
   title: {
     marginTop: 30,
     marginBottom: 25,
+  },
+  icon: {
+    marginRight: 7,
   },
 };

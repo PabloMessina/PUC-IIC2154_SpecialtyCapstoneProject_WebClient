@@ -1,9 +1,32 @@
 import React, { Component } from 'react';
-import { Grid, Tabs, Tab, Row, Col, Image, Glyphicon } from 'react-bootstrap';
-
+import { Grid, Tabs, Tab, Row, Col, Image } from 'react-bootstrap';
+import Icon from 'react-fa';
 import CourseTab from './courses';
 import { Colors } from '../../styles';
 
+const TABS = [
+  {
+    name: 'Courses',
+    icon: 'graduation-cap ',
+    path: '',
+  }, {
+    name: 'Atlases',
+    icon: 'book',
+    path: '',
+  }, {
+    name: 'Questions',
+    icon: 'list-alt ',
+    path: '',
+  }, {
+    name: 'Members',
+    icon: 'user',
+    path: '',
+  }, {
+    name: 'Settings',
+    icon: 'cog',
+    path: '',
+  },
+];
 
 export default class Organization extends Component {
 
@@ -33,18 +56,20 @@ export default class Organization extends Component {
   }
 
   navigationTabBar() {
-    const titles = ['Courses', 'Atlases', 'Members', 'Settings'];
-    const icons = ['education', 'book', 'user', 'cog'];
-
     return (
       <Tabs style={styles.tabs} activeKey={this.state.tab} id="tabs" onSelect={key => this.setState({ tab: key })}>
-        {titles.map((title, i) => (
-          <Tab key={i} eventKey={i} title={<span><Glyphicon glyph={icons[i]} /> {title}</span>}>
-            <div style={styles.tabContent}>
-              {this.renderTabContent(i)}
-            </div>
-          </Tab>
-        ))}
+        {TABS.map(({ name, icon, path }, i) => {
+          const title = (
+            <span><Icon style={styles.icon} name={icon} /> {name}</span>
+          );
+          return (
+            <Tab key={i} eventKey={i} title={title}>
+              <div style={styles.tabContent}>
+                {this.renderTabContent(i)}
+              </div>
+            </Tab>
+          );
+        })}
       </Tabs>
     );
   }
@@ -151,5 +176,8 @@ const styles = {
   },
   tabContent: {
     marginTop: 20,
+  },
+  icon: {
+    marginRight: 4,
   },
 };

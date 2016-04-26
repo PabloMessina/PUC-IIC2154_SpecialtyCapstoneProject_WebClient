@@ -117,6 +117,7 @@ const Routing = (
         component={Organization}
         onEnter={populate({ field: 'organizationId', to: 'organization' })}
       />
+
       <Route
         path="organizations/show/:organizationId/courses/create"
         component={CourseCreate}

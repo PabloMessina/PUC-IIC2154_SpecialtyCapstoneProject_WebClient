@@ -9,6 +9,7 @@ import {
   ControlLabel,
   FormControl,
   Alert,
+  Breadcrumb,
 } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
@@ -50,10 +51,19 @@ export default class CourseCreate extends Component {
     this.state = {
       name: this.props.name,
       description: this.props.description,
+      organization: props.params.organization,
       error: null,
       submiting: false,
     };
     this.onSubmit = this.onSubmit.bind(this);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    // Because router onEnter is not called when navigation between childrens.
+    const organization = nextProps.params.organization;
+    if (organization && organization.id !== this.state.organization.id) {
+      this.setState({ organization });
+    }
   }
 
   onSubmit(e) {
@@ -63,7 +73,7 @@ export default class CourseCreate extends Component {
     const options = {
       name: this.state.name,
       description: this.state.description,
-      organizationId: this.props.params.organizationId,
+      organizationId: this.state.organization.id,
     };
 
     return courseService.create(options)
@@ -72,8 +82,28 @@ export default class CourseCreate extends Component {
   }
 
   render() {
+    const organization = this.state.organization;
+
     return (
       <Grid style={styles.container}>
+
+        <br />
+
+        <Breadcrumb>
+          <Breadcrumb.Item>
+            Organizations
+          </Breadcrumb.Item>
+          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
+            {organization ? organization.name : 'Loading...'}
+          </Breadcrumb.Item>
+          <Breadcrumb.Item>
+            Courses
+          </Breadcrumb.Item>
+          <Breadcrumb.Item active>
+            Create
+          </Breadcrumb.Item>
+        </Breadcrumb>
+
         <h2>New Course</h2>
         <Row>
           <Col xs={12} sm={8}>

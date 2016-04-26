@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { Panel, Row, Col, Button, Glyphicon } from 'react-bootstrap';
+import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
 
@@ -70,7 +71,7 @@ export default class CourseStudents extends Component {
           </Col>
           <Col xs={12} md={4}>
             <Panel>
-              <h5>Evaluations</h5>
+              <h5><Icon style={styles.icon} size="lg" name="lightbulb-o" /> Evaluations</h5>
               <hr />
               <p>Measure the learning progress of the classroom with real-time individual and groupal evaluations.</p>
               <hr />
@@ -89,5 +90,8 @@ export default class CourseStudents extends Component {
 const styles = {
   container: {
 
+  },
+  icon: {
+    marginRight: 7,
   },
 };

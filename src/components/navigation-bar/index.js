@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
-import { Navbar, Nav, NavItem, NavDropdown, MenuItem, Glyphicon } from 'react-bootstrap';
+import { Navbar, Nav, NavItem, NavDropdown, MenuItem, FormControl, FormGroup, Button } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
+import Icon from 'react-fa';
 
 import { logout } from '../../app';
 
@@ -38,7 +39,7 @@ export default class NavigationBar extends Component {
             </MenuItem>
             <MenuItem divider />
             <MenuItem eventKey={1.3} onClick={this.onLogout}>
-              Log out
+              <Icon style={styles.icon} name="sign-out" /> Log out
             </MenuItem>
           </NavDropdown>
         </Nav>
@@ -57,8 +58,11 @@ export default class NavigationBar extends Component {
   }
 
   organizationsDropdown() {
+    const title = (
+      <span><Icon style={styles.navIcon} size="1x" name="users" /> Organizations</span>
+    );
     return (
-      <NavDropdown eventKey={2} title="Organizations" id="organizations-dropdown">
+      <NavDropdown eventKey={2} title={title} id="organizations-dropdown">
         {this.props.organizations.map((organization, i) => {
           const name = organization.name;
           const eventKey = 2 + i * 0.1;
@@ -74,7 +78,7 @@ export default class NavigationBar extends Component {
         ))}
         <MenuItem divider />
         <MenuItem eventKey={3} onSelect={() => browserHistory.push('/organizations/create')}>
-          <Glyphicon glyph="plus" /> Create organization
+          <Icon style={styles.icon} name="plus" /> Create organization
         </MenuItem>
       </NavDropdown>
     );
@@ -96,8 +100,16 @@ export default class NavigationBar extends Component {
         <Navbar.Collapse>
           <Nav>
 
+            <Navbar.Form style={{ paddingTop: 3.5 }} pullLeft>
+              <FormGroup bsSize="small">
+                <FormControl type="text" placeholder="Search" />
+              </FormGroup>
+              {' '}
+              <Button bsSize="small" type="submit">Submit</Button>
+            </Navbar.Form>
+
             <NavItem eventKey={1} onClick={() => browserHistory.push('/documents')}>
-              Atlases
+              <Icon style={styles.navIcon} size="1x" name="book" /> Atlases
             </NavItem>
 
             {this.organizationsDropdown()}
@@ -121,5 +133,11 @@ NavigationBar.propTypes = {
 
 const styles = {
   navbar: {
+  },
+  icon: {
+    marginRight: 7,
+  },
+  navIcon: {
+    marginRight: 3,
   },
 };
