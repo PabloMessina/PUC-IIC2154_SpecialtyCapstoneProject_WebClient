@@ -1,12 +1,12 @@
-/* eslint strict:0 */
+/* eslint strict:0 no-param-reassign: 0 */
 
 'use strict';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Router, Route, IndexRoute, browserHistory } from 'react-router';
+import { Router, Route, IndexRoute, IndexRedirect, browserHistory } from 'react-router';
 
-import { app, currentUser } from './app';
+import app, { auth, currentUser } from './app';
 
 import Main from './components/main';
 import Dashboard from './components/dashboard';
@@ -24,10 +24,19 @@ import DocumentDescription from './components/document-description';
 // import Organizations from './components/organizations';
 import Organization from './components/organization';
 import Course from './components/course/';
-import CourseNav from './components/course-nav/';
 import CourseCreate from './components/course-create/';
 import OrganizationCreate from './components/organization-create/';
 import AtlasBook from './components/atlas-book/';
+
+import CourseStudents from './components/course-students/';
+import CourseEvaluations from './components/course-evaluations/';
+
+import EvaluationCreate from './components/evaluation-create';
+import EvaluationCreateDescripction from './components/evaluation-create/description';
+import EvaluationCreateQuestions from './components/evaluation-create/questions';
+import EvaluationCreateStudents from './components/evaluation-create/students';
+import EvaluationCreateResults from './components/evaluation-create/results';
+import EvaluationCreateRecorrection from './components/evaluation-create/recorrection';
 
 // Development help
 // Go AtlasBook: http://localhost:3000/template
@@ -54,6 +63,31 @@ function requireAnnon(nextState, replace) {
   }
 }
 
+function populate(...names) {
+  return function func(nextState, replace, next) {
+    // Auth if user is not present
+    const user = currentUser() ? Promise.resolve(true) : auth();
+
+    // Auth user (if needed) then perform parallel requests to the server
+    const requests = user.then(() => {
+      const promises = names.map(({ field, to, service }) => {
+        // Get object in params if present
+        const param = nextState.params[to];
+        if (param) return param;
+
+        // Get object from Web API
+        const identifier = nextState.params[field];
+        return app.service(service || `/${to}s`).get(identifier)
+          .then(object => (nextState.params[to] = object));
+      });
+      return Promise.all(promises);
+    });
+
+    // Finish hook
+    return requests.then(() => next());
+  };
+}
+
 const Routing = (
   <Router history={browserHistory}>
     <Route path="/" component={Main} title="App">
@@ -74,12 +108,42 @@ const Routing = (
       </Route>
 
       <Route path="organizations/create" component={OrganizationCreate} />
-      <Route path="organizations/show/:organizationId" component={Organization}>
-        <Route path=":courseId" component={Course} />
+
+      <Route
+        path="organizations/show/:organizationId"
+        component={Organization}
+        onEnter={populate({ field: 'organizationId', to: 'organization' })}
+      />
+
+      <Route
+        path="organizations/show/:organizationId/courses/create"
+        component={CourseCreate}
+        onEnter={populate({ field: 'organizationId', to: 'organization' })}
+      />
+
+      <Route
+        path="courses/show/:courseId"
+        component={Course}
+        onEnter={populate({ field: 'courseId', to: 'course' })}
+      >
+        <IndexRedirect to="evaluations" />
+        <Route path="students" component={CourseStudents} />
+        <Route path="analytics" component={CourseStudents} />
+        <Route path="evaluations" component={CourseEvaluations} />
       </Route>
 
-      <Route path="/course_create" component={CourseCreate} />
-      <Route path="course_general" component={CourseNav} />
+      <Route
+        path="courses/show/:courseId/evaluations/create"
+        component={EvaluationCreate}
+        onEnter={populate({ field: 'courseId', to: 'course' })}
+      >
+        <IndexRedirect to="description" />
+        <Route path="description" component={EvaluationCreateDescripction} />
+        <Route path="questions" component={EvaluationCreateQuestions} />
+        <Route path="students" component={EvaluationCreateStudents} />
+        <Route path="results" component={EvaluationCreateResults} />
+        <Route path="recorrection" component={EvaluationCreateRecorrection} />
+      </Route>
 
       <Route path="create-atlas" component={CreateAtlas} />
       <Route path="editor/:atlasId" component={AtlasBook} />

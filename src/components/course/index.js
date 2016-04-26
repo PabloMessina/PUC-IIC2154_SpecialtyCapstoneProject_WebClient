@@ -1,52 +1,116 @@
 import React, { Component } from 'react';
-import { Grid, Col, ListGroup, ListGroupItem } from 'react-bootstrap';
+import { Grid, Col, Row, ListGroup, ListGroupItem, Breadcrumb } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
+import Icon from 'react-fa';
 
+import app from '../../app';
+
+const organizationService = app.service('/organizations');
+
+/**
+ * Component life-cycle:
+ * https://facebook.github.io/react/docs/component-specs.html
+ */
+
+/**
+ * React + Bootstrap components:
+ * https://react-bootstrap.github.io/components.html
+ */
 
 export default class Course extends Component {
-
-  static get defaultProps() {
-    return {
-      courses: [
-        {
-          courseName: 'Anatomia',
-          description: 'Curso para alumnos de Ciencias de la Salud para que aprendan del cuerpo humano',
-          imageSource: 'http://www.totton.ac.uk/media/183369/HUMANITIES-ICON-2_Square%20Crop.jpg',
-        },
-        {
-          courseName: 'Salud Publica',
-          description: 'Curso para alumnos de Ciencias de la Salud para que aprendan de Salud Pública',
-          imageSource: 'http://www.totton.ac.uk/media/183369/HUMANITIES-ICON-2_Square%20Crop.jpg',
-        },
-        {
-          courseName: 'Patologías',
-          description: 'Curso para alumnos de Ciencias de la Salud para que aprendan de Patologías',
-          imageSource: 'http://www.totton.ac.uk/media/183369/HUMANITIES-ICON-2_Square%20Crop.jpg',
-        },
-      ],
-    };
-  }
 
   constructor(props) {
     super(props);
     this.state = {
-      courses: props.courses,
+      organization: null,
+      course: props.params.course,
+      elements: [
+        {
+          name: 'Evaluations',
+          icon: 'file-text-o ',
+          path: 'evaluations',
+        }, {
+          name: 'Students',
+          icon: 'users',
+          path: 'students',
+        }, {
+          name: 'Analytics',
+          icon: 'bar-chart ',
+          path: 'analytics',
+        },
+      ],
     };
+    this.fetchOrganization = this.fetchOrganization.bind(this);
+
+    // Fetch organization
+    this.fetchOrganization(this.state.course.organizationId);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    // Because router onEnter is not called when navigation between childrens.
+    const course = nextProps.params.course;
+    if (course && course.id !== this.state.course.id) {
+      this.setState({ course });
+      this.fetchOrganization(course.organizationId);
+    }
+  }
+
+  fetchOrganization(organizationId) {
+    return organizationService.get(organizationId)
+      .then(organization => this.setState({ organization }));
+  }
+
+  renderListElement(element, i) {
+    const course = this.state.course;
+    const url = `/courses/show/${course.id}/${element.path}`;
+    return (
+      <ListGroupItem key={i} onClick={() => browserHistory.push(url)}>
+        <Icon style={styles.icon} name={element.icon} /> {element.name}
+      </ListGroupItem>
+    );
   }
 
   render() {
+    const course = this.state.course;
+    const organization = this.state.organization;
+
     return (
-      <div className="container-fluid">
-        {this.state.courses.map(course => (
-          <div className="jumbotron jumbotron-fluid col-xs-12">
-            <img className="col-xs-3 img-circle" src={course.imageSource} alt="no disp" />
-            <div className="container col-xs-8">
-              <h3 className="display-1">{course.courseName}</h3>
-              <p className="lead">{course.description}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      <Grid style={styles.container}>
+
+        <br />
+
+        <Breadcrumb>
+          <Breadcrumb.Item>
+            Organizations
+          </Breadcrumb.Item>
+          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
+            {organization ? organization.name : 'Loading...'}
+          </Breadcrumb.Item>
+          <Breadcrumb.Item>
+            Courses
+          </Breadcrumb.Item>
+          <Breadcrumb.Item active>
+            {course.name}
+          </Breadcrumb.Item>
+        </Breadcrumb>
+
+        <h1 style={styles.title}>{course.name}</h1>
+        <p>{course.description}</p>
+
+        <hr />
+
+        <Row>
+          <Col xs={12} sm={3} md={3}>
+            <ListGroup>
+              {this.state.elements.map((element, i) => this.renderListElement(element, i))}
+            </ListGroup>
+          </Col>
+
+          <Col xs={12} sm={9} md={9}>
+            {React.cloneElement(this.props.children, { course, organization })}
+          </Col>
+        </Row>
+      </Grid>
     );
   }
 }
@@ -55,7 +119,9 @@ export default class Course extends Component {
   See: https://facebook.github.io/react/docs/reusable-components.html#prop-validation
  */
 Course.propTypes = {
-  courses: React.PropTypes.array,
+  children: React.PropTypes.any,
+  // React Router
+  params: React.PropTypes.object,
 };
 
 /*
@@ -65,5 +131,12 @@ Course.propTypes = {
 const styles = {
   container: {
 
+  },
+  title: {
+    marginTop: 30,
+    marginBottom: 25,
+  },
+  icon: {
+    marginRight: 7,
   },
 };
