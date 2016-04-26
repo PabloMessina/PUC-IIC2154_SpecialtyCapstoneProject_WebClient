@@ -34,7 +34,7 @@ export default class Course extends Component {
       <Grid style={styles.container}>
         <h1>{this.props.params.courseId}</h1>
         <Row>
-          {/* <Col xs={12} sm={6} md={3}>
+           <Col xs={12} sm={6} md={3}>
             <ListGroup>
               {this.state.elements.map((ele, i) => (
                 <ListGroupItem key={i} onClick={() => browserHistory.push(`/course_general/${ele.path}`)}>
@@ -45,8 +45,7 @@ export default class Course extends Component {
           </Col>
           <Col xs={12} sm={6} md={9}>
            {this.props.children}
-          </Col> */}
-          {this.props.children}
+          </Col>
         </Row>
       </Grid>
     );
