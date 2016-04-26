@@ -13,7 +13,7 @@ import TrueFalse from '../questions/true-false';
 import QuestionContainer from '../questions/question-container';
 import renderIf from 'render-if';
 
-// import { Colors } from '../../styles';
+import { Colors } from '../../styles';
 const defaultQuestions = [
   {
     _id: 1,
@@ -76,6 +76,7 @@ export default class Questions extends Component {
       tags: React.PropTypes.array,
       allTags: React.PropTypes.array,
       questions: React.PropTypes.array,
+      allQuestionsComponents: React.PropTypes.array,
     };
   }
 
@@ -92,26 +93,18 @@ export default class Questions extends Component {
         { label: 'Tag 4', value: 'Tag 4' },
         { label: 'Tag 5', value: 'Tag 5' },
       ],
+      allQuestionsComponents: [],
     };
   }
   constructor(props) {
     super(props);
-    const components = [];
-    defaultQuestions.forEach((question, index) => {
-      const options = {
-        question,
-        permission: 'reader',
-      };
-      components[question._id] = (<QuestionContainer
-        component={this.questionFactory(question._type, options)}
-        title={`Question ${question._id}`}
-        tags={question.tags}
-        key={index}
-        open
-        collapsible
-      />);
-    });
-
+    this.changeMode = this.changeMode.bind(this);
+    this.changeNumberRandomQuestions = this.changeNumberRandomQuestions.bind(this);
+    this.handleSelectChange = this.handleSelectChange.bind(this);
+    this.questionFactory = this.questionFactory.bind(this);
+    this.matchQuestions = this.matchQuestions.bind(this);
+    this.renderQuestions = this.renderQuestions.bind(this);
+    this.addQuestion = this.addQuestion.bind(this);
     this.state = {
       mode: props.mode,
       numberRandomQuestions: props.numberRandomQuestions,
@@ -119,16 +112,42 @@ export default class Questions extends Component {
       allTags: props.allTags,
       questions: props.questions,
       allQuestions: defaultQuestions,
-      allQuestionsComponents: components,
+      allQuestionsComponents: this.init(defaultQuestions),
     };
-    this.changeMode = this.changeMode.bind(this);
-    this.changeNumberRandomQuestions = this.changeNumberRandomQuestions.bind(this);
-    this.handleSelectChange = this.handleSelectChange.bind(this);
-    this.questionFactory = this.questionFactory.bind(this);
-    this.matchQuestions = this.matchQuestions.bind(this);
-    this.renderQuestions = this.renderQuestions.bind(this);
   }
 
+  init(questions) {
+    const components = [];
+    questions.forEach((question, index) => {
+      const options = {
+        question,
+        permission: 'reader',
+      };
+      const buttons = [
+        { text: 'add', onClick: () => this.addQuestion(question._id), style: styles.addQuestion },
+      ];
+      const component = (<QuestionContainer
+        component={this.questionFactory(question._type, options)}
+        title={`Question ${question._id}`}
+        tags={question.tags}
+        buttons={buttons}
+        key={index}
+        open
+        collapsible={false}
+      />);
+      components.push({ _id: question._id, component });
+    });
+    return components;
+  }
+
+  addQuestion(_id) {
+    debugger;
+    const questions = this.state.questions;
+    questions.push(
+      this.state.allQuestionsComponents.find((item) => item._id === _id)
+    );
+    this.setState({ questions });
+  }
 
   handleSelectChange(value, tags) {
     this.forceUpdate();
@@ -173,7 +192,11 @@ export default class Questions extends Component {
     if (this.state.mode !== 'create') {
       const returns = [];
       mquestions.forEach((question) => {
-        returns.push(this.state.allQuestionsComponents[question._id]);
+        returns.push(
+          this.state.allQuestionsComponents
+          .filter((item) => item._id === question._id)
+          .map((item) => item.component)
+        );
       });
       return returns;
     }
@@ -181,46 +204,53 @@ export default class Questions extends Component {
   }
 
   render() {
-    const mquestions = this.matchQuestions();
+    const filtredQuestions = this.matchQuestions();
     return (
       <div style={styles.container}>
-        <Form style={styles.optionBar}>
-          <DropdownButton
-            id={'modeDropdown'}
-            title={this.state.mode}
-            onSelect={this.changeMode}
-            style={styles.formMode}
-          >
-            <MenuItem eventKey="random">Random</MenuItem>
-            <MenuItem eventKey="manually">Manually</MenuItem>
-            <MenuItem eventKey="create">Create</MenuItem>
-          </DropdownButton>
-          {renderIf(this.state.mode === 'random')(() =>
-            <FormControl
-              type="number"
-              min="1"
-              value={this.state.numberRandomQuestions}
-              onChange={this.changeNumberRandomQuestions}
-              style={styles.numberRandomQuestions}
-            />
-          )}
-          <div style={styles.formTags}>
-            <Select
-              multi
-              simpleValue={false}
-              disabled={false}
-              value={this.state.tags}
-              options={this.state.allTags}
-              onChange={this.handleSelectChange}
-              placeholder={'Tags'}
-            />
+        <div style={styles.mainQuestions}>
+          <div>
+            <Form style={styles.optionBar}>
+              <DropdownButton
+                id={'modeDropdown'}
+                title={this.state.mode}
+                onSelect={this.changeMode}
+                style={styles.formMode}
+              >
+                <MenuItem eventKey="random">Random</MenuItem>
+                <MenuItem eventKey="manually">Manually</MenuItem>
+                <MenuItem eventKey="create">Create</MenuItem>
+              </DropdownButton>
+              {renderIf(this.state.mode === 'random')(() =>
+                <FormControl
+                  type="number"
+                  min="1"
+                  value={this.state.numberRandomQuestions}
+                  onChange={this.changeNumberRandomQuestions}
+                  style={styles.numberRandomQuestions}
+                />
+              )}
+              <div style={styles.formTags}>
+                <Select
+                  multi
+                  simpleValue={false}
+                  disabled={false}
+                  value={this.state.tags}
+                  options={this.state.allTags}
+                  onChange={this.handleSelectChange}
+                  placeholder={'Tags'}
+                />
+              </div>
+            </Form>
+            <div style={styles.search}>
+              {this.renderQuestions(filtredQuestions)}
+              {renderIf(filtredQuestions.length < 1)(() =>
+                <p>No questions found :c</p>
+              )}
+            </div>
           </div>
-        </Form>
-        <div style={styles.preview}>
-          {this.renderQuestions(mquestions)}
-          {renderIf(mquestions.length < 1)(() =>
-            <p>No questions found :c</p>
-          )}
+          <div style={styles.preview}>
+            {this.renderQuestions(this.state.questions)}
+          </div>
         </div>
       </div>
     );
@@ -251,9 +281,29 @@ const styles = {
     height: '100%',
     marginLeft: 5,
   },
-  preview: {
-    marginTop: 20,
+  search: {
+    marginTop: 0,
     backgroundColor: 'white',
-    padding: 20,
+    padding: 0,
+  },
+  preview: {
+    backgroundColor: 'white',
+  },
+  addQuestion: {
+    backgroundColor: Colors.MAIN,
+    color: Colors.WHITE,
+    fontSize: 14,
+    padding: 3,
+    paddingLeft: 10,
+    paddingRight: 10,
+  },
+  removeQuestion: {
+    backgroundColor: Colors.RED,
+    color: Colors.WHITE,
+  },
+  mainQuestions: {
+    display: 'flex',
+    flexDirection: 'row',
+    backgroundColor: 'white',
   },
 };
