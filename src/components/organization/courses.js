@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Grid, Row, Col, Panel, Button, Glyphicon } from 'react-bootstrap';
+import { Grid, Col, Panel, Button, Glyphicon } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 
 import CourseList from '../course-list/';
@@ -53,13 +53,6 @@ export default class CourseTab extends Component {
           <CourseList courses={this.state.courses} />
         </Col>
 
-        {/* TODO: delete this button list */}
-        <Col xs={12} md={9}>
-          {this.state.courses.map((course, i) => (
-            <Button key={i} onClick={() => browserHistory.push(`/courses/show/${course.id}`)}>{course.name}</Button>
-          ))}
-        </Col>
-
         <Col xs={12} md={3}>
           <Panel>
             <h4>Courses</h4>
@@ -70,7 +63,6 @@ export default class CourseTab extends Component {
               <Glyphicon glyph="plus" /> Create course
             </Button>
           </Panel>
-
         </Col>
       </Grid>
     );
