@@ -120,7 +120,7 @@ const Routing = (
       <Route
         path="organizations/show/:organizationId/courses/create"
         component={CourseCreate}
-        onEnter={populate('organization')}
+        onEnter={populate({ field: 'organizationId', to: 'organization' })}
       />
 
       <Route
