@@ -1,19 +1,9 @@
 import React, { Component } from 'react';
-import { Grid, Col, Row, ListGroup, ListGroupItem, Input, ButtonInput, Label } from 'react-bootstrap';
+import { Grid, Col, Row, Button, Form, FormGroup, FormControl, ControlLabel } from 'react-bootstrap';
 import AtlasThumbnail from './atlas-thumbnail';
 import atlasExample from '../../atlas-example.js';
+import renderIf from 'render-if';
 
-// import renderIf from 'render-if';
-
-/**
- * Component life-cycle:
- * https://facebook.github.io/react/docs/component-specs.html
- */
-
-/**
- * React + Bootstrap components:
- * https://react-bootstrap.github.io/components.html
- */
 
 export default class Settings extends Component {
 
@@ -27,71 +17,86 @@ export default class Settings extends Component {
     super(props);
     this.state = {
       atlases: props.atlases,
+      advanced: false,
+      tags: [],
+      allTags: [
+        { label: 'Anatomy', value: 'Tag 1' },
+        { label: 'Cardiology', value: 'Tag 2' },
+        { label: 'Astronomy', value: 'Tag 3' },
+        { label: 'Biology', value: 'Tag 4' },
+        { label: 'Technology', value: 'Tag 5' },
+      ],
     };
+  }
+
+  handleSelectChange(value, tags) {
+    this.forceUpdate();
+    return this.setState({ tags });
   }
 
   render() {
     const lista = [];
-    atlasExample.documents.forEach((doc, i) => {
-      if (i % 4 === 0) {
-        lista.push(
-          <div>
-            <Col xs={2} md={3}>
-              <AtlasThumbnail id={doc.id} document={doc} />
-            </Col>
-          </div>
-        );
-      } else {
-        lista.push(
-          <Col xs={2} md={3}>
-            <AtlasThumbnail document={doc} />
-          </Col>
-        );
-      }
+    atlasExample.documents.forEach((doc) => {
+      lista.push(
+        <div style={styles.column} xs={2} md={3}>
+          <AtlasThumbnail id={doc.id} document={doc} />
+        </div>
+      );
     });
     return (
-      <Grid>
+      <Grid style={styles.container}>
+        <Row style={styles.search}>
+          <Form style={styles.form} horizontal>
+            <h1 style={styles.title}>Search</h1>
+            <FormGroup controlId="formHorizontalSearch">
+              <Col sm={10}>
+                <FormControl type="text" placeholder="" />
+              </Col>
+              <Col sm={2}>
+                <Button style={styles.button} type="submit">
+                  Search
+                </Button>
+              </Col>
+            </FormGroup>
+            {renderIf(this.state.advanced)(() =>
+              <FormGroup controlId="formHorizontalFilter">
+                <Col sm={3}>
+                  <ControlLabel>Genre</ControlLabel>
+                  <FormControl componentClass="select" placeholder="">
+                    <option value="select">All</option>
+                    <option value="other">...</option>
+                  </FormControl>
+                </Col>
+                <Col sm={3}>
+                  <ControlLabel>Rating</ControlLabel>
+                  <FormControl componentClass="select" placeholder="">
+                    <option value="select">All</option>
+                    <option value="other">...</option>
+                  </FormControl>
+                </Col>
+                <Col sm={3}>
+                  <ControlLabel>Lenguage</ControlLabel>
+                  <FormControl componentClass="select" placeholder="">
+                    <option value="select">English</option>
+                    <option value="other">...</option>
+                  </FormControl>
+                </Col>
+                <Col sm={3}>
+                  <ControlLabel>Order By</ControlLabel>
+                  <FormControl componentClass="select" placeholder="">
+                    <option value="select">Latest</option>
+                    <option value="other">...</option>
+                  </FormControl>
+                </Col>
+              </FormGroup>
+            )}
+            <p onClick={() => this.setState({ advanced: !this.state.advanced })}>Advanced</p>
+          </Form>
+        </Row>
         <Row>
-          <Col md={2} style={styles.filter}>
-            <p style={styles.title}>Tags</p>
-            <ListGroup style={styles.list}>
-              <ListGroupItem href="#" style={styles.borderRadius}>
-                <h4><Label bsStyle="primary">Anatomia</Label></h4>
-              </ListGroupItem>
-              <ListGroupItem href="#">
-                <h4><Label bsStyle="info">Tag2</Label></h4></ListGroupItem>
-              <ListGroupItem href="#">
-                <h4><Label bsStyle="info">Tag3</Label></h4>
-              </ListGroupItem>
-              <ListGroupItem href="#">
-                <h4><Label bsStyle="success">Tag4</Label></h4>
-              </ListGroupItem>
-              <ListGroupItem href="#" style={styles.borderRadius}>
-                <h4><Label bsStyle="success">Tag5</Label></h4>
-              </ListGroupItem>
-            </ListGroup>
-          </Col>
-          <Col md={10} style={styles.scroll}>
-            <h1>Atlas</h1>
-            <Row>
-              <form>
-                <Col sm={6} md={5}>
-                  <Input
-                    type="text"
-                    ref="input"
-                    onChange={this.handleChange}
-                    style={styles.borderRadius}
-                  />
-                </Col>
-                <Col sm={6} md={2}>
-                  <ButtonInput bsSize="small" style={styles.borderRadius}>Search</ButtonInput>
-                </Col>
-              </form>
-            </Row>
-            <Row className="show-grid">
+          <div style={styles.scroll}>
             {lista}
-            </Row>
-          </Col>
+          </div>
         </Row>
       </Grid>
     );
@@ -100,32 +105,39 @@ export default class Settings extends Component {
 
 Settings.propTypes = {
   children: React.PropTypes.object,
+  atlases: React.PropTypes.object,
 };
 
 
-/*
-  See: https://facebook.github.io/react/docs/reusable-components.html#prop-validation
- */
-/*
-  See: https://facebook.github.io/react/tips/inline-styles.html
-  CSS: http://www.w3schools.com/css/
- */
 const styles = {
+  container: {
+    textAlign: 'center',
+    width: '100%',
+    fontFamily: 'Raleway, Helvetica Neue, Helvetica, Arial, sans-serif',
+  },
   scroll: {
-    left: 'auto',
-    float: 'left',
-    width: '80%',
+    margin: 'auto',
+    width: '90%',
   },
   title: {
-    marginTop: 10,
+    textAlign: 'center',
     fontSize: 25,
   },
-  borderRadius: {
-    borderRadius: 0,
+  search: {
+    color: '#16a085',
+    display: 'block',
+    backgroundColor: '#f1f1f1',
   },
-  filter: {
-    borderRight: '1px solid #e7e7e7',
-    width: '20%',
-    height: '900',
+  input: {
+    marginLeft: '5%',
+    marginRight: '5%',
+  },
+  form: {
+    margin: 'auto',
+    width: '80%',
+  },
+  button: {
+    backgroundColor: '#16a085',
+    color: 'white',
   },
 };
