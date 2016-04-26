@@ -53,6 +53,7 @@ const BufferedReader = {
 
     // function to read by chunks
     function readNextChunk() {
+      console.log('reading a chunk');
       // check we are still within the limits
       if (offset >= file.size) {
         callback(null, null, true); // EOF detected

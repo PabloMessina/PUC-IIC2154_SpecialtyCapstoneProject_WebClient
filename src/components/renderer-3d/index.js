@@ -17,6 +17,9 @@ const DOWN_VECTOR = new THREE.Vector3(0, -1, 0);
 const FAR_VECTOR = new THREE.Vector3(0, 0, -1);
 const NEAR_VECTOR = new THREE.Vector3(0, 0, 1);
 
+// to resize coeficients
+const LABEL_SIZE_COEF = 1 / 22;
+
 export default class Renderer3D extends Component {
 
   constructor(props) {
@@ -33,8 +36,11 @@ export default class Renderer3D extends Component {
     this.removeLabel = this.removeLabel.bind(this);
     this.highlightLabel = this.highlightLabel.bind(this);
     this.unhighlightLabel = this.unhighlightLabel.bind(this);
-    this.updateSelectedLabel = this.updateSelectedLabel.bind(this);
+    this.updateLabelText = this.updateLabelText.bind(this);
     this.moveLabel = this.moveLabel.bind(this);
+    this.stopLabelPositionUpdates = this.stopLabelPositionUpdates.bind(this);
+    this.refocusOnModel = this.refocusOnModel.bind(this);
+    this.refreshLabelControls = this.refreshLabelControls.bind(this);
   }
 
   componentDidMount() {
@@ -108,6 +114,8 @@ export default class Renderer3D extends Component {
       updateTimerRunning: false,
       mouseClipping: new THREE.Vector2(),
       selectedSphere: null,
+      updatingLabelPosition: false,
+      labelPositionDirty: false,
     };
 
     // run animation
@@ -318,9 +326,20 @@ export default class Renderer3D extends Component {
       );
       this._state.zoom = this.camera.zoom; // keep the zoom up to date
 
-      // remove from scene the previous meshes, if any
+      // remove from scene the previous meshes, lines,
+      // spheres and sprites, if any
       if (this.meshGroup !== null) {
+        this.meshGroup.children.length = 0;
         this.scene.remove(this.meshGroup);
+      }
+      if (this.lineGroup !== null) {
+        this.lineGroup.children.length = 0;
+      }
+      if (this.spriteGroup !== null) {
+        this.spriteGroup.children.length = 0;
+      }
+      if (this.sphereGroup !== null) {
+        this.sphereGroup.children.length = 0;
       }
       // set the new meshGroup
       this.meshGroup = meshGroup;
@@ -411,6 +430,7 @@ export default class Renderer3D extends Component {
               this.highlightLabel(labelObj);
               // set this sphere as the selectedSphere
               this._state.selectedSphere = sphere;
+              this.refreshLabelControls(labelObj);
             } else if (sphere === prevSphere) {
               // ---------------------------------------------------------
               // case 2: this sphere and the selectedSphere are the same
@@ -418,6 +438,7 @@ export default class Renderer3D extends Component {
               // we delete the whole label
               this.removeLabel(labelObj);
               this._state.selectedSphere = null;
+              this.refreshLabelControls(null);
             } else {
               // ---------------------------------------------------------
               // case 3: this sphere and the selectedSphere are different
@@ -428,6 +449,7 @@ export default class Renderer3D extends Component {
               this.unhighlightLabel(this.sphereToLabelMap[prevSphere.uuid]);
               // update the selected sphere
               this._state.selectedSphere = sphere;
+              this.refreshLabelControls(labelObj);
             }
             pickedSphere = true;
           }
@@ -447,11 +469,9 @@ export default class Renderer3D extends Component {
           }
           */
         }
-
         // refresh canvas
         this.animateForAWhile();
       }
-
     } else if (event.button === RIGH_BUTTON) {
       event.preventDefault();
       if (this.meshGroup !== null) {
@@ -467,28 +487,30 @@ export default class Renderer3D extends Component {
         if (intersects.length > 0) {
           // add sphere into scene
           const point = intersects[0].point;
-          const radius = this.meshDiameter / 200;
+          const radius = this.meshDiameter / 100;
           const sphereGeom = new THREE.SphereGeometry(radius, 32, 32);
-          const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+          const material = new THREE.MeshPhongMaterial({ color: 0xffff00 });
           const sphere = new THREE.Mesh(sphereGeom, material);
           sphere.position.copy(point);
           this.sphereGroup.add(sphere);
 
           // add label into scene
-          const text = '<EMPTY LABEL>';
+          const text = '<EMPTY>';
           const sprite = ThreeUtils.makeTextSprite(text,
             {
               fontStyle: '100px Georgia',
-              worldFontHeight: this.meshDiameter / 100,
+              worldFontHeight: this.meshDiameter * LABEL_SIZE_COEF,
               borderThickness: 20,
               borderColor: 'rgb(0,0,0)',
-              backgroundColor: 'rgba(255,255,255,0.6)',
-              foregroundColor: 'rgb(0,0,0)',
+              backgroundColor: 'rgba(255,255,0,0.8)',
+              foregroundColor: 'rgb(0,0,255)',
             });
-          const textpos = new THREE.Vector3()
+          const dir = new THREE.Vector3()
             .subVectors(point, this.meshCenter)
-            .multiplyScalar(1.2)
-            .add(this.meshCenter);
+            .normalize();
+          const textpos = new THREE.Vector3()
+            .copy(point)
+            .addScaledVector(dir, this.meshDiameter / 5);
           sprite.position.copy(textpos);
           this.spriteGroup.add(sprite);
 
@@ -496,7 +518,7 @@ export default class Renderer3D extends Component {
           const lineGeo = new THREE.Geometry();
           lineGeo.vertices.push(point);
           lineGeo.vertices.push(textpos);
-          const lineMat = new THREE.LineBasicMaterial({ color: 0x00ffff });
+          const lineMat = new THREE.LineBasicMaterial({ color: 0xffff00 });
           const line = new THREE.Line(lineGeo, lineMat);
           this.lineGroup.add(line);
 
@@ -505,8 +527,18 @@ export default class Renderer3D extends Component {
           this.spriteToLabelMap[sprite.uuid] = labelObj;
           this.sphereToLabelMap[sphere.uuid] = labelObj;
 
+          // unhighlight the previously selected label (if any)
+          if (this._state.selectedSphere !== null) {
+            const sphereId = this._state.selectedSphere.uuid;
+            this.unhighlightLabel(this.sphereToLabelMap[sphereId]);
+          }
+          // set this as the current selected sphere
+          this._state.selectedSphere = sphere;
+
           // refresh scene
           this.animateForAWhile();
+          // refresh label controls
+          this.refreshLabelControls(labelObj);
         }
       }
     }
@@ -528,7 +560,7 @@ export default class Renderer3D extends Component {
     const newSprite = ThreeUtils.makeTextSprite(labelObj.text,
       {
         fontStyle: '100px Georgia',
-        worldFontHeight: this.meshDiameter / 100,
+        worldFontHeight: this.meshDiameter * LABEL_SIZE_COEF,
         borderThickness: 20,
         borderColor: 'rgb(0,0,0)',
         backgroundColor: 'rgba(255,255,0,0.8)',
@@ -557,7 +589,7 @@ export default class Renderer3D extends Component {
     // create a new non-highlighted sprite
     const newSprite = ThreeUtils.makeTextSprite(labelObj.text, {
       fontStyle: '100px Georgia',
-      worldFontHeight: this.meshDiameter / 100,
+      worldFontHeight: this.meshDiameter * LABEL_SIZE_COEF,
       borderThickness: 20,
       borderColor: 'rgb(0,0,0)',
       backgroundColor: 'rgba(255,255,255,0.6)',
@@ -620,10 +652,10 @@ export default class Renderer3D extends Component {
   }
 
   /**
-   * [updateSelectedLabel : updates currently selected label in the scene
-   * with the changes made to it]
+   * [updateLabelText : updates the text of the currently selected label
+   * with the text written by the user]
    */
-  updateSelectedLabel() {
+  updateLabelText() {
     const text = this.refs.labelTextInput.value;
     const sphere = this._state.selectedSphere;
     if (sphere) {
@@ -634,7 +666,13 @@ export default class Renderer3D extends Component {
     }
   }
 
-  moveLabel(dirV) {
+  moveLabel(dirV, firstCall) {
+    // perform several label updates while mouse is down (labelPositionDirty = true)
+    // until the mouse is released (labelPositionDirty = false)
+    if (firstCall) this._state.labelPositionDirty = true;
+    else if (!this._state.labelPositionDirty) return;
+    setTimeout(() => { this.moveLabel(dirV, false); }, 90);
+
     // check we have a selected sphere
     const sphere = this._state.selectedSphere;
     if (sphere) {
@@ -665,18 +703,63 @@ export default class Renderer3D extends Component {
     }
   }
 
+  stopLabelPositionUpdates() {
+    this._state.labelPositionDirty = false;
+  }
+
+  refocusOnModel() {
+    if (this.meshGroup !== null) {
+      ThreeUtils.centerCameraOnBoundingBox(
+        this.camera,
+        this.cameraLight,
+        this.boundingBox,
+        this.refs.viewport.offsetWidth,
+        this.refs.viewport.offsetHeight
+      );
+      this._state.zoom = this.camera.zoom; // keep the zoom up to date
+      this.animateForAWhile();
+    }
+  }
+
+  /**
+   * [refreshLabelControls : helper function that refresh some controls
+   * with the data the labelObj provided]
+   */
+  refreshLabelControls(labelObj) {
+    console.log('==> refreshLabelControls()');
+    if (labelObj) {
+      // update text input's value
+      this.refs.labelTextInput.value = labelObj.text;
+    } else {
+      this.refs.labelTextInput.value = '';
+    }
+  }
+
   render() {
     return (
       <div>
         <input ref="filesInput" type="file" onChange={this.read3DFiles} multiple></input>
         <div>
-          <input ref="labelTextInput" type="text" onChange={this.updateSelectedLabel}></input>
-          <button onClick={() => this.moveLabel(UP_VECTOR)}>^</button>
-          <button onClick={() => this.moveLabel(DOWN_VECTOR)}>v</button>
-          <button onClick={() => this.moveLabel(LEFT_VECTOR)}>{'<'}</button>
-          <button onClick={() => this.moveLabel(RIGHT_VECTOR)}>{'>'}</button>
-          <button onClick={() => this.moveLabel(FAR_VECTOR)}>far</button>
-          <button onClick={() => this.moveLabel(NEAR_VECTOR)}>near</button>
+          <input ref="labelTextInput" type="text" onChange={this.updateLabelText}></input>
+          <button onMouseUp={this.stopLabelPositionUpdates}
+            onMouseDown={() => this.moveLabel(UP_VECTOR, true)}
+          >^</button>
+          <button onMouseUp={this.stopLabelPositionUpdates}
+            onMouseDown={() => this.moveLabel(DOWN_VECTOR, true)}
+          >v</button>
+          <button onMouseUp={this.stopLabelPositionUpdates}
+            onMouseDown={() => this.moveLabel(LEFT_VECTOR, true)}
+          >{'<'}</button>
+          <button onMouseUp={this.stopLabelPositionUpdates}
+            onMouseDown={() => this.moveLabel(RIGHT_VECTOR, true)}
+          >{'>'}</button>
+          <button onMouseUp={this.stopLabelPositionUpdates}
+            onMouseDown={() => this.moveLabel(FAR_VECTOR, true)}
+          >far</button>
+          <button onMouseUp={this.stopLabelPositionUpdates}
+            onMouseDown={() => this.moveLabel(NEAR_VECTOR, true)}
+          >near</button>
+          <button onClick={this.refocusOnModel}>REFOCUS</button>
         </div>
         <div style={styles.viewport} ref="viewport"
           onWheel={this.handleWheel} onMouseDown={this.handleMouseDown}
