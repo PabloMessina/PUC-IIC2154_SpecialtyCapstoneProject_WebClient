@@ -9,22 +9,20 @@ import {
   Col,
   Row,
 } from 'react-bootstrap';
-import Correlation from '../questions/correlation';
 import MultiChoice from '../questions/multi-choice';
 import TShort from '../questions/tshort';
 import TrueFalse from '../questions/true-false';
-
+import NewQuestion from '../questions/new-question';
 import Icon from 'react-fa';
 
 // import QuestionContainer from '../questions/question-container';
-// import renderIf from 'render-if';
-//
+import renderIf from 'render-if';
+
 import { Colors } from '../../styles';
 
 const questionTypes = {
   multiChoice: 'Multi choice',
   tshort: 'Short text',
-  correlation: 'Correlation',
   trueFalse: 'True - False',
 };
 const defaultTags = [
@@ -47,15 +45,15 @@ const defaultQuestions = [
     },
   }, {
     _id: 2,
-    _type: 'correlation',
+    _type: 'multiChoice',
     question: { text: ' Phasellus nec tortor vel dui ultrices facilisis.' +
       'Vestibulum nec turpis vitae est interdum porttitor sed nec enim.' +
       'Curabitur vel viverra mi, tempor aliquet nisl.' },
     tags: ['Tag 1'],
     fields: {
-      keys: [{ text: 'Option1' }, { text: 'Option2' }],
-      values: [{ text: 'A' }, { text: 'B' }, { text: 'C' }, { text: 'D' }],
-      answers: [[0, 1], [1, 2], [1, 3]],
+      selectable: 1,
+      choices: [{ text: 'Option 1' }, { text: 'Option 2' }],
+      answers: [1],
     },
   }, {
     _id: 3,
@@ -96,6 +94,8 @@ export default class Questions extends Component {
       allQuestions: React.PropTypes.array,
       tags: React.PropTypes.array,
       allTags: React.PropTypes.array,
+      hideQuestions: React.PropTypes.array,
+      bufferQuestion: React.PropTypes.any,
     };
   }
 
@@ -105,7 +105,9 @@ export default class Questions extends Component {
       tags: [],
       allTags: defaultTags,
       questions: [],
-      allQuestions: defaultQuestions,
+      allQuestions: [...defaultQuestions],
+      hideQuestions: [],
+      bufferQuestion: { _id: 0, _type: 'trueFalse', question: { text: '' }, tags: [], fields: {} },
     };
   }
 
@@ -115,12 +117,41 @@ export default class Questions extends Component {
       tags: props.tags,
       questions: props.questions,
       mode: props.mode,
+      hideQuestions: props.hideQuestions,
+      allQuestions: props.allQuestions,
+      bufferQuestion: props.bufferQuestion,
     };
+    // this.setTypeBuffer = this.setTypeBuffer.bind(this);
+    // this.setTagsBuffer = this.setTagsBuffer.bind(this);
     this.changeTags = this.changeTags.bind(this);
     this.questionFactory = this.questionFactory.bind(this);
     this.addQuestion = this.addQuestion.bind(this);
     this.matchQuestions = this.matchQuestions.bind(this);
+    this.refreshAllQuestions = this.refreshAllQuestions.bind(this);
+    this.NewQuestion = this.NewQuestion.bind(this);
   }
+
+  // setTypeBuffer(e) {
+
+  //   const buffer = this.state.bufferQuestion;
+  //   buffer._type = Object.keys(this.props.questionTypes).map((tag) => tag)[e];
+  //   this.setState({ buffer });
+  // }
+  //
+  // setTagsBuffer(e) {
+
+  //   const buffer = this.state.bufferQuestion;
+  //   let tags = buffer.tags;
+  //   const tag = this.props.allTags[e].label;
+  //   const index = this.state.bufferQuestion.tags.findIndex((elem) => elem === tag);
+  //   if (index > -1) {
+  //     tags.splice(index, 1);
+  //   } else {
+  //     tags = [...this.state.tags, tag];
+  //   }
+  //   buffer.tags = tags;
+  //   this.setState({ buffer });
+  // }
 
   changeTags(value, tags) {
     return this.setState({ tags });
@@ -131,7 +162,6 @@ export default class Questions extends Component {
       case 'trueFalse': return <TrueFalse {...props} />;
       case 'multiChoice': return <MultiChoice {...props} />;
       case 'tshort': return <TShort {...props} />;
-      case 'correlation': return <Correlation {...props} />;
       default: return null;
     }
   }
@@ -149,13 +179,26 @@ export default class Questions extends Component {
       const questions = [...this.state.questions];
       questions.splice(index, 1);
       this.setState({ questions });
+    } else {
+      this.setState({ hideQuestions: [...this.state.hideQuestions, question._id] });
     }
   }
 
   matchQuestions() {
     const tags = this.state.tags;
-    return this.props.allQuestions
+    return this.state.allQuestions
       .filter(question => tags.every(tag => question.tags.indexOf(tag.label) > -1));
+  }
+
+  refreshAllQuestions() {
+    this.setState({ hideQuestions: [] });
+  }
+
+  NewQuestion(object) {
+    const allQuestions = [...this.state.allQuestions, object];
+    this.setState({ allQuestions });
+    this.setState({ mode: 'Select' });
+    this.addQuestion(object);
   }
 
   render() {
@@ -171,16 +214,18 @@ export default class Questions extends Component {
           </p>
           {this.state.questions.map((question, index) => {
             const props = {
-              question,
+              question: question.question,
+              tags: question.tags,
+              fields: question.fields,
               permission: 'reader',
             };
-            return (<div style={styles.question}>
+            return (<div key={index} style={styles.question}>
               <hr />
               <div style={styles.questionTitleTags}>
                 <p style={styles.questionTypesTitle}>#{question._id} - {questionTypes[question._type]}</p>
                 <div style={styles.tagsContainer}>
-                  {question.tags.map((tag) =>
-                    <p style={styles.tag}>{tag}</p>
+                  {question.tags.map((tag, j) =>
+                    <p key={j} style={styles.tag}>{tag}</p>
                   )}
                 </div>
               </div>
@@ -216,31 +261,65 @@ export default class Questions extends Component {
                 placeholder={'Tags'}
               />
             </div>
-            <Icon name="random fa-x" style={styles.randomIcon} />
+            <Icon
+              name="random"
+              style={styles.formIcon}
+            />
+            <Icon
+              name="refresh"
+              style={styles.formIcon}
+              onClick={this.refreshAllQuestions}
+            />
           </Form>
           <div>
-            {filteredQuestions.map((question) => {
+            {renderIf(this.state.mode === 'Select')(() =>
+            filteredQuestions.map((question, index) => {
+              if (!this.state.questions.includes(question) &&
+                  !this.state.hideQuestions.includes(question._id)) {
+                const props = {
+                  question: question.question,
+                  tags: question.tags,
+                  fields: question.fields,
+                  permission: 'reader',
+                };
+                return (
+                  <div key={index} style={styles.question}>
+                    <hr />
+                    <div style={styles.questionTitleTags}>
+                      <p style={styles.questionTypesTitle}>#{question._id} - {questionTypes[question._type]}</p>
+                      <div style={styles.tagsContainer}>
+                        {question.tags.map((tag, j) =>
+                          <p key={j} style={styles.tag}>{tag}</p>
+                        )}
+                      </div>
+                    </div>
+                    {this.questionFactory(question._type, props)}
+                    <div style={styles.questionIcons}>
+                      <Icon
+                        name="check fa-2x"
+                        style={styles.addIcon}
+                        onClick={() => this.addQuestion(question)}
+                      />
+                      <Icon
+                        name="close fa-2x"
+                        style={styles.removeIcon}
+                        onClick={() => this.removeQuestion(question, index, 'allQuestions')}
+                      />
+                    </div>
+                  </div>);
+              } return null;
+            })
+            )}
+            {renderIf(this.state.mode === 'Custom')(() => {
               const props = {
-                question,
-                permission: 'reader',
+                _id: this.state.allQuestions.length + 1,
+                typeQuestion: 'trueFalse',
+                allTags: this.props.allTags,
+                onSubmit: this.NewQuestion,
               };
-              return (<div style={styles.question}>
-                <hr />
-                <div style={styles.questionTitleTags}>
-                  <p style={styles.questionTypesTitle}>#{question._id} - {questionTypes[question._type]}</p>
-                  <div style={styles.tagsContainer}>
-                    {question.tags.map((tag) =>
-                      <p style={styles.tag}>{tag}</p>
-                    )}
-                  </div>
-                </div>
-                {this.questionFactory(question._type, props)}
-                <div style={styles.questionIcons}>
-                  <Icon name="check fa-2x" style={styles.addIcon} onClick={() => this.addQuestion(question)} />
-                  <Icon name="close fa-2x" style={styles.removeIcon} />
-                </div>
-              </div>);
-            })}
+              return (<NewQuestion {...props} />);
+            }
+            )}
           </div>
         </Col>
       </Row>
@@ -255,6 +334,13 @@ const styles = {
   },
   rigth: {
     padding: 10,
+    borderStyle: 'solid',
+    borderLeftWidth: 1,
+    borderLeftStyle: 'solid',
+    borderLeftColor: 'rgb(231, 231, 231)',
+    borderRightWidth: 0,
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
   },
   title: {
     fontSize: 28,
@@ -311,8 +397,16 @@ const styles = {
     color: Colors.RED,
     paddingLeft: 10,
   },
-  randomIcon: {
+  formIcon: {
     marginLeft: 10,
-    marginRight: 10,
+    marginRight: 5,
+  },
+  toolbar: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  button: {
+    margin: 5,
   },
 };
