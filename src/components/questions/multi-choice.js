@@ -1,5 +1,11 @@
 import React, { Component } from 'react';
-import { Input, ButtonInput } from 'react-bootstrap';
+import {
+  Input,
+  ButtonInput,
+  Form,
+  ControlLabel,
+  FormControl,
+} from 'react-bootstrap';
 import renderIf from 'render-if';
 
 import { Colors } from '../../styles';
@@ -104,9 +110,9 @@ export default class MultiChoice extends Component {
 
   renderEditor() {
     return (
-      <form style={styles.form}>
-      <p>Statement</p>
-        <Input
+      <Form style={styles.form}>
+        <ControlLabel>Statement</ControlLabel>
+        <FormControl
           style={styles.textArea}
           type="textArea"
           placeholder="Add a statement"
@@ -158,7 +164,7 @@ export default class MultiChoice extends Component {
             />
           </div>
         </div>
-      </form>
+      </Form>
     );
   }
 

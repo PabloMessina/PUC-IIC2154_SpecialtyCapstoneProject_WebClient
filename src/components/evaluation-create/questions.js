@@ -1,19 +1,39 @@
 import React, { Component } from 'react';
+
 import Select from 'react-select';
 import {
   DropdownButton,
   MenuItem,
-  FormControl,
+//   FormControl,
   Form,
+  Col,
+  Row,
 } from 'react-bootstrap';
 import Correlation from '../questions/correlation';
 import MultiChoice from '../questions/multi-choice';
 import TShort from '../questions/tshort';
 import TrueFalse from '../questions/true-false';
-import QuestionContainer from '../questions/question-container';
-import renderIf from 'render-if';
 
+import Icon from 'react-fa';
+
+// import QuestionContainer from '../questions/question-container';
+// import renderIf from 'render-if';
+//
 import { Colors } from '../../styles';
+
+const questionTypes = {
+  multiChoice: 'Multi choice',
+  tshort: 'Short text',
+  correlation: 'Correlation',
+  trueFalse: 'True - False',
+};
+const defaultTags = [
+  { label: 'Tag 1', value: 'Tag 1' },
+  { label: 'Tag 2', value: 'Tag 2' },
+  { label: 'Tag 3', value: 'Tag 3' },
+  { label: 'Tag 4', value: 'Tag 4' },
+  { label: 'Tag 5', value: 'Tag 5' },
+];
 const defaultQuestions = [
   {
     _id: 1,
@@ -72,102 +92,40 @@ export default class Questions extends Component {
   static get propTypes() {
     return {
       mode: React.PropTypes.string,
-      numberRandomQuestions: React.PropTypes.number,
+      questions: React.PropTypes.array,
+      allQuestions: React.PropTypes.array,
       tags: React.PropTypes.array,
       allTags: React.PropTypes.array,
-      questions: React.PropTypes.array,
-      allQuestionsComponents: React.PropTypes.array,
     };
   }
 
   static get defaultProps() {
     return {
-      mode: 'random',
-      numberRandomQuestions: 1,
+      mode: 'Select',
       tags: [],
+      allTags: defaultTags,
       questions: [],
-      allTags: [
-        { label: 'Tag 1', value: 'Tag 1' },
-        { label: 'Tag 2', value: 'Tag 2' },
-        { label: 'Tag 3', value: 'Tag 3' },
-        { label: 'Tag 4', value: 'Tag 4' },
-        { label: 'Tag 5', value: 'Tag 5' },
-      ],
-      allQuestionsComponents: [],
+      allQuestions: defaultQuestions,
     };
   }
+
   constructor(props) {
     super(props);
-    this.changeMode = this.changeMode.bind(this);
-    this.changeNumberRandomQuestions = this.changeNumberRandomQuestions.bind(this);
-    this.handleSelectChange = this.handleSelectChange.bind(this);
-    this.questionFactory = this.questionFactory.bind(this);
-    this.matchQuestions = this.matchQuestions.bind(this);
-    this.renderQuestions = this.renderQuestions.bind(this);
-    this.addQuestion = this.addQuestion.bind(this);
     this.state = {
-      mode: props.mode,
-      numberRandomQuestions: props.numberRandomQuestions,
       tags: props.tags,
-      allTags: props.allTags,
       questions: props.questions,
-      allQuestions: defaultQuestions,
-      allQuestionsComponents: this.init(defaultQuestions),
+      mode: props.mode,
     };
+    this.changeTags = this.changeTags.bind(this);
+    this.questionFactory = this.questionFactory.bind(this);
+    this.addQuestion = this.addQuestion.bind(this);
+    this.matchQuestions = this.matchQuestions.bind(this);
   }
 
-  init(questions) {
-    const components = [];
-    questions.forEach((question, index) => {
-      const options = {
-        question,
-        permission: 'reader',
-      };
-      const buttons = [
-        { text: 'add', onClick: () => this.addQuestion(question._id), style: styles.addQuestion },
-      ];
-      const component = (<QuestionContainer
-        component={this.questionFactory(question._type, options)}
-        title={`Question ${question._id}`}
-        tags={question.tags}
-        buttons={buttons}
-        key={index}
-        open
-        collapsible={false}
-      />);
-      components.push({ _id: question._id, component });
-    });
-    return components;
-  }
-
-  addQuestion(_id) {
-    debugger;
-    const questions = this.state.questions;
-    questions.push(
-      this.state.allQuestionsComponents.find((item) => item._id === _id)
-    );
-    this.setState({ questions });
-  }
-
-  handleSelectChange(value, tags) {
-    this.forceUpdate();
+  changeTags(value, tags) {
     return this.setState({ tags });
   }
 
-  changeMode(e) {
-    this.setState({ mode: e });
-  }
-
-  changeNumberRandomQuestions(e) {
-    this.setState({ numberRandomQuestions: e.target.value });
-  }
-
-  /**
-   * Return a question component
-   * @param  {string} _type   type of question
-   * @param  {object} props   props of component
-   * @return {component}
-   */
   questionFactory(_type, props) {
     switch (_type) {
       case 'trueFalse': return <TrueFalse {...props} />;
@@ -178,132 +136,184 @@ export default class Questions extends Component {
     }
   }
 
-  /**
-   * Return questions with tags selected by the user
-   * @return {array}
-   */
+  addQuestion(question) {
+    let questions = [...this.state.questions];
+    if (!questions.includes(question)) {
+      questions = [...questions, question];
+    }
+    this.setState({ questions });
+  }
+
+  removeQuestion(question, index, option) {
+    if (option === 'evaluation') {
+      const questions = [...this.state.questions];
+      questions.splice(index, 1);
+      this.setState({ questions });
+    }
+  }
+
   matchQuestions() {
+    debugger;
     const tags = this.state.tags;
-    return this.state.allQuestions
+    return this.props.allQuestions
       .filter(question => tags.every(tag => question.tags.indexOf(tag.label) > -1));
   }
 
-  renderQuestions(mquestions) {
-    if (this.state.mode !== 'create') {
-      const returns = [];
-      mquestions.forEach((question) => {
-        returns.push(
-          this.state.allQuestionsComponents
-          .filter((item) => item._id === question._id)
-          .map((item) => item.component)
-        );
-      });
-      return returns;
-    }
-    return null;
-  }
-
   render() {
-    const filtredQuestions = this.matchQuestions();
+    const filteredQuestions = this.matchQuestions();
     return (
-      <div style={styles.container}>
-        <div style={styles.mainQuestions}>
-          <div>
-            <Form style={styles.optionBar}>
-              <DropdownButton
-                id={'modeDropdown'}
-                title={this.state.mode}
-                onSelect={this.changeMode}
-                style={styles.formMode}
-              >
-                <MenuItem eventKey="random">Random</MenuItem>
-                <MenuItem eventKey="manually">Manually</MenuItem>
-                <MenuItem eventKey="create">Create</MenuItem>
-              </DropdownButton>
-              {renderIf(this.state.mode === 'random')(() =>
-                <FormControl
-                  type="number"
-                  min="1"
-                  value={this.state.numberRandomQuestions}
-                  onChange={this.changeNumberRandomQuestions}
-                  style={styles.numberRandomQuestions}
-                />
-              )}
-              <div style={styles.formTags}>
-                <Select
-                  multi
-                  simpleValue={false}
-                  disabled={false}
-                  value={this.state.tags}
-                  options={this.state.allTags}
-                  onChange={this.handleSelectChange}
-                  placeholder={'Tags'}
+      <Row style={styles.container}>
+        <Col style={styles.left} xs={12} sm={6} md={6}>
+          <p style={styles.title}>Evaluation Name</p>
+          <p>Evaluation description: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+          Phasellus auctor imperdiet pulvinar. Nam quam risus, eleifend id pulvinar ac,
+          maximus eu massa. Cras dignissim arcu ac nunc porta maximus. Aliquam sapien quam,
+          bibendum quis neque efficitur, gravida finibus eros.
+          </p>
+          {this.state.questions.map((question, index) => {
+            const props = {
+              question,
+              permission: 'reader',
+            };
+            return (<div style={styles.question}>
+              <hr />
+              <div style={styles.questionTitleTags}>
+                <p style={styles.questionTypesTitle}>#{question._id} - {questionTypes[question._type]}</p>
+                <div style={styles.tagsContainer}>
+                  {question.tags.map((tag) =>
+                    <p style={styles.tag}>{tag}</p>
+                  )}
+                </div>
+              </div>
+              {this.questionFactory(question._type, props)}
+              <div style={styles.questionIcons}>
+                <Icon
+                  name="close fa-2x"
+                  style={styles.removeIcon}
+                  onClick={() => this.removeQuestion(question, index, 'evaluation')}
                 />
               </div>
-            </Form>
-            <div style={styles.search}>
-              {this.renderQuestions(filtredQuestions)}
-              {renderIf(filtredQuestions.length < 1)(() =>
-                <p>No questions found :c</p>
-              )}
+            </div>);
+          })}
+        </Col>
+        <Col style={styles.rigth} xs={12} sm={6} md={6}>
+          <Form style={styles.formQuestions}>
+            <DropdownButton
+              id={'modeDropdown'}
+              title={this.state.mode}
+              onSelect={(e) => this.setState({ mode: e })}
+            >
+              <MenuItem eventKey="Select">Select</MenuItem>
+              <MenuItem eventKey="Custom">Custom</MenuItem>
+            </DropdownButton>
+            <div style={styles.selectTag}>
+              <Select
+                multi
+                simpleValue={false}
+                disabled={false}
+                value={this.state.tags}
+                options={this.props.allTags}
+                onChange={this.changeTags}
+                placeholder={'Tags'}
+              />
             </div>
+            <Icon name="random fa-x" style={styles.randomIcon} />
+          </Form>
+          <div>
+            {filteredQuestions.map((question) => {
+              const props = {
+                question,
+                permission: 'reader',
+              };
+              return (<div style={styles.question}>
+                <hr />
+                <div style={styles.questionTitleTags}>
+                  <p style={styles.questionTypesTitle}>#{question._id} - {questionTypes[question._type]}</p>
+                  <div style={styles.tagsContainer}>
+                    {question.tags.map((tag) =>
+                      <p style={styles.tag}>{tag}</p>
+                    )}
+                  </div>
+                </div>
+                {this.questionFactory(question._type, props)}
+                <div style={styles.questionIcons}>
+                  <Icon name="check fa-2x" style={styles.addIcon} onClick={() => this.addQuestion(question)} />
+                  <Icon name="close fa-2x" style={styles.removeIcon} />
+                </div>
+              </div>);
+            })}
           </div>
-          <div style={styles.preview}>
-            {this.renderQuestions(this.state.questions)}
-          </div>
-        </div>
-      </div>
+        </Col>
+      </Row>
     );
   }
 }
 
 const styles = {
-  container: {
-
+  container: {},
+  left: {
+    padding: 10,
   },
-  optionBar: {
+  rigth: {
+    padding: 10,
+  },
+  title: {
+    fontSize: 28,
+  },
+  selectTag: {
     width: '100%',
+    height: '100%',
+    marginLeft: 5,
+  },
+  formQuestions: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    height: '100%',
   },
-  formMode: {
-    marginRight: 5,
-  },
-  numberRandomQuestions: {
-    width: 80,
-    marginLeft: 5,
-    marginRight: 5,
-  },
-  formTags: {
-    width: '100%',
-    height: '100%',
-    marginLeft: 5,
-  },
-  search: {
-    marginTop: 0,
-    backgroundColor: 'white',
-    padding: 0,
-  },
-  preview: {
-    backgroundColor: 'white',
-  },
-  addQuestion: {
-    backgroundColor: Colors.MAIN,
-    color: Colors.WHITE,
-    fontSize: 14,
-    padding: 3,
+  question: {
+    margin: 10,
     paddingLeft: 10,
     paddingRight: 10,
   },
-  removeQuestion: {
-    backgroundColor: Colors.RED,
-    color: Colors.WHITE,
+  questionTypesTitle: {
+    fontSize: 24,
   },
-  mainQuestions: {
+  tag: {
+    backgroundColor: Colors.MAIN,
+    color: Colors.WHITE,
+    margin: 3,
+    padding: 3,
+    paddingLeft: 15,
+    paddingRight: 15,
+    borderRadius: 5,
+  },
+  tagsContainer: {
     display: 'flex',
     flexDirection: 'row',
-    backgroundColor: 'white',
+    justifyContent: 'flex-end',
+  },
+  questionTitleTags: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  questionIcons: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  addIcon: {
+    color: Colors.MAIN,
+    paddingRight: 10,
+  },
+  removeIcon: {
+    color: Colors.RED,
+    paddingLeft: 10,
+  },
+  randomIcon: {
+    marginLeft: 10,
+    marginRight: 10,
   },
 };
