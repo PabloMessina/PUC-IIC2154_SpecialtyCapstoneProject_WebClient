@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Checkbox, Grid, Row, Col, Table } from 'react-bootstrap';
+import { Checkbox, Grid, Row, Col, Table, Button, Glyphicon } from 'react-bootstrap';
 
 
 export default class Students extends Component {
@@ -28,6 +28,11 @@ export default class Students extends Component {
       unselectedStudents: [0, 3, 4, 7, 9],
       selectedGroup: 0,
     };
+
+    this.renderGroup = this.renderGroup.bind(this);
+    this.addGroup = this.addGroup.bind(this);
+    this.isButtonDisabled = this.isButtonDisabled.bind(this);
+    this.rowGroupStyle = this.rowGroupStyle.bind(this);
   }
 
   addToGroup(studentIndex) {
@@ -41,11 +46,35 @@ export default class Students extends Component {
 
   removeFromGroup(groupIndex, studentIndex, studentId) {
     const groups = [...this.state.groups];
-    groups[groupIndex].splice(studentIndex, 1);   // TODO: ultimo del grupo?
+    groups[groupIndex].splice(studentIndex, 1);
+
+    // delete empty group
+    if (groups[groupIndex].length === 0) {
+      groups.splice(groupIndex, 1);
+      if (this.state.selectedGroup === groupIndex) {
+        this.state.selectedGroup = 0;
+      }
+    }
+
     const unselectedStudents = [...this.state.unselectedStudents];
     unselectedStudents.push(studentId);
 
     this.setState({ unselectedStudents, groups });
+  }
+
+  addGroup() {
+    const groups = [...this.state.groups];
+    groups.push([]);
+    this.setState({ groups, selectedGroup: groups.length - 1 });
+  }
+
+  rowGroupStyle(groupIndex) {
+    const style = { backgroundColor: groupIndex % 2 === 0 ? '#f9f9f9' : '' };
+    if (this.state.selectedGroup === groupIndex) {
+      style.border = 'solid 2px #2CA083';
+      //debugger;
+    }
+    return style;
   }
 
   renderGroupIndex(groupIndex, studentIndex, groupLength) {
@@ -62,11 +91,41 @@ export default class Students extends Component {
     return null;
   }
 
+  renderGroup(group, groupIndex) {
+    if (group.length > 0) {
+      return (
+        group.map((studentId, studentIndex) => (
+          <tr style={this.rowGroupStyle(groupIndex)}>
+            {this.renderGroupIndex(groupIndex, studentIndex, group.length)}
+            <td
+              onClick={() => this.removeFromGroup(groupIndex, studentIndex, studentId)}
+            >
+              {this.props.students[studentId].name}
+            </td>
+            <td> <Checkbox /> </td>
+          </tr>
+        ))
+      );
+    }
+
+    return (
+      <tr style={this.rowGroupStyle(groupIndex)}>
+        {this.renderGroupIndex(groupIndex, 0, 1)}
+        <td />
+        <td />
+      </tr>
+    );
+  }
+
+  isButtonDisabled() {
+    return this.state.groups[this.state.groups.length - 1].length === 0;
+  }
+
   render() {
     return (
       <div style={styles.container}>
         <Col md={8}>
-          <Table striped bordered condensed hover>
+          <Table bordered condensed hover>
             <thead>
               <tr>
                 <th>Group</th>
@@ -75,19 +134,7 @@ export default class Students extends Component {
               </tr>
             </thead>
             <tbody>
-            {this.state.groups.map((group, groupIndex) => (
-              group.map((studentId, studentIndex) => (
-                <tr>
-                  {this.renderGroupIndex(groupIndex, studentIndex, group.length)}
-                  <td
-                    onClick={() => this.removeFromGroup(groupIndex, studentIndex, studentId)}
-                  >
-                    {this.props.students[studentId].name}
-                  </td>
-                  <td> <Checkbox /> </td>
-                </tr>
-              ))
-            ))}
+            {this.state.groups.map(this.renderGroup)}
             </tbody>
           </Table>
         </Col>
@@ -106,6 +153,9 @@ export default class Students extends Component {
             ))}
             </tbody>
           </Table>
+        </Col>
+        <Col md={8}>
+          <Button onClick={this.addGroup} disabled={this.isButtonDisabled()}><Glyphicon glyph="plus" /> New Group </Button>
         </Col>
       </div>
     );
