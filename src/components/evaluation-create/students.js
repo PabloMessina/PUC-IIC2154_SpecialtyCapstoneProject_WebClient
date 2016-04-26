@@ -26,7 +26,7 @@ export default class Students extends Component {
     this.state = {
       groups: [[1, 2], [5, 6, 8]],
       unselectedStudents: [0, 3, 4, 7, 9],
-      selectedGroup: 0,
+      selectedGroup: -1,
     };
 
     this.renderGroup = this.renderGroup.bind(this);
@@ -71,7 +71,7 @@ export default class Students extends Component {
   rowGroupStyle(groupIndex) {
     const style = { backgroundColor: groupIndex % 2 === 0 ? '#f9f9f9' : '' };
     if (this.state.selectedGroup === groupIndex) {
-      style.border = 'solid 2px #2CA083';
+      style.borderLeft = 'solid 7px #2CA083';
       //debugger;
     }
     return style;
