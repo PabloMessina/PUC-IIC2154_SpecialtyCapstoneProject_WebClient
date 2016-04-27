@@ -11,6 +11,7 @@ import Dashboard from './components/dashboard';
 import Login from './components/login/';
 import Join from './components/join/';
 import Renderer3D from './components/renderer-3d/';
+import RendererWrapper from './components/renderer-wrapper/';
 
 // Development help
 // Go to: http://localhost:3000/template
@@ -24,6 +25,7 @@ const Routing = (
       <Route path="join" component={Join} />
       <Route path="renderer-3d" component={Renderer3D} />
       <Route path="template" component={Template} />
+      <Route path="renderer-wrapper" component={RendererWrapper} />
     </Route>
   </Router>
 );
