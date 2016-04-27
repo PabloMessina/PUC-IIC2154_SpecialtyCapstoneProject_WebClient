@@ -27,6 +27,9 @@ import Course from './components/course/';
 import CourseCreate from './components/course-create/';
 import OrganizationCreate from './components/organization-create/';
 import AtlasBook from './components/atlas-book/';
+// import Tree from './components/hierarchy-navigation/';
+// import Editor from './components/editor/';
+import Questions from './components/questions/';
 
 import CourseStudents from './components/course-students/';
 import CourseEvaluations from './components/course-evaluations/';
@@ -153,6 +156,7 @@ const Routing = (
 
       <Route path="editor/:atlasId" component={AtlasBook} />
       <Route path="template" component={Template} />
+      <Route path="questions" component={Questions} />
     </Route>
   </Router>
 );

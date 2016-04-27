@@ -38,17 +38,34 @@ but they will not be able to see the questions inside it.`,
 
 export default class MinTemplate extends Component {
 
+  static get propTypes() {
+    return {
+      organization: React.PropTypes.object,
+      course: React.PropTypes.object,
+      evaluation: React.PropTypes.object,
+      onEvaluationChange: React.PropTypes.func,
+    };
+  }
+
   constructor(props) {
     super(props);
     this.state = {
       title: '',
       description: '',
-      attendance: 0,
-      public: true,
+      attendance: ATTENDANCES[0].value,
+      isPublic: true,
     };
+    this.onChange = this.onChange.bind(this);
+  }
+
+  onChange(field, value) {
+    const evaluation = { [field]: value };
+    if (this.props.onEvaluationChange) this.props.onEvaluationChange(evaluation);
   }
 
   render() {
+    const { title, description, attendance, isPublic } = this.props.evaluation;
+
     return (
       <div style={styles.container}>
         <Row>
@@ -59,10 +76,10 @@ export default class MinTemplate extends Component {
                 <ControlLabel>Title</ControlLabel>
                 <FormControl
                   type="text"
-                  value={this.state.title}
+                  value={title}
                   placeholder="Mid-term evaluation"
                   label="Title"
-                  onChange={e => this.setState({ title: e.target.value })}
+                  onChange={e => this.onChange('title', e.target.value)}
                 />
                 <FormControl.Feedback />
               </FormGroup>
@@ -71,9 +88,9 @@ export default class MinTemplate extends Component {
                 <ControlLabel>Description</ControlLabel>
                 <FormControl
                   componentClass="textarea"
-                  value={this.state.description}
+                  value={description}
                   placeholder="Evaluation description..."
-                  onChange={e => this.setState({ description: e.target.value })}
+                  onChange={e => this.onChange('description', e.target.value)}
                 />
               </FormGroup>
 
@@ -82,21 +99,21 @@ export default class MinTemplate extends Component {
                 {ATTENDANCES.map((sub, i) => (
                   <Radio
                     key={i}
-                    checked={this.state.attendance === i}
-                    onChange={() => this.setState({ attendance: i })}
+                    checked={attendance === i}
+                    onChange={() => this.onChange('attendance', i)}
                   >
                     {sub.name}
                   </Radio>)
                 )}
-                <HelpBlock>{ATTENDANCES[this.state.attendance].description}</HelpBlock>
+                <HelpBlock>{ATTENDANCES[attendance].description}</HelpBlock>
               </FormGroup>
 
               <FormGroup>
                 <ControlLabel>Visibility</ControlLabel>
-                <Checkbox checked={this.state.public} onChange={() => this.setState({ public: !this.state.public })}>
+                <Checkbox checked={isPublic} onChange={() => this.onChange('isPublic', !isPublic)}>
                   Public evaluation
                 </Checkbox>
-                <HelpBlock>{this.state.public ? PRIVACY.PUBLIC : PRIVACY.PRIVATE}</HelpBlock>
+                <HelpBlock>{isPublic ? PRIVACY.PUBLIC : PRIVACY.PRIVATE}</HelpBlock>
               </FormGroup>
 
             </form>

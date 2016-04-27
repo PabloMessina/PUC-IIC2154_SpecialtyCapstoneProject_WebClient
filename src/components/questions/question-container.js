@@ -12,6 +12,7 @@ export default class questionContainer extends Component {
       collapsible: React.PropTypes.bool,
       open: React.PropTypes.bool,
       tags: React.PropTypes.array,
+      buttons: React.PropTypes.array,
     };
   }
 
@@ -21,7 +22,8 @@ export default class questionContainer extends Component {
       component: null,
       collapsible: true,
       open: false,
-      tags: [''],
+      tags: [],
+      buttons: [],
     };
   }
 
@@ -33,6 +35,7 @@ export default class questionContainer extends Component {
       collapsible: props.collapsible,
       open: props.open,
       tags: props.tags,
+      buttons: props.buttons,
     };
     this.onClick = this.onClick.bind(this);
   }
@@ -53,6 +56,7 @@ export default class questionContainer extends Component {
           <Title
             value={this.state.title}
             tags={this.state.tags}
+            buttons={this.state.buttons}
             onClick={() => this.setState({ open: !this.state.open })}
           />
         }

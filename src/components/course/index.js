@@ -55,6 +55,10 @@ export default class Course extends Component {
     }
   }
 
+  onEvaluationChange(evaluation) {
+    if (evaluation) this.setState({ evaluation });
+  }
+
   fetchOrganization(organizationId) {
     return organizationService.get(organizationId)
       .then(organization => this.setState({ organization }));
