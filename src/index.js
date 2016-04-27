@@ -11,7 +11,7 @@ import app, { auth, currentUser } from './app';
 import Main from './components/main';
 import Dashboard from './components/dashboard';
 import Login from './components/login/';
-import CreateAtlas from './components/create-atlas';
+import AtlasCreate from './components/atlas-create/';
 import SignUp from './components/signup/';
 import Settings from './components/settings';
 import NotificationSettings from './components/settings/notifications';
@@ -145,7 +145,12 @@ const Routing = (
         <Route path="recorrection" component={EvaluationCreateRecorrection} />
       </Route>
 
-      <Route path="create-atlas" component={CreateAtlas} />
+      <Route
+        path="organizations/show/:organizationId/atlases/create"
+        component={AtlasCreate}
+        onEnter={populate({ field: 'organizationId', to: 'organization' })}
+      />
+
       <Route path="editor/:atlasId" component={AtlasBook} />
       <Route path="template" component={Template} />
     </Route>

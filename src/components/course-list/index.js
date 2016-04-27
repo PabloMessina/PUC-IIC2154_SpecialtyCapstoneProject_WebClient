@@ -31,8 +31,8 @@ export default class CourseList extends Component {
     return (
       <div style={styles.container}>
       {this.props.courses.map((course, i) => (
-        <div>
-          <Media key={i} style={styles.cell}>
+        <div key={i}>
+          <Media style={styles.cell}>
             <Media.Left>
               <img
                 style={{ cursor: 'pointer' }}

@@ -18,7 +18,7 @@ import renderIf from 'render-if';
 import app from '../../app.js';
 const atlasService = app.service('/atlases');
 
-export default class CreateAtlas extends Component {
+export default class AtlasCreate extends Component {
 
   static get propTypes() {
     return {
@@ -75,6 +75,7 @@ export default class CreateAtlas extends Component {
       title: this.state.title,
       description: this.state.description,
       cover: this.state.cover,
+      organizationId: this.state.organization.id,
     };
 
     atlasService.create(newAtlas)
@@ -148,11 +149,11 @@ export default class CreateAtlas extends Component {
 
         <Row>
           <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
-            <p>LOREM IPSUM</p>
+            <p>Share knowledge across your organization with rich text books. Students and teachers can download your work on their personal devices and take notes and add bookmarks.</p>
             <ul>
-              <li>Create individual or group evaluations.</li>
-              <li>Schedule evaluations or make a surprise quiz.</li>
-              <li>Trace the performance of your students.</li>
+              <li>Add contributors and work on parallel.</li>
+              <li>Restrict your atlas to selected courses or make it private just for you.</li>
+              <li>Add <strong>sections</strong>, <strong>images</strong>, <strong>videos</strong> and even <strong>3D models</strong>.</li>
             </ul>
 
             <hr />
@@ -183,7 +184,7 @@ export default class CreateAtlas extends Component {
                 <FormControl
                   type="textarea"
                   value={this.state.description}
-                  placeholder="Course description..."
+                  placeholder="Atlas description..."
                   rows="5"
                   onChange={e => this.setState({ description: e.target.value })}
                 />
