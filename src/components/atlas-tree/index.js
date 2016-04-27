@@ -10,6 +10,7 @@ export default class AtlasTree extends Component {
   static get propTypes() {
     return {
       static: React.PropTypes.bool,
+      title: React.PropTypes.string,
       tree: React.PropTypes.object,
       onSelectSection: React.PropTypes.func,
       onAddSection: React.PropTypes.func,
@@ -17,22 +18,17 @@ export default class AtlasTree extends Component {
   }
 
   render() {
-    const tree = this.props.tree;
+    const { title, tree } = this.props;
     return (
       <div style={styles.container}>
-        {renderIf(tree.undefined)(() => (
-          tree.undefined.map((section, i) => (
-            <Node
-              key={i}
-              static={this.props.static}
-              onSelectSection={this.props.onSelectSection}
-              onAddSection={this.props.onAddSection}
-              section={section}
-              tree={tree}
-              anidation={[i + 1]}
-            />
-            ))
-        ))}
+        <Node
+          root
+          static={this.props.static}
+          onSelectSection={this.props.onSelectSection}
+          onAddSection={this.props.onAddSection}
+          section={{ title, _id: 'undefined' }}
+          tree={tree}
+        />
       </div>
     );
   }
@@ -42,8 +38,13 @@ export default class AtlasTree extends Component {
 const styles = {
   container: {
     backgroundColor: 'white',
-    display: 'flex',
     overflow: 'scroll',
+    width: '20%',
+    top: 64,
+    bottom: 35,
+    paddingTop: 20,
+    position: 'absolute',
+    borderRight: '1px solid rgba(0,0,0,0.07)',
 
     // flexDirection: 'column', // row, column
     // flexWrap: 'nowrap' // wrap, nowrap

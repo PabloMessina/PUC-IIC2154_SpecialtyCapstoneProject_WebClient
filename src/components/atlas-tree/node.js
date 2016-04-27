@@ -22,6 +22,7 @@ export default class Node extends Component {
     return {
       style: React.PropTypes.any,
       tree: React.PropTypes.object,
+      root: React.PropTypes.bool,
       onSelectSection: React.PropTypes.func,
       onAddSection: React.PropTypes.func,
       section: React.PropTypes.object,
@@ -37,6 +38,7 @@ export default class Node extends Component {
       collapsed: false,
       section: { name: 'Untitled', sections: [] },
       anidation: [],
+      selected: false,
     };
   }
 
@@ -46,6 +48,8 @@ export default class Node extends Component {
       tree: props.tree,
       collapsed: props.collapsed,
       section: props.section,
+      selected: props.selected,
+      hover: false,
     };
 
     this.collapse = this.collapse.bind(this);
@@ -71,30 +75,50 @@ export default class Node extends Component {
     .catch(error => console.log(error));
   }
 
+  onClick() {
+    this.props.onSelectSection(this.state.section);
+    // this.setState({ selected: true })
+  }
+
+
   render() {
-    const { anidation } = this.props;
-    const { collapsed } = this.state;
-    const section = this.state.section;
-    const { _id, title, content } = section;
-    const sections = this.state.tree[_id];
+    
+    const { anidation, root, tree } = this.props;
+    const { hover, selected, collapsed, section} = this.state;
+    const { _id, title } = section;
+
+    const sections = tree[_id];
     const onSelectSection = () => this.props.onSelectSection(section);
+    const hoverStyle = hover || selected ? { color: 'blue' } : { color: '#4A4A4A' };
 
     const hasSubtree = sections && sections.length > 0 && !collapsed;
-    //const fontSize = Math.max(FONT.MAX - (FONT.DELTA * anidation.length), FONT.MIN);
+    // const fontSize = Math.max(FONT.MAX - (FONT.DELTA * anidation.length), FONT.MIN);
 
     return (
       <div style={styles.container}>
 
-        <div style={styles.sectionNav}>
-          <p onClick={onSelectSection}>
-            {anidation.join('.')}. {title}
-          </p>
+        {renderIf(root)(() => (
+          <span style={styles.title}>{title}</span>
+        ))}
 
-          {renderIf(!this.props.static)(() => (
-            <Icon name="plus" style={styles.plusIcon} onClick={this.addSection} />
-            ))
-          }
-        </div>
+        {renderIf(!root)(() => (
+          <span
+            style={Object.assign(styles.sectionNav, hoverStyle)}
+            onMouseEnter={() => this.setState({ hover: true })}
+            onMouseLeave={() => this.setState({ hover: false })}
+          >
+            <span
+              onClick={onSelectSection}
+            >
+              <span style={styles.anidation}>{anidation.join('.')}.</span> {title}
+            </span>
+
+            {renderIf(!this.props.static)(() => (
+              <Icon name="plus" style={styles.plusIcon} onClick={this.addSection} />
+              ))
+            }
+          </span>
+        ))}
 
         {renderIf(hasSubtree)(() => (
           <div style={styles.subtree}>
@@ -124,15 +148,13 @@ const styles = {
     marginBottom: 3,
     marginLeft: 15,
     marginRight: 15,
+    width: '100%',
   },
-  texts: {
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'grey',
-  },
-  text: {
-    marginTop: 3,
-    marginBottom: 3,
-    fontWeight: '100',
+  title: {
+    display: 'inline-block',
+    width: '100%',
+    fontSize: 22,
+    textAlign: 'center',
   },
   subtree: {
     // height: 30,
@@ -148,9 +170,14 @@ const styles = {
     alignItems: 'center',
   },
   sectionNav: {
+    display: 'inline-block',
+    padding: '5px 0',
     alignItems: 'center',
-    display: 'inline-flex',
     fontSize: 18,
+    width: '100%',
+  },
+  anidation: {
+    fontWeight: 'bold',
   },
 };
 
