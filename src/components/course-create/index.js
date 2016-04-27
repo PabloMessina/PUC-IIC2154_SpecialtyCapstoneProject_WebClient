@@ -153,6 +153,8 @@ export default class CourseCreate extends Component {
                 />
               </FormGroup>
 
+              <hr />
+
               <Button bsStyle="primary" type="submit" disabled={this.state.submiting}>
                 Create Course
               </Button>
