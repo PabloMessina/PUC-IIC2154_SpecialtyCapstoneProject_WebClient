@@ -36,12 +36,14 @@ export default class DocumentDescription extends Component {
 
   render() {
     const doc = this.props.params.atlas;
+    let image = doc.cover.url;
+    image = image || 'http://sightlinemediaentertainment.com/wp-content/uploads/2015/09/placeholder-cover.jpg';
     return (
       <Grid>
         <Panel footer={doc.description}>
           <Row className="show-grid">
             <Col xs={6} md={4}>
-              <Image src="/img/atlas1.jpg" src={`/${doc.cover}`} responsive />
+              <Image src={image} responsive />
             </Col>
             <Col xs={6} md={8}>
               <h3>{doc.title}</h3>

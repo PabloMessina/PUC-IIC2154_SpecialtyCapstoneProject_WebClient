@@ -7,11 +7,14 @@ export default class AtlasThumbnail extends Component {
 
   render() {
     const route = `/documents/${this.props.document.id}`;
+    const doc = this.props.document;
+    let image = doc.cover.url;
+    image = image || 'http://sightlinemediaentertainment.com/wp-content/uploads/2015/09/placeholder-cover.jpg';
     return (
       <Panel style={styles.box} onClick={() => browserHistory.push(route)}>
-        <Image style={styles.image} src={this.props.document.cover} thumbnail responsive />
+        <Image style={styles.image} src={image} thumbnail responsive />
         <div style={styles.texts}>
-          <p style={styles.name}>{this.props.document.title}</p>
+          <p style={styles.name}>{doc.title}</p>
         </div>
         <div style={styles.texts}>
           <p style={styles.author}></p>
