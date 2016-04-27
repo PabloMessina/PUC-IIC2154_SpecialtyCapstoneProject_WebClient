@@ -89,6 +89,7 @@ export default class AtlasBook extends Component {
     const query = {
       atlasId: this.props.params.atlasId,
       version: 'latest',
+      $limit: 100,
     };
 
     return versionService.find({ query })

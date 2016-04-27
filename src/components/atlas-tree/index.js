@@ -10,6 +10,7 @@ export default class AtlasTree extends Component {
   static get propTypes() {
     return {
       static: React.PropTypes.bool,
+      title: React.PropTypes.string,
       tree: React.PropTypes.object,
       onSelectSection: React.PropTypes.func,
       onAddSection: React.PropTypes.func,
@@ -20,19 +21,15 @@ export default class AtlasTree extends Component {
     const tree = this.props.tree;
     return (
       <div style={styles.container}>
-        {renderIf(tree.undefined)(() => (
-          tree.undefined.map((section, i) => (
-            <Node
-              key={i}
-              static={this.props.static}
-              onSelectSection={this.props.onSelectSection}
-              onAddSection={this.props.onAddSection}
-              section={section}
-              tree={tree}
-              anidation={[i + 1]}
-            />
-            ))
-        ))}
+        <span>{this.props.title} </span>
+        <Node
+          root
+          static={this.props.static}
+          onSelectSection={this.props.onSelectSection}
+          onAddSection={this.props.onAddSection}
+          section={{ title: 'holaa', _id: 'undefined' }}
+          tree={tree}
+        />
       </div>
     );
   }

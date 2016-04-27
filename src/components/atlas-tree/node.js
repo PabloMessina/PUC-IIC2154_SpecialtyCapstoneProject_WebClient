@@ -22,6 +22,7 @@ export default class Node extends Component {
     return {
       style: React.PropTypes.any,
       tree: React.PropTypes.object,
+      root: React.PropTypes.bool,
       onSelectSection: React.PropTypes.func,
       onAddSection: React.PropTypes.func,
       section: React.PropTypes.object,
@@ -81,34 +82,43 @@ export default class Node extends Component {
 
 
   render() {
-    const { anidation } = this.props;
-    const { hover, selected, collapsed, section, tree } = this.state;
-    const { _id, title, content } = section;
+    
+    const { anidation, root, tree } = this.props;
+    const { hover, selected, collapsed, section} = this.state;
+    const { _id, title } = section;
+
     const sections = tree[_id];
     const onSelectSection = () => this.props.onSelectSection(section);
     const hoverStyle = hover || selected ? { color: 'blue' } : { color: '#4A4A4A' };
 
     const hasSubtree = sections && sections.length > 0 && !collapsed;
-    //const fontSize = Math.max(FONT.MAX - (FONT.DELTA * anidation.length), FONT.MIN);
+    // const fontSize = Math.max(FONT.MAX - (FONT.DELTA * anidation.length), FONT.MIN);
 
     return (
       <div style={styles.container}>
 
-        <span 
-          style={Object.assign(styles.sectionNav, hoverStyle)}
-          onMouseEnter={() => this.setState({ hover: true })}
-          onMouseLeave={() => this.setState({ hover: false })}
-        >
-          <span 
-            onClick={onSelectSection}>
-            <span style={styles.anidation}>{anidation.join('.')}.</span> {title}
-          </span>
+        {renderIf(root)(() => (
+          <span>{title}</span>
+        ))}
 
-          {renderIf(!this.props.static)(() => (
-            <Icon name="plus" style={styles.plusIcon} onClick={this.addSection} />
-            ))
-          }
-        </span>
+        {renderIf(!root)(() => (
+          <span
+            style={Object.assign(styles.sectionNav, hoverStyle)}
+            onMouseEnter={() => this.setState({ hover: true })}
+            onMouseLeave={() => this.setState({ hover: false })}
+          >
+            <span
+              onClick={onSelectSection}
+            >
+              <span style={styles.anidation}>{anidation.join('.')}.</span> {title}
+            </span>
+
+            {renderIf(!this.props.static)(() => (
+              <Icon name="plus" style={styles.plusIcon} onClick={this.addSection} />
+              ))
+            }
+          </span>
+        ))}
 
         {renderIf(hasSubtree)(() => (
           <div style={styles.subtree}>
