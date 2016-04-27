@@ -119,13 +119,13 @@ export default class CourseTab extends Component {
     ];
 
     const options = this.state.allMembers
-    .filter((user) => !this.state.tableUsers
-    .find((item) => item.name === user.name))
-    .map(member => (
-      {
+      .filter((user) => !this.state.tableUsers
+      .find((item) => item.name === user.name))
+      .map(member => ({
         value: member.mail,
         label: member.name,
       }));
+
     return (
       <Grid style={styles.container}>
         <form onSubmit={this.onSubmit}>
@@ -139,7 +139,7 @@ export default class CourseTab extends Component {
                 value={this.state.users}
                 options={options}
                 placeholder={'Members'}
-                onChange={this.adduser}
+                onChange={(value, label) => this.setState({ users: label })}
               />
             </Col>
             <Col xs={3}>
@@ -148,7 +148,7 @@ export default class CourseTab extends Component {
                 simpleValue
                 value={this.state.role}
                 options={roles}
-                onChange={this.setShip}
+                onChange={value => this.setState({ role: value })}
               />
               <br />
             </Col>
@@ -172,7 +172,7 @@ export default class CourseTab extends Component {
             </thead>
             <tbody>
             {this.state.tableUsers.map((user, i) => (
-              <tr>
+              <tr key={i}>
                 <th>{i + 1}</th>
                 <th>{user.name}</th>
                 <th>{user.mail}</th>
@@ -187,7 +187,7 @@ export default class CourseTab extends Component {
             <h4>Members</h4>
             <p>Each member has a specific role inside the organization.</p>
             <hr />
-            <p>Want to edit a member's role?</p>
+            <p>Search users and add a bulk of them to the organization.</p>
           </Panel>
         </Col>
       </Grid>
