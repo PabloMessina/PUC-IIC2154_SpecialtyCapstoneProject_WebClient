@@ -1,17 +1,17 @@
 import React, { Component } from 'react';
 import { Grid, Col, Row, Button, Form, FormGroup, FormControl, ControlLabel } from 'react-bootstrap';
 import AtlasThumbnail from './atlas-thumbnail';
-import atlasExample from '../../atlas-example.js';
 import renderIf from 'render-if';
 import Select from 'react-select';
 import { Colors } from '../../styles';
+import app from '../../app';
+const atlasesService = app.service('/atlases');
 
-
-export default class Settings extends Component {
+export default class DocumentList extends Component {
 
   static get defaultProps() {
     return {
-      atlases: atlasExample.documents,
+      atlases: [],
     };
   }
 
@@ -20,33 +20,75 @@ export default class Settings extends Component {
     this.state = {
       atlases: props.atlases,
       advanced: false,
+      lista: [],
       tags: [],
       allTags: [
-        { label: 'Anatomy', value: 'Tag 1' },
-        { label: 'Cardiology', value: 'Tag 2' },
-        { label: 'Astronomy', value: 'Tag 3' },
-        { label: 'Biology', value: 'Tag 4' },
-        { label: 'Technology', value: 'Tag 5' },
+        { label: 'Anatomy', value: 'Anatomy' },
+        { label: 'Cardiology', value: 'Cardiology' },
+        { label: 'Astronomy', value: 'Astronomy' },
+        { label: 'Biology', value: 'Biology' },
+        { label: 'Technology', value: 'Technology' },
       ],
     };
     this.handleSelectChange = this.handleSelectChange.bind(this);
+    this.findOne = this.findOne.bind(this);
+    this.filterDocuments = this.filterDocuments.bind(this);
   }
 
+  componentDidMount() {
+    this.fetchTree();
+  }
+
+  // To fetch the atlases from the server
+  fetchTree() {
+    const query = {
+    };
+
+    return atlasesService.find({ query })
+      .then(results => {
+        this.setState({ atlases: results.data });
+      });
+  }
+  // To find an atlas with at least one of the tags
+  findOne(haystack, arr) {
+    return haystack.every(v => arr.indexOf(v.label) >= 0);
+  }
+
+  // To handle the changes in the tags
   handleSelectChange(value, tags) {
     this.forceUpdate();
-    return this.setState({ tags });
+    this.setState({ tags });
+    this.state.lista = [];
+    this.state.atlases.forEach((doc) => {
+      const search = this.findOne(this.state.tags, doc.tags);
+      if (search || this.state.tags.length === 0) {
+        this.state.lista.push(
+          <div style={styles.column} xs={2} md={3}>
+            <AtlasThumbnail id={doc.id} document={doc} />
+          </div>
+        );
+      }
+    });
+  }
+
+
+  // For the first actualization and when you press the button search
+  filterDocuments() {
+    this.state.lista = [];
+    this.state.atlases.forEach((doc) => {
+      const search = this.findOne(this.state.tags, doc.tags);
+      if (search || this.state.tags.length === 0) {
+        this.state.lista.push(
+          <div style={styles.column} xs={2} md={3}>
+            <AtlasThumbnail id={doc.id} document={doc} />
+          </div>
+        );
+      }
+    });
   }
 
   render() {
-    const lista = [];
-    atlasExample.documents.forEach((doc) => {
-      lista.push(
-        <div style={styles.column} xs={2} md={3}>
-          <AtlasThumbnail id={doc.id} document={doc} />
-        </div>
-      );
-    });
-
+    this.filterDocuments();
     // Use <FormControl type="text" placeholder="" /> instead of Select for simple search
     return (
       <Grid style={styles.container}>
@@ -68,7 +110,7 @@ export default class Settings extends Component {
                 </div>
               </Col>
               <Col sm={2}>
-                <Button style={styles.button} type="submit">
+                <Button style={styles.button} onClick={this.filterDocuments()}>
                   Search
                 </Button>
               </Col>
@@ -110,7 +152,7 @@ export default class Settings extends Component {
         </Row>
         <Row>
           <div style={styles.scroll}>
-            {lista}
+            {this.state.lista}
           </div>
         </Row>
       </Grid>
@@ -118,7 +160,7 @@ export default class Settings extends Component {
   }
 }
 
-Settings.propTypes = {
+DocumentList.propTypes = {
   children: React.PropTypes.object,
   atlases: React.PropTypes.object,
 };
@@ -130,8 +172,9 @@ const styles = {
     fontFamily: 'Raleway, Helvetica Neue, Helvetica, Arial, sans-serif',
   },
   scroll: {
+    display: 'block',
     margin: 'auto',
-    width: '90%',
+    width: '88%',
   },
   title: {
     textAlign: 'center',

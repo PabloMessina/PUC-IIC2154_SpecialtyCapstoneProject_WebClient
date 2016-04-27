@@ -1,21 +1,50 @@
 import React, { Component } from 'react';
 import { Grid, Image, Panel, Col, Row } from 'react-bootstrap';
-import atlasExample from '../../atlas-example.js';
+import app from '../../app';
+const atlasesService = app.service('/atlases');
+
 
 export default class DocumentDescription extends Component {
 
+  static get defaultProps() {
+    return {
+      atlas: {},
+    };
+  }
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      atlas: props.atlas,
+    };
+  }
+
+  componentDidMount() {
+    this.fetchTree();
+  }
+
+  fetchTree() {
+    const query = {
+      atlasId: this.props.params.atlasId,
+    };
+
+    return atlasesService.find({ query })
+      .then(results => {
+        this.setState({ atlas: results.data });
+      });
+  }
+
   render() {
-    const doc = atlasExample.documents[this.props.params.docId - 1];
+    const doc = this.props.params.atlas;
     return (
       <Grid>
         <Panel footer="Footer">
           <Row className="show-grid">
             <Col xs={6} md={4}>
-              <Image src="/img/atlas1.jpg" src={`/${doc.url}`} responsive />
+              <Image src="/img/atlas1.jpg" src={`/${doc.cover}`} responsive />
             </Col>
             <Col xs={6} md={8}>
               <h3>{doc.title}</h3>
-              <p>Author: {doc.author}</p>
               <p>Year: 2016</p>
               <p>Category: anatomy</p>
             </Col>
@@ -27,7 +56,8 @@ export default class DocumentDescription extends Component {
 }
 
 DocumentDescription.propTypes = {
-  params: React.PropTypes.number,
+  atlas: React.PropTypes.object,
+  params: React.PropTypes.object,
 };
 
 // this.props.params.docId

@@ -9,12 +9,12 @@ export default class AtlasThumbnail extends Component {
     const route = `/documents/${this.props.document.id}`;
     return (
       <Panel style={styles.box} onClick={() => browserHistory.push(route)}>
-        <Image style={styles.image} src={this.props.document.url} thumbnail responsive />
+        <Image style={styles.image} src={this.props.document.cover} thumbnail responsive />
         <div style={styles.texts}>
           <p style={styles.name}>{this.props.document.title}</p>
         </div>
         <div style={styles.texts}>
-          <p style={styles.author}>{this.props.document.author}</p>
+          <p style={styles.author}></p>
         </div>
         <Rater total={5} rating={2} />
       </Panel>
