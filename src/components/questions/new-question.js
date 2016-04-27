@@ -3,9 +3,6 @@ import React, {
 } from 'react';
 import {
   Button,
-  ButtonToolbar,
-  DropdownButton,
-  MenuItem,
 } from 'react-bootstrap';
 
 import MultiChoice from './multi-choice';
@@ -29,7 +26,6 @@ export default class NewQuestion extends Component {
       question: React.PropTypes.object,
       tags: React.PropTypes.array,
       fields: React.PropTypes.object,
-      allTags: React.PropTypes.array,
       current: React.PropTypes.any,
       onSubmit: React.PropTypes.func,
       questionTypes: React.PropTypes.any,
@@ -43,7 +39,6 @@ export default class NewQuestion extends Component {
       question: {},
       tags: [],
       fields: {},
-      allTags: [],
       current: <TrueFalse permission={'editor'} title={'New Question'} />,
       questionTypes,
     };
@@ -59,11 +54,20 @@ export default class NewQuestion extends Component {
       fields: props.fields,
       current: props.current,
     };
-    this.setTypeQuestion = this.setTypeQuestion.bind(this);
-    this.setTags = this.setTags.bind(this);
     this.changeQuestion = this.changeQuestion.bind(this);
     this.changeFields = this.changeFields.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const tags = nextProps.tags;
+    const typeQuestion = nextProps.typeQuestion;
+    if (tags && tags !== this.state.tags) {
+      this.setState({ tags });
+    }
+    if (typeQuestion && typeQuestion !== this.state.typeQuestion) {
+      this.setState({ typeQuestion });
+    }
   }
 
   onSubmit() {
@@ -77,28 +81,10 @@ export default class NewQuestion extends Component {
     this.props.onSubmit(question);
   }
 
-  setTypeQuestion(e) {
-    this.setState({
-      typeQuestion: Object.keys(this.props.questionTypes)
-      .map((tag) => tag)[e],
-    });
-  }
-
-  setTags(e) {
-    let tags = this.state.tags;
-    const tag = this.props.allTags[e].label;
-    const index = this.state.tags.findIndex((elem) => elem === tag);
-    if (index > -1) {
-      tags.splice(index, 1);
-    } else {
-      tags = [...this.state.tags, tag];
-    }
-    this.setState({ tags });
-  }
-
   changeQuestion(id, question) {
     this.setState({ question });
   }
+
   changeFields(id, fields) {
     this.setState({ fields });
   }
@@ -107,58 +93,19 @@ export default class NewQuestion extends Component {
     return (
       <div>
         <hr />
-        <ButtonToolbar style={styles.toolbar}>
-          <DropdownButton
-            style={styles.button}
-            bsStyle={'default'}
-            title={this.state.typeQuestion}
-            onSelect={this.setTypeQuestion}
-            id={0}
-          >
-          {Object.keys(this.props.questionTypes).map((tag, index) =>
-              <MenuItem
-                key={index}
-                eventKey={index}
-                active={this.state.typeQuestion === tag}
-              >
-                {tag}
-              </MenuItem>
-          )}
-          </DropdownButton>
-          <DropdownButton
-            style={styles.button}
-            bsStyle={'default'}
-            title={'tags'}
-            onSelect={this.setTags}
-            id={1}
-          >
-            {this.props.allTags.
-              map((tag, index) =>
-                <MenuItem
-                  key={index}
-                  eventKey={index}
-                  active={this.state.tags.includes(tag.label)}
-                >
-                  {tag.label}
-                  </MenuItem>
-              )}
-          </DropdownButton>
-          <Button
-            disabled
-            style={styles.button}
-          >Permission</Button>
-        </ButtonToolbar>
         <div>
-          <div style={styles.tagsContainer}>
-            {this.state.tags.map((tag, j) =>
-              <p key={j} style={styles.tag}>{tag}</p>
-            )}
+          <div style={styles.questionTitleTags}>
+            <p style={styles.questionTypesTitle}>#{this.state._id} - {questionTypes[this.state.typeQuestion]}</p>
+            <div style={styles.tagsContainer}>
+              {this.state.tags.map((tag, j) =>
+                <p key={j} style={styles.tag}>{tag}</p>
+              )}
+            </div>
           </div>
           {(() => {
             const props = {
               _id: this.state._id,
               question: this.state.question,
-              tags: this.state.tags,
               permission: 'editor',
               changeQuestion: this.changeQuestion,
               changeFields: this.changeFields,
@@ -226,5 +173,15 @@ const styles = {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'flex-end',
+  },
+  questionTitleTags: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  questionTypesTitle: {
+    fontSize: 24,
   },
 };

@@ -10,8 +10,7 @@ import {
 import renderIf from 'render-if';
 
 import { Colors } from '../../styles';
-// Choices: array of objects {text:''}.
-// Answers: array of booleans.
+
 
 export default class MultiChoice extends Component {
 
@@ -43,11 +42,9 @@ export default class MultiChoice extends Component {
   }
 
   constructor(props) {
-    debugger;
     super(props);
     this.renderEditor = this.renderEditor.bind(this);
     this.renderResponder = this.renderResponder.bind(this);
-    // this.renderReader = this.renderReader.bind(this);
     this.changeQuestion = this.changeQuestion.bind(this);
     this.changeFields = this.changeFields.bind(this);
     this.check = this.check.bind(this);
@@ -92,62 +89,6 @@ export default class MultiChoice extends Component {
     fields.choices.splice(index, 1);
     this.props.changeFields(this.props._id, fields);
   }
-
-  // onChange(event, _type, index) {
-  //   if (_type === 'statement') {
-  //     this.setState({ statement: event.target.value });
-  //   } else if (_type === 'choice') {
-  //     const choices = [...this.state.choices];
-  //     choices[index].text = event.target.value;
-  //     this.setState({ choices });
-  //   }
-  //   this.props.returnValue({
-  //     question: { text: this.state.statement },
-  //     fields: {
-  //       selectable: this.state.selectable,
-  //       choices: this.state.choices,
-  //       answers: this.state.answers,
-  //     },
-  //   });
-  // }
-  //
-  // addItem(e) {
-  //   e.preventDefault();
-  //   const answers = this.state.answers;
-  //   const choices = this.state.choices;
-  //   if (choices.filter((choice) => choice.text === '').length < 1) {
-  //     this.setState({ answers: [...answers, false] });
-  //     this.setState({ choices: [...choices, { text: '' }] });
-  //   }
-  //   this.props.returnValue({
-  //     question: { text: this.state.statement },
-  //     fields: {
-  //       selectable: this.state.selectable,
-  //       choices: this.state.choices,
-  //       answers: this.state.answers,
-  //     },
-  //   });
-  // }
-  //
-  // removeItem(e, index) {
-  //   e.preventDefault();
-  //   const answers = [...this.state.answers];
-  //   const choices = [...this.state.choices];
-  //   if (answers.length > 1) {
-  //     answers.splice(index, 1);
-  //     choices.splice(index, 1);
-  //   }
-  //   this.setState({ answers });
-  //   this.setState({ choices });
-  //   this.props.returnValue({
-  //     question: { text: this.state.statement },
-  //     fields: {
-  //       selectable: this.state.selectable,
-  //       choices: this.state.choices,
-  //       answers: this.state.answers,
-  //     },
-  //   });
-  // }
 
   renderEditor() {
     return (

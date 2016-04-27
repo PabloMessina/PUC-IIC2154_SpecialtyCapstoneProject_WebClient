@@ -4,7 +4,6 @@ import Select from 'react-select';
 import {
   DropdownButton,
   MenuItem,
-//   FormControl,
   Form,
   Col,
   Row,
@@ -15,7 +14,6 @@ import TrueFalse from '../questions/true-false';
 import NewQuestion from '../questions/new-question';
 import Icon from 'react-fa';
 
-// import QuestionContainer from '../questions/question-container';
 import renderIf from 'render-if';
 
 import { Colors } from '../../styles';
@@ -121,37 +119,22 @@ export default class Questions extends Component {
       allQuestions: props.allQuestions,
       bufferQuestion: props.bufferQuestion,
     };
-    // this.setTypeBuffer = this.setTypeBuffer.bind(this);
-    // this.setTagsBuffer = this.setTagsBuffer.bind(this);
+
     this.changeTags = this.changeTags.bind(this);
     this.questionFactory = this.questionFactory.bind(this);
     this.addQuestion = this.addQuestion.bind(this);
     this.matchQuestions = this.matchQuestions.bind(this);
     this.refreshAllQuestions = this.refreshAllQuestions.bind(this);
     this.NewQuestion = this.NewQuestion.bind(this);
+    this.removeQuestion = this.removeQuestion.bind(this);
+    this.setTypeBuffer = this.setTypeBuffer.bind(this);
   }
 
-  // setTypeBuffer(e) {
-
-  //   const buffer = this.state.bufferQuestion;
-  //   buffer._type = Object.keys(this.props.questionTypes).map((tag) => tag)[e];
-  //   this.setState({ buffer });
-  // }
-  //
-  // setTagsBuffer(e) {
-
-  //   const buffer = this.state.bufferQuestion;
-  //   let tags = buffer.tags;
-  //   const tag = this.props.allTags[e].label;
-  //   const index = this.state.bufferQuestion.tags.findIndex((elem) => elem === tag);
-  //   if (index > -1) {
-  //     tags.splice(index, 1);
-  //   } else {
-  //     tags = [...this.state.tags, tag];
-  //   }
-  //   buffer.tags = tags;
-  //   this.setState({ buffer });
-  // }
+  setTypeBuffer(value) {
+    const bufferQuestion = this.state.bufferQuestion;
+    bufferQuestion._type = Object.keys(questionTypes)[value];
+    this.setState({ bufferQuestion });
+  }
 
   changeTags(value, tags) {
     return this.setState({ tags });
@@ -205,7 +188,7 @@ export default class Questions extends Component {
     const filteredQuestions = this.matchQuestions();
     return (
       <Row style={styles.container}>
-        <Col style={styles.left} xs={12} sm={6} md={6}>
+        <Col style={styles.left} xs={12} sm={7} md={7}>
           <p style={styles.title}>Evaluation Name</p>
           <p>Evaluation description: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
           Phasellus auctor imperdiet pulvinar. Nam quam risus, eleifend id pulvinar ac,
@@ -240,7 +223,7 @@ export default class Questions extends Component {
             </div>);
           })}
         </Col>
-        <Col style={styles.rigth} xs={12} sm={6} md={6}>
+        <Col style={styles.rigth} xs={12} sm={5} md={5}>
           <Form style={styles.formQuestions}>
             <DropdownButton
               id={'modeDropdown'}
@@ -250,6 +233,25 @@ export default class Questions extends Component {
               <MenuItem eventKey="Select">Select</MenuItem>
               <MenuItem eventKey="Custom">Custom</MenuItem>
             </DropdownButton>
+            {renderIf(this.state.mode === 'Custom')(() =>
+              <DropdownButton
+                style={styles.button}
+                bsStyle={'default'}
+                title={questionTypes[this.state.bufferQuestion._type]}
+                onSelect={this.setTypeBuffer}
+                id={0}
+              >
+                {Object.keys(questionTypes).map((tag, index) =>
+                  <MenuItem
+                    key={index}
+                    eventKey={index}
+                    active={this.state.bufferQuestion._type === tag}
+                  >
+                    {tag}
+                  </MenuItem>
+                )}
+              </DropdownButton>
+            )}
             <div style={styles.selectTag}>
               <Select
                 multi
@@ -313,8 +315,8 @@ export default class Questions extends Component {
             {renderIf(this.state.mode === 'Custom')(() => {
               const props = {
                 _id: this.state.allQuestions.length + 1,
-                typeQuestion: 'trueFalse',
-                allTags: this.props.allTags,
+                typeQuestion: this.state.bufferQuestion._type,
+                tags: this.state.tags.map((item) => item.label),
                 onSubmit: this.NewQuestion,
               };
               return (<NewQuestion {...props} />);

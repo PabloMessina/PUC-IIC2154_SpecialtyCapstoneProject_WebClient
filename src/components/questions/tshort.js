@@ -80,7 +80,7 @@ export default class TShort extends Component {
     return (
       <Form style={styles.form}>
         <FormGroup>
-          <ControlLabel style={styles.instruction}>Statement</ControlLabel>
+          <ControlLabel>Statement</ControlLabel>
           <FormControl
             style={styles.textArea}
             componentClass="textarea"
@@ -90,7 +90,7 @@ export default class TShort extends Component {
           />
         </FormGroup>
         <FormGroup>
-          <ControlLabel style={styles.instruction}>Choices </ControlLabel>
+          <ControlLabel>Choices </ControlLabel>
           {this.props.fields.answers.map((answer, i) => (
             <FormGroup key={i} style={styles.row}>
               <FormControl
@@ -209,9 +209,5 @@ const styles = {
   },
   button: {
     textDecoration: 'none',
-  },
-  instruction: {
-    fontSize: 14,
-    color: Colors.GRAY,
   },
 };
