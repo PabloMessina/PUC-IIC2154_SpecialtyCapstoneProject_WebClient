@@ -4,6 +4,7 @@ import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
 
+import moment from 'moment';
 import app from '../../app';
 
 const evaluationService = app.service('/evaluations');
@@ -65,13 +66,80 @@ export default class CourseStudents extends Component {
   }
 
   render() {
+    const evaluations = this.state.evaluations;
+    const sections = {
+      ready: [],
+      soon: [],
+      done: [],
+    };
+
+    // sorted quizes
+    evaluations.forEach((evaluation) => {
+      // after a week is in in 'soon' heather
+      if (moment(evaluation.startAt).isAfter(moment().add(7, 'd'))) {
+        sections.soon.push(evaluation);
+      } else if (moment(evaluation.startAt).isAfter(moment())) {
+        // before soon and after now is in 'ready' heather
+        sections.ready.push(evaluation);
+      } else if (moment(evaluation.finishAt).isBefore(moment())) {
+        // enden before now is in 'done' heather
+        sections.done.push(evaluation);
+      }
+    });
     return (
       <div style={styles.container}>
-        <Row>
+        <Row style={styles.seccion}>
           <Col xs={12} md={8}>
-            {this.state.evaluations.map((evaluation, i) => this.renderRow(evaluation, i))}
-            {renderIf(this.state.evaluations.length === 0)(() => (
-              <p>This course has no evaluations yet.</p>
+            <h4 style={styles.title} size="lg" name="lightbulb-o"> Coming Soon</h4>
+            {sections.ready.map((evaluation, i) => (
+              <div key={i}>
+                <h5 size="lg" name="lightbulb-o">{moment(evaluation.startAt).format('dddd, MMMM Do, h:mm a')}</h5>
+                <p style={styles.text}>{evaluation.title}</p>
+                <p style={styles.text}>
+                  Duration: {moment(evaluation.finishAt).diff(evaluation.startAt, 'minutes')} minutes
+                </p>
+                <hr />
+              </div>
+            ))}
+            {renderIf(sections.ready.length === 0)(() => (
+              <div>
+                <p>There are no evaluations coming soon</p>
+                <br />
+              </div>
+            ))}
+            <h4 style={styles.title} size="lg" name="lightbulb-o"> Future Quizzes</h4>
+            {sections.soon.map((evaluation, i) => (
+              <div key={i}>
+                <h5 size="lg" name="lightbulb-o" >{moment(evaluation.startAt).format('dddd, MMMM Do, h:mm a')}</h5>
+                <p style={styles.text}>{evaluation.title}</p>
+                <p style={styles.text}>
+                  Duration: {moment(evaluation.finishAt).diff(evaluation.startAt, 'minutes')} minutes
+                </p>
+                <hr />
+              </div>
+            ))}
+            {renderIf(sections.soon.length === 0)(() => (
+              <div>
+                <p>There are no future evaluations</p>
+                <br />
+              </div>
+            ))}
+            <h4 style={styles.title} size="lg" name="lightbulb-o"> Done</h4>
+            {sections.done.map((evaluation, i) => (
+              <div key={i}>
+                <h5 size="lg" name="lightbulb-o">{moment(evaluation.startAt).format('dddd, MMMM Do, h:mm a')}</h5>
+                <p style={styles.text}>{evaluation.title}</p>
+                <p style={styles.text}>
+                  Duration: {moment(evaluation.finishAt).diff(evaluation.startAt, 'minutes')} minutes
+                </p>
+                <hr />
+              </div>
+            ))}
+            {renderIf(sections.done.length === 0)(() => (
+              <div>
+                <p>There are no evaluations done</p>
+                <br />
+              </div>
             ))}
           </Col>
           <Col xs={12} md={4}>
@@ -98,5 +166,15 @@ const styles = {
   },
   icon: {
     marginRight: 7,
+  },
+  medium: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  title: {
+    marginBottom: 22,
+  },
+  text: {
+    marginBottom: 3,
   },
 };

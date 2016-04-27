@@ -1,5 +1,11 @@
 import React, { Component } from 'react';
-import { Input, Button } from 'react-bootstrap';
+import {
+  Form,
+  Button,
+  FormControl,
+  ControlLabel,
+  FormGroup,
+} from 'react-bootstrap';
 
 import { Colors } from '../../styles';
 
@@ -8,121 +14,113 @@ export default class TrueFalse extends Component {
   static get propTypes() {
     return {
       _id: React.PropTypes.number,
-      question: React.PropTypes.object,
-      statement: React.PropTypes.string,
-      answer: React.PropTypes.number,
+      question: React.PropTypes.any,
+      tags: React.PropTypes.array,
+      fields: React.PropTypes.any,
+      changeQuestion: React.PropTypes.func,
+      changeFields: React.PropTypes.func,
       permission: React.PropTypes.string,
-      collapsible: React.PropTypes.bool,
-      open: React.PropTypes.bool,
     };
   }
 
   static get defaultProps() {
     return {
       _id: 0,
-      question: { question: { text: '' }, fields: { answer: false } },
-      statement: '',
-      answer: 0,
+      question: { text: '' },
+      tags: [],
+      fields: {
+        answer: 0,
+      },
       permission: 'reader',
-      collapsible: true,
-      open: false,
     };
   }
 
   constructor(props) {
     super(props);
-    this.state = {
-      _id: props.question._id || props._id,
-      question: props.question,
-      statement: props.question.question.text || props.statement,
-      answer: props.question.fields.answer || 0,
-      permission: props.permission,
-      collapsible: props.collapsible,
-      open: props.open,
-    };
-    this.onClick = this.onClick.bind(this);
     this.renderEditor = this.renderEditor.bind(this);
     this.renderResponder = this.renderResponder.bind(this);
     this.renderReader = this.renderReader.bind(this);
+    this.changeQuestion = this.changeQuestion.bind(this);
+    this.changeFields = this.changeFields.bind(this);
   }
 
-  onClick(value) {
-    if (this.state.answer === value) {
-      this.setState({ answer: 0 });
-    } else {
-      this.setState({ answer: value });
-    }
+  changeQuestion(event) {
+    this.props.changeQuestion(this.props._id, {
+      text: event.target.value,
+    });
   }
 
-  onChange(event) {
-    this.setState({ statement: event.target.value });
+  changeFields(value) {
+    const fields = this.props.fields;
+    fields.answer = fields.answer === value ? 0 : value;
+    this.props.changeFields(this.props._id, fields);
   }
 
   renderEditor() {
     return (
-      <div>
-        <form style={styles.form}>
-        <p>Statement</p>
-          <Input
+      <Form>
+        <FormGroup>
+          <ControlLabel style={styles.instruction}>Statement</ControlLabel>
+          <FormControl
             style={styles.textArea}
-            type="textArea"
+            componentClass="textarea"
             placeholder="Add a statement"
-            value={this.state.statement}
-            onChange={e => this.onChange(e, 'statement')}
+            value={this.props.question.text}
+            onChange={this.changeQuestion}
           />
-      </form>
-      <div style={styles.buttons}>
-        <Button
-          bsStyle="default"
-          style={this.state.answer === 1 ? styles.buttonTrue : styles.button}
-          onClick={() => this.onClick(1)}
-        >
-          True
-        </Button>
-        <Button
-          bsStyle="default"
-          style={this.state.answer === -1 ? styles.buttonFalse : styles.button}
-          onClick={() => this.onClick(-1)}
-        >
-          False
-        </Button>
-      </div>
-    </div>
-    );
-  }
-
-  renderResponder() {
-    return (
-      <div>
-        <p>{this.state.statement}</p>
-        <div style={styles.buttons}>
+        </FormGroup>
+        <FormGroup style={styles.buttons}>
           <Button
             bsStyle="default"
-            style={this.state.answer === 1 ? styles.buttonTrue : styles.button}
-            onClick={() => this.onClick(1)}
+            style={this.props.fields.answer === 1 ? styles.buttonTrue : styles.button}
+            onClick={() => this.changeFields(1)}
           >
             True
           </Button>
           <Button
             bsStyle="default"
-            style={this.state.answer === -1 ? styles.buttonFalse : styles.button}
-            onClick={() => this.onClick(-1)}
+            style={this.props.fields.answer === -1 ? styles.buttonFalse : styles.button}
+            onClick={() => this.changeFields(-1)}
           >
             False
           </Button>
-        </div>
-      </div>
+        </FormGroup>
+    </Form>
+    );
+  }
+
+  renderResponder() {
+    return (
+      <Form>
+        <ControlLabel>{this.props.question.text}</ControlLabel>
+        <FormGroup style={styles.buttons}>
+          <Button
+            bsStyle="default"
+            style={this.props.fields.answer === 1 ? styles.buttonTrue : styles.button}
+            onClick={() => this.changeFields(1)}
+          >
+            True
+          </Button>
+          <Button
+            bsStyle="default"
+            style={this.props.fields.answer === -1 ? styles.buttonFalse : styles.button}
+            onClick={() => this.changeFields(-1)}
+          >
+            False
+          </Button>
+        </FormGroup>
+      </Form>
     );
   }
 
   renderReader() {
     return (
       <div>
-        <p>{this.state.statement}</p>
+        <p>{this.props.question.text}</p>
         <div style={styles.buttons}>
           <Button
             bsStyle="default"
-            style={this.state.answer === 1 ? styles.buttonTrue : styles.button}
+            style={this.props.fields.answer === 1 ? styles.buttonTrue : styles.button}
             disabled
             onClick={() => this.onClick(1)}
           >
@@ -130,7 +128,7 @@ export default class TrueFalse extends Component {
           </Button>
           <Button
             bsStyle="default"
-            style={this.state.answer === -1 ? styles.buttonFalse : styles.button}
+            style={this.props.fields.answer === -1 ? styles.buttonFalse : styles.button}
             disabled
             onClick={() => this.onClick(-1)}
           >
@@ -145,7 +143,7 @@ export default class TrueFalse extends Component {
     return (
       <div>
         {(() => {
-          switch (this.state.permission) {
+          switch (this.props.permission) {
             case 'editor': return (this.renderEditor());
             case 'responder': return (this.renderResponder());
             case 'reader': return (this.renderReader());

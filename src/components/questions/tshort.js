@@ -1,152 +1,110 @@
 import React, { Component } from 'react';
 import {
-  Input,
+  Form,
   Button,
   FormControl,
   ControlLabel,
   FormGroup,
 } from 'react-bootstrap';
-import renderIf from 'render-if';
 
+import renderIf from 'render-if';
 import { Colors } from '../../styles';
+
 
 export default class TShort extends Component {
 
-  // editor: can change statement and choices
-  // responder: only can introduce an answer
-  // reader: only reader
   static get propTypes() {
     return {
       _id: React.PropTypes.number,
       question: React.PropTypes.any,
-      answers: React.PropTypes.array,
-      statement: React.PropTypes.string,
-      responderAnswer: React.PropTypes.string,
+      tags: React.PropTypes.array,
+      fields: React.PropTypes.any,
+      changeQuestion: React.PropTypes.func,
+      changeFields: React.PropTypes.func,
       permission: React.PropTypes.string,
-      collapsible: React.PropTypes.bool,
-      open: React.PropTypes.bool,
-      validateAnswers: React.PropTypes.any,
     };
   }
 
   static get defaultProps() {
     return {
       _id: 0,
-      question: { question: { text: '' }, fields: { answers: [] } },
-      answers: [''],
-      validateAnswers: [''],
-      responderAnswer: '',
-      statement: '',
+      question: { text: '' },
+      tags: [],
+      fields: {
+        answers: [],
+      },
       permission: 'reader',
-      collapsible: true,
-      open: false,
     };
   }
 
   constructor(props) {
     super(props);
-    this.state = {
-      _id: props.question._id || props._id,
-      question: props.question,
-      statement: props.question.question.text || props.statement,
-      answers: props.question.fields.answers.length
-        ? props.question.fields.answers
-        : props.answers,
-      validateAnswers: props.question.fields.answers.length
-        ? Array(props.question.fields.answers.length).fill('')
-        : props.validateAnswers,
-      responderAnswer: props.responderAnswer,
-      permission: props.permission,
-      collapsible: props.collapsible,
-      open: props.open,
-    };
-
-    this.onChange = this.onChange.bind(this);
-    this.addItem = this.addItem.bind(this);
-    this.removeItem = this.removeItem.bind(this);
+    this.renderEditor = this.renderEditor.bind(this);
+    this.renderResponder = this.renderResponder.bind(this);
+    this.renderReader = this.renderReader.bind(this);
+    this.changeQuestion = this.changeQuestion.bind(this);
+    this.changeFields = this.changeFields.bind(this);
+    this.addAnswer = this.addAnswer.bind(this);
+    this.removeAnswer = this.removeAnswer.bind(this);
   }
 
-  onChange(e, option, index) {
-    // const answers = this.state.answers.splice(index, 1, e.target.value);
-    if (option === 'statement') {
-      this.setState({ statement: e.target.value });
-    } else if (option === 'option') {
-      const answers = [...this.state.answers];
-      const validateAnswers = [...this.state.validateAnswers];
-      answers[index] = e.target.value;
-      validateAnswers[index] = answers[index].length > 0 ? '  ' : 'error';
-      this.setState({ answers, validateAnswers });
-    } else if (option === 'responder') {
-      this.setState({ responderAnswer: e.target.value });
-    }
-  }
-
-  addItem(e) {
-    e.preventDefault();
-    const answers = this.state.answers;
-    const validateAnswers = this.state.validateAnswers;
-    // const last = answers[answers.length - 1];
-    // if (last && last.length > 0) {
-    this.setState({
-      answers: [...answers, ''],
-      validateAnswers: [...validateAnswers, ''],
+  changeQuestion(event) {
+    this.props.changeQuestion(this.props._id, {
+      text: event.target.value,
     });
-    // }
   }
 
-  removeItem(e, index) {
-    e.preventDefault();
-    const answers = [...this.state.answers];
-    const validateAnswers = [...this.state.validateAnswers];
-    if (answers.length > 1) {
-      answers.splice(index, 1);
-      validateAnswers.splice(index, 1);
+  changeFields(event, index) {
+    const fields = this.props.fields;
+    if (this.props.permission === 'editor') {
+      fields.answers[index] = event.target.value;
+      this.props.changeFields(this.props._id, fields);
+    } else if (this.props.permission === 'reader') {
+      this.props.changeFields(this.props._id, { answers: [event.target.value] });
     }
-    this.setState({ answers, validateAnswers });
+  }
+
+  addAnswer() {
+    const fields = this.props.fields;
+    fields.answers.push('');
+    this.props.changeFields(this.props._id, fields);
+  }
+
+  removeAnswer(event, index) {
+    const fields = this.props.fields;
+    fields.answers.splice(index, 1);
+    this.props.changeFields(this.props._id, fields);
   }
 
   renderEditor() {
     return (
-      <form style={styles.form}>
+      <Form style={styles.form}>
         <FormGroup>
           <ControlLabel>Statement</ControlLabel>
           <FormControl
             style={styles.textArea}
             componentClass="textarea"
             placeholder="Add a statement"
-            value={this.state.statement}
-            onChange={e => this.onChange(e, 'statement')}
+            value={this.props.question.text}
+            onChange={this.changeQuestion}
           />
         </FormGroup>
         <FormGroup>
-        {(() => {
-          if (this.state.validateAnswers.filter((item) =>
-          item === 'error').length > 0) {
-            return (
-              <ControlLabel style={styles.instruction}>
-                Choices must not be empty
-              </ControlLabel>
-            );
-          }
-          return (<ControlLabel style={styles.instruction}>Choices </ControlLabel>);
-        })()}
-          {this.state.answers.map((answer, i, arr) => (
-            <FormGroup key={i} style={styles.row} validationState={this.state.validateAnswers[i]}>
+          <ControlLabel>Choices </ControlLabel>
+          {this.props.fields.answers.map((answer, i) => (
+            <FormGroup key={i} style={styles.row}>
               <FormControl
-                style={styles.input}
                 type="text"
                 placeholder="Ingrese su respuesta"
                 value={answer}
-                autoFocus={arr.length - 1 === i}
-                onChange={e => this.onChange(e, 'option', i)}
+                onChange={e => this.changeFields(e, i)}
               />
               {renderIf(i > 0)(() => (
                 <Button
-                  style={[styles.button, styles.remove]}
                   bsStyle="link"
                   bsSize="large"
                   type="button"
-                  onClick={e => this.removeItem(e, i)}
+                  onClick={e => this.removeAnswer(e, i)}
                 >
                   -
                 </Button>
@@ -159,38 +117,38 @@ export default class TShort extends Component {
           bsStyle="link"
           type="button"
           value="Agregar respuesta"
-          onClick={this.addItem}
+          onClick={this.addAnswer}
         >
           Agregar respuesta
         </Button>
-      </form>
+      </Form>
     );
   }
 
   renderResponder() {
     return (
-      <form style={styles.form}>
-        <p>{this.state.statement}</p>
-        <div style={styles.row}>
-          <Input
+      <Form style={styles.form}>
+        <FormGroup>
+          <ControlLabel>{this.props.question.text}</ControlLabel>
+          <FormControl
             style={styles.input}
             type="text"
             placeholder="Ingrese su respuesta"
-            value={this.state.responderAnswer}
-            onChange={e => this.onChange(e, 'responder')}
+            value={this.props.fields.answers[0]}
+            onChange={e => this.changeFields(e)}
           />
-        </div>
-      </form>
+        </FormGroup>
+      </Form>
     );
   }
 
   renderReader() {
     return (
       <div>
-        <p>{this.state.statement}</p>
+        <p>{this.props.question.text}</p>
         <p style={styles.instruction}>Choices</p>
         <ul>
-          {this.state.answers.map((answer, index) => <li key={index} style={styles.input}>{answer}</li>)}
+          {this.props.fields.answers.map((answer, index) => <li key={index} style={styles.input}>{answer}</li>)}
         </ul>
       </div>
     );
@@ -199,13 +157,13 @@ export default class TShort extends Component {
   render() {
     return (
       <div>
-        {(() => {
-          switch (this.state.permission) {
-            case 'editor': return (this.renderEditor());
-            case 'responder': return (this.renderResponder());
-            case 'reader': return (this.renderReader());
-            default: return null;
-          }})()}
+      {(() => {
+        switch (this.props.permission) {
+          case 'editor': return (this.renderEditor());
+          case 'responder': return (this.renderResponder());
+          case 'reader': return (this.renderReader());
+          default: return null;
+        }})()}
       </div>
     );
   }
@@ -251,9 +209,5 @@ const styles = {
   },
   button: {
     textDecoration: 'none',
-  },
-  instruction: {
-    fontSize: 14,
-    color: Colors.GRAY,
   },
 };

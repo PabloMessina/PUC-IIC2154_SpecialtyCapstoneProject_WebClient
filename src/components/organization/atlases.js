@@ -3,7 +3,7 @@ import { Grid, Col, Panel, Button, Glyphicon } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 
 import app from '../../app';
-const atlasService = app.service('/atlass');
+const atlasService = app.service('/atlases');
 
 export default class AtlasTab extends Component {
 
