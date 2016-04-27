@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Panel, Row, Col, Button, Glyphicon, ListGroup, ListGroupItem } from 'react-bootstrap';
+import { Panel, Row, Col, Button, Glyphicon } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
@@ -66,53 +66,7 @@ export default class CourseStudents extends Component {
   }
 
   render() {
-    const evaluations = [
-      {
-          // ready
-          name: 'Anatomy Quiz 3',
-          dateInitial: '2016-04-24 09:30',
-          dateEnd: '2016-04-24 10:20',
-          numberQuestion: '10',
-          grade: '0',
-          answers: '0',
-        },
-        {
-          // done
-          name: 'Anatomy Quiz 2',
-          dateInitial: '2016-04-13 09:30',
-          dateEnd: '2016-04-13 10:30',
-          numberQuestion: '20',
-          grade: '50',
-          answers: '15',
-        },
-        {
-          // soon
-          name: 'Anatomy Quiz 4',
-          dateInitial: '2016-05-13 09:30',
-          dateEnd: '2016-05-13 10:15',
-          numberQuestion: '20',
-          grade: '0',
-          answers: '0',
-        },
-        {
-          // soon
-          name: 'Anatomy Quiz 5',
-          dateInitial: '2016-05-23 09:30',
-          dateEnd: '2016-05-23 10:00',
-          numberQuestion: '10',
-          grade: '0',
-          answers: '0',
-        },
-        {
-          // done
-          name: 'Anatomy Quiz 1',
-          dateInitial: '2016-04-08 09:30',
-          dateEnd: '2016-04-08 10:1 0',
-          numberQuestion: '15',
-          grade: '80',
-          answers: '13',
-        },
-    ]
+    const evaluations = this.state.evaluations;
     const sections = {
       ready: [],
       soon: [],
@@ -122,12 +76,12 @@ export default class CourseStudents extends Component {
     // sorted quizes
     evaluations.forEach((evaluation) => {
       // after a week is in in 'soon' heather
-      if (moment(evaluation.dateInitial).isAfter(moment().add(7, 'd'))) {
+      if (moment(evaluation.startAt).isAfter(moment().add(7, 'd'))) {
         sections.soon.push(evaluation);
-      } else if (moment(evaluation.dateInitial).isAfter(moment())) {
+      } else if (moment(evaluation.startAt).isAfter(moment())) {
         // before soon and after now is in 'ready' heather
         sections.ready.push(evaluation);
-      } else if (moment(evaluation.dateEnd).isBefore(moment())) {
+      } else if (moment(evaluation.finishAt).isBefore(moment())) {
         // enden before now is in 'done' heather
         sections.done.push(evaluation);
       }
@@ -136,15 +90,14 @@ export default class CourseStudents extends Component {
       <div style={styles.container}>
         <Row style={styles.seccion}>
           <Col xs={12} md={8}>
-            {renderIf(evaluations.length === 0)(() => (
-              <p>This course has no evaluations yet.</p>
-            ))}
             <h4 style={styles.title} size="lg" name="lightbulb-o"> Coming Soon</h4>
             {sections.ready.map((evaluation, i) => (
               <div key={i}>
-                <h5 size="lg" name="lightbulb-o">{moment(evaluation.dateInitial).format('dddd, MMMM Do, h:mm a')}</h5>
-                <p style={styles.tezt}>{evaluation.name}</p>
-                <p style={styles.tezt}> Duration: {moment(evaluation.dateEnd).diff(evaluation.dateInitial, 'minutes')} minutes</p>
+                <h5 size="lg" name="lightbulb-o">{moment(evaluation.startAt).format('dddd, MMMM Do, h:mm a')}</h5>
+                <p style={styles.text}>{evaluation.title}</p>
+                <p style={styles.text}>
+                  Duration: {moment(evaluation.finishAt).diff(evaluation.startAt, 'minutes')} minutes
+                </p>
                 <hr />
               </div>
             ))}
@@ -157,9 +110,11 @@ export default class CourseStudents extends Component {
             <h4 style={styles.title} size="lg" name="lightbulb-o"> Future Quizzes</h4>
             {sections.soon.map((evaluation, i) => (
               <div key={i}>
-                <h5 size="lg" name="lightbulb-o" >{moment(evaluation.dateInitial).format('dddd, MMMM Do, h:mm a')}</h5>
-                <p style={styles.tezt}>{evaluation.name}</p>
-                <p style={styles.tezt}> Duration: {moment(evaluation.dateEnd).diff(evaluation.dateInitial, 'minutes')} minutes</p>
+                <h5 size="lg" name="lightbulb-o" >{moment(evaluation.startAt).format('dddd, MMMM Do, h:mm a')}</h5>
+                <p style={styles.text}>{evaluation.title}</p>
+                <p style={styles.text}>
+                  Duration: {moment(evaluation.finishAt).diff(evaluation.startAt, 'minutes')} minutes
+                </p>
                 <hr />
               </div>
             ))}
@@ -172,9 +127,11 @@ export default class CourseStudents extends Component {
             <h4 style={styles.title} size="lg" name="lightbulb-o"> Done</h4>
             {sections.done.map((evaluation, i) => (
               <div key={i}>
-                <h5 size="lg" name="lightbulb-o">{moment(evaluation.dateInitial).format('dddd, MMMM Do, h:mm a')}</h5>
-                <p style={styles.tezt}>{evaluation.name}</p>
-                <p style={styles.tezt}> Duration: {moment(evaluation.dateEnd).diff(evaluation.dateInitial, 'minutes')} minutes</p>
+                <h5 size="lg" name="lightbulb-o">{moment(evaluation.startAt).format('dddd, MMMM Do, h:mm a')}</h5>
+                <p style={styles.text}>{evaluation.title}</p>
+                <p style={styles.text}>
+                  Duration: {moment(evaluation.finishAt).diff(evaluation.startAt, 'minutes')} minutes
+                </p>
                 <hr />
               </div>
             ))}
@@ -217,7 +174,7 @@ const styles = {
   title: {
     marginBottom: 22,
   },
-  tezt: {
+  text: {
     marginBottom: 3,
   },
 };
