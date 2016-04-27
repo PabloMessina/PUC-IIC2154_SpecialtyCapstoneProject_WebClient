@@ -139,10 +139,10 @@ export default class CourseStudents extends Component {
             {renderIf(evaluations.length === 0)(() => (
               <p>This course has no evaluations yet.</p>
             ))}
-            <h4><p style={styles.titulo} size="lg" name="lightbulb-o" /> Coming Soon</h4>
+            <h4 style={styles.titulo} size="lg" name="lightbulb-o"> Coming Soon</h4>
             {sections.ready.map((evaluation, i) => (
               <div key={i}>
-                <h5><p size="lg" name="lightbulb-o" />{moment(evaluation.dateInitial).format('dddd, MMMM Do, h:mm a')}</h5>
+                <h5 size="lg" name="lightbulb-o">{moment(evaluation.dateInitial).format('dddd, MMMM Do, h:mm a')}</h5>
                 <p>{evaluation.name}</p>
                 <p> Duration: {moment(evaluation.dateEnd).diff(evaluation.dateInitial, 'minutes')} minutes</p>
                 <hr />
@@ -151,12 +151,13 @@ export default class CourseStudents extends Component {
             {renderIf(sections.ready.length === 0)(() => (
               <div>
                 <p>There are no evaluations coming soon</p>
+                <br />
               </div>
             ))}
-            <h4><p style={styles.titulo} size="lg" name="lightbulb-o" /> Future Quizzes</h4>
+            <h4 style={styles.titulo} size="lg" name="lightbulb-o"> Future Quizzes</h4>
             {sections.soon.map((evaluation, i) => (
               <div key={i}>
-                <h5><p size="lg" name="lightbulb-o" />{moment(evaluation.dateInitial).format('dddd, MMMM Do, h:mm a')}</h5>
+                <h5 size="lg" name="lightbulb-o" >{moment(evaluation.dateInitial).format('dddd, MMMM Do, h:mm a')}</h5>
                 <p>{evaluation.name}</p>
                 <p> Duration: {moment(evaluation.dateEnd).diff(evaluation.dateInitial, 'minutes')} minutes</p>
                 <hr />
@@ -165,12 +166,13 @@ export default class CourseStudents extends Component {
             {renderIf(sections.soon.length === 0)(() => (
               <div>
                 <p>There are no future evaluations</p>
+                <br />
               </div>
             ))}
-            <h4><p style={styles.titulo} size="lg" name="lightbulb-o" /> Done</h4>
+            <h4 style={styles.titulo} size="lg" name="lightbulb-o"> Done</h4>
             {sections.done.map((evaluation, i) => (
               <div key={i}>
-                <h5><p size="lg" name="lightbulb-o" />{moment(evaluation.dateInitial).format('dddd, MMMM Do, h:mm a')}</h5>
+                <h5 size="lg" name="lightbulb-o">{moment(evaluation.dateInitial).format('dddd, MMMM Do, h:mm a')}</h5>
                 <p>{evaluation.name}</p>
                 <p> Duration: {moment(evaluation.dateEnd).diff(evaluation.dateInitial, 'minutes')} minutes</p>
                 <hr />
@@ -179,6 +181,7 @@ export default class CourseStudents extends Component {
             {renderIf(sections.done.length === 0)(() => (
               <div>
                 <p>There are no evaluations done</p>
+                <br />
               </div>
             ))}
           </Col>
@@ -212,6 +215,6 @@ const styles = {
     flexDirection: 'column',
   },
   titulo: {
-    marginBottom: 30,
+    marginBottom: 22,
   },
 };
