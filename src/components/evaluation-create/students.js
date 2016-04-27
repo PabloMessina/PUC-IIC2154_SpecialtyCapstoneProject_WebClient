@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Checkbox, Col, Table, Button, Glyphicon, Form, FormControl } from 'react-bootstrap';
 
+// TODO: incluir alumnos en asistencia
 
 export default class Students extends Component {
 
@@ -46,6 +47,7 @@ export default class Students extends Component {
        * Value of groupSize input
        */
       groupSize: 3,
+      attendance: [],
     };
 
     this.renderGroup = this.renderGroup.bind(this);
@@ -178,17 +180,11 @@ export default class Students extends Component {
     this.state.groups.forEach(group => {
       unselectedStudents = unselectedStudents.concat(group);
     });
-    // console.log(this.state.groups);
-    // this.setState({ groups: [[]], unselectedStudents });
-    // console.log(this.state.groups);
     return unselectedStudents;
   }
 
   randomGroupGenerator(groupSize) {
-    // this.unselectAll();
-    // const unselectedStudents = this.shuffle(this.state.unselectedStudents);
     const unselectedStudents = this.shuffle(this.unselectAll());
-    console.log(unselectedStudents);
     const groups = [];
     while (unselectedStudents.length > 0) {
       const group = unselectedStudents.splice(0, groupSize);
@@ -201,6 +197,12 @@ export default class Students extends Component {
       }
     }
     this.setState({ groups, unselectedStudents });
+  }
+
+  includeInAttendance(studentId) {
+    const attendance = [...this.state.attendance].push(studentId);
+    this.setState({ attendance });
+    console.log(this.state.attendance);
   }
 
   render() {
