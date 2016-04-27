@@ -3,6 +3,8 @@ import { Grid, Col, Row, Button, Form, FormGroup, FormControl, ControlLabel } fr
 import AtlasThumbnail from './atlas-thumbnail';
 import atlasExample from '../../atlas-example.js';
 import renderIf from 'render-if';
+import Select from 'react-select';
+import { Colors } from '../../styles';
 
 
 export default class Settings extends Component {
@@ -27,6 +29,7 @@ export default class Settings extends Component {
         { label: 'Technology', value: 'Tag 5' },
       ],
     };
+    this.handleSelectChange = this.handleSelectChange.bind(this);
   }
 
   handleSelectChange(value, tags) {
@@ -43,6 +46,8 @@ export default class Settings extends Component {
         </div>
       );
     });
+
+    // Use <FormControl type="text" placeholder="" /> instead of Select for simple search
     return (
       <Grid style={styles.container}>
         <Row style={styles.search}>
@@ -50,7 +55,17 @@ export default class Settings extends Component {
             <h1 style={styles.title}>Search</h1>
             <FormGroup controlId="formHorizontalSearch">
               <Col sm={10}>
-                <FormControl type="text" placeholder="" />
+                <div style={styles.formTags}>
+                  <Select
+                    multi
+                    simpleValue={false}
+                    disabled={false}
+                    value={this.state.tags}
+                    options={this.state.allTags}
+                    onChange={this.handleSelectChange}
+                    placeholder={'Tags'}
+                  />
+                </div>
               </Col>
               <Col sm={2}>
                 <Button style={styles.button} type="submit">
@@ -90,7 +105,7 @@ export default class Settings extends Component {
                 </Col>
               </FormGroup>
             )}
-            <p onClick={() => this.setState({ advanced: !this.state.advanced })}>Advanced</p>
+            <p style={styles.advanced} onClick={() => this.setState({ advanced: !this.state.advanced })}>Advanced</p>
           </Form>
         </Row>
         <Row>
@@ -111,7 +126,6 @@ Settings.propTypes = {
 
 const styles = {
   container: {
-    textAlign: 'center',
     width: '100%',
     fontFamily: 'Raleway, Helvetica Neue, Helvetica, Arial, sans-serif',
   },
@@ -124,9 +138,9 @@ const styles = {
     fontSize: 25,
   },
   search: {
-    color: '#16a085',
+    color: Colors.MAIN,
     display: 'block',
-    backgroundColor: '#f1f1f1',
+    backgroundColor: Colors.LIGHTGRAY,
   },
   input: {
     marginLeft: '5%',
@@ -137,7 +151,16 @@ const styles = {
     width: '80%',
   },
   button: {
-    backgroundColor: '#16a085',
-    color: 'white',
+    backgroundColor: Colors.MAIN,
+    color: Colors.WHITE,
+  },
+  advanced: {
+    cursor: 'default',
+    textAlign: 'center',
+  },
+  formTags: {
+    width: '100%',
+    height: '100%',
+    marginLeft: 5,
   },
 };
