@@ -2,26 +2,37 @@ import React, { Component } from 'react';
 // import Button from 'react-native-button';
 // import renderIf from 'render-if';
 import Node from './node.js';
+import renderIf from 'render-if';
 
-/*
-  Component life-cycle:
-  https://facebook.github.io/react/docs/component-specs.html
- */
 
-export default class SectionTree extends Component {
+export default class AtlasTree extends Component {
 
-  constructor(props) {
-    super(props);
-    this.state.sections = props.sections;
-    this.handleClick = this.handleClick.bind(this);
+  static get propTypes() {
+    return {
+      static: React.PropTypes.bool,
+      tree: React.PropTypes.object,
+      onSelectSection: React.PropTypes.func,
+      onAddSection: React.PropTypes.func,
+    };
   }
 
   render() {
+    const tree = this.props.tree;
     return (
       <div style={styles.container}>
-        {this.state.sections.map((section, i) => (
-          <Node key={i} static={this.props.static} onSelected={this.props.onSelected} section={section} anidation={[i + 1]} />
-          ))}
+        {renderIf(tree.undefined)(() => (
+          tree.undefined.map((section, i) => (
+            <Node
+              key={i}
+              static={this.props.static}
+              onSelectSection={this.props.onSelectSection}
+              onAddSection={this.props.onAddSection}
+              section={section}
+              tree={tree}
+              anidation={[i + 1]}
+            />
+            ))
+        ))}
       </div>
     );
   }
@@ -30,8 +41,10 @@ export default class SectionTree extends Component {
 
 const styles = {
   container: {
-    paddingTop: 64,
     backgroundColor: 'white',
+    display: 'flex',
+    overflow: 'scroll',
+
     // flexDirection: 'column', // row, column
     // flexWrap: 'nowrap' // wrap, nowrap
     // alignItems: 'center', // flex-start, flex-end, center, stretch

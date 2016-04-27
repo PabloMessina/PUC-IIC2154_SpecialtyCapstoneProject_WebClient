@@ -1,8 +1,11 @@
 import React, { Component } from 'react';
 import { Grid, Tabs, Tab, Row, Col, Image } from 'react-bootstrap';
 import Icon from 'react-fa';
-import CourseTab from './courses';
+
 import { Colors } from '../../styles';
+
+import CourseTab from './courses';
+import AtlasTab from './atlases';
 
 const TABS = [
   {
@@ -80,6 +83,7 @@ export default class Organization extends Component {
     };
     switch (index) {
       case 0: return <CourseTab {...options} />;
+      case 1: return <AtlasTab {...options} />;
       default: return null;
     }
   }

@@ -11,7 +11,7 @@ import app, { auth, currentUser } from './app';
 import Main from './components/main';
 import Dashboard from './components/dashboard';
 import Login from './components/login/';
-import CreateAtlas from './components/create-atlas';
+import AtlasCreate from './components/atlas-create/';
 import SignUp from './components/signup/';
 import Settings from './components/settings';
 import NotificationSettings from './components/settings/notifications';
@@ -26,8 +26,9 @@ import Organization from './components/organization';
 import Course from './components/course/';
 import CourseCreate from './components/course-create/';
 import OrganizationCreate from './components/organization-create/';
-import Tree from './components/hierarchy-navigation/';
-import Editor from './components/editor/';
+import AtlasBook from './components/atlas-book/';
+// import Tree from './components/hierarchy-navigation/';
+// import Editor from './components/editor/';
 import Questions from './components/questions/';
 
 import CourseStudents from './components/course-students/';
@@ -41,7 +42,7 @@ import EvaluationCreateResults from './components/evaluation-create/results';
 import EvaluationCreateRecorrection from './components/evaluation-create/recorrection';
 
 // Development help
-// Go to: http://localhost:3000/template
+// Go AtlasBook: http://localhost:3000/template
 import Template from './utils/template';
 
 function requireAuth(nextState, replace) {
@@ -98,8 +99,6 @@ const Routing = (
       <Route path="login" component={Login} onEnter={requireAnnon} />
       <Route path="signup" component={SignUp} onEnter={requireAnnon} />
 
-      <Route path="create-atlas" component={CreateAtlas} />
-
       <Route path="documents" component={DocumentList} onEnter={requireAuth} />
       <Route path="documents/:docId" component={DocumentDescription} />
 
@@ -149,8 +148,13 @@ const Routing = (
         <Route path="recorrection" component={EvaluationCreateRecorrection} />
       </Route>
 
-      <Route path="editor" component={Editor} />
-      <Route path="tree" component={Tree} />
+      <Route
+        path="organizations/show/:organizationId/atlases/create"
+        component={AtlasCreate}
+        onEnter={populate({ field: 'organizationId', to: 'organization' })}
+      />
+
+      <Route path="editor/:atlasId" component={AtlasBook} />
       <Route path="template" component={Template} />
       <Route path="questions" component={Questions} />
     </Route>
