@@ -80,8 +80,6 @@ export default class AtlasBook extends Component {
     this.setState({
       section: { ...section, title },
     });
-    console.log(this.state.section.title);
-    console.log(title);
     this.shouldPatchTitle = true;
   }
 
