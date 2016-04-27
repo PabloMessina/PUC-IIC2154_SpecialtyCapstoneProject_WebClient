@@ -1,11 +1,23 @@
 import React, { Component } from 'react';
-import { Grid, Button, Input } from 'react-bootstrap';
+import {
+  Button,
+  Grid,
+  Row,
+  Col,
+  Panel,
+  FormGroup,
+  ControlLabel,
+  FormControl,
+  Alert,
+  Breadcrumb,
+} from 'react-bootstrap';
+import Icon from 'react-fa';
+import { browserHistory } from 'react-router';
+import renderIf from 'render-if';
 
 import app from '../../app';
 
 const courseService = app.service('/courses');
-const participantService = app.service('/participants');
-const membershipService = app.service('/memberships');
 
 /**
  * Component life-cycle:
@@ -22,13 +34,9 @@ export default class CourseCreate extends Component {
   static get propTypes() {
     return {
       name: React.PropTypes.string,
-      teachers: React.PropTypes.array,
-      selectedTeachers: React.PropTypes.array,
-      atlases: React.PropTypes.array,
-      users: React.PropTypes.array,
-      selectedStudents: React.PropTypes.array,
       description: React.PropTypes.string,
-      associatedAtlases: React.PropTypes.array,
+      // From react-router
+      params: React.PropTypes.object,
     };
   }
 
@@ -36,11 +44,6 @@ export default class CourseCreate extends Component {
     return {
       name: '',
       description: '',
-      selectedTeachers: [],
-      users: [],
-      selectedStudents: [],
-      atlases: [],
-      associatedAtlases: [],
     };
   }
 
@@ -49,111 +52,125 @@ export default class CourseCreate extends Component {
     this.state = {
       name: this.props.name,
       description: this.props.description,
-      users: this.props.users,
-      selectedStudents: this.props.selectedStudents,
-      selectedTeachers: this.props.selectedTeachers,
-      atlases: this.props.atlases,
-      associatedAtlases: this.props.associatedAtlases,
+      organization: props.params.organization,
+      error: null,
+      submiting: false,
     };
-    this.addStudent = this.addStudent.bind(this);
-    this.addTeachers = this.addTeacher.bind(this);
-    this.addAtlas = this.addAtlas.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    // Because router onEnter is not called when navigation between childrens.
+    const organization = nextProps.params.organization;
+    if (organization && organization.id !== this.state.organization.id) {
+      this.setState({ organization });
+    }
   }
 
   onSubmit(e) {
     e.preventDefault();
+    this.setState({ submiting: true, didSubmit: true });
+
     const options = {
       name: this.state.name,
       description: this.state.description,
-      users: this.state.users, /* pide participants */
-      /* organizationId: URL */
+      organizationId: this.state.organization.id,
     };
 
-    return courseService.create(options).then(course => {
-      console.log(course);
-    }).catch(err => {
-      console.log(err);
-    });
-  }
-
-  fetchUsers() {
-    let query = {
-      organizationId: 1,  /* URL */
-    };
-    return membershipService.find({ query }).then(result => {
-      query = {
-        id: { $in: result.data.map(row => row.userId) },
-      };
-    /*  return userService.find({ query }); */
-      return participantService.find({ query });
-    }).then(result => {
-      this.setState({ users: result.data });
-    }).catch(err => {
-      console.log("Can't fetch users", err);
-    });
-  }
-
-  addStudent(student) {
-    const selectedStudents = [...this.state.selectedStudents, student];
-    this.setState({ selectedStudents });
-  }
-
-  addTeacher(teacher) {
-    const selectedTeachers = [...this.state.selectedTeachers, teacher];
-    this.setState({ selectedTeachers });
-  }
-
-  addAtlas(atlas) {
-    const associatedAtlases = [...this.state.associatedAtlases, atlas];
-    this.setState({ associatedAtlases });
+    return courseService.create(options)
+      .then(course => browserHistory.push(`/courses/show/${course.id}`))
+      .catch(err => this.setState({ submiting: false, error: err }));
   }
 
   render() {
+    const organization = this.state.organization;
+
     return (
       <Grid style={styles.container}>
-        <form onSubmit={this.onSubmit}>
-          <Input
-            type="text"
-            value={this.state.name}
-            placeholder="Enter course name"
-            label="Course Name"
-            onChange={e => this.setState({ name: e.target.value })}
-          />
 
-          <Input
-            type="textarea"
-            label="Course Description"
-            placeholder="Example: This course
-            focuses in the study of the human body..."
-            onChange={e => this.setState({ description: e.target.value })}
-          />
+        <br />
 
-          <Input type="select" label="Select Teachers" multiple>
-            {this.state.users.map(user => (
-              <option value={user} onClick={() => this.addTeacher(user)}>
-                {user}
-              </option>
-            ))}
-          </Input>
+        <Breadcrumb>
+          <Breadcrumb.Item>
+            Organizations
+          </Breadcrumb.Item>
+          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
+            {organization ? organization.name : 'Loading...'}
+          </Breadcrumb.Item>
+          <Breadcrumb.Item>
+            Courses
+          </Breadcrumb.Item>
+          <Breadcrumb.Item active>
+            Create
+          </Breadcrumb.Item>
+        </Breadcrumb>
 
-          <Input type="select" label="Select Asociated Atlases" multiple >
-            {this.state.atlases.map(atlas => (
-              <option value={atlas} onClick={() => this.addAtlas(atlas)}>
-                {atlas}
-              </option>
-            ))}
-          </Input>
+        <Row>
+          <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
+            <h2>New Course</h2>
+          </Col>
+        </Row>
 
-          <Input type="select" label="Select Students" multiple >
-            {this.state.users.map(user => (
-              <option value={user} onClick={() => this.addStudent(user)}>
-                {user}
-              </option>
-            ))}
-          </Input>
-          <Button bsStyle="primary" type="submit">Submit Course</Button>
-        </form>
+        <Row>
+          <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
+            <p>Take a group of people from your organization and assing them evaluations and a bibliography of atlases to read.</p>
+            <ul>
+              <li>Create individual or group evaluations.</li>
+              <li>Schedule evaluations or make a surprise quiz.</li>
+              <li>Trace the performance of your students.</li>
+            </ul>
+
+            <hr />
+
+            {renderIf(this.state.error)(() =>
+              <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
+                <h4>Oh snap! You got an error!</h4>
+                <p>{this.state.error.message}</p>
+              </Alert>
+            )}
+
+            <form onSubmit={this.onSubmit}>
+
+              <FormGroup controlId="name">
+                <ControlLabel>Course name</ControlLabel>
+                <FormControl
+                  type="text"
+                  value={this.state.name}
+                  placeholder="Introduction to Psicology"
+                  label="Organization name"
+                  onChange={e => this.setState({ name: e.target.value })}
+                />
+                <FormControl.Feedback />
+              </FormGroup>
+
+              <FormGroup controlId="description">
+                <ControlLabel>Description</ControlLabel>
+                <FormControl
+                  componentClass="textarea"
+                  value={this.state.description}
+                  placeholder="Course description..."
+                  onChange={e => this.setState({ description: e.target.value })}
+                />
+              </FormGroup>
+
+              <hr />
+
+              <Button bsStyle="primary" type="submit" disabled={this.state.submiting}>
+                Create Course
+              </Button>
+
+            </form>
+          </Col>
+
+          <Col xsOffset={0} xs={12} sm={3}>
+            <Panel>
+              <h5><Icon style={styles.icon} size="lg" name="info-circle" /> Need help?</h5>
+              <hr />
+              <p>Take a look at our showcase or contact us.</p>
+            </Panel>
+          </Col>
+
+        </Row>
       </Grid>
     );
   }
@@ -162,5 +179,8 @@ export default class CourseCreate extends Component {
 const styles = {
   container: {
 
+  },
+  icon: {
+    marginRight: 7,
   },
 };
