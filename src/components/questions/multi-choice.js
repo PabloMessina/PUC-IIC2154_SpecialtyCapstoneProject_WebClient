@@ -1,219 +1,210 @@
 import React, { Component } from 'react';
-import { Input, ButtonInput } from 'react-bootstrap';
+import {
+  Button,
+  Form,
+  ControlLabel,
+  FormControl,
+  FormGroup,
+  Checkbox,
+} from 'react-bootstrap';
 import renderIf from 'render-if';
 
 import { Colors } from '../../styles';
-// Choices: array of objects {text:''}.
-// Answers: array of booleans.
+
 
 export default class MultiChoice extends Component {
 
   static get propTypes() {
     return {
+
       _id: React.PropTypes.number,
       question: React.PropTypes.any,
-      choices: React.PropTypes.array,
-      answers: React.PropTypes.array,
-      selectable: React.PropTypes.number,
-      statement: React.PropTypes.string,
+      tags: React.PropTypes.array,
+      fields: React.PropTypes.any,
+      changeQuestion: React.PropTypes.func,
+      changeFields: React.PropTypes.func,
       permission: React.PropTypes.string,
-      collapsible: React.PropTypes.bool,
-      open: React.PropTypes.bool,
     };
   }
 
   static get defaultProps() {
     return {
       _id: 0,
-      question: { question: { text: '' }, fields: { answers: [], choices: [{ text: '' }] } },
-      choices: [{ text: '' }],
-      answers: [false],
-      statement: '',
+      question: { text: '' },
+      tags: [],
+      fields: {
+        selectable: 1,
+        choices: [{ text: 'Option 1' }, { text: 'Option 2' }],
+        answers: [1],
+      },
       permission: 'reader',
-      selectable: 1,
-      collapsible: true,
-      open: false,
     };
   }
 
   constructor(props) {
     super(props);
-    const answers = Array(this.props.question.fields.choices.length).fill(false);
-    if (props.question.fields.answers.length) {
-      props.question.fields.answers.forEach(index => {
-        answers[index] = true;
-      });
-    }
-    this.state = {
-      _id: props.question._id || props._id,
-      question: props.question,
-      choices: props.question.fields.choices.length
-        && props.question.fields.choices[0].text
-        ? props.question.fields.choices
-        : props.choices,
-      answers: answers.length ? answers : props.answers,
-      statement: props.question.question.text || props.statement,
-      selectable: props.question.fields.selectable || props.selectable,
-      permission: props.permission,
-      collapsible: props.collapsible,
-      open: props.open,
-    };
-    this.onChange = this.onChange.bind(this);
+    this.renderEditor = this.renderEditor.bind(this);
+    this.renderResponder = this.renderResponder.bind(this);
+    this.changeQuestion = this.changeQuestion.bind(this);
+    this.changeFields = this.changeFields.bind(this);
     this.check = this.check.bind(this);
-    this.removeItem = this.removeItem.bind(this);
-    this.addItem = this.addItem.bind(this);
-  }
-
-  onChange(event, _type, index) {
-    if (_type === 'statement') {
-      this.setState({ statement: event.target.value });
-    } else if (_type === 'choice') {
-      const choices = [...this.state.choices];
-      choices[index].text = event.target.value;
-      this.setState({ choices });
-    }
-  }
-
-  addItem(e) {
-    e.preventDefault();
-    const answers = this.state.answers;
-    const choices = this.state.choices;
-    if (choices.filter((choice) => choice.text === '').length < 1) {
-      this.setState({ answers: [...answers, false] });
-      this.setState({ choices: [...choices, { text: '' }] });
-    }
-  }
-
-  removeItem(e, index) {
-    e.preventDefault();
-    const answers = [...this.state.answers];
-    const choices = [...this.state.choices];
-    if (answers.length > 1) {
-      answers.splice(index, 1);
-      choices.splice(index, 1);
-    }
-    this.setState({ answers });
-    this.setState({ choices });
+    this.addChoice = this.addChoice.bind(this);
+    this.removeChoice = this.removeChoice.bind(this);
   }
 
   check(index) {
-    const answers = [...this.state.answers];
-    answers[index] = !answers[index];
-    this.setState({ answers });
+    const answers = this.props.fields.answers;
+    if (answers.includes(index)) {
+      answers.splice(answers.findIndex((item) => item === index), 1);
+    } else {
+      answers.push(index);
+    }
+    this.props.changeFields(this.props._id, {
+      selectable: answers.length,
+      choices: this.props.fields.choices,
+      answers: this.props.fields.answers,
+    });
+  }
+
+  changeQuestion(event) {
+    this.props.changeQuestion(this.props._id, {
+      text: event.target.value,
+    });
+  }
+
+  changeFields(event, index) {
+    const fields = this.props.fields;
+    fields.choices[index].text = event.target.value;
+    this.props.changeFields(this.props._id, fields);
+  }
+
+  addChoice() {
+    const fields = this.props.fields;
+    fields.choices.push({ text: '' });
+    this.props.changeFields(this.props._id, fields);
+  }
+
+  removeChoice(event, index) {
+    const fields = this.props.fields;
+    fields.choices.splice(index, 1);
+    this.props.changeFields(this.props._id, fields);
   }
 
   renderEditor() {
     return (
-      <form style={styles.form}>
-      <p>Statement</p>
-        <Input
-          style={styles.textArea}
-          type="textArea"
-          placeholder="Add a statement"
-          value={this.state.statement}
-          onChange={e => this.onChange(e, 'statement')}
-        />
-        <p>
-          Choices: you must select
-          {` ${this.state.selectable} `}
-          option
-          {this.state.selectable > 1 ? 's.' : '.' }
-        </p>
-        <div style={styles.body}>
-          <div style={styles.column}>
-            {this.state.choices.map((choice, i) => (
-              <div key={i} style={styles.choice}>
-                <Input
-                  type="checkbox"
-                  label=" "
-                  checked={this.state.answers[i]}
-                  onChange={() => this.check(i)}
-                />
-                <Input
-                  type="text"
-                  value={choice.text}
-                  checked={this.state.answers[i]}
-                  placeholder={"placeholder"}
-                  onChange={(e) => this.onChange(e, 'choice', i)}
-                />
-                {renderIf(i > 0)(() => (
-                  <ButtonInput
-                    style={styles.button}
-                    bsStyle="link"
-                    bsSize="large"
-                    type="button"
-                    onClick={e => this.removeItem(e, i)}
-                  >
-                    -
-                  </ButtonInput>
-                ))}
-              </div>
-            ))}
-            <ButtonInput
-              style={[styles.button, styles.add]}
-              bsStyle="link"
-              type="button"
-              value="Add a choice"
-              onClick={this.addItem}
-            />
+      <Form style={styles.form}>
+        <FormGroup>
+          <ControlLabel>Statement</ControlLabel>
+          <FormControl
+            style={styles.textArea}
+            type="textArea"
+            placeholder="Add a statement"
+            value={this.props.question.text}
+            onChange={e => this.changeQuestion(e)}
+          />
+        </FormGroup>
+        <FormGroup>
+          <ControlLabel>
+            Choices: you must select
+            {` ${this.props.fields.selectable} `}
+            option
+            {this.props.fields.selectable > 1 ? 's.' : '.' }
+          </ControlLabel>
+          <div style={styles.body}>
+            <div style={styles.column}>
+              {this.props.fields.choices.map((choice, i) => (
+                <div key={i} style={styles.choice}>
+                  <Checkbox
+                    checked={this.props.fields.answers.includes(i)}
+                    onChange={() => this.check(i)}
+                  />
+                  <FormControl
+                    type="text"
+                    value={choice.text}
+                    placeholder={""}
+                    onChange={(e) => this.changeFields(e, i)}
+                  />
+                  {renderIf(i > 0)(() => (
+                    <Button
+                      style={styles.button}
+                      bsStyle="link"
+                      bsSize="large"
+                      type="button"
+                      onClick={e => this.removeChoice(e, i)}
+                    >
+                      -
+                    </Button>
+                  ))}
+                </div>
+              ))}
+              <Button
+                style={[styles.button, styles.add]}
+                bsStyle="link"
+                type="button"
+                onClick={this.addChoice}
+              >Add a choice</Button>
+            </div>
           </div>
-        </div>
-      </form>
+        </FormGroup>
+      </Form>
     );
   }
 
   renderResponder() {
     return (
-      <form style={styles.form}>
-        <p>{this.state.statement}</p>
-        <p>
-          Choices: you must select
-          {` ${this.state.selectable} `}
-          option
-          {this.state.selectable > 1 ? 's.' : '.' }
-        </p>
-        <div style={styles.body}>
-          <div style={styles.column}>
-            {this.state.choices.map((choice, i) => (
-              <Input
-                key={i}
-                type="checkbox"
-                label={choice.text}
-                checked={this.state.answers[i]}
-                onChange={() => this.check(i)}
-              />
-            ))}
+      <Form style={styles.form}>
+        <FormGroup>
+          <ControlLabel>{this.props.question.text}</ControlLabel>
+        </FormGroup>
+        <FormGroup>
+          <ControlLabel>
+            Choices: you must select
+            {` ${this.props.fields.selectable} `}
+            option
+            {this.props.fields.selectable > 1 ? 's.' : '.' }
+          </ControlLabel>
+          <div style={styles.body}>
+            <div style={styles.column}>
+              {this.props.fields.choices.map((choice, i) => (
+                <Checkbox
+                  key={i}
+                  checked={this.props.fields.answers.includes(i)}
+                  onChange={() => this.check(i)}
+                >
+                  {choice.text}
+                </Checkbox>
+              ))}
+            </div>
           </div>
-        </div>
-      </form>
+        </FormGroup>
+      </Form>
       );
   }
 
   renderReader() {
     return (
-      <form style={styles.form}>
-      <p>{this.state.statement}</p>
-      <p style={styles.instruction}>
-        Choices: you must select
-        {` ${this.state.selectable} `}
-        option
-        {this.state.selectable > 1 ? 's.' : '.' }
-      </p>
-      <div style={styles.body}>
-        <div style={styles.column}>
-            {this.state.choices.map((choice, i) => (
-              <Input
-                key={i}
-                type="checkbox"
-                label={choice.text}
-                checked={this.state.answers[i]}
-                onChange={() => this.check(i)}
-                disabled
-              />
-            ))}
+      <div>
+        <p>{this.props.question.text}</p>
+        <p style={styles.instruction}>
+          Choices: you must select
+          {` ${this.props.fields.selectable} `}
+          option
+          {this.props.fields.selectable > 1 ? 's.' : '.' }
+        </p>
+        <div style={styles.body}>
+          <div style={styles.column}>
+              {this.props.fields.choices.map((choice, i) => (
+                <Checkbox
+                  key={i}
+                  checked={this.props.fields.answers.includes(i)}
+                  disabled
+                >
+                  {choice.text}
+                </Checkbox>
+              ))}
+          </div>
         </div>
-      </div>
-    </form>
+    </div>
     );
   }
 
@@ -221,7 +212,7 @@ export default class MultiChoice extends Component {
     return (
       <div>
       {(() => {
-        switch (this.state.permission) {
+        switch (this.props.permission) {
           case 'editor': return (this.renderEditor());
           case 'responder': return (this.renderResponder());
           case 'reader': return (this.renderReader());
@@ -270,5 +261,8 @@ const styles = {
   instruction: {
     fontSize: 14,
     color: Colors.GRAY,
+  },
+  checkbox: {
+
   },
 };
