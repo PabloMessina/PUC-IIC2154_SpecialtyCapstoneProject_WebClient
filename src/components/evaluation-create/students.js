@@ -115,44 +115,28 @@ export default class Students extends Component {
     return arr[arr.length - 1].length === 0;
   }
 
-  renderGroupIndex(groupIndex, studentIndex, groupLength) {
-    if (studentIndex === 0) {
-      return (
-        <td
-          rowSpan={groupLength}
-          onClick={() => this.setState({ selectedGroup: groupIndex })}
-        >
-          {groupIndex + 1}
-        </td>
-      );
-    }
-    return null;
+  includeInAttendance(studentId) {
+    const attendance = [...this.state.attendance];
+    attendance.push(studentId);
+    return attendance;
   }
 
-  renderGroup(group, groupIndex) {
-    if (group.length > 0) {
-      return (
-        group.map((studentId, studentIndex) => (
-          <tr style={this.rowGroupStyle(groupIndex)}>
-            {this.renderGroupIndex(groupIndex, studentIndex, group.length)}
-            <td onClick={() => this.removeFromGroup(groupIndex, studentIndex, studentId)} >
-              {this.props.students[studentId].name}
-            </td>
-            <td>
-              <Checkbox style={styles.checkbox} />
-            </td>
-          </tr>
-        ))
-      );
+  removeFromAttendance(studentId) {
+    const attendance = [...this.state.attendance];
+    attendance.splice(attendance.indexOf(studentId), 1);
+    return attendance;
+  }
+
+  handleCheckboxChange(checked, studentId) {
+    if (checked) {
+      const attendance = this.includeInAttendance(studentId);
+      this.setState({ attendance });
+    //  console.log(attendance);
+    } else {
+      const attendance = this.removeFromAttendance(studentId);
+      this.setState({ attendance });
+    //  console.log(attendance);
     }
-    // empty group
-    return (
-      <tr style={this.rowGroupStyle(groupIndex)}>
-        {this.renderGroupIndex(groupIndex, 0, 1)}
-        <td />
-        <td />
-      </tr>
-    );
   }
 
 // http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
@@ -184,25 +168,66 @@ export default class Students extends Component {
   }
 
   randomGroupGenerator(groupSize) {
-    const unselectedStudents = this.shuffle(this.unselectAll());
-    const groups = [];
-    while (unselectedStudents.length > 0) {
-      const group = unselectedStudents.splice(0, groupSize);
-      if (group.length < groupSize) {
-        group.forEach((student, index) => {
-          groups[index % groupSize].push(student);
-        });
-      } else {
-        groups.push(group);
+    if (groupSize < 1 || groupSize > 99 || groupSize % 1 !== 0) {
+      alert('Invalid group size. Groups must be integer numbers between 1 and 99'); 
+    } else {
+      const unselectedStudents = this.shuffle(this.unselectAll());
+      const groups = [];
+      while (unselectedStudents.length > 0) {
+        const group = unselectedStudents.splice(0, groupSize);
+        if (group.length < groupSize) {
+          group.forEach((student, index) => {
+            groups[index % groupSize].push(student);
+          });
+        } else {
+          groups.push(group);
+        }
       }
+      this.setState({ groups, unselectedStudents });
     }
-    this.setState({ groups, unselectedStudents });
   }
 
-  includeInAttendance(studentId) {
-    const attendance = [...this.state.attendance].push(studentId);
-    this.setState({ attendance });
-    console.log(this.state.attendance);
+  renderGroupIndex(groupIndex, studentIndex, groupLength) {
+    if (studentIndex === 0) {
+      return (
+        <td
+          rowSpan={groupLength}
+          onClick={() => this.setState({ selectedGroup: groupIndex })}
+        >
+          {groupIndex + 1}
+        </td>
+      );
+    }
+    return null;
+  }
+
+  renderGroup(group, groupIndex) {
+    if (group.length > 0) {
+      return (
+        group.map((studentId, studentIndex) => (
+          <tr style={this.rowGroupStyle(groupIndex)}>
+            {this.renderGroupIndex(groupIndex, studentIndex, group.length)}
+            <td onClick={() => this.removeFromGroup(groupIndex, studentIndex, studentId)} >
+              {this.props.students[studentId].name}
+            </td>
+            <td>
+              <Checkbox
+                style={styles.checkbox}
+                onChange={(e) => this.handleCheckboxChange(e.target.checked, studentId)}
+              />
+            </td>
+          </tr>
+        ))
+      );
+    }
+    // empty group
+    return (
+      <tr style={this.rowGroupStyle(groupIndex)}>
+        {this.renderGroupIndex(groupIndex, 0, 1)}
+        <td />
+        <td />
+      </tr>
+    );
   }
 
   render() {
