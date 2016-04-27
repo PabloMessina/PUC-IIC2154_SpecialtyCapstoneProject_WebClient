@@ -139,12 +139,12 @@ export default class CourseStudents extends Component {
             {renderIf(evaluations.length === 0)(() => (
               <p>This course has no evaluations yet.</p>
             ))}
-            <h4 style={styles.titulo} size="lg" name="lightbulb-o"> Coming Soon</h4>
+            <h4 style={styles.title} size="lg" name="lightbulb-o"> Coming Soon</h4>
             {sections.ready.map((evaluation, i) => (
               <div key={i}>
                 <h5 size="lg" name="lightbulb-o">{moment(evaluation.dateInitial).format('dddd, MMMM Do, h:mm a')}</h5>
-                <p>{evaluation.name}</p>
-                <p> Duration: {moment(evaluation.dateEnd).diff(evaluation.dateInitial, 'minutes')} minutes</p>
+                <p style={styles.tezt}>{evaluation.name}</p>
+                <p style={styles.tezt}> Duration: {moment(evaluation.dateEnd).diff(evaluation.dateInitial, 'minutes')} minutes</p>
                 <hr />
               </div>
             ))}
@@ -154,12 +154,12 @@ export default class CourseStudents extends Component {
                 <br />
               </div>
             ))}
-            <h4 style={styles.titulo} size="lg" name="lightbulb-o"> Future Quizzes</h4>
+            <h4 style={styles.title} size="lg" name="lightbulb-o"> Future Quizzes</h4>
             {sections.soon.map((evaluation, i) => (
               <div key={i}>
                 <h5 size="lg" name="lightbulb-o" >{moment(evaluation.dateInitial).format('dddd, MMMM Do, h:mm a')}</h5>
-                <p>{evaluation.name}</p>
-                <p> Duration: {moment(evaluation.dateEnd).diff(evaluation.dateInitial, 'minutes')} minutes</p>
+                <p style={styles.tezt}>{evaluation.name}</p>
+                <p style={styles.tezt}> Duration: {moment(evaluation.dateEnd).diff(evaluation.dateInitial, 'minutes')} minutes</p>
                 <hr />
               </div>
             ))}
@@ -169,12 +169,12 @@ export default class CourseStudents extends Component {
                 <br />
               </div>
             ))}
-            <h4 style={styles.titulo} size="lg" name="lightbulb-o"> Done</h4>
+            <h4 style={styles.title} size="lg" name="lightbulb-o"> Done</h4>
             {sections.done.map((evaluation, i) => (
               <div key={i}>
                 <h5 size="lg" name="lightbulb-o">{moment(evaluation.dateInitial).format('dddd, MMMM Do, h:mm a')}</h5>
-                <p>{evaluation.name}</p>
-                <p> Duration: {moment(evaluation.dateEnd).diff(evaluation.dateInitial, 'minutes')} minutes</p>
+                <p style={styles.tezt}>{evaluation.name}</p>
+                <p style={styles.tezt}> Duration: {moment(evaluation.dateEnd).diff(evaluation.dateInitial, 'minutes')} minutes</p>
                 <hr />
               </div>
             ))}
@@ -214,7 +214,10 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
   },
-  titulo: {
+  title: {
     marginBottom: 22,
+  },
+  tezt: {
+    marginBottom: 3,
   },
 };
