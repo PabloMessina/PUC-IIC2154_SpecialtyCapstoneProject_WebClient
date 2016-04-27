@@ -11,6 +11,7 @@ import {
   Alert,
   Breadcrumb,
 } from 'react-bootstrap';
+import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
 
@@ -104,10 +105,20 @@ export default class CourseCreate extends Component {
           </Breadcrumb.Item>
         </Breadcrumb>
 
-        <h2>New Course</h2>
         <Row>
-          <Col xs={12} sm={8}>
-            <p>Message</p>
+          <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
+            <h2>New Course</h2>
+          </Col>
+        </Row>
+
+        <Row>
+          <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
+            <p>Take a group of people from your organization and assing them evaluations and a bibliography of atlases to read.</p>
+            <ul>
+              <li>Create individual or group evaluations.</li>
+              <li>Schedule evaluations or make a surprise quiz.</li>
+              <li>Trace the performance of your students.</li>
+            </ul>
 
             <hr />
 
@@ -142,6 +153,8 @@ export default class CourseCreate extends Component {
                 />
               </FormGroup>
 
+              <hr />
+
               <Button bsStyle="primary" type="submit" disabled={this.state.submiting}>
                 Create Course
               </Button>
@@ -149,9 +162,9 @@ export default class CourseCreate extends Component {
             </form>
           </Col>
 
-          <Col xs={12} sm={4}>
+          <Col xsOffset={0} xs={12} sm={3}>
             <Panel>
-              <h5>Looking for help?</h5>
+              <h5><Icon style={styles.icon} size="lg" name="info-circle" /> Need help?</h5>
               <hr />
               <p>Take a look at our showcase or contact us.</p>
             </Panel>
@@ -166,5 +179,8 @@ export default class CourseCreate extends Component {
 const styles = {
   container: {
 
+  },
+  icon: {
+    marginRight: 7,
   },
 };

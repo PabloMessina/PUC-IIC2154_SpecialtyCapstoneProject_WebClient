@@ -100,6 +100,7 @@ export default class NavigationBar extends Component {
         <Navbar.Collapse>
           <Nav>
 
+            {/*
             <Navbar.Form style={{ paddingTop: 3.5 }} pullLeft>
               <FormGroup bsSize="small">
                 <FormControl type="text" placeholder="Search" />
@@ -107,6 +108,7 @@ export default class NavigationBar extends Component {
               {' '}
               <Button bsSize="small" type="submit">Submit</Button>
             </Navbar.Form>
+            */}
 
             <NavItem eventKey={1} onClick={() => browserHistory.push('/documents')}>
               <Icon style={styles.navIcon} size="1x" name="book" /> Atlases

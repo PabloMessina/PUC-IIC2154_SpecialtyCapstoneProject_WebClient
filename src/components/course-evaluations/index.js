@@ -32,6 +32,7 @@ export default class CourseStudents extends Component {
     this.state = {
       evaluations: props.evaluations,
     };
+    this.renderRow = this.renderRow.bind(this);
     this.createEvaluation = this.createEvaluation.bind(this);
     this.fetchEvaluation = this.fetchEvaluation.bind(this);
     this.fetchEvaluation(props.course.id);
@@ -57,14 +58,18 @@ export default class CourseStudents extends Component {
       .then(evaluations => this.setState({ evaluations }));
   }
 
+  renderRow(evaluation, i) {
+    return (
+      <p key={i}>{evaluation}</p>
+    );
+  }
+
   render() {
     return (
       <div style={styles.container}>
         <Row>
           <Col xs={12} md={8}>
-            {this.state.evaluations.map((evaluation, i) => (
-              <p key={i}>{evaluation}</p>
-            ))}
+            {this.state.evaluations.map((evaluation, i) => this.renderRow(evaluation, i))}
             {renderIf(this.state.evaluations.length === 0)(() => (
               <p>This course has no evaluations yet.</p>
             ))}
