@@ -6,6 +6,7 @@ import { Colors } from '../../styles';
 
 import CourseTab from './courses';
 import AtlasTab from './atlases';
+import MembersTab  from './members'
 
 const TABS = [
   {
@@ -84,6 +85,7 @@ export default class Organization extends Component {
     switch (index) {
       case 0: return <CourseTab {...options} />;
       case 1: return <AtlasTab {...options} />;
+      case 3: return <MembersTab {...options} />;
       default: return null;
     }
   }
