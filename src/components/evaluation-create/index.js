@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Grid, Row, Col, ButtonGroup, Button, Breadcrumb } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
+import renderIf from 'render-if';
 
 import app from '../../app';
 
@@ -38,9 +39,22 @@ export default class EvaluationCreate extends Component {
 
   static get propTypes() {
     return {
+      evaluation: React.PropTypes.object,
       // React Router
       params: React.PropTypes.object,
       children: React.PropTypes.any,
+    };
+  }
+
+  static get defaultProps() {
+    return {
+      evaluation: {
+        title: '',
+        description: '',
+        attendance: 0,
+        isPublic: true,
+        questions: [],
+      },
     };
   }
 
@@ -49,11 +63,13 @@ export default class EvaluationCreate extends Component {
     this.state = {
       selected: 0,
       tabStates: Array(SECTIONS.length).fill('default'),
-      course: props.params.course,
       organization: null,
+      course: props.params.course,
+      evaluation: props.evaluation,
     };
     this.renderSection = this.renderSection.bind(this);
     this.fetchOrganization = this.fetchOrganization.bind(this);
+    this.onEvaluationChange = this.onEvaluationChange.bind(this);
 
     // Get organization
     this.fetchOrganization(this.state.course.organizationId);
@@ -65,6 +81,12 @@ export default class EvaluationCreate extends Component {
     if (course && course.id !== this.state.course.id) {
       this.setState({ course });
       this.fetchOrganization(course.organizationId);
+    }
+  }
+
+  onEvaluationChange(evaluation) {
+    if (evaluation) {
+      this.setState({ evaluation: { ...this.state.evaluation, ...evaluation } });
     }
   }
 
@@ -96,8 +118,7 @@ export default class EvaluationCreate extends Component {
   }
 
   render() {
-    const course = this.state.course;
-    const organization = this.state.organization;
+    const { course, organization, evaluation } = this.state;
 
     return (
       <Grid style={styles.container}>
@@ -125,7 +146,12 @@ export default class EvaluationCreate extends Component {
           </Breadcrumb.Item>
         </Breadcrumb>
 
-        <h2>Evaluation</h2>
+        <h2>
+          Evaluation
+          {renderIf(this.state.evaluation && this.state.evaluation.title)(() => (
+            <small style={{ marginLeft: 4 }}> {this.state.evaluation.title}</small>
+          ))}
+        </h2>
 
         <Row>
           <Col style={styles.bar} xsOffset={0} xs={12}>
@@ -137,7 +163,12 @@ export default class EvaluationCreate extends Component {
         <hr />
         <Row>
           <Col xs={12}>
-            {this.props.children}
+            {React.cloneElement(this.props.children, {
+              organization,
+              course,
+              evaluation,
+              onEvaluationChange: this.onEvaluationChange,
+            })}
           </Col>
         </Row>
       </Grid>

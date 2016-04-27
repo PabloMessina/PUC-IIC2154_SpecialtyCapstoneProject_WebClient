@@ -1,3 +1,5 @@
+/* eslint no-underscore-dangle:0 */
+
 import React, { Component } from 'react';
 
 import Select from 'react-select';
@@ -88,12 +90,17 @@ export default class Questions extends Component {
   static get propTypes() {
     return {
       mode: React.PropTypes.string,
-      questions: React.PropTypes.array,
       allQuestions: React.PropTypes.array,
       tags: React.PropTypes.array,
       allTags: React.PropTypes.array,
       hideQuestions: React.PropTypes.array,
       bufferQuestion: React.PropTypes.any,
+
+      // From parent
+      organization: React.PropTypes.object,
+      course: React.PropTypes.object,
+      evaluation: React.PropTypes.object,
+      onEvaluationChange: React.PropTypes.func,
     };
   }
 
@@ -102,7 +109,6 @@ export default class Questions extends Component {
       mode: 'Select',
       tags: [],
       allTags: defaultTags,
-      questions: [],
       allQuestions: [...defaultQuestions],
       hideQuestions: [],
       bufferQuestion: { _id: 0, _type: 'trueFalse', question: { text: '' }, tags: [], fields: {} },
@@ -113,7 +119,6 @@ export default class Questions extends Component {
     super(props);
     this.state = {
       tags: props.tags,
-      questions: props.questions,
       mode: props.mode,
       hideQuestions: props.hideQuestions,
       allQuestions: props.allQuestions,
@@ -125,9 +130,16 @@ export default class Questions extends Component {
     this.addQuestion = this.addQuestion.bind(this);
     this.matchQuestions = this.matchQuestions.bind(this);
     this.refreshAllQuestions = this.refreshAllQuestions.bind(this);
-    this.NewQuestion = this.NewQuestion.bind(this);
+    this.onSubmitNewQuestion = this.onSubmitNewQuestion.bind(this);
     this.removeQuestion = this.removeQuestion.bind(this);
     this.setTypeBuffer = this.setTypeBuffer.bind(this);
+  }
+
+  onSubmitNewQuestion(object) {
+    const allQuestions = [...this.state.allQuestions, object];
+    this.setState({ allQuestions });
+    this.setState({ mode: 'Select' });
+    this.addQuestion(object);
   }
 
   setTypeBuffer(value) {
@@ -150,21 +162,24 @@ export default class Questions extends Component {
   }
 
   addQuestion(question) {
-    let questions = [...this.state.questions];
-    if (!questions.includes(question)) {
-      questions = [...questions, question];
+    const questions = [...this.props.evaluation.questions];
+    if (!questions.find(q => q._id === question._id)) {
+      this.updateEvaluation({ questions: [...questions, question] });
     }
-    this.setState({ questions });
   }
 
   removeQuestion(question, index, option) {
     if (option === 'evaluation') {
-      const questions = [...this.state.questions];
+      const questions = [...this.props.evaluation.questions];
       questions.splice(index, 1);
-      this.setState({ questions });
+      this.updateEvaluation({ questions });
     } else {
       this.setState({ hideQuestions: [...this.state.hideQuestions, question._id] });
     }
+  }
+
+  updateEvaluation(evaluation) {
+    if (this.props.onEvaluationChange) this.props.onEvaluationChange(evaluation);
   }
 
   matchQuestions() {
@@ -177,25 +192,19 @@ export default class Questions extends Component {
     this.setState({ hideQuestions: [] });
   }
 
-  NewQuestion(object) {
-    const allQuestions = [...this.state.allQuestions, object];
-    this.setState({ allQuestions });
-    this.setState({ mode: 'Select' });
-    this.addQuestion(object);
-  }
-
   render() {
     const filteredQuestions = this.matchQuestions();
+    const { evaluation } = this.props;
+    const { title, description, questions } = evaluation;
+
     return (
       <Row style={styles.container}>
         <Col style={styles.left} xs={12} sm={7} md={7}>
-          <p style={styles.title}>Evaluation Name</p>
-          <p>Evaluation description: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-          Phasellus auctor imperdiet pulvinar. Nam quam risus, eleifend id pulvinar ac,
-          maximus eu massa. Cras dignissim arcu ac nunc porta maximus. Aliquam sapien quam,
-          bibendum quis neque efficitur, gravida finibus eros.
+          <p style={styles.title}>{title || 'No title'}</p>
+          <p>
+            {description}
           </p>
-          {this.state.questions.map((question, index) => {
+          {questions.map((question, index) => {
             const props = {
               question: question.question,
               tags: question.tags,
@@ -276,7 +285,7 @@ export default class Questions extends Component {
           <div>
             {renderIf(this.state.mode === 'Select')(() =>
             filteredQuestions.map((question, index) => {
-              if (!this.state.questions.includes(question) &&
+              if (!questions.includes(question) &&
                   !this.state.hideQuestions.includes(question._id)) {
                 const props = {
                   question: question.question,
@@ -317,7 +326,7 @@ export default class Questions extends Component {
                 _id: this.state.allQuestions.length + 1,
                 typeQuestion: this.state.bufferQuestion._type,
                 tags: this.state.tags.map((item) => item.label),
-                onSubmit: this.NewQuestion,
+                onSubmit: this.onSubmitNewQuestion,
               };
               return (<NewQuestion {...props} />);
             }
