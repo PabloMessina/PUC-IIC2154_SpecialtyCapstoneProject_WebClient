@@ -1,11 +1,10 @@
 import React, { Component } from 'react';
 import { Grid, Col, Row, Button, Form, FormGroup, FormControl, ControlLabel } from 'react-bootstrap';
-import AtlasThumbnail from './atlas-thumbnail';
+import AtlasGrid from './atlas-grid';
 import renderIf from 'render-if';
 import Select from 'react-select';
 import { Colors } from '../../styles';
-import app from '../../app';
-const atlasesService = app.service('/atlases');
+import AtlasThumbnail from './atlas-thumbnail';
 
 export default class DocumentList extends Component {
 
@@ -30,47 +29,7 @@ export default class DocumentList extends Component {
         { label: 'Technology', value: 'Technology' },
       ],
     };
-    this.handleSelectChange = this.handleSelectChange.bind(this);
-    this.findOne = this.findOne.bind(this);
-    this.filterDocuments = this.filterDocuments.bind(this);
   }
-
-  componentDidMount() {
-    this.fetchTree();
-  }
-
-  // To fetch the atlases from the server
-  fetchTree() {
-    const query = {
-    };
-
-    return atlasesService.find({ query })
-      .then(results => {
-        this.setState({ atlases: results.data });
-      });
-  }
-  // To find an atlas with at least one of the tags
-  findOne(haystack, arr) {
-    return haystack.every(v => arr.indexOf(v.label) >= 0);
-  }
-
-  // To handle the changes in the tags
-  handleSelectChange(value, tags) {
-    this.forceUpdate();
-    this.setState({ tags });
-    this.state.lista = [];
-    this.state.atlases.forEach((doc) => {
-      const search = this.findOne(this.state.tags, doc.tags);
-      if (search || this.state.tags.length === 0) {
-        this.state.lista.push(
-          <div style={styles.column} xs={2} md={3}>
-            <AtlasThumbnail id={doc.id} document={doc} />
-          </div>
-        );
-      }
-    });
-  }
-
 
   // For the first actualization and when you press the button search
   filterDocuments() {
@@ -151,9 +110,7 @@ export default class DocumentList extends Component {
           </Form>
         </Row>
         <Row>
-          <div style={styles.scroll}>
-            {this.state.lista}
-          </div>
+          <AtlasGrid />
         </Row>
       </Grid>
     );

@@ -17,36 +17,16 @@ export default class Payments extends Component {
   render() {
     return (
       <div style={styles.container}>
-      <h1>Pagos</h1>
-      <Table responsive>
-        <tbody>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-        </tbody>
-       </Table>
+        <h1>Payments</h1>
+        <Table responsive>
+          <tbody>
+            <tr>
+              <td bold>State</td>
+              <td>OK</td>
+              <td href="#"><a>Edit</a></td>
+            </tr>
+          </tbody>
+        </Table>
       </div>
     );
   }

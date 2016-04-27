@@ -100,8 +100,11 @@ const Routing = (
       <Route path="create-atlas" component={CreateAtlas} />
 
       <Route path="documents" component={DocumentList} onEnter={requireAuth} />
-      <Route path="documents/:docId" component={DocumentDescription}
-        onEnter= {populate({field: 'docId', to: 'atlas', service: 'atlases'})}/>
+      <Route
+        path="documents/:docId"
+        component={DocumentDescription}
+        onEnter={populate({ field: 'docId', to: 'atlas', service: 'atlases' })}
+      />
 
       <Route path="settings" component={Settings} >
         <IndexRoute component={GeneralSettings} />

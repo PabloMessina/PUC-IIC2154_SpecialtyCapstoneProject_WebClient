@@ -38,15 +38,15 @@ export default class DocumentDescription extends Component {
     const doc = this.props.params.atlas;
     return (
       <Grid>
-        <Panel footer="Footer">
+        <Panel footer={doc.description}>
           <Row className="show-grid">
             <Col xs={6} md={4}>
               <Image src="/img/atlas1.jpg" src={`/${doc.cover}`} responsive />
             </Col>
             <Col xs={6} md={8}>
               <h3>{doc.title}</h3>
-              <p>Year: 2016</p>
-              <p>Category: anatomy</p>
+              <p>Year: 'Date of creation'</p>
+              <p>Category: 'Here will be the tags of the atlas'</p>
             </Col>
           </Row>
         </Panel>
