@@ -25,27 +25,23 @@ export default class Students extends Component {
     super(props);
     this.state = {
       /**
-       * [groups description]
        * @type {Array}
        * Every group is an array inside this array.
        * Students included here should not be in unselectedStudents.
        */
       groups: [[1, 2], [4], [5, 6, 8]],
       /**
-       * [unselectedStudents description]
        * @type {Array}
        * Students not assigned to any group.
        * Students included here should not be in the 'groups' array.
        */
       unselectedStudents: [0, 3, 7, 9],
       /**
-       * [selectedGroup description]
        * @type {Number}
        * To which group unselectedStudents will be added.
        */
       selectedGroup: 0,
       /**
-       * [groupSize description]
        * @type {Number}
        * Value of groupSize input
        */
@@ -56,11 +52,8 @@ export default class Students extends Component {
     this.addGroup = this.addGroup.bind(this);
     this.isButtonDisabled = this.isButtonDisabled.bind(this);
     this.rowGroupStyle = this.rowGroupStyle.bind(this);
-    this.generateRandomGroups = this.generateRandomGroups.bind(this);
-  }
-
-  generateRandomGroups() {
-alert(this.groupSize)
+    this.randomGroupGenerator = this.randomGroupGenerator.bind(this);
+    this.unselectAll = this.unselectAll.bind(this);
   }
 
   addToGroup(studentIndex) {
@@ -150,7 +143,6 @@ alert(this.groupSize)
         ))
       );
     }
-
     // empty group
     return (
       <tr style={this.rowGroupStyle(groupIndex)}>
@@ -161,22 +153,78 @@ alert(this.groupSize)
     );
   }
 
+// http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+  shuffle(array) {
+    let currentIndex = array.length;
+    let temporaryValue;
+    let randomIndex;
+
+    // While there remain elements to shuffle...
+    while (currentIndex !== 0) {
+      // Pick a remaining element...
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex -= 1;
+
+      // And swap it with the current element.
+      temporaryValue = array[currentIndex];
+      array[currentIndex] = array[randomIndex];
+      array[randomIndex] = temporaryValue;
+    }
+    return array;
+  }
+
+  unselectAll() {
+    let unselectedStudents = this.state.unselectedStudents;
+    this.state.groups.forEach(group => {
+      unselectedStudents = unselectedStudents.concat(group);
+    });
+    // console.log(this.state.groups);
+    // this.setState({ groups: [[]], unselectedStudents });
+    // console.log(this.state.groups);
+    return unselectedStudents;
+  }
+
+  randomGroupGenerator(groupSize) {
+    // this.unselectAll();
+    // const unselectedStudents = this.shuffle(this.state.unselectedStudents);
+    const unselectedStudents = this.shuffle(this.unselectAll());
+    console.log(unselectedStudents);
+    const groups = [];
+    while (unselectedStudents.length > 0) {
+      const group = unselectedStudents.splice(0, groupSize);
+      if (group.length < groupSize) {
+        group.forEach((student, index) => {
+          groups[index % groupSize].push(student);
+        });
+      } else {
+        groups.push(group);
+      }
+    }
+    this.setState({ groups, unselectedStudents });
+  }
+
   render() {
     return (
       <div>
         <div>
           <Form inline>
-            <span>Generar grupos aleatoreos de </span>
+            <span>Generate random groups of </span>
             <FormControl
-              type="text"
-              maxLength="2"
+              type="number"
+              min="1"
+              max="99"
               onkeypress="return event.charCode >= 48 && event.charCode <= 57"
               placeholder="3"
               style={styles.groupSizeInput}
               onChange={e => { this.setState({ groupSize: e.target.value }); }}
             />
-            <span> personas </span>
-            <Button onClick={this.generateRandomGroups}>Generar</Button>
+            <span> people </span>
+            <Button
+              style={styles.generateGroupsButton}
+              onClick={() => this.randomGroupGenerator(this.state.groupSize)}
+            >
+              Generate
+            </Button>
           </Form>
           <br />
         </div>
@@ -233,6 +281,11 @@ const styles = {
     margin: 'auto',
   },
   groupSizeInput: {
-    width: '50px',
+    width: '80px',
+    marginLeft: '10px',
+    marginRight: '10px',
+  },
+  generateGroupsButton: {
+    marginLeft: '20px',
   },
 };
