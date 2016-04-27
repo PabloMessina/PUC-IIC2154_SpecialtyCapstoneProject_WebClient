@@ -37,6 +37,7 @@ export default class Node extends Component {
       collapsed: false,
       section: { name: 'Untitled', sections: [] },
       anidation: [],
+      selected: false,
     };
   }
 
@@ -46,6 +47,8 @@ export default class Node extends Component {
       tree: props.tree,
       collapsed: props.collapsed,
       section: props.section,
+      selected: props.selected,
+      hover: false,
     };
 
     this.collapse = this.collapse.bind(this);
@@ -71,13 +74,19 @@ export default class Node extends Component {
     .catch(error => console.log(error));
   }
 
+  onClick() {
+    this.props.onSelectSection(this.state.section);
+    // this.setState({ selected: true })
+  }
+
+
   render() {
     const { anidation } = this.props;
-    const { collapsed } = this.state;
-    const section = this.state.section;
+    const { hover, selected, collapsed, section, tree } = this.state;
     const { _id, title, content } = section;
-    const sections = this.state.tree[_id];
+    const sections = tree[_id];
     const onSelectSection = () => this.props.onSelectSection(section);
+    const hoverStyle = hover || selected ? { color: 'blue' } : { color: '#4A4A4A' };
 
     const hasSubtree = sections && sections.length > 0 && !collapsed;
     //const fontSize = Math.max(FONT.MAX - (FONT.DELTA * anidation.length), FONT.MIN);
@@ -85,8 +94,13 @@ export default class Node extends Component {
     return (
       <div style={styles.container}>
 
-        <span style={styles.sectionNav}>
-          <span onClick={onSelectSection}>
+        <span 
+          style={Object.assign(styles.sectionNav, hoverStyle)}
+          onMouseEnter={() => this.setState({ hover: true })}
+          onMouseLeave={() => this.setState({ hover: false })}
+        >
+          <span 
+            onClick={onSelectSection}>
             <span style={styles.anidation}>{anidation.join('.')}.</span> {title}
           </span>
 
@@ -140,7 +154,6 @@ const styles = {
     alignItems: 'center',
   },
   sectionNav: {
-    color: '#4A4A4A',
     display: 'inline-block',
     padding: '5px 0',
     alignItems: 'center',
