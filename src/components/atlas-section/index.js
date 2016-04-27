@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import { Panel } from 'react-bootstrap';
 import ReactQuill from 'react-quill';
 
 export default class AtlasSection extends Component {
@@ -46,6 +45,7 @@ export default class AtlasSection extends Component {
         >
 
           <ReactQuill.Toolbar
+            style={styles.bar}
             key="toolbar"
             ref="toolbar"
             items={toolbar}
@@ -66,10 +66,24 @@ export default class AtlasSection extends Component {
 
 const styles = {
   container: {
-    display: 'flex',
-    height: '100%',
+    position: 'absolute',
+    width: '80%',
+    right: 0,
+    bottom: 88,
+    top: 64,
+  },
+  bar: {
+    backgroundColor: 'white',
+    width: '100%',
+    zIndex: 1,
+    borderBottom: '1px solid rgba(0,0,0,0.07)',
   },
   editor: {
-    overflow: 'scroll',
+    fontSize: '20',
+    overflow: 'auto',
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    right: 0,
   },
 };

@@ -42,8 +42,13 @@ export default class AtlasTree extends Component {
 const styles = {
   container: {
     backgroundColor: 'white',
-    display: 'flex',
     overflow: 'scroll',
+    width: '20%',
+    top: 64,
+    bottom: 35,
+    paddingTop: 20,
+    position: 'absolute',
+    borderRight: '1px solid rgba(0,0,0,0.07)',
 
     // flexDirection: 'column', // row, column
     // flexWrap: 'nowrap' // wrap, nowrap

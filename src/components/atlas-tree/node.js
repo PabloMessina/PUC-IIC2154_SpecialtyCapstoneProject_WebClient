@@ -85,16 +85,16 @@ export default class Node extends Component {
     return (
       <div style={styles.container}>
 
-        <div style={styles.sectionNav}>
-          <p onClick={onSelectSection}>
-            {anidation.join('.')}. {title}
-          </p>
+        <span style={styles.sectionNav}>
+          <span onClick={onSelectSection}>
+            <span style={styles.anidation}>{anidation.join('.')}.</span> {title}
+          </span>
 
           {renderIf(!this.props.static)(() => (
             <Icon name="plus" style={styles.plusIcon} onClick={this.addSection} />
             ))
           }
-        </div>
+        </span>
 
         {renderIf(hasSubtree)(() => (
           <div style={styles.subtree}>
@@ -124,15 +124,7 @@ const styles = {
     marginBottom: 3,
     marginLeft: 15,
     marginRight: 15,
-  },
-  texts: {
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'grey',
-  },
-  text: {
-    marginTop: 3,
-    marginBottom: 3,
-    fontWeight: '100',
+    width: '100%',
   },
   subtree: {
     // height: 30,
@@ -148,9 +140,15 @@ const styles = {
     alignItems: 'center',
   },
   sectionNav: {
+    color: '#4A4A4A',
+    display: 'inline-block',
+    padding: '5px 0',
     alignItems: 'center',
-    display: 'inline-flex',
     fontSize: 18,
+    width: '100%',
+  },
+  anidation: {
+    fontWeight: 'bold',
   },
 };
 
