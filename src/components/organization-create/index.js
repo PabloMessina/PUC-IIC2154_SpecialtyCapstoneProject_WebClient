@@ -10,7 +10,9 @@ import {
   FormControl,
   HelpBlock,
   Alert,
+
 } from 'react-bootstrap';
+import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
 
@@ -107,10 +109,15 @@ export default class OrganizationCreate extends Component {
   render() {
     return (
       <Grid style={styles.container}>
-        <h2>New Organization</h2>
-        <Row>
 
-          <Col xs={12} sm={8}>
+        <Row>
+          <Col xsOffset={1}>
+            <h2>New Organization</h2>
+          </Col>
+        </Row>
+
+        <Row>
+          <Col xsOffset={1} xs={11} sm={7}>
             <p>An organization is a community of students and teachers from a common institution.</p>
             <ul>
               <li>Create courses and keep a store of questions.</li>
@@ -140,7 +147,7 @@ export default class OrganizationCreate extends Component {
                   onChange={e => this.setName(e.target.value)}
                 />
                 <FormControl.Feedback />
-                <HelpBlock>Must be unique and not too short.</HelpBlock>
+                <HelpBlock>Must be unique and not too short</HelpBlock>
               </FormGroup>
 
               <FormGroup controlId="description">
@@ -165,6 +172,8 @@ export default class OrganizationCreate extends Component {
                 <HelpBlock>Optional</HelpBlock>
               </FormGroup>
 
+              <hr />
+
               <FormGroup controlId="subscription">
                 <ControlLabel>Suscription Plan</ControlLabel>
                 <FormControl
@@ -176,15 +185,17 @@ export default class OrganizationCreate extends Component {
                 </FormControl>
               </FormGroup>
 
+              <hr />
+
               <Button bsStyle="primary" type="submit" disabled={this.state.submiting}>
                 Create Organization
               </Button>
             </form>
           </Col>
 
-          <Col xs={12} sm={4}>
+          <Col xs={11} sm={3}>
             <Panel>
-              <h5>Looking for help?</h5>
+              <h5><Icon style={styles.icon} size="lg" name="info-circle" /> Need help?</h5>
               <hr />
               <p>Take a look at our showcase or contact us.</p>
             </Panel>
@@ -199,5 +210,8 @@ export default class OrganizationCreate extends Component {
 const styles = {
   container: {
 
+  },
+  icon: {
+    marginRight: 7,
   },
 };
