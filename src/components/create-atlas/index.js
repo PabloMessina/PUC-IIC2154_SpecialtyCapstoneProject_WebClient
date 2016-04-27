@@ -1,9 +1,22 @@
 import React, { Component } from 'react';
-
-import { Grid, Button, Input, ButtonInput, Alert } from 'react-bootstrap';
-import renderIf from 'render-if';
+import {
+  Button,
+  Grid,
+  Row,
+  Col,
+  Panel,
+  FormGroup,
+  ControlLabel,
+  FormControl,
+  Alert,
+  Breadcrumb,
+} from 'react-bootstrap';
+import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
+import renderIf from 'render-if';
+
 import app from '../../app.js';
+const atlasService = app.service('/atlases');
 
 export default class CreateAtlas extends Component {
 
@@ -14,6 +27,8 @@ export default class CreateAtlas extends Component {
       description: React.PropTypes.string,
       cover: React.PropTypes.object,
       imagePreviewUrl: React.PropTypes.string,
+      // From react-router
+      params: React.PropTypes.object,
     };
   }
   static get defaultProps() {
@@ -34,16 +49,26 @@ export default class CreateAtlas extends Component {
       description: this.props.description,
       cover: this.props.cover,
       imagePreviewUrl: this.props.imagePreviewUrl,
+      organization: props.params.organization,
+      error: null,
     };
 
-    this._handleImageChange = this._handleImageChange.bind(this);
+    this.handleImageChange = this.handleImageChange.bind(this);
     this.addAuthor = this.addAuthor.bind(this);
     this.changeAuthor = this.changeAuthor.bind(this);
     this.deleteAuthor = this.deleteAuthor.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
+    this.onSubmit = this.onSubmit.bind(this);
   }
 
-  handleSubmit(e) {
+  componentWillReceiveProps(nextProps) {
+    // Because router onEnter is not called when navigation between childrens.
+    const organization = nextProps.params.organization;
+    if (organization && organization.id !== this.state.organization.id) {
+      this.setState({ organization });
+    }
+  }
+
+  onSubmit(e) {
     e.preventDefault();
 
     const newAtlas = {
@@ -52,11 +77,9 @@ export default class CreateAtlas extends Component {
       cover: this.state.cover,
     };
 
-    const atlasService = app.service('/atlases');
-
     atlasService.create(newAtlas)
-    .then(atlas => browserHistory.push(`/editor/${atlas.id}`))
-    .catch(error => this.setState({ error }));
+      .then(atlas => browserHistory.push(`/editor/${atlas.id}`))
+      .catch(error => this.setState({ error }));
   }
 
   changeAuthor(event, index) {
@@ -66,10 +89,7 @@ export default class CreateAtlas extends Component {
   }
 
   addAuthor() {
-    // const authors = [...this.state.authors];
     this.setState({ authors: [...this.state.authors, ''] });
-    // if (authors.filter((author) => author === '').length < 1) {
-    // }
   }
 
   deleteAuthor(event, index) {
@@ -81,7 +101,7 @@ export default class CreateAtlas extends Component {
     }
   }
 
-  _handleImageChange(e) {
+  handleImageChange(e) {
     e.preventDefault();
 
     const reader = new FileReader();
@@ -98,20 +118,78 @@ export default class CreateAtlas extends Component {
   }
 
   render() {
+    const organization = this.state.organization;
+
     return (
       <Grid style={styles.container}>
-        <form onSubmit={this.handleSubmit}>
-          <h1>Create Atlas</h1>
-          <div style={styles.granDiv}>
-            <div>
-              <div style={styles.item}>
-                <label>Atlas Title:</label>
-                <Input
+
+        <br />
+
+        <Breadcrumb>
+          <Breadcrumb.Item>
+            Organizations
+          </Breadcrumb.Item>
+          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
+            {organization ? organization.name : 'Loading...'}
+          </Breadcrumb.Item>
+          <Breadcrumb.Item>
+            Atlases
+          </Breadcrumb.Item>
+          <Breadcrumb.Item active>
+            Create
+          </Breadcrumb.Item>
+        </Breadcrumb>
+
+        <Row>
+          <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
+            <h2>New Atlas</h2>
+          </Col>
+        </Row>
+
+        <Row>
+          <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
+            <p>LOREM IPSUM</p>
+            <ul>
+              <li>Create individual or group evaluations.</li>
+              <li>Schedule evaluations or make a surprise quiz.</li>
+              <li>Trace the performance of your students.</li>
+            </ul>
+
+            <hr />
+
+            {renderIf(this.state.error)(() =>
+              <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
+                <h4>Oh snap! You got an error!</h4>
+                <p>{this.state.error.message}</p>
+              </Alert>
+            )}
+
+            <form onSubmit={this.onSubmit}>
+
+              <FormGroup controlId="name">
+                <ControlLabel>Course name</ControlLabel>
+                <FormControl
                   type="text"
                   value={this.state.title}
-                  onChange={(e) => this.setState({ title: e.target.value })}
+                  placeholder="Advanced calculus"
+                  label="Atlas title"
+                  onChange={e => this.setState({ title: e.target.value })}
                 />
-              </div>
+                <FormControl.Feedback />
+              </FormGroup>
+
+              <FormGroup controlId="description">
+                <ControlLabel>Description</ControlLabel>
+                <FormControl
+                  type="textarea"
+                  value={this.state.description}
+                  placeholder="Course description..."
+                  rows="5"
+                  onChange={e => this.setState({ description: e.target.value })}
+                />
+              </FormGroup>
+
+              {/*
               <div style={styles.item}>
                 <label>Atlas Author:</label>
                 {this.state.authors.map((author, i) => (
@@ -141,35 +219,33 @@ export default class CreateAtlas extends Component {
                   Add Author
                 </Button>
               </div>
-            </div>
-            <div style={styles.item}>
-              <Input type="file" style={styles.imageInput} onChange={this._handleImageChange} />
-              {renderIf(this.state.imagePreviewUrl)(() => (
-                <img src={this.state.imagePreviewUrl} />
-              ))}
-            </div>
-          </div>
-          <div>
-            <label>Description:</label>
-            <Input
-              type="textarea"
-              rows="5"
-              onChange={(e) => this.setState({ description: e.target.value })}
-            />
-          </div>
-          <ButtonInput
-            type="submit"
-            bsStyle="primary"
-            value="Submit"
-          />
 
-        {renderIf(this.state.error)(() =>
-          <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
-            <h4>Oh snap! You got an error!</h4>
-            <p>{this.state.error.message}</p>
-          </Alert>
-        )}
-        </form>
+              <div style={styles.item}>
+                <Input type="file" style={styles.imageInput} onChange={this.handleImageChange} />
+                {renderIf(this.state.imagePreviewUrl)(() => (
+                  <img src={this.state.imagePreviewUrl} />
+                ))}
+              </div>
+              */}
+
+              <hr />
+
+              <Button bsStyle="primary" type="submit">
+                Create Course
+              </Button>
+
+            </form>
+          </Col>
+
+          <Col xsOffset={0} xs={12} sm={3}>
+            <Panel>
+              <h5><Icon style={styles.icon} size="lg" name="info-circle" /> Need help?</h5>
+              <hr />
+              <p>Take a look at our showcase or contact us.</p>
+            </Panel>
+          </Col>
+
+        </Row>
       </Grid>
     );
   }
