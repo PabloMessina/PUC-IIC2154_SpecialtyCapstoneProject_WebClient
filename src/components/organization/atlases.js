@@ -34,10 +34,7 @@ export default class AtlasTab extends Component {
       organizationId,
     };
     return atlasService.find({ query })
-      .then(result => {
-        console.log(result);
-        return result.data;
-      })
+      .then(result => result.data)
       .then(atlases => this.setState({ atlases }));
   }
 

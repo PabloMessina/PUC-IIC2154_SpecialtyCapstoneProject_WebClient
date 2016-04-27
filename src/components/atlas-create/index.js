@@ -79,10 +79,7 @@ export default class AtlasCreate extends Component {
     };
 
     atlasService.create(newAtlas)
-      .then(atlas => {
-        console.log(atlas);
-        browserHistory.push(`/editor/${atlas.id}`);
-      })
+      .then(atlas => browserHistory.push(`/editor/${atlas.id}`))
       .catch(error => this.setState({ error }));
   }
 
