@@ -111,13 +111,13 @@ export default class OrganizationCreate extends Component {
       <Grid style={styles.container}>
 
         <Row>
-          <Col xsOffset={1}>
+          <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
             <h2>New Organization</h2>
           </Col>
         </Row>
 
         <Row>
-          <Col xsOffset={1} xs={11} sm={7}>
+          <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
             <p>An organization is a community of students and teachers from a common institution.</p>
             <ul>
               <li>Create courses and keep a store of questions.</li>
@@ -193,7 +193,7 @@ export default class OrganizationCreate extends Component {
             </form>
           </Col>
 
-          <Col xs={11} sm={3}>
+          <Col xsOffset={0} xs={12} sm={3}>
             <Panel>
               <h5><Icon style={styles.icon} size="lg" name="info-circle" /> Need help?</h5>
               <hr />
