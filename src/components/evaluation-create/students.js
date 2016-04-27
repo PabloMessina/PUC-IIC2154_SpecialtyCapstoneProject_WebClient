@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Checkbox, Grid, Row, Col, Table, Button, Glyphicon } from 'react-bootstrap';
+import { Checkbox, Col, Table, Button, Glyphicon, Form, FormControl } from 'react-bootstrap';
 
 
 export default class Students extends Component {
@@ -24,15 +24,43 @@ export default class Students extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      groups: [[1, 2], [5, 6, 8]],
-      unselectedStudents: [0, 3, 4, 7, 9],
-      selectedGroup: -1,
+      /**
+       * [groups description]
+       * @type {Array}
+       * Every group is an array inside this array.
+       * Students included here should not be in unselectedStudents.
+       */
+      groups: [[1, 2], [4], [5, 6, 8]],
+      /**
+       * [unselectedStudents description]
+       * @type {Array}
+       * Students not assigned to any group.
+       * Students included here should not be in the 'groups' array.
+       */
+      unselectedStudents: [0, 3, 7, 9],
+      /**
+       * [selectedGroup description]
+       * @type {Number}
+       * To which group unselectedStudents will be added.
+       */
+      selectedGroup: 0,
+      /**
+       * [groupSize description]
+       * @type {Number}
+       * Value of groupSize input
+       */
+      groupSize: 3,
     };
 
     this.renderGroup = this.renderGroup.bind(this);
     this.addGroup = this.addGroup.bind(this);
     this.isButtonDisabled = this.isButtonDisabled.bind(this);
     this.rowGroupStyle = this.rowGroupStyle.bind(this);
+    this.generateRandomGroups = this.generateRandomGroups.bind(this);
+  }
+
+  generateRandomGroups() {
+alert(this.groupSize)
   }
 
   addToGroup(studentIndex) {
@@ -45,21 +73,27 @@ export default class Students extends Component {
   }
 
   removeFromGroup(groupIndex, studentIndex, studentId) {
-    const groups = [...this.state.groups];
+    let groups = [...this.state.groups];
     groups[groupIndex].splice(studentIndex, 1);
 
+    let selectedGroup = this.state.selectedGroup;
     // delete empty group
     if (groups[groupIndex].length === 0) {
       groups.splice(groupIndex, 1);
-      if (this.state.selectedGroup === groupIndex) {
-        this.state.selectedGroup = 0;
+      if (selectedGroup >= groupIndex) {
+        selectedGroup--;
+      }
+      if (groups.length === 0) {
+        groups = [[]];
+        selectedGroup = 0;
       }
     }
 
     const unselectedStudents = [...this.state.unselectedStudents];
     unselectedStudents.push(studentId);
+    unselectedStudents.sort();
 
-    this.setState({ unselectedStudents, groups });
+    this.setState({ unselectedStudents, groups, selectedGroup });
   }
 
   addGroup() {
@@ -69,12 +103,21 @@ export default class Students extends Component {
   }
 
   rowGroupStyle(groupIndex) {
-    const style = { backgroundColor: groupIndex % 2 === 0 ? '#f9f9f9' : '' };
+    const style = {};
+    // stripe
+    if (groupIndex % 2 === 0) {
+      style.backgroundColor = '#f9f9f9';
+    }
+    // selected
     if (this.state.selectedGroup === groupIndex) {
       style.borderLeft = 'solid 7px #2CA083';
-      //debugger;
     }
     return style;
+  }
+
+  isButtonDisabled() {
+    const arr = this.state.groups;
+    return arr[arr.length - 1].length === 0;
   }
 
   renderGroupIndex(groupIndex, studentIndex, groupLength) {
@@ -84,8 +127,8 @@ export default class Students extends Component {
           rowSpan={groupLength}
           onClick={() => this.setState({ selectedGroup: groupIndex })}
         >
-        {groupIndex + 1
-        }</td>
+          {groupIndex + 1}
+        </td>
       );
     }
     return null;
@@ -97,17 +140,18 @@ export default class Students extends Component {
         group.map((studentId, studentIndex) => (
           <tr style={this.rowGroupStyle(groupIndex)}>
             {this.renderGroupIndex(groupIndex, studentIndex, group.length)}
-            <td
-              onClick={() => this.removeFromGroup(groupIndex, studentIndex, studentId)}
-            >
+            <td onClick={() => this.removeFromGroup(groupIndex, studentIndex, studentId)} >
               {this.props.students[studentId].name}
             </td>
-            <td> <Checkbox /> </td>
+            <td>
+              <Checkbox style={styles.checkbox} />
+            </td>
           </tr>
         ))
       );
     }
 
+    // empty group
     return (
       <tr style={this.rowGroupStyle(groupIndex)}>
         {this.renderGroupIndex(groupIndex, 0, 1)}
@@ -117,46 +161,63 @@ export default class Students extends Component {
     );
   }
 
-  isButtonDisabled() {
-    return this.state.groups[this.state.groups.length - 1].length === 0;
-  }
-
   render() {
     return (
-      <div style={styles.container}>
-        <Col md={8}>
-          <Table bordered condensed hover>
-            <thead>
-              <tr>
-                <th>Group</th>
-                <th>Name</th>
-                <th>Attendance</th>
-              </tr>
-            </thead>
-            <tbody>
-            {this.state.groups.map(this.renderGroup)}
-            </tbody>
-          </Table>
-        </Col>
-        <Col md={4}>
-          <Table striped bordered condensed hover>
-            <thead>
-              <tr>
-                <th>Name</th>
-              </tr>
-            </thead>
-            <tbody>
-            {this.state.unselectedStudents.map((studentId, i) => (
-              <tr key={i}>
-                <td onClick={() => this.addToGroup(i)}> {this.props.students[studentId].name} </td>
-              </tr>
-            ))}
-            </tbody>
-          </Table>
-        </Col>
-        <Col md={8}>
-          <Button onClick={this.addGroup} disabled={this.isButtonDisabled()}><Glyphicon glyph="plus" /> New Group </Button>
-        </Col>
+      <div>
+        <div>
+          <Form inline>
+            <span>Generar grupos aleatoreos de </span>
+            <FormControl
+              type="text"
+              maxLength="2"
+              onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+              placeholder="3"
+              style={styles.groupSizeInput}
+              onChange={e => { this.setState({ groupSize: e.target.value }); }}
+            />
+            <span> personas </span>
+            <Button onClick={this.generateRandomGroups}>Generar</Button>
+          </Form>
+          <br />
+        </div>
+        <div>
+          <Col md={8}>
+            <Table bordered condensed hover>
+              <thead>
+                <tr>
+                  <th>Group</th>
+                  <th>Name</th>
+                  <th>Attendance</th>
+                </tr>
+              </thead>
+              <tbody>
+              {this.state.groups.map(this.renderGroup)}
+              </tbody>
+            </Table>
+            <Button onClick={this.addGroup} disabled={this.isButtonDisabled()}>
+              <Glyphicon glyph="plus" />
+              <span> New Group</span>
+            </Button>
+          </Col>
+          <Col md={4}>
+            <Table striped bordered condensed hover>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                </tr>
+              </thead>
+              <tbody>
+              {this.state.unselectedStudents.map((studentIndex, i) => (
+                <tr key={i}>
+                  <td onClick={() => this.addToGroup(i)}>
+                    {this.props.students[studentIndex].name}
+                  </td>
+                </tr>
+              ))}
+              </tbody>
+            </Table>
+          </Col>
+        </div>
       </div>
     );
   }
@@ -168,7 +229,10 @@ Students.propTypes = {
 };
 
 const styles = {
-  container: {
-
+  checkbox: {
+    margin: 'auto',
+  },
+  groupSizeInput: {
+    width: '50px',
   },
 };
