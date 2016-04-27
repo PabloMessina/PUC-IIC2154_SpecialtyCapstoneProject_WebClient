@@ -12,7 +12,6 @@ export default class AtlasBook extends Component {
   static get propTypes() {
     return {
       static: React.PropTypes.bool,
-      atlasId: React.PropTypes.string,
     };
   }
 
@@ -26,7 +25,7 @@ export default class AtlasBook extends Component {
     super(props);
     this.state = {
       tree: {},
-      section: { content: [] },
+      section: { title: '', content: [] },
     };
 
     // Subscribe to events.
@@ -41,13 +40,15 @@ export default class AtlasBook extends Component {
 
     // Wether it should send a request to the
     // server to patch the current section.
-    this.shouldPatchSection = false;
+    this.shouldPatchContent = false;
+    this.shouldPatchTitle = false;
 
     this.fetchTree = this.fetchTree.bind(this);
     this.tryPatchSection = this.tryPatchSection.bind(this);
     this.onSelectSection = this.onSelectSection.bind(this);
     this.onAddSection = this.onAddSection.bind(this);
     this.onChangeContent = this.onChangeContent.bind(this);
+    this.onChangeTitle = this.onChangeTitle.bind(this);
   }
 
   componentDidMount() {
@@ -71,7 +72,17 @@ export default class AtlasBook extends Component {
     this.setState({
       section,
     });
-    this.shouldPatchSection = true;
+    this.shouldPatchContent = true;
+  }
+
+  onChangeTitle(title) {
+    const section = this.state.section;
+    this.setState({
+      section: { ...section, title },
+    });
+    console.log(this.state.section.title);
+    console.log(title);
+    this.shouldPatchTitle = true;
   }
 
   onAddSection(section) {
@@ -87,7 +98,7 @@ export default class AtlasBook extends Component {
 
   fetchTree() {
     const query = {
-      atlasId: this.props.params.atlasId,
+      atlasId: this.props.params.atlas.id,
       version: 'latest',
       $limit: 100,
     };
@@ -113,27 +124,38 @@ export default class AtlasBook extends Component {
    * @returns {undefined}
    */
   tryPatchSection() {
-    if (!this.shouldPatchSection) return;
+    const { _id, title, content } = this.state.section;
 
-    const section = this.state.section;
-    const content = { content: section.content };
-    sectionService.patch(section._id, content);
-    this.shouldPatchSection = false;
+    const newSection = {};
+    if (this.shouldPatchTitle) {
+      newSection.title = title;
+    }
+    if (this.shouldPatchContent) {
+      newSection.content = content;
+    }
+
+    // Nothing to patch
+    if (newSection.length === 0) return;
+
+    sectionService.patch(_id, newSection);
+    this.shouldPatchTitle = false;
+    this.shouldPatchContent = false;
   }
 
 
   render() {
-    const content = this.state.section.content;
     return (
       <div style={styles.container}>
         <AtlasTree
           tree={this.state.tree}
+          title={this.props.params.atlas.title}
           onSelectSection={this.onSelectSection}
           onAddSection={this.onAddSection}
         />
         <AtlasSection
-          content={content}
+          section={this.state.section}
           onChangeContent={this.onChangeContent}
+          onChangeTitle={this.onChangeTitle}
         />
       </div>
     );

@@ -98,7 +98,7 @@ export default class Node extends Component {
       <div style={styles.container}>
 
         {renderIf(root)(() => (
-          <span>{title}</span>
+          <span style={styles.title}>{title}</span>
         ))}
 
         {renderIf(!root)(() => (
@@ -149,6 +149,12 @@ const styles = {
     marginLeft: 15,
     marginRight: 15,
     width: '100%',
+  },
+  title: {
+    display: 'inline-block',
+    width: '100%',
+    fontSize: 22,
+    textAlign: 'center',
   },
   subtree: {
     // height: 30,

@@ -18,16 +18,15 @@ export default class AtlasTree extends Component {
   }
 
   render() {
-    const tree = this.props.tree;
+    const { title, tree } = this.props;
     return (
       <div style={styles.container}>
-        <span>{this.props.title} </span>
         <Node
           root
           static={this.props.static}
           onSelectSection={this.props.onSelectSection}
           onAddSection={this.props.onAddSection}
-          section={{ title: 'holaa', _id: 'undefined' }}
+          section={{ title, _id: 'undefined' }}
           tree={tree}
         />
       </div>

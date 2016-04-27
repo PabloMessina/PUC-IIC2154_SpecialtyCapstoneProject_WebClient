@@ -151,7 +151,11 @@ const Routing = (
         onEnter={populate({ field: 'organizationId', to: 'organization' })}
       />
 
-      <Route path="editor/:atlasId" component={AtlasBook} />
+      <Route
+        path="editor/:atlasId"
+        component={AtlasBook}
+        onEnter={populate({ field: 'atlasId', to: 'atlas', service: 'atlases' })}
+      />
       <Route path="template" component={Template} />
     </Route>
   </Router>
