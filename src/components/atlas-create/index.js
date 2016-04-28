@@ -14,6 +14,7 @@ import {
 import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
+import Select from 'react-select';
 
 import app from '../../app.js';
 const atlasService = app.service('/atlases');
@@ -24,6 +25,7 @@ export default class AtlasCreate extends Component {
     return {
       title: React.PropTypes.string,
       authors: React.PropTypes.array,
+      tags: React.PropTypes.tags,
       description: React.PropTypes.string,
       cover: React.PropTypes.string,
       imagePreviewUrl: React.PropTypes.string,
@@ -38,6 +40,7 @@ export default class AtlasCreate extends Component {
       description: '',
       cover: '',
       imagePreviewUrl: '',
+      tags: [],
     };
   }
 
@@ -51,6 +54,14 @@ export default class AtlasCreate extends Component {
       imagePreviewUrl: this.props.imagePreviewUrl,
       organization: props.params.organization,
       error: null,
+      tags: this.props.tags,
+      allTags: [
+        { label: 'Anatomy', value: 'Anatomy' },
+        { label: 'Cardiology', value: 'Cardiology' },
+        { label: 'Astronomy', value: 'Astronomy' },
+        { label: 'Biology', value: 'Biology' },
+        { label: 'Technology', value: 'Technology' },
+      ],
     };
 
     this.handleImageChange = this.handleImageChange.bind(this);
@@ -58,6 +69,7 @@ export default class AtlasCreate extends Component {
     this.changeAuthor = this.changeAuthor.bind(this);
     this.deleteAuthor = this.deleteAuthor.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
+    this.handleSelectChange = this.handleSelectChange.bind(this);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -76,10 +88,11 @@ export default class AtlasCreate extends Component {
       description: this.state.description,
       cover: { url: this.state.cover },
       organizationId: this.state.organization.id,
+      tags: this.state.tags,
     };
 
     atlasService.create(newAtlas)
-      .then(atlas => browserHistory.push(`/editor/${atlas.id}`))
+      .then(atlas => browserHistory.push(`/editor/${atlas.id}/`))
       .catch(error => this.setState({ error }));
   }
 
@@ -100,6 +113,12 @@ export default class AtlasCreate extends Component {
       authors.splice(index, 1);
       this.setState({ authors });
     }
+  }
+
+  // To handle the changes in the tags
+  handleSelectChange(value, tags) {
+    this.forceUpdate();
+    return this.setState({ tags });
   }
 
   handleImageChange(e) {
@@ -199,6 +218,21 @@ export default class AtlasCreate extends Component {
                   onChange={e => this.setState({ cover: e.target.value })}
                 />
                 <FormControl.Feedback />
+              </FormGroup>
+
+              <FormGroup controlId="formHorizontalSearch">
+                <ControlLabel>Tags</ControlLabel>
+                <div style={styles.formTags}>
+                  <Select
+                    multi
+                    simpleValue={false}
+                    disabled={false}
+                    value={this.state.tags}
+                    options={this.state.allTags}
+                    onChange={this.handleSelectChange}
+                    placeholder={'Tags'}
+                  />
+                </div>
               </FormGroup>
 
               {/*
