@@ -51,10 +51,11 @@ export default class EvaluationCreate extends Component {
       evaluation: {
         title: '',
         description: '',
-        attendance: 0,
+        attendance: 'none',
         isPublic: true,
         questions: [],
         groups: [[]],
+        attendingStudents: [],
       },
     };
   }

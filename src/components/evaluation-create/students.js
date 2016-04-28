@@ -18,7 +18,6 @@ export default class Students extends Component {
        * Value of groupSize input
        */
       groupSize: 3,
-      attendance: [],
     };
 
     // TODO: todavia existen?
@@ -96,27 +95,29 @@ export default class Students extends Component {
     const arr = this.props.evaluation.groups;
     return arr[arr.length - 1].length === 0;
   }
-//FIXME
+
   includeInAttendance(studentId) {
-    const attendance = [...this.state.attendance];
+    const attendance = [...this.props.evaluation.attendingStudents];
     attendance.push(studentId);
     return attendance;
   }
-//FIXME
+
   removeFromAttendance(studentId) {
-    const attendance = [...this.state.attendance];
+    const attendance = [...this.props.evaluation.attendingStudents];
     attendance.splice(attendance.indexOf(studentId), 1);
     return attendance;
   }
-//FIXME
+
   handleCheckboxChange(checked, studentId) {
     if (checked) {
-      const attendance = this.includeInAttendance(studentId);
-      this.setState({ attendance });
+      const attendingStudents = this.includeInAttendance(studentId);
+      this.props.onEvaluationChange({ attendingStudents });
+    //  this.setState({ attendance });
     //  console.log(attendance);
     } else {
-      const attendance = this.removeFromAttendance(studentId);
-      this.setState({ attendance });
+      const attendingStudents = this.removeFromAttendance(studentId);
+      this.props.onEvaluationChange({ attendingStudents });
+    //  this.setState({ attendance });
     //  console.log(attendance);
     }
   }
@@ -151,7 +152,6 @@ export default class Students extends Component {
         unassignedIds.push(user.id);
       });
       const unselectedStudents = this.shuffle(unassignedIds);
-      console.log(unselectedStudents[0]);
       const groups = [];
       while (unselectedStudents.length > 0) {
         const group = unselectedStudents.splice(0, groupSize);
@@ -181,7 +181,7 @@ export default class Students extends Component {
     }
     return null;
   }
-  // FIXME
+
   renderGroup(group, groupIndex) {
     if (group.length > 0) {
       return (
@@ -217,7 +217,13 @@ export default class Students extends Component {
     return (
       <div>
         <div>
-          <Form inline>
+          <Form
+            inline
+            onSubmit={e => {
+              e.preventDefault();
+              this.randomGroupGenerator(this.state.groupSize)
+            ; }}
+          >
             <span>Generate random groups of </span>
             <FormControl
               type="number"
