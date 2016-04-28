@@ -5,38 +5,9 @@ import { Checkbox, Col, Table, Button, Glyphicon, Form, FormControl } from 'reac
 
 export default class Students extends Component {
 
-  static get defaultProps() {
-    return {
-      students: [
-           { id: 0, name: 'Lopez Patricio' },
-           { id: 1, name: 'Andrighetti Tomas' },
-           { id: 2, name: 'Astaburuaga Francisco' },
-           { id: 3, name: 'Bobadilla Felipe' },
-           { id: 4, name: 'Bustamante Jose' },
-           { id: 5, name: 'Dragicevic Vicente' },
-           { id: 6, name: 'Halabi Maria Constanza' },
-           { id: 7, name: 'Messina Pablo' },
-           { id: 8, name: 'Monsalve Geraldine' },
-           { id: 9, name: 'Steinsapir Diego' },
-      ],
-    };
-  }
-
   constructor(props) {
     super(props);
     this.state = {
-      /**
-       * @type {Array}
-       * Every group is an array inside this array.
-       * Students included here should not be in unselectedStudents.
-       */
-      groups: [[1, 2], [4], [5, 6, 8]],
-      /**
-       * @type {Array}
-       * Students not assigned to any group.
-       * Students included here should not be in the 'groups' array.
-       */
-      unselectedStudents: [0, 3, 7, 9],
       /**
        * @type {Number}
        * To which group unselectedStudents will be added.
@@ -50,25 +21,38 @@ export default class Students extends Component {
       attendance: [],
     };
 
+    // TODO: todavia existen?
     this.renderGroup = this.renderGroup.bind(this);
     this.addGroup = this.addGroup.bind(this);
     this.isButtonDisabled = this.isButtonDisabled.bind(this);
     this.rowGroupStyle = this.rowGroupStyle.bind(this);
     this.randomGroupGenerator = this.randomGroupGenerator.bind(this);
-    this.unselectAll = this.unselectAll.bind(this);
+
+    this.unassignedStudents = this.unassignedStudents.bind(this);
   }
 
-  addToGroup(studentIndex) {
-    const groups = [...this.state.groups];
-    groups[this.state.selectedGroup].push(this.state.unselectedStudents[studentIndex]);
-    const unselectedStudents = [...this.state.unselectedStudents];
-    unselectedStudents.splice(studentIndex, 1);
-
-    this.setState({ unselectedStudents, groups });
+  unassignedStudents() {
+    const unassignedStudents = [];
+    this.props.users.forEach(user => {
+      unassignedStudents.push(user.id);
+    });
+    this.props.evaluation.groups.forEach(group => {
+      group.forEach(studentId => {
+        unassignedStudents.splice(unassignedStudents.indexOf(studentId), 1);
+      });
+    });
+    unassignedStudents.sort();
+    return unassignedStudents;
   }
 
-  removeFromGroup(groupIndex, studentIndex, studentId) {
-    let groups = [...this.state.groups];
+  addToGroup(studentId) {
+    const groups = [...this.props.evaluation.groups];
+    groups[this.state.selectedGroup].push(studentId);
+    this.props.onEvaluationChange({ groups });
+  }
+
+  removeFromGroup(groupIndex, studentIndex) {
+    let groups = [...this.props.evaluation.groups];
     groups[groupIndex].splice(studentIndex, 1);
 
     let selectedGroup = this.state.selectedGroup;
@@ -84,17 +68,15 @@ export default class Students extends Component {
       }
     }
 
-    const unselectedStudents = [...this.state.unselectedStudents];
-    unselectedStudents.push(studentId);
-    unselectedStudents.sort();
-
-    this.setState({ unselectedStudents, groups, selectedGroup });
+    this.setState({ selectedGroup });
+    this.props.onEvaluationChange({ groups });
   }
 
   addGroup() {
-    const groups = [...this.state.groups];
+    const groups = [...this.props.evaluation.groups];
     groups.push([]);
-    this.setState({ groups, selectedGroup: groups.length - 1 });
+    this.props.onEvaluationChange({ groups });
+    this.setState({ selectedGroup: groups.length - 1 });
   }
 
   rowGroupStyle(groupIndex) {
@@ -111,22 +93,22 @@ export default class Students extends Component {
   }
 
   isButtonDisabled() {
-    const arr = this.state.groups;
+    const arr = this.props.evaluation.groups;
     return arr[arr.length - 1].length === 0;
   }
-
+//FIXME
   includeInAttendance(studentId) {
     const attendance = [...this.state.attendance];
     attendance.push(studentId);
     return attendance;
   }
-
+//FIXME
   removeFromAttendance(studentId) {
     const attendance = [...this.state.attendance];
     attendance.splice(attendance.indexOf(studentId), 1);
     return attendance;
   }
-
+//FIXME
   handleCheckboxChange(checked, studentId) {
     if (checked) {
       const attendance = this.includeInAttendance(studentId);
@@ -139,8 +121,9 @@ export default class Students extends Component {
     }
   }
 
-// http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
-  shuffle(array) {
+  // http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+  shuffle(constArray) {
+    const array = [...constArray];
     let currentIndex = array.length;
     let temporaryValue;
     let randomIndex;
@@ -159,23 +142,21 @@ export default class Students extends Component {
     return array;
   }
 
-  unselectAll() {
-    let unselectedStudents = this.state.unselectedStudents;
-    this.state.groups.forEach(group => {
-      unselectedStudents = unselectedStudents.concat(group);
-    });
-    return unselectedStudents;
-  }
-
   randomGroupGenerator(groupSize) {
     if (groupSize < 1 || groupSize > 99 || groupSize % 1 !== 0) {
-      alert('Invalid group size. Groups must be integer numbers between 1 and 99'); 
+      alert('Invalid group size. Groups must be integer numbers between 1 and 99');
     } else {
-      const unselectedStudents = this.shuffle(this.unselectAll());
+      const unassignedIds = [];
+      this.props.users.forEach(user => {
+        unassignedIds.push(user.id);
+      });
+      const unselectedStudents = this.shuffle(unassignedIds);
+      console.log(unselectedStudents[0]);
       const groups = [];
       while (unselectedStudents.length > 0) {
         const group = unselectedStudents.splice(0, groupSize);
         if (group.length < groupSize) {
+          // alumnos restantes se reparten en los otros grupos
           group.forEach((student, index) => {
             groups[index % groupSize].push(student);
           });
@@ -183,7 +164,7 @@ export default class Students extends Component {
           groups.push(group);
         }
       }
-      this.setState({ groups, unselectedStudents });
+      this.props.onEvaluationChange({ groups });
     }
   }
 
@@ -200,15 +181,17 @@ export default class Students extends Component {
     }
     return null;
   }
-
+  // FIXME
   renderGroup(group, groupIndex) {
     if (group.length > 0) {
       return (
         group.map((studentId, studentIndex) => (
-          <tr style={this.rowGroupStyle(groupIndex)}>
+          <tr key={studentId} style={this.rowGroupStyle(groupIndex)}>
             {this.renderGroupIndex(groupIndex, studentIndex, group.length)}
-            <td onClick={() => this.removeFromGroup(groupIndex, studentIndex, studentId)} >
-              {this.props.students[studentId].name}
+            <td onClick={() => this.removeFromGroup(groupIndex, studentIndex)} >
+              {this.props.users.find(user => {
+                return user.id === studentId;
+              }).name}
             </td>
             <td>
               <Checkbox
@@ -266,7 +249,7 @@ export default class Students extends Component {
                 </tr>
               </thead>
               <tbody>
-              {this.state.groups.map(this.renderGroup)}
+              {this.props.evaluation.groups.map(this.renderGroup)}
               </tbody>
             </Table>
             <Button onClick={this.addGroup} disabled={this.isButtonDisabled()}>
@@ -282,10 +265,12 @@ export default class Students extends Component {
                 </tr>
               </thead>
               <tbody>
-              {this.state.unselectedStudents.map((studentIndex, i) => (
+              {this.unassignedStudents().map((studentId, i) => (
                 <tr key={i}>
-                  <td onClick={() => this.addToGroup(i)}>
-                    {this.props.students[studentIndex].name}
+                  <td onClick={() => this.addToGroup(studentId)}>
+                    {this.props.users.find(student => {
+                      return student.id === studentId;
+                    }).name}
                   </td>
                 </tr>
               ))}
@@ -300,7 +285,10 @@ export default class Students extends Component {
 
 Students.propTypes = {
   children: React.PropTypes.any,
+  users: React.PropTypes.array,
   students: React.PropTypes.array,
+  evaluation: React.PropTypes.object,
+  onEvaluationChange: React.PropTypes.func,
 };
 
 const styles = {

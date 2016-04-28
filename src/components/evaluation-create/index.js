@@ -54,6 +54,7 @@ export default class EvaluationCreate extends Component {
         attendance: 0,
         isPublic: true,
         questions: [],
+        groups: [[]],
       },
     };
   }
@@ -66,6 +67,18 @@ export default class EvaluationCreate extends Component {
       organization: null,
       course: props.params.course,
       evaluation: props.evaluation,
+      users: [
+           { id: 3, name: 'Bobadilla Felipe' },
+           { id: 0, name: 'Lopez Patricio' },
+           { id: 1, name: 'Andrighetti Tomas' },
+           { id: 9, name: 'Steinsapir Diego' },
+           { id: 8, name: 'Monsalve Geraldine' },
+           { id: 2, name: 'Astaburuaga Francisco' },
+           { id: 5, name: 'Dragicevic Vicente' },
+           { id: 6, name: 'Halabi Maria Constanza' },
+           { id: 7, name: 'Messina Pablo' },
+           { id: 4, name: 'Bustamante Jose' },
+      ],
     };
     this.renderSection = this.renderSection.bind(this);
     this.fetchOrganization = this.fetchOrganization.bind(this);
@@ -118,7 +131,7 @@ export default class EvaluationCreate extends Component {
   }
 
   render() {
-    const { course, organization, evaluation } = this.state;
+    const { course, organization, evaluation, users } = this.state;
 
     return (
       <Grid style={styles.container}>
@@ -167,6 +180,7 @@ export default class EvaluationCreate extends Component {
               organization,
               course,
               evaluation,
+              users,
               onEvaluationChange: this.onEvaluationChange,
             })}
           </Col>
