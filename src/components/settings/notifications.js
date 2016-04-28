@@ -17,36 +17,31 @@ export default class Notifications extends Component {
   render() {
     return (
       <div style={styles.container}>
-      <h1>Notificaciones</h1>
-      <Table responsive>
-        <tbody>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-        </tbody>
-       </Table>
+        <h1>Notifications</h1>
+        <Table responsive>
+          <tbody>
+            <tr>
+              <td bold>Web</td>
+              <td>Sound, Pop-ups, Etiquetas</td>
+              <td href="#"><a>Edit</a></td>
+            </tr>
+            <tr>
+              <td>Android</td>
+              <td>Sound, Pop-ups</td>
+              <td href="#"><a>Edit</a></td>
+            </tr>
+            <tr>
+              <td>iOS</td>
+              <td>Sound</td>
+              <td href="#"><a>Edit</a></td>
+            </tr>
+            <tr>
+              <td>Email</td>
+              <td></td>
+              <td href="#"><a>Edit</a></td>
+            </tr>
+          </tbody>
+        </Table>
       </div>
     );
   }

@@ -17,36 +17,16 @@ export default class MyAtlas extends Component {
   render() {
     return (
       <div style={styles.container}>
-      <h1>Mis Atlas</h1>
-      <Table responsive>
-        <tbody>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-        </tbody>
-       </Table>
+        <h1>My Atlases</h1>
+        <Table responsive>
+          <tbody>
+            <tr>
+              <td bold>Quantity</td>
+              <td>3</td>
+              <td href="#"><a>Edit</a></td>
+            </tr>
+          </tbody>
+        </Table>
       </div>
     );
   }

@@ -17,36 +17,36 @@ export default class Security extends Component {
   render() {
     return (
       <div style={styles.container}>
-      <h1>Seguridad</h1>
-      <Table responsive>
-        <tbody>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-          <tr>
-            <td>Table cell</td>
-            <td>Table cell</td>
-            <td>Table cell</td>
-          </tr>
-        </tbody>
-       </Table>
+        <h1>Security</h1>
+        <Table responsive>
+          <tbody>
+            <tr>
+              <td>Where you sign in</td>
+              <td>Juan Perez</td>
+              <td href="#"><a>Edit</a></td>
+            </tr>
+            <tr>
+              <td>Email</td>
+              <td>jperez@uc.cl</td>
+              <td href="#"><a>Edit</a></td>
+            </tr>
+            <tr>
+              <td>Contraseña</td>
+              <td>******</td>
+              <td href="#"><a>Edit</a></td>
+            </tr>
+            <tr>
+              <td>Organizaciones</td>
+              <td>Universidad Católica</td>
+              <td href="#"><a>Edit</a></td>
+            </tr>
+            <tr>
+              <td>Delete Account</td>
+              <td>This action is irreversible</td>
+              <td href="#"><a>Edit</a></td>
+            </tr>
+          </tbody>
+        </Table>
       </div>
     );
   }

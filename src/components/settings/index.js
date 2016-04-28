@@ -34,27 +34,27 @@ export default class Settings extends Component {
         <Col sm={6} md={3}>
           <h1></h1>
           <ListGroup>
-            <ListGroupItem onClick={() => browserHistory.push('/settings')}>
+            <ListGroupItem style={styles.lista} onClick={() => browserHistory.push('/settings')}>
               General
             </ListGroupItem>
-            <ListGroupItem onClick={() => browserHistory.push('/settings/security')}>
-              Seguridad
+            <ListGroupItem style={styles.lista} onClick={() => browserHistory.push('/settings/security')}>
+              Security
             </ListGroupItem>
-            <ListGroupItem onClick={() => browserHistory.push('/settings/notifications')}>
-              Notificaciones
+            <ListGroupItem style={styles.lista} onClick={() => browserHistory.push('/settings/notifications')}>
+              Notifications
             </ListGroupItem>
-            <ListGroupItem onClick={() => browserHistory.push('/settings/payments')}>
-              Pagos
+            <ListGroupItem style={styles.lista} onClick={() => browserHistory.push('/settings/payments')}>
+              Payments
             </ListGroupItem>
-            <ListGroupItem onClick={() => browserHistory.push('/settings/myatlas')}>
-              Mis Atlas
+            <ListGroupItem style={styles.lista} onClick={() => browserHistory.push('/settings/myatlas')}>
+              My Atlases
             </ListGroupItem>
           </ListGroup>
         </Col>
         <Col sm={6} md={9}>
            {this.props.children}
         </Col>
-       </Grid>
+      </Grid>
     );
   }
 }
@@ -74,5 +74,8 @@ Settings.propTypes = {
 const styles = {
   container: {
 
+  },
+  lista: {
+    margin: 3,
   },
 };
