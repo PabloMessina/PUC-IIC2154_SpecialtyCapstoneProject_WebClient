@@ -6,7 +6,7 @@ import app from '../../app.js';
 // import Icon from 'react-native-vector-icons/FontAwesome';
 // import StyleSheet from 'react-native-debug-stylesheet';
 // import StyleSheet from 'react-native-debug-stylesheet';
-// import { Colors } from '../../styles';
+import { Colors } from '../../styles';
 
 const sectionService = app.service('/sections');
 
@@ -23,6 +23,7 @@ export default class Node extends Component {
       style: React.PropTypes.any,
       tree: React.PropTypes.object,
       root: React.PropTypes.bool,
+      selectedSectionId: React.PropTypes.string,
       onSelectSection: React.PropTypes.func,
       onAddSection: React.PropTypes.func,
       section: React.PropTypes.object,
@@ -36,9 +37,8 @@ export default class Node extends Component {
   static get defaultProps() {
     return {
       collapsed: false,
-      section: { name: 'Untitled', sections: [] },
+      section: { title: 'Untitled', sections: [] },
       anidation: [],
-      selected: false,
     };
   }
 
@@ -48,7 +48,6 @@ export default class Node extends Component {
       tree: props.tree,
       collapsed: props.collapsed,
       section: props.section,
-      selected: props.selected,
       hover: false,
     };
 
@@ -63,9 +62,10 @@ export default class Node extends Component {
 
   addSection() {
     const section = this.state.section;
+    const parentId = section._id === 'undefined' ? null : section._id;
     const newSection = {
       versionId: section.versionId,
-      parentId: section._id,
+      parentId,
     };
 
     sectionService.create(newSection)
@@ -75,21 +75,15 @@ export default class Node extends Component {
     .catch(error => console.log(error));
   }
 
-  onClick() {
-    this.props.onSelectSection(this.state.section);
-    // this.setState({ selected: true })
-  }
-
-
   render() {
-    
-    const { anidation, root, tree } = this.props;
-    const { hover, selected, collapsed, section} = this.state;
+    const { anidation, root, tree, selectedSectionId } = this.props;
+    const { hover, collapsed, section } = this.state;
     const { _id, title } = section;
 
+    const selected = _id === selectedSectionId;
     const sections = tree[_id];
     const onSelectSection = () => this.props.onSelectSection(section);
-    const hoverStyle = hover || selected ? { color: 'blue' } : { color: '#4A4A4A' };
+    const hoverStyle = hover || selected ? { color: Colors.MAIN } : { color: '#4A4A4A' };
 
     const hasSubtree = sections && sections.length > 0 && !collapsed;
     // const fontSize = Math.max(FONT.MAX - (FONT.DELTA * anidation.length), FONT.MIN);
@@ -98,12 +92,18 @@ export default class Node extends Component {
       <div style={styles.container}>
 
         {renderIf(root)(() => (
-          <span style={styles.title}>{title}</span>
+          <span style={styles.title}>
+            {title}
+            {renderIf(!this.props.static)(() => (
+              <Icon name="plus" style={styles.plusIcon} onClick={this.addSection} />
+              ))
+            }
+          </span>
         ))}
 
         {renderIf(!root)(() => (
           <span
-            style={Object.assign(styles.sectionNav, hoverStyle)}
+            style={Object.assign({}, styles.sectionNav, hoverStyle)}
             onMouseEnter={() => this.setState({ hover: true })}
             onMouseLeave={() => this.setState({ hover: false })}
           >
@@ -126,6 +126,7 @@ export default class Node extends Component {
               <Node
                 key={i}
                 static={this.props.static}
+                selectedSectionId={this.props.selectedSectionId}
                 onSelectSection={this.props.onSelectSection}
                 onAddSection={this.props.onAddSection}
                 section={section}
