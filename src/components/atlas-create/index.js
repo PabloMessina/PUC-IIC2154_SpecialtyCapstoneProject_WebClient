@@ -243,7 +243,7 @@ export default class AtlasCreate extends Component {
               <hr />
 
               <Button bsStyle="primary" type="submit">
-                Create Course
+                Create Atlas
               </Button>
 
             </form>
