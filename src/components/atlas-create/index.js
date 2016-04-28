@@ -25,7 +25,7 @@ export default class AtlasCreate extends Component {
       title: React.PropTypes.string,
       authors: React.PropTypes.array,
       description: React.PropTypes.string,
-      cover: React.PropTypes.object,
+      cover: React.PropTypes.string,
       imagePreviewUrl: React.PropTypes.string,
       // From react-router
       params: React.PropTypes.object,
@@ -36,7 +36,7 @@ export default class AtlasCreate extends Component {
       title: '',
       authors: [''],
       description: '',
-      cover: {},
+      cover: '',
       imagePreviewUrl: '',
     };
   }
@@ -74,7 +74,7 @@ export default class AtlasCreate extends Component {
     const newAtlas = {
       title: this.state.title,
       description: this.state.description,
-      cover: this.state.cover,
+      cover: { url: this.state.cover },
       organizationId: this.state.organization.id,
     };
 
@@ -182,12 +182,23 @@ export default class AtlasCreate extends Component {
               <FormGroup controlId="description">
                 <ControlLabel>Description</ControlLabel>
                 <FormControl
-                  type="textarea"
+                  componentClass="textarea"
                   value={this.state.description}
                   placeholder="Atlas description..."
-                  rows="5"
                   onChange={e => this.setState({ description: e.target.value })}
                 />
+              </FormGroup>
+
+              <FormGroup controlId="cover">
+                <ControlLabel>Cover URL</ControlLabel>
+                <FormControl
+                  type="text"
+                  value={this.state.cover}
+                  placeholder="http://..."
+                  label="Cover URL"
+                  onChange={e => this.setState({ cover: e.target.value })}
+                />
+                <FormControl.Feedback />
               </FormGroup>
 
               {/*
