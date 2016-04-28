@@ -59,7 +59,7 @@ export default class NavigationBar extends Component {
 
   organizationsDropdown() {
     const title = (
-      <span><Icon style={styles.navIcon} size="1x" name="users" /> Organizations</span>
+      <span><Icon style={styles.navIcon} name="users" /> Organizations</span>
     );
     return (
       <NavDropdown eventKey={2} title={title} id="organizations-dropdown">
@@ -111,7 +111,7 @@ export default class NavigationBar extends Component {
             */}
 
             <NavItem eventKey={1} onClick={() => browserHistory.push('/documents')}>
-              <Icon style={styles.navIcon} size="1x" name="book" /> Atlases
+              <Icon style={styles.navIcon} name="book" /> Atlases
             </NavItem>
 
             {this.organizationsDropdown()}
