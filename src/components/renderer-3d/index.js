@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import _ from 'lodash';
 import THREE from 'n3d-threejs';
 import MTLLoader from '../../_3Dlibrary/MTLLoader';
 import OBJLoader from '../../_3Dlibrary/OBJLoader';
@@ -18,8 +17,18 @@ const DOWN_VECTOR = new THREE.Vector3(0, -1, 0);
 const FAR_VECTOR = new THREE.Vector3(0, 0, -1);
 const NEAR_VECTOR = new THREE.Vector3(0, 0, 1);
 
+// colors
+const LIGHT_BLUE = 'rgba(159,222,247,0.8)';
+const BLACK = 'rgb(0,0,0)';
+const WHITE = 'rgb(255,255,255)';
+const RED = 'rgb(255,0,0)';
+const YELLOW = 'rgb(255,255,0)';
+const GREEN_US = 'rgb(0,168,150)';
+
 // to resize coeficients
-const LABEL_SIZE_COEF = 1 / 22;
+const LABEL_SIZE_COEF = 1 / 24;
+
+const DEFAULT_LABEL_MESSAGE = 'Add name...';
 
 export default class Renderer3D extends Component {
 
@@ -464,7 +473,7 @@ export default class Renderer3D extends Component {
     const sphere = this._state.selectedSphere;
     if (sphere) {
       const labelObj = this._state.sphereToLabelMap[sphere.uuid];
-      labelObj.text = text || '<EMPTY>';
+      labelObj.text = text || DEFAULT_LABEL_MESSAGE;
       this.highlightLabel(labelObj);
       this.animateForAWhile();
     }
@@ -599,20 +608,20 @@ export default class Renderer3D extends Component {
           const point = intersects[0].point;
           const radius = this._state.meshDiameter / 100;
           const sphereGeom = new THREE.SphereGeometry(radius, 32, 32);
-          const material = new THREE.MeshPhongMaterial({ color: 0xffff00 });
+          const material = new THREE.MeshPhongMaterial({ color: YELLOW });
           const sphere = new THREE.Mesh(sphereGeom, material);
           sphere.position.copy(point);
           this._state.sphereGroup.add(sphere);
 
           // add label into scene
-          const text = '<EMPTY>';
+          const text = DEFAULT_LABEL_MESSAGE;
           const sprite = ThreeUtils.makeTextSprite(text,
             {
               fontStyle: '100px Georgia',
               worldFontHeight: this._state.meshDiameter * LABEL_SIZE_COEF,
               borderThickness: 20,
-              borderColor: 'rgb(0,0,0)',
-              backgroundColor: 'rgba(255,255,0,0.8)',
+              borderColor: BLACK,
+              backgroundColor: LIGHT_BLUE,
               foregroundColor: 'rgb(0,0,255)',
             });
           const dir = new THREE.Vector3()
@@ -628,7 +637,7 @@ export default class Renderer3D extends Component {
           const lineGeo = new THREE.Geometry();
           lineGeo.vertices.push(point);
           lineGeo.vertices.push(textpos);
-          const lineMat = new THREE.LineBasicMaterial({ color: 0xffff00 });
+          const lineMat = new THREE.LineBasicMaterial({ color: BLACK });
           const line = new THREE.Line(lineGeo, lineMat);
           this._state.lineGroup.add(line);
 
@@ -660,9 +669,9 @@ export default class Renderer3D extends Component {
    */
   highlightLabel(labelObj) {
     // highlight sphere
-    labelObj.sphere.material.color.set(0xffff00);
+    labelObj.sphere.material.color.set(YELLOW);
     // highlight line
-    labelObj.line.material.color.set(0xffff00);
+    labelObj.line.material.color.set(BLACK);
     // remove current sprite
     this._state.spriteGroup.remove(labelObj.sprite);
     delete this._state.spriteToLabelMap[labelObj.sprite.uuid];
@@ -672,8 +681,8 @@ export default class Renderer3D extends Component {
         fontStyle: '100px Georgia',
         worldFontHeight: this._state.meshDiameter * LABEL_SIZE_COEF,
         borderThickness: 20,
-        borderColor: 'rgb(0,0,0)',
-        backgroundColor: 'rgba(255,255,0,0.8)',
+        borderColor: BLACK,
+        backgroundColor: LIGHT_BLUE,
         foregroundColor: 'rgb(0,0,255)',
       });
     // copy the same position
@@ -690,9 +699,9 @@ export default class Renderer3D extends Component {
    */
   unhighlightLabel(labelObj) {
     // unhighlight sphere
-    labelObj.sphere.material.color.set(0xff0000);
+    labelObj.sphere.material.color.set(GREEN_US);
     // unhighlight line
-    labelObj.line.material.color.set(0x00ffff);
+    labelObj.line.material.color.set(BLACK);
     // remove current sprite
     this._state.spriteGroup.remove(labelObj.sprite);
     delete this._state.spriteToLabelMap[labelObj.sprite.uuid];
@@ -701,9 +710,9 @@ export default class Renderer3D extends Component {
       fontStyle: '100px Georgia',
       worldFontHeight: this._state.meshDiameter * LABEL_SIZE_COEF,
       borderThickness: 20,
-      borderColor: 'rgb(0,0,0)',
+      borderColor: BLACK,
       backgroundColor: 'rgba(255,255,255,0.6)',
-      foregroundColor: 'rgb(0,0,0)',
+      foregroundColor: BLACK,
     });
     // copy the same position
     newSprite.position.copy(labelObj.sprite.position);

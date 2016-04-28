@@ -129,24 +129,20 @@ const ThreeUtils = {
     const textWidth = Math.ceil(ctx.measureText(text).width);
     const textHeight = getFontHeight(fontStyle);
     // resize canvas to fit text
-    canvas.width = textWidth * 1.10;
-    canvas.height = textHeight * 1.10;
+    canvas.width = textWidth * 1.40;
+    canvas.height = textHeight * 2;
     // restore context's settings again after resizing
     ctx.font = fontStyle;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    // draw background
-    ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // draw border
-    ctx.beginPath();
+    // draw background and border
     ctx.lineWidth = borderThickness;
     ctx.strokeStyle = borderColor;
-    ctx.rect(0, 0, canvas.width, canvas.height);
-    ctx.stroke();
+    ctx.fillStyle = backgroundColor;
+    roundRect(ctx, 0, 0, canvas.width, canvas.height, canvas.height * 0.6);
     // draw text
     ctx.fillStyle = foregroundColor;
-    ctx.fillText(text, textWidth * 0.05, textHeight * 0.05);
+    ctx.fillText(text, textWidth * 0.2, textHeight * 0.5);
     // generate texture from canvas
     const texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;
@@ -183,6 +179,25 @@ function getFontHeight(fontStyle) {
     fontHeightCache[fontStyle] = fontHeight;
   }
   return fontHeight;
+}
+
+/**
+ * [roundRect : drawss a rectangle with rounded corners]
+ */
+function roundRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 }
 
 export default ThreeUtils;
