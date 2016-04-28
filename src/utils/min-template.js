@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-// import { Button } from 'react-bootstrap';
+import { Row, Col } from 'react-bootstrap';
 
 
 export default class MinTemplate extends Component {
@@ -14,7 +14,11 @@ export default class MinTemplate extends Component {
   render() {
     return (
       <div style={styles.container}>
-        <p>Hello world</p>
+        <Row>
+          <Col xs={12}>
+            <p>Hello world</p>
+          </Col>
+        </Row>
       </div>
     );
   }

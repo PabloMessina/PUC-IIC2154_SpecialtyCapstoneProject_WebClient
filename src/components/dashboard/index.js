@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
-
+import { Grid } from 'react-bootstrap';
 
 export default class Dashboard extends Component {
   render() {
     return (
-      <div>
+      <Grid>
         <p>Dashboard</p>
-      </div>
+      </Grid>
     );
   }
 }
