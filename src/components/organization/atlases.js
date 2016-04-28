@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Grid, Col, Panel, Button, Glyphicon } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
+import AtlasGrid from '../document-list/atlas-grid';
 
 import app from '../../app';
 const atlasService = app.service('/atlases');
@@ -43,17 +44,16 @@ export default class AtlasTab extends Component {
     return browserHistory.push(url);
   }
 
+  // {/* TODO: Add link */}
+  // {this.state.atlases.map((atlas, i) => (
+  //   <p key={i}>{atlas.title}</p>
+  // ))}
   render() {
     return (
       <Grid style={styles.container}>
-
         <Col xs={12} md={9}>
-          {/* TODO: Add link */}
-          {this.state.atlases.map((atlas, i) => (
-            <p key={i}>{atlas.title}</p>
-          ))}
+          <AtlasGrid />
         </Col>
-
         <Col xs={12} md={3}>
           <Panel>
             <h4>Atlases</h4>
