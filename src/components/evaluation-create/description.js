@@ -66,6 +66,8 @@ export default class MinTemplate extends Component {
   render() {
     const { title, description, attendance, isPublic } = this.props.evaluation;
 
+    const mode = ATTENDANCES.find(a => a.value === attendance) || ATTENDANCES[0];
+
     return (
       <div style={styles.container}>
         <Row>
@@ -99,13 +101,13 @@ export default class MinTemplate extends Component {
                 {ATTENDANCES.map((sub, i) => (
                   <Radio
                     key={i}
-                    checked={attendance === i}
-                    onChange={() => this.onChange('attendance', i)}
+                    checked={mode.value === sub.value}
+                    onChange={() => this.onChange('attendance', sub.value)}
                   >
                     {sub.name}
                   </Radio>)
                 )}
-                <HelpBlock>{ATTENDANCES[attendance].description}</HelpBlock>
+                <HelpBlock>{mode.description}</HelpBlock>
               </FormGroup>
 
               <FormGroup>
