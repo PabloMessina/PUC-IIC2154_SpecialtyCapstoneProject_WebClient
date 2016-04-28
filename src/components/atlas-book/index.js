@@ -26,6 +26,7 @@ export default class AtlasBook extends Component {
     this.state = {
       tree: {},
       section: { title: '', content: [] },
+      versionId: '',
     };
 
     // Subscribe to events.
@@ -103,11 +104,13 @@ export default class AtlasBook extends Component {
 
     return versionService.find({ query })
       .then(results => {
-        // Get section's tree
-        return treeService.get(results.data[0].id)
+        const version = results.data[0];
+        // Get sections tree
+        return treeService.get(version.id)
         .then(tree => {
           this.setState({
             tree,
+            versionId: version.id,
             section: tree.undefined[0], // Select first section on start
           });
         });
@@ -147,6 +150,7 @@ export default class AtlasBook extends Component {
         <AtlasTree
           tree={this.state.tree}
           title={this.props.params.atlas.title}
+          versionId={this.state.versionId}
           onSelectSection={this.onSelectSection}
           onAddSection={this.onAddSection}
         />

@@ -12,21 +12,48 @@ export default class AtlasTree extends Component {
       static: React.PropTypes.bool,
       title: React.PropTypes.string,
       tree: React.PropTypes.object,
+      versionId: React.PropTypes.string.isRequired,
       onSelectSection: React.PropTypes.func,
       onAddSection: React.PropTypes.func,
     };
   }
 
+  constructor(props) {
+    super(props);
+    this.state = {
+      selectedSectionId: '',
+    };
+
+    this.onSelectSection = this.onSelectSection.bind(this);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const tree = nextProps.tree;
+    if (tree.undefined && this.state.selectedSectionId === '') {
+      this.setState({
+        selectedSectionId: tree.undefined[0]._id,
+      });
+    }
+  }
+
+  onSelectSection(section) {
+    this.props.onSelectSection(section);
+    this.setState({
+      selectedSectionId: section._id,
+    });
+  }
+
   render() {
-    const { title, tree } = this.props;
+    const { title, tree, versionId } = this.props;
     return (
       <div style={styles.container}>
         <Node
           root
           static={this.props.static}
-          onSelectSection={this.props.onSelectSection}
+          selectedSectionId={this.state.selectedSectionId}
+          onSelectSection={this.onSelectSection}
           onAddSection={this.props.onAddSection}
-          section={{ title, _id: 'undefined' }}
+          section={{ title, _id: 'undefined', versionId }}
           tree={tree}
         />
       </div>
