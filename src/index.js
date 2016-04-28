@@ -41,6 +41,9 @@ import EvaluationCreateStudents from './components/evaluation-create/students';
 import EvaluationCreateResults from './components/evaluation-create/results';
 import EvaluationCreateRecorrection from './components/evaluation-create/recorrection';
 
+import Renderer3D from './components/renderer-3d/';
+import RendererWrapper from './components/renderer-wrapper/';
+
 // Development help
 // Go AtlasBook: http://localhost:3000/template
 import Template from './utils/template';
@@ -98,6 +101,9 @@ const Routing = (
 
       <Route path="login" component={Login} onEnter={requireAnnon} />
       <Route path="signup" component={SignUp} onEnter={requireAnnon} />
+
+      <Route path="renderer-3d" component={Renderer3D} />
+      <Route path="renderer-wrapper" component={RendererWrapper} />
 
       <Route path="documents" component={DocumentList} onEnter={requireAuth} />
       <Route
