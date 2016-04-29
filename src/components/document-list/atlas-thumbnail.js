@@ -17,7 +17,7 @@ export default class AtlasThumbnail extends Component {
           <p style={styles.name}>{doc.title}</p>
         </div>
         <div style={styles.texts}>
-          <p style={styles.author}></p>
+          <p style={styles.author}>{doc.tags}</p>
         </div>
         <Rater total={5} rating={2} />
       </Panel>
