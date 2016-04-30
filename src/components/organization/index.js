@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import { Grid, Tabs, Tab, Row, Col, Image } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
-import renderIf from 'render-if';
 
 import { Colors } from '../../styles';
 
@@ -37,6 +36,7 @@ export default class Organization extends Component {
       // From react-router
       params: React.PropTypes.object,
       children: React.PropTypes.any,
+      location: React.PropTypes.any,
     };
   }
 
@@ -44,7 +44,6 @@ export default class Organization extends Component {
     super(props);
     this.state = {
       organization: props.params.organization,
-      tab: 0,
     };
     this.renderNavigationTabBar = this.renderNavigationTabBar.bind(this);
     this.onTabChange = this.onTabChange.bind(this);
@@ -58,11 +57,11 @@ export default class Organization extends Component {
     }
   }
 
-  onTabChange(key) {
-    const organization = this.state.organization;
-    const path = TABS[key].path;
-    browserHistory.push(`/organizations/show/${organization.id}/${path}`);
-    this.setState({ tab: key });
+  onTabChange(path) {
+    if (path) {
+      const organization = this.state.organization;
+      browserHistory.replace(`/organizations/show/${organization.id}/${path}`);
+    }
   }
 
   renderNavigationTabBar() {
@@ -70,15 +69,18 @@ export default class Organization extends Component {
       <span><Icon style={styles.icon} name={icon} /> {name}</span>
     );
 
+    const paths = this.props.location.pathname.split('/');
+    const active = paths[paths.length - 1];
+
     return (
       <Tabs
         style={styles.tabs}
-        activeKey={this.state.tab}
+        activeKey={active}
         id="tabs"
         onSelect={this.onTabChange}
       >
-        {TABS.map((options, i) => (
-          <Tab key={i} eventKey={i} title={title(options)} />
+        {TABS.map(({ path, ...options }, i) => (
+          <Tab key={i} eventKey={path} title={title(options)} />
         ))}
       </Tabs>
     );
