@@ -1,32 +1,63 @@
 import React, { Component } from 'react';
-import { Navbar, Nav, NavItem, NavDropdown, MenuItem, FormControl, FormGroup, Button } from 'react-bootstrap';
+import { Navbar, Nav, NavItem, NavDropdown, MenuItem } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
 import Icon from 'react-fa';
 
-import { logout } from '../../app';
-
+import app, { logout } from '../../app';
+const membershipService = app.service('/memberships');
 
 export default class NavigationBar extends Component {
+
+  static get propTypes() {
+    return {
+      title: React.PropTypes.node,
+      user: React.PropTypes.any,
+    };
+  }
 
   static get defaultProps() {
     return {
       title: 'Title',
       user: null,
-      organizations: [],
     };
   }
 
   constructor(props) {
     super(props);
+    this.state = {
+      memberships: [],
+    };
     this.onLogout = this.onLogout.bind(this);
+    this.fetchMemberships = this.fetchMemberships.bind(this);
+    this.onDropdownClick = this.onDropdownClick.bind(this);
+    this.renderRightNavigation = this.renderRightNavigation.bind(this);
+    this.renderDropDown = this.renderDropDown.bind(this);
+  }
+
+  onDropdownClick() {
+    return this.fetchMemberships();
   }
 
   onLogout() {
     return logout().then(() => browserHistory.push('/'));
   }
 
-  rightNavigation() {
+  fetchMemberships() {
+    const user = this.props.user;
+    if (user) {
+      const query = {
+        userId: user.id,
+      };
+      membershipService.find({ query })
+        .then(result => result.data)
+        .then(memberships => this.setState({ memberships }));
+    } else {
+      this.setState({ memberships: [] });
+    }
+  }
+
+  renderRightNavigation() {
     if (this.props.user) {
       return (
         <Nav pullRight>
@@ -57,13 +88,15 @@ export default class NavigationBar extends Component {
     );
   }
 
-  organizationsDropdown() {
+  renderDropDown() {
+    const memberships = this.state.memberships;
     const title = (
       <span><Icon style={styles.navIcon} name="users" /> Organizations</span>
     );
     return (
-      <NavDropdown eventKey={2} title={title} id="organizations-dropdown">
-        {this.props.organizations.map((organization, i) => {
+      <NavDropdown eventKey={2} title={title} id="organizations-dropdown" onClick={this.onDropdownClick}>
+        {memberships.map((membership, i) => {
+          const organization = membership.organization;
           const name = organization.name;
           const eventKey = 2 + i * 0.1;
           const url = `/organizations/show/${organization.id}`;
@@ -73,7 +106,7 @@ export default class NavigationBar extends Component {
             </MenuItem>
           );
         })}
-        {renderIf(this.props.organizations.length === 0)(() => (
+        {renderIf(memberships.length === 0)(() => (
           <MenuItem eventKey={2.1} disabled>None</MenuItem>
         ))}
         <MenuItem divider />
@@ -114,11 +147,11 @@ export default class NavigationBar extends Component {
               <Icon style={styles.navIcon} name="book" /> Atlases
             </NavItem>
 
-            {this.organizationsDropdown()}
+            {this.renderDropDown()}
 
           </Nav>
 
-          {this.rightNavigation()}
+          {this.renderRightNavigation()}
 
         </Navbar.Collapse>
 
@@ -126,12 +159,6 @@ export default class NavigationBar extends Component {
     );
   }
 }
-
-NavigationBar.propTypes = {
-  title: React.PropTypes.node,
-  user: React.PropTypes.any,
-  organizations: React.PropTypes.array,
-};
 
 const styles = {
   navbar: {
