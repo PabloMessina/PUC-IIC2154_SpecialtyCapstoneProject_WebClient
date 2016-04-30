@@ -152,7 +152,7 @@ export default class AtlasCreate extends Component {
           <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
             {organization ? organization.name : 'Loading...'}
           </Breadcrumb.Item>
-          <Breadcrumb.Item>
+          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}/atlases`)}>
             Atlases
           </Breadcrumb.Item>
           <Breadcrumb.Item active>

@@ -97,7 +97,7 @@ export default class CourseCreate extends Component {
           <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
             {organization ? organization.name : 'Loading...'}
           </Breadcrumb.Item>
-          <Breadcrumb.Item>
+          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}/courses`)}>
             Courses
           </Breadcrumb.Item>
           <Breadcrumb.Item active>
