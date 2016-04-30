@@ -21,8 +21,12 @@ import SecuritySettings from './components/settings/security';
 import PaymentsSettings from './components/settings/payments';
 import DocumentList from './components/document-list';
 import DocumentDescription from './components/document-description';
-// import Organizations from './components/organizations';
+
 import Organization from './components/organization';
+import OrganizationCoursesTab from './components/organization/courses';
+import OrganizationAtlasesTab from './components/organization/atlases';
+import OrganizationMembersTab from './components/organization/members';
+
 import Course from './components/course/';
 import CourseCreate from './components/course-create/';
 import OrganizationCreate from './components/organization-create/';
@@ -126,7 +130,14 @@ const Routing = (
         path="organizations/show/:organizationId"
         component={Organization}
         onEnter={populate({ field: 'organizationId', to: 'organization' })}
-      />
+      >
+        <IndexRedirect to="courses" />
+        <Route path="courses" component={OrganizationCoursesTab} />
+        <Route path="atlases" component={OrganizationAtlasesTab} />
+        <Route path="questions" component={OrganizationMembersTab} />
+        <Route path="members" component={OrganizationMembersTab} />
+        <Route path="settings" component={OrganizationMembersTab} />
+      </Route>
 
       <Route
         path="organizations/show/:organizationId/courses/create"
