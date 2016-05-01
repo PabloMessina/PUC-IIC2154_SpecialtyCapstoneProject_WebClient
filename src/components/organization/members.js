@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Grid, Row, Col, Panel, Button, Table, ControlLabel, DropdownButton, MenuItem } from 'react-bootstrap';
 import Select from 'react-select';
+import moment from 'moment';
 
 import app from '../../app';
 const membershipService = app.service('/memberships');
@@ -202,7 +203,7 @@ export default class CourseTab extends Component {
                         </MenuItem>
                       </DropdownButton>
                     </th>
-                    <th style={styles.cell}>{membership.createdAt}</th>
+                    <th style={styles.cell}>{moment(membership.createdAt).format('LL')}</th>
                   </tr>
                 ))}
                 </tbody>
