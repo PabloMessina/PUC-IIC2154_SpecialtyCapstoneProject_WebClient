@@ -81,6 +81,36 @@ export default class CourseTab extends Component {
   }
 
   fetchMemberships(organizationId) {
+    const renew = (membership) => {
+      const index = this.state.memberships.map(m => m.id).indexOf(membership.id);
+      if (index) {
+        userService.get(membership.userId).then(user => {
+          const memberships = [...this.state.memberships];
+          memberships[index] = membership;
+          memberships[index].user = user;
+          this.setState({ memberships });
+        });
+      }
+    };
+
+    membershipService.on('created', membership => {
+      userService.get(membership.userId).then(user => {
+        membership.user = user;
+        this.setState({ memberships: [...this.state.memberships, membership] });
+      });
+    });
+
+    membershipService.on('patched', renew);
+    membershipService.on('updated', renew);
+    membershipService.on('removed', membership => {
+      const index = this.state.memberships.map(m => m.id).indexOf(membership.id);
+      if (index) {
+        const memberships = [...this.state.memberships];
+        memberships.splice(index, 1);
+        this.setState({ memberships });
+      }
+    });
+
     const query = {
       organizationId,
     };
@@ -90,6 +120,8 @@ export default class CourseTab extends Component {
   }
 
   render() {
+    // TODO: filter from current selected list
+
     const ids = this.state.memberships.map(m => m.userId);
     const users = this.state.users.map(user => {
       const disabled = ids.indexOf(user.id) > -1;
@@ -100,6 +132,8 @@ export default class CourseTab extends Component {
         label: disabled ? `${user.name} (already selected)` : user.name,
       };
     });
+    const permissions = {};
+    ROLES.forEach(({ value, label }) => (permissions[value] = label));
 
     return (
       <Grid style={styles.container}>
@@ -154,7 +188,7 @@ export default class CourseTab extends Component {
                       <DropdownButton
                         id="membership-dropdown"
                         bsStyle="link"
-                        title={membership.permission}
+                        title={permissions[membership.permission]}
                         onSelect={key => this.onPermissionSelect(key, user, membership)}
                       >
                         {ROLES.map((role, i) => (
