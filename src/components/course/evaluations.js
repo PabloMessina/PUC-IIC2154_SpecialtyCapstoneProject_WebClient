@@ -10,7 +10,7 @@ import app from '../../app';
 const evaluationService = app.service('/evaluations');
 
 
-export default class CourseStudents extends Component {
+export default class CourseEvaluations extends Component {
 
   static get propTypes() {
     return {

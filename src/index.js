@@ -11,32 +11,31 @@ import app, { auth, currentUser } from './app';
 import Main from './components/main';
 import Dashboard from './components/dashboard';
 import Login from './components/login/';
-import AtlasCreate from './components/atlas-create/';
 import SignUp from './components/signup/';
+
 import Settings from './components/settings';
 import NotificationSettings from './components/settings/notifications';
 import MyAtlasSettings from './components/settings/myatlas';
 import GeneralSettings from './components/settings/general';
 import SecuritySettings from './components/settings/security';
 import PaymentsSettings from './components/settings/payments';
+
 import DocumentList from './components/document-list';
 import DocumentDescription from './components/document-description';
 
+import OrganizationCreate from './components/organization-create/';
 import Organization from './components/organization';
 import OrganizationCoursesTab from './components/organization/courses';
 import OrganizationAtlasesTab from './components/organization/atlases';
 import OrganizationMembersTab from './components/organization/members';
+import OrganizationSettingsTab from './components/organization/settings';
+import OrganizationSettingsGeneral from './components/organization/settings/general';
+import OrganizationSettingsAdministrative from './components/organization/settings/administrative';
 
-import Course from './components/course/';
 import CourseCreate from './components/course-create/';
-import OrganizationCreate from './components/organization-create/';
-import AtlasBook from './components/atlas-book/';
-// import Tree from './components/hierarchy-navigation/';
-// import Editor from './components/editor/';
-import Questions from './components/questions/';
-
-import CourseStudents from './components/course-students/';
-import CourseEvaluations from './components/course-evaluations/';
+import Course from './components/course/';
+import CourseStudents from './components/course/students';
+import CourseEvaluations from './components/course/evaluations';
 
 import EvaluationCreate from './components/evaluation-create';
 import EvaluationCreateDescripction from './components/evaluation-create/description';
@@ -44,6 +43,10 @@ import EvaluationCreateQuestions from './components/evaluation-create/questions'
 import EvaluationCreateStudents from './components/evaluation-create/students';
 import EvaluationCreateResults from './components/evaluation-create/results';
 import EvaluationCreateRecorrection from './components/evaluation-create/recorrection';
+
+import AtlasCreate from './components/atlas-create/';
+import AtlasBook from './components/atlas-book/';
+import Questions from './components/questions/';
 
 import Renderer3D from './components/renderer-3d/';
 import RendererWrapper from './components/renderer-wrapper/';
@@ -136,7 +139,11 @@ const Routing = (
         <Route path="atlases" component={OrganizationAtlasesTab} />
         <Route path="questions" component={OrganizationMembersTab} />
         <Route path="members" component={OrganizationMembersTab} />
-        <Route path="settings" component={OrganizationMembersTab} />
+        <Route path="settings" component={OrganizationSettingsTab}>
+          <IndexRedirect to="general" />
+          <Route path="general" component={OrganizationSettingsGeneral} />
+          <Route path="administrative" component={OrganizationSettingsAdministrative} />
+        </Route>
       </Route>
 
       <Route

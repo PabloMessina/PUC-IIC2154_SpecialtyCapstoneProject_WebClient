@@ -17,6 +17,22 @@ const organizationService = app.service('/organizations');
  * https://react-bootstrap.github.io/components.html
  */
 
+const ELEMENTS = [
+  {
+    name: 'Evaluations',
+    icon: 'file-text-o ',
+    path: 'evaluations',
+  }, {
+    name: 'Students',
+    icon: 'users',
+    path: 'students',
+  }, {
+    name: 'Analytics',
+    icon: 'bar-chart ',
+    path: 'analytics',
+  },
+];
+
 export default class Course extends Component {
 
   constructor(props) {
@@ -24,21 +40,6 @@ export default class Course extends Component {
     this.state = {
       organization: null,
       course: props.params.course,
-      elements: [
-        {
-          name: 'Evaluations',
-          icon: 'file-text-o ',
-          path: 'evaluations',
-        }, {
-          name: 'Students',
-          icon: 'users',
-          path: 'students',
-        }, {
-          name: 'Analytics',
-          icon: 'bar-chart ',
-          path: 'analytics',
-        },
-      ],
     };
     this.fetchOrganization = this.fetchOrganization.bind(this);
 
@@ -113,7 +114,7 @@ export default class Course extends Component {
         <Row>
           <Col xs={12} sm={3} md={3}>
             <ListGroup>
-              {this.state.elements.map((element, i) => this.renderListElement(element, i))}
+              {ELEMENTS.map((element, i) => this.renderListElement(element, i))}
             </ListGroup>
           </Col>
 
