@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Grid, Col, Row, ListGroup, ListGroupItem, Breadcrumb } from 'react-bootstrap';
+import { Grid, Col, Row, ListGroup, ListGroupItem, Breadcrumb, DropdownButton, MenuItem } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 import Icon from 'react-fa';
 
@@ -98,7 +98,14 @@ export default class Course extends Component {
           </Breadcrumb.Item>
         </Breadcrumb>
 
-        <h1 style={styles.title}>{course.name}</h1>
+        <h1 style={styles.title} style={styles.header}>
+          <span>{course.name}</span>
+          <DropdownButton bsStyle="link" pullRight title="Period" id="dropownasd">
+            <MenuItem eventKey="1">Action</MenuItem>
+            <MenuItem eventKey="2">Another action</MenuItem>
+            <MenuItem eventKey="3" active>Active Item</MenuItem>
+          </DropdownButton>
+        </h1>
         <p>{course.description}</p>
 
         <hr />
@@ -136,9 +143,14 @@ const styles = {
   container: {
 
   },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   title: {
-    marginTop: 30,
-    marginBottom: 25,
+    // marginTop: 30,
+    // marginBottom: 25,
   },
   icon: {
     marginRight: 7,

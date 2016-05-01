@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Media, DropdownButton, MenuItem } from 'react-bootstrap';
+import { Media } from 'react-bootstrap';
 import renderIf from 'render-if';
 import { browserHistory } from 'react-router';
 
