@@ -4,8 +4,10 @@ import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
 
 import app from '../../app';
-
 const organizationService = app.service('/organizations');
+const userService = app.service('/users');
+const courseService = app.service('/courses');
+const instanceService = app.service('/instances');
 
 const SECTIONS = [
   {
@@ -39,54 +41,71 @@ export default class EvaluationCreate extends Component {
 
   static get propTypes() {
     return {
+      // Main object
       evaluation: React.PropTypes.object,
+      // Defaults
+      questions: React.PropTypes.array,
+      groups: React.PropTypes.array,
+      users: React.PropTypes.array,
+      attendants: React.PropTypes.array,
       // React Router
       params: React.PropTypes.object,
       children: React.PropTypes.any,
+      location: React.PropTypes.any,
     };
   }
 
   static get defaultProps() {
     return {
-      evaluation: {
-        title: '',
-        description: '',
-        attendance: 'none',
-        isPublic: true,
-        questions: [],
-        groups: [[]],
-        attendingStudents: [],
-      },
+      users: [
+       { id: 3, name: 'Bobadilla Felipe' },
+       { id: 0, name: 'Lopez Patricio' },
+       { id: 1, name: 'Andrighetti Tomas' },
+       { id: 9, name: 'Steinsapir Diego' },
+       { id: 8, name: 'Monsalve Geraldine' },
+       { id: 2, name: 'Astaburuaga Francisco' },
+       { id: 5, name: 'Dragicevic Vicente' },
+       { id: 6, name: 'Halabi Maria Constanza' },
+       { id: 7, name: 'Messina Pablo' },
+       { id: 4, name: 'Bustamante Jose' },
+      ],
+      questions: [],
+      groups: [[]],
+      attendants: [],
     };
   }
 
   constructor(props) {
     super(props);
     this.state = {
-      selected: 0,
       tabStates: Array(SECTIONS.length).fill('default'),
       organization: null,
-      course: props.params.course,
-      evaluation: props.evaluation,
-      users: [
-           { id: 3, name: 'Bobadilla Felipe' },
-           { id: 0, name: 'Lopez Patricio' },
-           { id: 1, name: 'Andrighetti Tomas' },
-           { id: 9, name: 'Steinsapir Diego' },
-           { id: 8, name: 'Monsalve Geraldine' },
-           { id: 2, name: 'Astaburuaga Francisco' },
-           { id: 5, name: 'Dragicevic Vicente' },
-           { id: 6, name: 'Halabi Maria Constanza' },
-           { id: 7, name: 'Messina Pablo' },
-           { id: 4, name: 'Bustamante Jose' },
-      ],
+      course: null,
+      // Current evaluation
+      evaluation: props.params.evaluation,
+      users: props.users,
+      questions: props.questions,
+      groups: props.groups,
+      attendants: props.attendants,
     };
-    this.renderSection = this.renderSection.bind(this);
-    this.fetchOrganization = this.fetchOrganization.bind(this);
-    this.onEvaluationChange = this.onEvaluationChange.bind(this);
 
-    // Get organization
-    this.fetchOrganization(this.state.course.organizationId);
+    this.renderSection = this.renderSection.bind(this);
+
+    this.fetchOrganization = this.fetchOrganization.bind(this);
+    this.fetchCourse = this.fetchCourse.bind(this);
+    this.fetchInstance = this.fetchInstance.bind(this);
+
+    this.onEvaluationChange = this.onEvaluationChange.bind(this);
+    this.onQuestionsChange = this.onQuestionsChange.bind(this);
+    this.onGroupsChange = this.onGroupsChange.bind(this);
+    this.onAttendantsChange = this.onAttendantsChange.bind(this);
+  }
+
+  componentDidMount() {
+    const instanceId = this.state.evaluation.instanceId;
+    return this.fetchInstance(instanceId)
+      .then(instance => this.fetchCourse(instance.courseId))
+      .then(course => this.fetchOrganization(course.organizationId));
   }
 
   componentWillReceiveProps(nextProps) {
@@ -104,26 +123,65 @@ export default class EvaluationCreate extends Component {
     }
   }
 
+  onQuestionsChange(questions) {
+    if (questions) this.setState({ questions });
+  }
+
+  onGroupsChange(groups) {
+    if (groups) this.setState({ groups });
+  }
+
+  onAttendantsChange(attendants) {
+    if (attendants) this.setState({ attendants });
+  }
+
+  fetchCourse(courseId) {
+    return courseService.get(courseId)
+      .then(course => {
+        this.setState({ course });
+        return course;
+      });
+  }
+
+  fetchInstance(instanceId) {
+    return instanceService.get(instanceId)
+      .then(instance => {
+        this.setState({ instance });
+        return instance;
+      });
+  }
+
   fetchOrganization(organizationId) {
     return organizationService.get(organizationId)
-      .then(organization => this.setState({ organization }));
+      .then(organization => {
+        this.setState({ organization });
+        return organization;
+      });
+  }
+
+  renderSections() {
+    return (
+      <ButtonGroup justified>
+        {SECTIONS.map(this.renderSection)}
+      </ButtonGroup>
+    );
   }
 
   renderSection(section, i) {
-    const course = this.state.course;
+    const evaluation = this.state.evaluation;
     const { name, description, path } = section;
-    const url = `/courses/show/${course.id}/evaluations/create/${path}`;
+    const paths = this.props.location.pathname.split('/');
+    const active = paths[paths.length - 1];
+    const url = `/evaluations/show/${evaluation.id}/${path}`;
+
     return (
       <Button
         style={styles.tab}
         key={i}
         href="#"
-        active={this.state.selected === i}
+        active={path === active}
         bsStyle={this.state.tabStates[i]}
-        onClick={() => {
-          this.setState({ selected: i });
-          browserHistory.push(url);
-        }}
+        onClick={() => browserHistory.push(url)}
       >
         <h5 style={styles.tabTitle}>{name}</h5>
         <small style={styles.tabDescription}>{description}</small>
@@ -132,7 +190,7 @@ export default class EvaluationCreate extends Component {
   }
 
   render() {
-    const { course, organization, evaluation, users } = this.state;
+    const { course, instance, organization, evaluation, users, questions, groups, attendants } = this.state;
 
     return (
       <Grid style={styles.container}>
@@ -150,28 +208,41 @@ export default class EvaluationCreate extends Component {
             Courses
           </Breadcrumb.Item>
           <Breadcrumb.Item onClick={() => browserHistory.push(`/courses/show/${course.id}`)}>
-            {course.name}
+            {course ? course.name : 'Loading...'}
           </Breadcrumb.Item>
-          <Breadcrumb.Item>
+          <Breadcrumb.Item onClick={() => browserHistory.push(`/courses/show/${course.id}/instances/${instance.id}`)}>
+            {instance ? instance.period : 'Loading...'}
+          </Breadcrumb.Item>
+          <Breadcrumb.Item
+            onClick={() => browserHistory.push(`/courses/show/${course.id}/instances/${instance.id}/evaluations`)}
+          >
             Evaluations
           </Breadcrumb.Item>
           <Breadcrumb.Item active>
-            Create
+            {evaluation.title}
           </Breadcrumb.Item>
         </Breadcrumb>
 
-        <h2>
-          Evaluation
-          {renderIf(this.state.evaluation && this.state.evaluation.title)(() => (
-            <small style={{ marginLeft: 4 }}> {this.state.evaluation.title}</small>
-          ))}
-        </h2>
+        <Row>
+          <Col xs={12} md={9}>
+            <h2>
+              Evaluation
+              {renderIf(this.state.evaluation && this.state.evaluation.title)(() => (
+                <small style={{ marginLeft: 4 }}> {this.state.evaluation.title}</small>
+              ))}
+            </h2>
+            {/*
+            {renderIf(this.state.evaluation && this.state.evaluation.description)(() => (
+              <p style={{ marginLeft: 4 }}> {this.state.evaluation.description}</p>
+            ))}
+            */}
+          </Col>
+        </Row>
+
 
         <Row>
           <Col style={styles.bar} xsOffset={0} xs={12}>
-            <ButtonGroup justified>
-              {SECTIONS.map((section, i) => this.renderSection(section, i))}
-            </ButtonGroup>
+            {this.renderSections()}
           </Col>
         </Row>
         <hr />
@@ -180,9 +251,16 @@ export default class EvaluationCreate extends Component {
             {React.cloneElement(this.props.children, {
               organization,
               course,
+              instance,
               evaluation,
               users,
+              questions,
+              groups,
+              attendants,
               onEvaluationChange: this.onEvaluationChange,
+              onQuestionsChange: this.onQuestionsChange,
+              onGroupsChange: this.onGroupsChange,
+              onAttendantsChange: this.onAttendantsChange,
             })}
           </Col>
         </Row>

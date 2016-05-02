@@ -80,4 +80,7 @@ const styles = {
   container: {
 
   },
+  icon: {
+    marginRight: 7,
+  },
 };

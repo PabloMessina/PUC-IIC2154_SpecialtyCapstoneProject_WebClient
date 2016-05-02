@@ -24,8 +24,8 @@ export default class CourseList extends Component {
     this.renderRow = this.renderRow.bind(this);
   }
 
-  onClick(courseId) {
-    const url = `/courses/show/${courseId}`;
+  onClick(course) {
+    const url = `/courses/show/${course.id}`;
     return browserHistory.push(url);
   }
 
@@ -38,14 +38,14 @@ export default class CourseList extends Component {
               style={{ cursor: 'pointer' }}
               width={70}
               height={70}
-              onClick={() => this.onClick(course.id)}
+              onClick={() => this.onClick(course)}
               src="https://d3njjcbhbojbot.cloudfront.net/api/utilities/v1/imageproxy/https://coursera-university-assets.s3.amazonaws.com/89/d0ddf06ad611e4b53d95ff03ce5aa7/360px.png"
               alt="Not available"
             />
           </Media.Left>
           <Media.Body>
             <Media.Heading style={{ cursor: 'pointer' }}>
-              <span onClick={() => this.onClick(course.id)}>{course.name}</span>
+              <span onClick={() => this.onClick(course)}>{course.name}</span>
             </Media.Heading>
             <p>{course.description}</p>
           </Media.Body>

@@ -9,6 +9,7 @@ import {
   ControlLabel,
   FormControl,
   HelpBlock,
+  InputGroup,
 } from 'react-bootstrap';
 
 
@@ -31,7 +32,7 @@ const ATTENDANCES = [
 ];
 
 const PRIVACY = {
-  PRIVATE: 'This is a secret evaluation.',
+  PRIVATE: 'This is a secret evaluation. Will only appear to the students once it starts.',
   PUBLIC: `This evaluation will be scheduled as soon as posible to all the participan students,
 but they will not be able to see the questions inside it.`,
 };
@@ -50,10 +51,7 @@ export default class MinTemplate extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      title: '',
-      description: '',
-      attendance: ATTENDANCES[0].value,
-      isPublic: true,
+      checked: this.props.evaluation.discount !== 0,
     };
     this.onChange = this.onChange.bind(this);
   }
@@ -63,15 +61,35 @@ export default class MinTemplate extends Component {
     if (this.props.onEvaluationChange) this.props.onEvaluationChange(evaluation);
   }
 
-  render() {
-    const { title, description, attendance, isPublic } = this.props.evaluation;
+  discountMessage(discount) {
+    if (discount < 0.0) {
+      return 'Invalid discount value';
+    } else if (discount > 0.0 && discount <= 1.0) {
+      return `Each ${(1 / discount).toFixed(2)} incorrect answers will cancel the score of 1 good answer.`;
+    } else if (discount > 1.0) {
+      return `Each incorrect answers will cancel the score of ${discount} good answer.`;
+    } else {
+      return 'No discount will apply.';
+    }
+  }
 
+  render() {
+    const {
+      title,
+      description,
+      attendance,
+      secret,
+      discount,
+      randomized,
+      // startAt,
+      // finishAt,
+    } = this.props.evaluation;
     const mode = ATTENDANCES.find(a => a.value === attendance) || ATTENDANCES[0];
 
     return (
       <div style={styles.container}>
         <Row>
-          <Col xs={12} sm={9}>
+          <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
             <form onSubmit={this.onSubmit}>
 
               <FormGroup controlId="title">
@@ -96,6 +114,8 @@ export default class MinTemplate extends Component {
                 />
               </FormGroup>
 
+              <hr />
+
               <FormGroup>
                 <ControlLabel>Attendance restriction</ControlLabel>
                 {ATTENDANCES.map((sub, i) => (
@@ -111,16 +131,57 @@ export default class MinTemplate extends Component {
               </FormGroup>
 
               <FormGroup>
-                <ControlLabel>Visibility</ControlLabel>
-                <Checkbox checked={isPublic} onChange={() => this.onChange('isPublic', !isPublic)}>
-                  Public evaluation
+                <ControlLabel>Discount score on wrong answers</ControlLabel>
+                <InputGroup>
+
+                  <InputGroup.Addon>
+                    <input
+                      type="checkbox"
+                      checked={this.state.checked}
+                      onChange={() => {
+                        const checked = !this.state.checked;
+                        this.setState({ checked });
+                        this.onChange('discount', checked ? discount : 0);
+                      }}
+                      aria-label="check-discount"
+                    />
+                  </InputGroup.Addon>
+
+                  <FormControl
+                    type="number"
+                    disabled={!this.state.checked}
+                    value={discount || undefined}
+                    placeholder="0.25"
+                    min="0"
+                    step="0.25"
+                    label="Discount"
+                    onChange={e => this.onChange('discount', this.state.checked ? e.target.value : 0)}
+                  />
+                </InputGroup>
+                <HelpBlock>{this.discountMessage(this.state.checked ? discount : 0)}</HelpBlock>
+              </FormGroup>
+
+              <hr />
+
+              <FormGroup>
+                <ControlLabel>Randomized evaluation</ControlLabel>
+                <Checkbox checked={randomized} onChange={() => this.onChange('randomized', !randomized)}>
+                  Each student should have different question order.
                 </Checkbox>
-                <HelpBlock>{isPublic ? PRIVACY.PUBLIC : PRIVACY.PRIVATE}</HelpBlock>
+                <HelpBlock>This can reduce cheating if enabled.</HelpBlock>
+              </FormGroup>
+
+              <FormGroup>
+                <ControlLabel>Visibility</ControlLabel>
+                <Checkbox checked={secret} onChange={() => this.onChange('secret', !secret)}>
+                  Secret or surprise evaluation
+                </Checkbox>
+                <HelpBlock>{secret ? PRIVACY.PRIVATE : PRIVACY.PUBLIC}</HelpBlock>
               </FormGroup>
 
             </form>
           </Col>
-          <Col xs={12} sm={3}>
+          <Col xsOffset={0} xs={12} sm={3}>
             <Panel>
               <h4>Evaluation settings</h4>
               <p>Make sure to setup the evaluation with the correct parameters</p>

@@ -171,7 +171,7 @@ const Routing = (
       </Route>
 
       <Route
-        path="evaluations/:evaluationId"
+        path="evaluations/show/:evaluationId"
         component={Evaluation}
         onEnter={populate({ field: 'evaluationId', to: 'evaluation' })}
       >
