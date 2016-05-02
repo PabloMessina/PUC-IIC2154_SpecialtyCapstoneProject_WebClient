@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { Media } from 'react-bootstrap';
+import renderIf from 'render-if';
 import { browserHistory } from 'react-router';
 
 
@@ -19,44 +20,51 @@ export default class CourseList extends Component {
 
   constructor(props) {
     super(props);
-    this.handleClick = this.handleClick.bind(this);
+    this.onClick = this.onClick.bind(this);
+    this.renderRow = this.renderRow.bind(this);
   }
 
-  handleClick(courseId) {
-    const url = `/courses/show/${courseId}`;
+  onClick(course) {
+    const url = `/courses/show/${course.id}`;
     return browserHistory.push(url);
+  }
+
+  renderRow(course) {
+    return (
+      <div key={course.id}>
+        <Media style={styles.cell}>
+          <Media.Left>
+            <img
+              style={{ cursor: 'pointer' }}
+              width={70}
+              height={70}
+              onClick={() => this.onClick(course)}
+              src="https://d3njjcbhbojbot.cloudfront.net/api/utilities/v1/imageproxy/https://coursera-university-assets.s3.amazonaws.com/89/d0ddf06ad611e4b53d95ff03ce5aa7/360px.png"
+              alt="Not available"
+            />
+          </Media.Left>
+          <Media.Body>
+            <Media.Heading style={{ cursor: 'pointer' }}>
+              <span onClick={() => this.onClick(course)}>{course.name}</span>
+            </Media.Heading>
+            <p>{course.description}</p>
+          </Media.Body>
+        </Media>
+        <hr />
+      </div>
+    );
   }
 
   render() {
     return (
       <div style={styles.container}>
-      {this.props.courses.map((course, i) => (
-        <div key={i}>
-          <Media style={styles.cell}>
-            <Media.Left>
-              <img
-                style={{ cursor: 'pointer' }}
-                width={70}
-                height={70}
-                onClick={() => this.handleClick(course.id)}
-            /*  src={course.imageSource} */
-                src="https://d3njjcbhbojbot.cloudfront.net/api/utilities/v1/imageproxy/https://coursera-university-assets.s3.amazonaws.com/89/d0ddf06ad611e4b53d95ff03ce5aa7/360px.png"
-                alt="Not available"
-              />
-            </Media.Left>
-            <Media.Body>
-              <Media.Heading
-                style={{ cursor: 'pointer' }}
-                onClick={() => this.handleClick(course.id)}
-              >
-              {course.name}
-              </Media.Heading>
-              <p>{course.description}</p>
-            </Media.Body>
-          </Media>
-          <hr />
-        </div>
+
+        {renderIf(this.props.courses.length === 0)(() => (
+          <p>No courses</p>
         ))}
+
+        {this.props.courses.map(this.renderRow)}
+
       </div>
     );
   }

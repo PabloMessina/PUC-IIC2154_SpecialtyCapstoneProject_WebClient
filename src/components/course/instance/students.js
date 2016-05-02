@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { Row, Col } from 'react-bootstrap';
 
 
-export default class CourseEvaluations extends Component {
+export default class InstanceStudents extends Component {
 
   constructor(props) {
     super(props);

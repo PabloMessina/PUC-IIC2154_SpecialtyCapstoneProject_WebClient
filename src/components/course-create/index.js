@@ -8,16 +8,19 @@ import {
   FormGroup,
   ControlLabel,
   FormControl,
+  HelpBlock,
   Alert,
   Breadcrumb,
 } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
+import Select from 'react-select';
 
 import app from '../../app';
 
 const courseService = app.service('/courses');
+const instanceService = app.service('/instances');
 
 /**
  * Component life-cycle:
@@ -53,10 +56,12 @@ export default class CourseCreate extends Component {
       name: this.props.name,
       description: this.props.description,
       organization: props.params.organization,
+      instances: [],
       error: null,
       submiting: false,
     };
     this.onSubmit = this.onSubmit.bind(this);
+    this.onInstanceChange = this.onInstanceChange.bind(this);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -65,6 +70,10 @@ export default class CourseCreate extends Component {
     if (organization && organization.id !== this.state.organization.id) {
       this.setState({ organization });
     }
+  }
+
+  onInstanceChange(value, instances) {
+    this.setState({ instances });
   }
 
   onSubmit(e) {
@@ -77,9 +86,22 @@ export default class CourseCreate extends Component {
       organizationId: this.state.organization.id,
     };
 
+    // Create course
     return courseService.create(options)
-      .then(course => browserHistory.push(`/courses/show/${course.id}`))
-      .catch(err => this.setState({ submiting: false, error: err }));
+      .then(course => {
+        const instances = this.state.instances;
+        const courseId = course.id;
+
+        // Create all the instances
+        const promises = instances
+          .map(obj => obj.value)
+          .map(period => instanceService.create({ period, courseId }));
+
+        // Run operations in parallel
+        return Promise.all(promises)
+          .then(() => browserHistory.push(`/courses/show/${courseId}`));
+      })
+      .catch(error => this.setState({ submiting: false, error }));
   }
 
   render() {
@@ -97,7 +119,7 @@ export default class CourseCreate extends Component {
           <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
             {organization ? organization.name : 'Loading...'}
           </Breadcrumb.Item>
-          <Breadcrumb.Item>
+          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}/courses`)}>
             Courses
           </Breadcrumb.Item>
           <Breadcrumb.Item active>
@@ -113,7 +135,10 @@ export default class CourseCreate extends Component {
 
         <Row>
           <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
-            <p>Take a group of people from your organization and assing them evaluations and a bibliography of atlases to read.</p>
+            <p>
+              Take a group of people from your organization and assing them evaluations
+              and a bibliography of atlases to read.
+            </p>
             <ul>
               <li>Create individual or group evaluations.</li>
               <li>Schedule evaluations or make a surprise quiz.</li>
@@ -151,6 +176,35 @@ export default class CourseCreate extends Component {
                   placeholder="Course description..."
                   onChange={e => this.setState({ description: e.target.value })}
                 />
+              </FormGroup>
+
+              <hr />
+
+              <FormGroup controlId="instances">
+                <ControlLabel>Instances</ControlLabel>
+                <p>
+                  You may want to reutilize content of this course, so you can create instances of it for purposes like:
+                </p>
+                <ul>
+                  <li>Different periods of times likes semesters or summer camps.</li>
+                  <li>Different sections of the same course.</li>
+                </ul>
+                <p>
+                  Add any ammout of sections, make sure to have different names.
+                </p>
+                <Select
+                  multi
+                  allowCreate
+                  addLabelText={'Add instance: {label}'}
+                  noResultsText="Type and add a instance with any name"
+                  value={this.state.instances}
+                  options={[]}
+                  onChange={this.onInstanceChange}
+                  placeholder={'Summer 2016, Fall 2016'}
+                />
+                <HelpBlock>
+                  You can skip this for now.
+                </HelpBlock>
               </FormGroup>
 
               <hr />

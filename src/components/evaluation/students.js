@@ -5,6 +5,18 @@ import { Checkbox, Col, Table, Button, Glyphicon, Form, FormControl } from 'reac
 
 export default class Students extends Component {
 
+  static get propTypes() {
+    return {
+      users: React.PropTypes.array,
+      groups: React.PropTypes.array,
+      students: React.PropTypes.array,
+      attendants: React.PropTypes.array,
+      evaluation: React.PropTypes.object,
+      onGroupsChange: React.PropTypes.func,
+      onAttendantsChange: React.PropTypes.func,
+    };
+  }
+
   constructor(props) {
     super(props);
     this.state = {
@@ -35,7 +47,7 @@ export default class Students extends Component {
     this.props.users.forEach(user => {
       unassignedStudents.push(user.id);
     });
-    this.props.evaluation.groups.forEach(group => {
+    this.props.groups.forEach(group => {
       group.forEach(studentId => {
         unassignedStudents.splice(unassignedStudents.indexOf(studentId), 1);
       });
@@ -45,13 +57,13 @@ export default class Students extends Component {
   }
 
   addToGroup(studentId) {
-    const groups = [...this.props.evaluation.groups];
+    const groups = [...this.props.groups];
     groups[this.state.selectedGroup].push(studentId);
-    this.props.onEvaluationChange({ groups });
+    this.props.onGroupsChange(groups);
   }
 
   removeFromGroup(groupIndex, studentIndex) {
-    let groups = [...this.props.evaluation.groups];
+    let groups = [...this.props.groups];
     groups[groupIndex].splice(studentIndex, 1);
 
     let selectedGroup = this.state.selectedGroup;
@@ -68,13 +80,13 @@ export default class Students extends Component {
     }
 
     this.setState({ selectedGroup });
-    this.props.onEvaluationChange({ groups });
+    this.props.onGroupsChange(groups);
   }
 
   addGroup() {
-    const groups = [...this.props.evaluation.groups];
+    const groups = [...this.props.groups];
     groups.push([]);
-    this.props.onEvaluationChange({ groups });
+    this.props.onGroupsChange(groups);
     this.setState({ selectedGroup: groups.length - 1 });
   }
 
@@ -92,31 +104,31 @@ export default class Students extends Component {
   }
 
   isButtonDisabled() {
-    const arr = this.props.evaluation.groups;
+    const arr = this.props.groups;
     return arr[arr.length - 1].length === 0;
   }
 
   includeInAttendance(studentId) {
-    const attendance = [...this.props.evaluation.attendingStudents];
+    const attendance = [...this.props.attendants];
     attendance.push(studentId);
     return attendance;
   }
 
   removeFromAttendance(studentId) {
-    const attendance = [...this.props.evaluation.attendingStudents];
+    const attendance = [...this.props.attendants];
     attendance.splice(attendance.indexOf(studentId), 1);
     return attendance;
   }
 
   handleCheckboxChange(checked, studentId) {
     if (checked) {
-      const attendingStudents = this.includeInAttendance(studentId);
-      this.props.onEvaluationChange({ attendingStudents });
+      const attendants = this.includeInAttendance(studentId);
+      this.props.onAttendantsChange(attendants);
     //  this.setState({ attendance });
     //  console.log(attendance);
     } else {
-      const attendingStudents = this.removeFromAttendance(studentId);
-      this.props.onEvaluationChange({ attendingStudents });
+      const attendants = this.removeFromAttendance(studentId);
+      this.props.onAttendantsChange(attendants);
     //  this.setState({ attendance });
     //  console.log(attendance);
     }
@@ -145,7 +157,8 @@ export default class Students extends Component {
 
   randomGroupGenerator(groupSize) {
     if (groupSize < 1 || groupSize > 99 || groupSize % 1 !== 0) {
-      alert('Invalid group size. Groups must be integer numbers between 1 and 99');
+      // TODO: show error
+      // alert('Invalid group size. Groups must be integer numbers between 1 and 99');
     } else {
       const unassignedIds = [];
       this.props.users.forEach(user => {
@@ -164,17 +177,14 @@ export default class Students extends Component {
           groups.push(group);
         }
       }
-      this.props.onEvaluationChange({ groups });
+      this.props.onGroupsChange(groups);
     }
   }
 
   renderGroupIndex(groupIndex, studentIndex, groupLength) {
     if (studentIndex === 0) {
       return (
-        <td
-          rowSpan={groupLength}
-          onClick={() => this.setState({ selectedGroup: groupIndex })}
-        >
+        <td rowSpan={groupLength} onClick={() => this.setState({ selectedGroup: groupIndex })}>
           {groupIndex + 1}
         </td>
       );
@@ -184,28 +194,24 @@ export default class Students extends Component {
 
   renderGroup(group, groupIndex) {
     if (group.length > 0) {
-      return (
-        group.map((studentId, studentIndex) => (
-          <tr key={studentId} style={this.rowGroupStyle(groupIndex)}>
-            {this.renderGroupIndex(groupIndex, studentIndex, group.length)}
-            <td onClick={() => this.removeFromGroup(groupIndex, studentIndex)} >
-              {this.props.users.find(user => {
-                return user.id === studentId;
-              }).name}
-            </td>
-            <td>
-              <Checkbox
-                style={styles.checkbox}
-                onChange={(e) => this.handleCheckboxChange(e.target.checked, studentId)}
-              />
-            </td>
-          </tr>
-        ))
-      );
+      return group.map((studentId, studentIndex) => (
+        <tr key={studentId} style={this.rowGroupStyle(groupIndex)}>
+          {this.renderGroupIndex(groupIndex, studentIndex, group.length)}
+          <td onClick={() => this.removeFromGroup(groupIndex, studentIndex)} >
+            {this.props.users.find(user => user.id === studentId).name}
+          </td>
+          <td>
+            <Checkbox
+              style={styles.checkbox}
+              onChange={(e) => this.handleCheckboxChange(e.target.checked, studentId)}
+            />
+          </td>
+        </tr>
+      ));
     }
     // empty group
     return (
-      <tr style={this.rowGroupStyle(groupIndex)}>
+      <tr key={groupIndex} style={this.rowGroupStyle(groupIndex)}>
         {this.renderGroupIndex(groupIndex, 0, 1)}
         <td />
         <td />
@@ -255,7 +261,7 @@ export default class Students extends Component {
                 </tr>
               </thead>
               <tbody>
-              {this.props.evaluation.groups.map(this.renderGroup)}
+                {this.props.groups.map(this.renderGroup)}
               </tbody>
             </Table>
             <Button onClick={this.addGroup} disabled={this.isButtonDisabled()}>
@@ -274,9 +280,7 @@ export default class Students extends Component {
               {this.unassignedStudents().map((studentId, i) => (
                 <tr key={i}>
                   <td onClick={() => this.addToGroup(studentId)}>
-                    {this.props.users.find(student => {
-                      return student.id === studentId;
-                    }).name}
+                    {this.props.users.find(student => student.id === studentId).name}
                   </td>
                 </tr>
               ))}
@@ -288,14 +292,6 @@ export default class Students extends Component {
     );
   }
 }
-
-Students.propTypes = {
-  children: React.PropTypes.any,
-  users: React.PropTypes.array,
-  students: React.PropTypes.array,
-  evaluation: React.PropTypes.object,
-  onEvaluationChange: React.PropTypes.func,
-};
 
 const styles = {
   checkbox: {

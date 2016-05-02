@@ -22,6 +22,9 @@ export default class CourseTab extends Component {
     };
     this.createCourse = this.createCourse.bind(this);
     this.fetch = this.fetch.bind(this);
+  }
+
+  componentDidMount() {
     this.fetch(this.props.organization.id);
   }
 

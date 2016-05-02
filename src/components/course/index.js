@@ -1,10 +1,14 @@
 import React, { Component } from 'react';
-import { Grid, Col, Row, ListGroup, ListGroupItem, Breadcrumb } from 'react-bootstrap';
+import {
+  Grid,
+  Col,
+  Row,
+  Breadcrumb,
+} from 'react-bootstrap';
 import { browserHistory } from 'react-router';
-import Icon from 'react-fa';
+// import Icon from 'react-fa';
 
 import app from '../../app';
-
 const organizationService = app.service('/organizations');
 
 /**
@@ -19,31 +23,31 @@ const organizationService = app.service('/organizations');
 
 export default class Course extends Component {
 
+  static get propTypes() {
+    return {
+      // React Router
+      params: React.PropTypes.object,
+      location: React.PropTypes.object,
+      children: React.PropTypes.any,
+    };
+  }
+
   constructor(props) {
     super(props);
     this.state = {
       organization: null,
       course: props.params.course,
-      elements: [
-        {
-          name: 'Evaluations',
-          icon: 'file-text-o ',
-          path: 'evaluations',
-        }, {
-          name: 'Students',
-          icon: 'users',
-          path: 'students',
-        }, {
-          name: 'Analytics',
-          icon: 'bar-chart ',
-          path: 'analytics',
-        },
-      ],
+      instances: [],
+      instance: -1, // index
     };
     this.fetchOrganization = this.fetchOrganization.bind(this);
+  }
 
+  componentDidMount() {
     // Fetch organization
-    this.fetchOrganization(this.state.course.organizationId);
+    // const query = this.props.location.query;
+    const course = this.state.course;
+    this.fetchOrganization(course.organizationId);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -55,28 +59,13 @@ export default class Course extends Component {
     }
   }
 
-  onEvaluationChange(evaluation) {
-    if (evaluation) this.setState({ evaluation });
-  }
-
   fetchOrganization(organizationId) {
     return organizationService.get(organizationId)
       .then(organization => this.setState({ organization }));
   }
 
-  renderListElement(element, i) {
-    const course = this.state.course;
-    const url = `/courses/show/${course.id}/${element.path}`;
-    return (
-      <ListGroupItem key={i} onClick={() => browserHistory.push(url)}>
-        <Icon style={styles.icon} name={element.icon} /> {element.name}
-      </ListGroupItem>
-    );
-  }
-
   render() {
-    const course = this.state.course;
-    const organization = this.state.organization;
+    const { course, organization } = this.state;
 
     return (
       <Grid style={styles.container}>
@@ -90,7 +79,7 @@ export default class Course extends Component {
           <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
             {organization ? organization.name : 'Loading...'}
           </Breadcrumb.Item>
-          <Breadcrumb.Item>
+          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}/courses`)}>
             Courses
           </Breadcrumb.Item>
           <Breadcrumb.Item active>
@@ -98,35 +87,25 @@ export default class Course extends Component {
           </Breadcrumb.Item>
         </Breadcrumb>
 
-        <h1 style={styles.title}>{course.name}</h1>
-        <p>{course.description}</p>
-
-        <hr />
-
         <Row>
-          <Col xs={12} sm={3} md={3}>
-            <ListGroup>
-              {this.state.elements.map((element, i) => this.renderListElement(element, i))}
-            </ListGroup>
-          </Col>
-
-          <Col xs={12} sm={9} md={9}>
-            {React.cloneElement(this.props.children, { course, organization })}
+          <Col xs={12} md={9}>
+            <h2 style={styles.title} style={styles.header}>
+              <span>{course.name}</span>
+            </h2>
+            <p>{course.description}</p>
           </Col>
         </Row>
+
+        <br />
+
+        <div style={styles.content}>
+          {React.cloneElement(this.props.children, { organization, course })}
+        </div>
+
       </Grid>
     );
   }
 }
-
-/*
-  See: https://facebook.github.io/react/docs/reusable-components.html#prop-validation
- */
-Course.propTypes = {
-  children: React.PropTypes.any,
-  // React Router
-  params: React.PropTypes.object,
-};
 
 /*
   See: https://facebook.github.io/react/tips/inline-styles.html
@@ -136,9 +115,14 @@ const styles = {
   container: {
 
   },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   title: {
-    marginTop: 30,
-    marginBottom: 25,
+    // marginTop: 30,
+    // marginBottom: 25,
   },
   icon: {
     marginRight: 7,

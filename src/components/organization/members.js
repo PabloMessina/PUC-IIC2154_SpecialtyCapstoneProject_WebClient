@@ -1,10 +1,17 @@
 import React, { Component } from 'react';
-import { Grid, Col, Panel, Button, Table, ControlLabel, Row } from 'react-bootstrap';
-import { browserHistory } from 'react-router';
+import { Grid, Row, Col, Panel, Button, Table, ControlLabel, DropdownButton, MenuItem } from 'react-bootstrap';
 import Select from 'react-select';
+import moment from 'moment';
 
 import app from '../../app';
-const courseService = app.service('/courses');
+const membershipService = app.service('/memberships');
+const userService = app.service('/users');
+
+const ROLES = [
+  { value: 'read', label: 'Student' },
+  { value: 'write', label: 'Teacher' },
+  { value: 'admin', label: 'Administrator' },
+];
 
 export default class CourseTab extends Component {
 
@@ -17,170 +24,192 @@ export default class CourseTab extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      tableUsers: [],
+      // Appear on the select box
+      selected: [],
+      // Local store
       users: [],
-      role: '',
-      allMembers: [
-        {
-          name: 'Felipe Bobadilla',
-          mail: 'bobadilla91@gmail.com',
-          Membership: 'undefined',
-        },
-        {
-          name: 'Patricio Lopez',
-          mail: 'pato@gmail.com',
-          Membership: 'undefined',
-        },
-        {
-          name: 'Constanza Halabi',
-          mail: 'coni@gmail.com',
-          Membership: 'undefined',
-        },
-        {
-          name: 'Droid',
-          mail: 'droide@gmail.com',
-          Membership: 'undefined',
-        },
-        {
-          name: 'Matias',
-          mail: 'matias@gmail.com',
-          Membership: 'undefined',
-        },
-        {
-          name: 'Vicente holi',
-          mail: 'vicho@gmail.com',
-          Membership: 'undefined',
-        },
-        {
-          name: 'Diego Steing',
-          mail: 'diego@gmail.com',
-          Membership: 'undefined',
-        },
-        {
-          name: 'Geri Mami',
-          mail: 'Geri@gmail.com',
-          Membership: 'undefined',
-        },
-      ],
+      // Current members
+      memberships: [],
+      // Other state values
+      role: ROLES[0],
+      loading: false,
+      error: null,
     };
-    this.createCourse = this.createCourse.bind(this);
-    this.fetch = this.fetch.bind(this);
-    this.fetch(this.props.organization.id);
+    this.fetchMemberships = this.fetchMemberships.bind(this);
+    this.fetchUsers = this.fetchUsers.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
-    this.adduser = this.adduser.bind(this);
-    this.setShip = this.setShip.bind(this);
+  }
+
+  componentDidMount() {
+    this.fetchMemberships(this.props.organization.id);
+    this.fetchUsers();
   }
 
   componentWillReceiveProps(nextProps) {
     if (nextProps.organization) {
-      this.fetch(nextProps.organization.id);
+      this.fetchMemberships(nextProps.organization.id);
     }
+  }
+
+  onPermissionSelect(key, user, membership) {
+    if (key < ROLES.length) {
+      // Role changed
+      const permission = ROLES[key].value;
+      return membershipService.patch(membership.id, { permission });
+    }
+    // Removed
+    return membershipService.remove(membership.id);
   }
 
   onSubmit(e) {
     e.preventDefault();
-    const tableUsers = this.state.users.map((member) => (
-      {
-        name: member.label,
-        mail: member.value,
-        role: this.state.role,
+    const newMemberships = this.state.selected.map(user => ({
+      userId: user.id,
+      organizationId: this.props.organization.id,
+      permission: this.state.role.value,
+    }));
+
+    return Promise.all(newMemberships.map(m => membershipService.create(m)))
+      .then(() => this.setState({ selected: [] }))
+      .catch(error => this.setState({ error }));
+  }
+
+  fetchUsers(query = {}) {
+    this.setState({ loading: true });
+    return userService.find({ query })
+      .then(result => result.data)
+      .then(users => this.setState({ users, loading: false }));
+  }
+
+  fetchMemberships(organizationId) {
+    const renew = (membership) => {
+      const index = this.state.memberships.map(m => m.id).indexOf(membership.id);
+      if (index) {
+        userService.get(membership.userId).then(user => {
+          const memberships = [...this.state.memberships];
+          memberships[index] = membership;
+          memberships[index].user = user;
+          this.setState({ memberships });
+        });
       }
-    ));
-    this.setState({ tableUsers: [...this.state.tableUsers, ...tableUsers], users: [] });
-  }
+    };
 
-  setShip(value) {
-    this.setState({ role: value });
-  }
+    membershipService.on('created', membership => {
+      userService.get(membership.userId).then(user => {
+        membership.user = user;
+        this.setState({ memberships: [...this.state.memberships, membership] });
+      });
+    });
 
-  adduser(value, label) {
-    this.setState({ users: label });
-  }
+    membershipService.on('patched', renew);
+    membershipService.on('updated', renew);
+    membershipService.on('removed', membership => {
+      const index = this.state.memberships.map(m => m.id).indexOf(membership.id);
+      if (index) {
+        const memberships = [...this.state.memberships];
+        memberships.splice(index, 1);
+        this.setState({ memberships });
+      }
+    });
 
-  fetch(organizationId) {
     const query = {
       organizationId,
     };
-    return courseService.find({ query })
+    return membershipService.find({ query })
       .then(result => result.data)
-      .then(courses => this.setState({ courses }));
-  }
-
-  createCourse() {
-    const url = `/organizations/show/${this.props.organization.id}/members/create`;
-    return browserHistory.push(url);
+      .then(memberships => this.setState({ memberships }));
   }
 
   render() {
-    const roles = [
-      { value: 'read', label: 'Student' },
-      { value: 'write', label: 'Teacher' },
-      { value: 'admin', label: 'Administrator' },
-    ];
+    // TODO: filter from current selected list
 
-    const options = this.state.allMembers
-      .filter((user) => !this.state.tableUsers
-      .find((item) => item.name === user.name))
-      .map(member => ({
-        value: member.mail,
-        label: member.name,
-      }));
+    const ids = this.state.memberships.map(m => m.userId);
+    const users = this.state.users.map(user => {
+      const disabled = ids.indexOf(user.id) > -1;
+      return {
+        disabled,
+        id: user.id,
+        value: user.id,
+        label: disabled ? `${user.name} (already selected)` : user.name,
+      };
+    });
+    const permissions = {};
+    ROLES.forEach(({ value, label }) => (permissions[value] = label));
 
     return (
       <Grid style={styles.container}>
-        <form onSubmit={this.onSubmit}>
+        <Col xs={12} md={9}>
           <Row>
-            <Col xs={5}>
-              <ControlLabel style={styles.text2}>Name</ControlLabel>
-              <Select
-                multi
-                simpleValue
-                disabled={this.state.disabled}
-                value={this.state.users}
-                options={options}
-                placeholder={'Members'}
-                onChange={(value, label) => this.setState({ users: label })}
-              />
-            </Col>
-            <Col xs={3}>
-              <ControlLabel style={styles.text}>New Role</ControlLabel>
-              <Select
-                simpleValue
-                value={this.state.role}
-                options={roles}
-                onChange={value => this.setState({ role: value })}
-              />
-              <br />
-            </Col>
-            <Col xs={1}>
-              <br />
-              <Button bsStyle="primary" type="submit" >
-                Add
-              </Button>
+            <form onSubmit={this.onSubmit}>
+              <Col xs={7}>
+                <ControlLabel>Names</ControlLabel>
+                <Select
+                  multi
+                  disabled={this.state.disabled}
+                  value={this.state.selected}
+                  options={users}
+                  isLoading={this.state.loading}
+                  placeholder="Member"
+                  onChange={(value, selected) => this.setState({ selected })}
+                />
+              </Col>
+              <Col xs={3}>
+                <ControlLabel>Role</ControlLabel>
+                <Select
+                  value={this.state.role}
+                  options={ROLES}
+                  placeholder="Role"
+                  onChange={role => this.setState({ role })}
+                />
+              </Col>
+              <Col xs={2}>
+                <br />
+                <Button bsStyle="primary" block type="submit" disabled={this.state.selected.length === 0}>
+                  Set
+                </Button>
+              </Col>
+            </form>
+          </Row>
+          <hr />
+          <Row>
+            <Col xs={12}>
+              <Table responsive hover striped>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Added at</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {this.state.memberships.map(({ user, ...membership }) => (
+                  <tr key={user.id}>
+                    <th style={styles.cell}>{user.name}</th>
+                    <th style={styles.cell}>
+                      <DropdownButton
+                        id="membership-dropdown"
+                        bsStyle="link"
+                        title={permissions[membership.permission]}
+                        onSelect={key => this.onPermissionSelect(key, user, membership)}
+                      >
+                        {ROLES.map((role, i) => (
+                          <MenuItem key={i} eventKey={i} active={membership.permission === role.value}>
+                            {role.label}
+                          </MenuItem>
+                        ))}
+                        <MenuItem divider />
+                        <MenuItem eventKey={ROLES.length}>
+                          Remove
+                        </MenuItem>
+                      </DropdownButton>
+                    </th>
+                    <th style={styles.cell}>{moment(membership.createdAt).format('LL')}</th>
+                  </tr>
+                ))}
+                </tbody>
+              </Table>
             </Col>
           </Row>
-        </form>
-        <Col xs={12} md={9}>
-          <Table responsive hover striped>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-              </tr>
-            </thead>
-            <tbody>
-            {this.state.tableUsers.map((user, i) => (
-              <tr key={i}>
-                <th>{i + 1}</th>
-                <th>{user.name}</th>
-                <th>{user.mail}</th>
-                <th>{user.role}</th>
-              </tr>
-            ))}
-            </tbody>
-          </Table>
         </Col>
         <Col xs={12} md={3}>
           <Panel>
@@ -196,5 +225,8 @@ export default class CourseTab extends Component {
 }
 const styles = {
   container: {
+  },
+  cell: {
+    verticalAlign: 'middle',
   },
 };

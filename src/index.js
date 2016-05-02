@@ -11,35 +11,44 @@ import app, { auth, currentUser } from './app';
 import Main from './components/main';
 import Dashboard from './components/dashboard';
 import Login from './components/login/';
-import AtlasCreate from './components/atlas-create/';
 import SignUp from './components/signup/';
+
 import Settings from './components/settings';
 import NotificationSettings from './components/settings/notifications';
 import MyAtlasSettings from './components/settings/myatlas';
 import GeneralSettings from './components/settings/general';
 import SecuritySettings from './components/settings/security';
 import PaymentsSettings from './components/settings/payments';
+
 import DocumentList from './components/document-list';
 import DocumentDescription from './components/document-description';
-// import Organizations from './components/organizations';
-import Organization from './components/organization';
-import Course from './components/course/';
-import CourseCreate from './components/course-create/';
+
 import OrganizationCreate from './components/organization-create/';
+import Organization from './components/organization';
+import OrganizationCoursesTab from './components/organization/courses';
+import OrganizationAtlasesTab from './components/organization/atlases';
+import OrganizationMembersTab from './components/organization/members';
+import OrganizationSettingsTab from './components/organization/settings';
+import OrganizationSettingsGeneral from './components/organization/settings/general';
+import OrganizationSettingsAdministrative from './components/organization/settings/administrative';
+
+import CourseCreate from './components/course-create/';
+import Course from './components/course/';
+import CourseInstances from './components/course/instances';
+import CourseInstance from './components/course/instance';
+import CourseInstanceStudents from './components/course/instance/students';
+import CourseInstanceEvaluations from './components/course/instance/evaluations';
+
+import Evaluation from './components/evaluation';
+import EvaluationDescripction from './components/evaluation/description';
+import EvaluationQuestions from './components/evaluation/questions';
+import EvaluationStudents from './components/evaluation/students';
+import EvaluationResults from './components/evaluation/results';
+import EvaluationRecorrection from './components/evaluation/recorrection';
+
+import AtlasCreate from './components/atlas-create/';
 import AtlasBook from './components/atlas-book/';
-// import Tree from './components/hierarchy-navigation/';
-// import Editor from './components/editor/';
 import Questions from './components/questions/';
-
-import CourseStudents from './components/course-students/';
-import CourseEvaluations from './components/course-evaluations/';
-
-import EvaluationCreate from './components/evaluation-create';
-import EvaluationCreateDescripction from './components/evaluation-create/description';
-import EvaluationCreateQuestions from './components/evaluation-create/questions';
-import EvaluationCreateStudents from './components/evaluation-create/students';
-import EvaluationCreateResults from './components/evaluation-create/results';
-import EvaluationCreateRecorrection from './components/evaluation-create/recorrection';
 
 import Renderer3D from './components/renderer-3d/';
 import RendererWrapper from './components/renderer-wrapper/';
@@ -126,7 +135,18 @@ const Routing = (
         path="organizations/show/:organizationId"
         component={Organization}
         onEnter={populate({ field: 'organizationId', to: 'organization' })}
-      />
+      >
+        <IndexRedirect to="courses" />
+        <Route path="courses" component={OrganizationCoursesTab} />
+        <Route path="atlases" component={OrganizationAtlasesTab} />
+        <Route path="questions" component={OrganizationMembersTab} />
+        <Route path="members" component={OrganizationMembersTab} />
+        <Route path="settings" component={OrganizationSettingsTab}>
+          <IndexRedirect to="general" />
+          <Route path="general" component={OrganizationSettingsGeneral} />
+          <Route path="administrative" component={OrganizationSettingsAdministrative} />
+        </Route>
+      </Route>
 
       <Route
         path="organizations/show/:organizationId/courses/create"
@@ -139,23 +159,28 @@ const Routing = (
         component={Course}
         onEnter={populate({ field: 'courseId', to: 'course' })}
       >
-        <IndexRedirect to="evaluations" />
-        <Route path="students" component={CourseStudents} />
-        <Route path="analytics" component={CourseStudents} />
-        <Route path="evaluations" component={CourseEvaluations} />
+        <IndexRedirect to="instances" />
+        <Route path="instances" component={CourseInstances}>
+          <Route path=":instanceId" component={CourseInstance}>
+            <IndexRedirect to="evaluations" />
+            <Route path="students" component={CourseInstanceStudents} />
+            <Route path="analytics" component={CourseInstanceStudents} />
+            <Route path="evaluations" component={CourseInstanceEvaluations} />
+          </Route>
+        </Route>
       </Route>
 
       <Route
-        path="courses/show/:courseId/evaluations/create"
-        component={EvaluationCreate}
-        onEnter={populate({ field: 'courseId', to: 'course' })}
+        path="evaluations/show/:evaluationId"
+        component={Evaluation}
+        onEnter={populate({ field: 'evaluationId', to: 'evaluation' })}
       >
         <IndexRedirect to="description" />
-        <Route path="description" component={EvaluationCreateDescripction} />
-        <Route path="questions" component={EvaluationCreateQuestions} />
-        <Route path="students" component={EvaluationCreateStudents} />
-        <Route path="results" component={EvaluationCreateResults} />
-        <Route path="recorrection" component={EvaluationCreateRecorrection} />
+        <Route path="description" component={EvaluationDescripction} />
+        <Route path="questions" component={EvaluationQuestions} />
+        <Route path="students" component={EvaluationStudents} />
+        <Route path="results" component={EvaluationResults} />
+        <Route path="recorrection" component={EvaluationRecorrection} />
       </Route>
 
       <Route
