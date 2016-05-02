@@ -40,7 +40,7 @@ export default class CourseTab extends Component {
     this.onSubmit = this.onSubmit.bind(this);
   }
 
-  componentWillMount() {
+  componentDidMount() {
     this.fetchMemberships(this.props.organization.id);
     this.fetchUsers();
   }

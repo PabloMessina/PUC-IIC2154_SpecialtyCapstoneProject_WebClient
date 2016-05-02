@@ -21,6 +21,9 @@ export default class AtlasTab extends Component {
     };
     this.createAtlas = this.createAtlas.bind(this);
     this.fetch = this.fetch.bind(this);
+  }
+
+  componentDidMount() {
     this.fetch(this.props.organization.id);
   }
 

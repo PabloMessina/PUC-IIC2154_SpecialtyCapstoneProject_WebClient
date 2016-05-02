@@ -34,15 +34,17 @@ import OrganizationSettingsAdministrative from './components/organization/settin
 
 import CourseCreate from './components/course-create/';
 import Course from './components/course/';
-import CourseStudents from './components/course/students';
-import CourseEvaluations from './components/course/evaluations';
+import CourseInstances from './components/course/instances';
+import CourseInstance from './components/course/instance';
+import CourseInstanceStudents from './components/course/instance/students';
+import CourseInstanceEvaluations from './components/course/instance/evaluations';
 
-import EvaluationCreate from './components/evaluation-create';
-import EvaluationCreateDescripction from './components/evaluation-create/description';
-import EvaluationCreateQuestions from './components/evaluation-create/questions';
-import EvaluationCreateStudents from './components/evaluation-create/students';
-import EvaluationCreateResults from './components/evaluation-create/results';
-import EvaluationCreateRecorrection from './components/evaluation-create/recorrection';
+import Evaluation from './components/evaluation';
+import EvaluationDescripction from './components/evaluation/description';
+import EvaluationQuestions from './components/evaluation/questions';
+import EvaluationStudents from './components/evaluation/students';
+import EvaluationResults from './components/evaluation/results';
+import EvaluationRecorrection from './components/evaluation/recorrection';
 
 import AtlasCreate from './components/atlas-create/';
 import AtlasBook from './components/atlas-book/';
@@ -157,23 +159,28 @@ const Routing = (
         component={Course}
         onEnter={populate({ field: 'courseId', to: 'course' })}
       >
-        <IndexRedirect to="evaluations" />
-        <Route path="students" component={CourseStudents} />
-        <Route path="analytics" component={CourseStudents} />
-        <Route path="evaluations" component={CourseEvaluations} />
+        <IndexRedirect to="instances" />
+        <Route path="instances" component={CourseInstances}>
+          <Route path=":instanceId" component={CourseInstance}>
+            <IndexRedirect to="evaluations" />
+            <Route path="students" component={CourseInstanceStudents} />
+            <Route path="analytics" component={CourseInstanceStudents} />
+            <Route path="evaluations" component={CourseInstanceEvaluations} />
+          </Route>
+        </Route>
       </Route>
 
       <Route
-        path="courses/show/:courseId/evaluations/create"
-        component={EvaluationCreate}
-        onEnter={populate({ field: 'courseId', to: 'course' })}
+        path="evaluations/:evaluationId"
+        component={Evaluation}
+        onEnter={populate({ field: 'evaluationId', to: 'evaluation' })}
       >
         <IndexRedirect to="description" />
-        <Route path="description" component={EvaluationCreateDescripction} />
-        <Route path="questions" component={EvaluationCreateQuestions} />
-        <Route path="students" component={EvaluationCreateStudents} />
-        <Route path="results" component={EvaluationCreateResults} />
-        <Route path="recorrection" component={EvaluationCreateRecorrection} />
+        <Route path="description" component={EvaluationDescripction} />
+        <Route path="questions" component={EvaluationQuestions} />
+        <Route path="students" component={EvaluationStudents} />
+        <Route path="results" component={EvaluationResults} />
+        <Route path="recorrection" component={EvaluationRecorrection} />
       </Route>
 
       <Route

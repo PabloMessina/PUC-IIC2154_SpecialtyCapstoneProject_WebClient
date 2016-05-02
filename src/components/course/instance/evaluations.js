@@ -5,19 +5,20 @@ import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
 
 import moment from 'moment';
-import app from '../../app';
+import app from '../../../app';
 
 const evaluationService = app.service('/evaluations');
 
 
-export default class CourseEvaluations extends Component {
+export default class InstanceEvaluations extends Component {
 
   static get propTypes() {
     return {
+      organization: React.PropTypes.object,
+      course: React.PropTypes.object,
+      instance: React.PropTypes.object,
       // React Router
       params: React.PropTypes.object,
-      course: React.PropTypes.object,
-      organization: React.PropTypes.object,
       evaluations: React.PropTypes.array,
     };
   }
@@ -36,12 +37,18 @@ export default class CourseEvaluations extends Component {
     this.renderRow = this.renderRow.bind(this);
     this.createEvaluation = this.createEvaluation.bind(this);
     this.fetchEvaluation = this.fetchEvaluation.bind(this);
-    this.fetchEvaluation(props.course.id);
+  }
+
+  componentDidMount() {
+    // Fetch organization
+    // const query = this.props.location.query;
+    const instance = this.props.instance;
+    this.fetchEvaluation(instance.id);
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.course) {
-      this.fetchEvaluation(nextProps.course.id);
+    if (nextProps.instance) {
+      this.fetchEvaluation(nextProps.instance.id);
     }
   }
 
@@ -50,9 +57,9 @@ export default class CourseEvaluations extends Component {
     return browserHistory.push(url);
   }
 
-  fetchEvaluation(courseId) {
+  fetchEvaluation(instanceId) {
     const query = {
-      courseId,
+      instanceId,
     };
     return evaluationService.find({ query })
       .then(result => result.data)
