@@ -35,13 +35,15 @@ export default class Students extends Component {
     // TODO: todavia existen?
     this.renderGroup = this.renderGroup.bind(this);
     this.addGroup = this.addGroup.bind(this);
-    this.isButtonDisabled = this.isButtonDisabled.bind(this);
-    this.rowGroupStyle = this.rowGroupStyle.bind(this);
+    this.isNewGroupButtonDisabled = this.isNewGroupButtonDisabled.bind(this);
     this.randomGroupGenerator = this.randomGroupGenerator.bind(this);
-
     this.unassignedStudents = this.unassignedStudents.bind(this);
   }
 
+  /**
+   * Students not assigned to any group
+   * @return {array} Array with ids
+   */
   unassignedStudents() {
     const unassignedStudents = [];
     this.props.users.forEach(user => {
@@ -90,20 +92,11 @@ export default class Students extends Component {
     this.setState({ selectedGroup: groups.length - 1 });
   }
 
-  rowGroupStyle(groupIndex) {
-    const style = {};
-    // stripe
-    if (groupIndex % 2 === 0) {
-      style.backgroundColor = '#f9f9f9';
-    }
-    // selected
-    if (this.state.selectedGroup === groupIndex) {
-      style.borderLeft = 'solid 7px #2CA083';
-    }
-    return style;
-  }
-
-  isButtonDisabled() {
+  /**
+   * Cannot create a new group if there is already an empty one
+   * @return {Boolean}
+   */
+  isNewGroupButtonDisabled() {
     const arr = this.props.groups;
     return arr[arr.length - 1].length === 0;
   }
@@ -124,17 +117,18 @@ export default class Students extends Component {
     if (checked) {
       const attendants = this.includeInAttendance(studentId);
       this.props.onAttendantsChange(attendants);
-    //  this.setState({ attendance });
-    //  console.log(attendance);
     } else {
       const attendants = this.removeFromAttendance(studentId);
       this.props.onAttendantsChange(attendants);
-    //  this.setState({ attendance });
-    //  console.log(attendance);
     }
   }
 
-  // http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+  /**
+   * Shuffles an array
+   * http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+   * @param  {array} array
+   * @return {array} shuffled array
+   */
   shuffle(constArray) {
     const array = [...constArray];
     let currentIndex = array.length;
@@ -156,9 +150,10 @@ export default class Students extends Component {
   }
 
   randomGroupGenerator(groupSize) {
-    if (groupSize < 1 || groupSize > 99 || groupSize % 1 !== 0) {
-      // TODO: show error
-      // alert('Invalid group size. Groups must be integer numbers between 1 and 99');
+    if (groupSize < 1 || groupSize > this.props.users.length || groupSize % 1 !== 0) {
+      // TODO: error without 'alert'?
+      // eslint-disable-next-line no-alert
+      alert('Invalid group size. Groups must be integer numbers between 1 and number of students');
     } else {
       const unassignedIds = [];
       this.props.users.forEach(user => {
@@ -169,9 +164,9 @@ export default class Students extends Component {
       while (unselectedStudents.length > 0) {
         const group = unselectedStudents.splice(0, groupSize);
         if (group.length < groupSize) {
-          // alumnos restantes se reparten en los otros grupos
+          // remaining students get distributed in other groups
           group.forEach((student, index) => {
-            groups[index % groupSize].push(student);
+            groups[index % groups.length].push(student);
           });
         } else {
           groups.push(group);
@@ -184,7 +179,11 @@ export default class Students extends Component {
   renderGroupIndex(groupIndex, studentIndex, groupLength) {
     if (studentIndex === 0) {
       return (
-        <td rowSpan={groupLength} onClick={() => this.setState({ selectedGroup: groupIndex })}>
+        <td
+          rowSpan={groupLength}
+          className="hoverGreen"
+          onClick={() => this.setState({ selectedGroup: groupIndex })}
+        >
           {groupIndex + 1}
         </td>
       );
@@ -195,9 +194,12 @@ export default class Students extends Component {
   renderGroup(group, groupIndex) {
     if (group.length > 0) {
       return group.map((studentId, studentIndex) => (
-        <tr key={studentId} style={this.rowGroupStyle(groupIndex)}>
+        <tr key={studentId} style={rowGroupStyle(groupIndex, this.state.selectedGroup === groupIndex)}>
           {this.renderGroupIndex(groupIndex, studentIndex, group.length)}
-          <td onClick={() => this.removeFromGroup(groupIndex, studentIndex)} >
+          <td
+            onClick={() => this.removeFromGroup(groupIndex, studentIndex)}
+            className="hoverRed"
+          >
             {this.props.users.find(user => user.id === studentId).name}
           </td>
           <td>
@@ -211,7 +213,7 @@ export default class Students extends Component {
     }
     // empty group
     return (
-      <tr key={groupIndex} style={this.rowGroupStyle(groupIndex)}>
+      <tr key={groupIndex} style={rowGroupStyle(groupIndex, this.state.selectedGroup === groupIndex)}>
         {this.renderGroupIndex(groupIndex, 0, 1)}
         <td />
         <td />
@@ -222,20 +224,20 @@ export default class Students extends Component {
   render() {
     return (
       <div>
+        <style dangerouslySetInnerHTML={cssStyles} />
         <div>
           <Form
             inline
             onSubmit={e => {
               e.preventDefault();
-              this.randomGroupGenerator(this.state.groupSize)
-            ; }}
+              this.randomGroupGenerator(this.state.groupSize);
+            }}
           >
             <span>Generate random groups of </span>
             <FormControl
               type="number"
               min="1"
               max="99"
-              onkeypress="return event.charCode >= 48 && event.charCode <= 57"
               placeholder="3"
               style={styles.groupSizeInput}
               onChange={e => { this.setState({ groupSize: e.target.value }); }}
@@ -252,7 +254,7 @@ export default class Students extends Component {
         </div>
         <div>
           <Col md={8}>
-            <Table bordered condensed hover>
+            <Table bordered condensed>
               <thead>
                 <tr>
                   <th>Group</th>
@@ -264,26 +266,29 @@ export default class Students extends Component {
                 {this.props.groups.map(this.renderGroup)}
               </tbody>
             </Table>
-            <Button onClick={this.addGroup} disabled={this.isButtonDisabled()}>
+            <Button onClick={this.addGroup} disabled={this.isNewGroupButtonDisabled()}>
               <Glyphicon glyph="plus" />
               <span> New Group</span>
             </Button>
           </Col>
           <Col md={4}>
-            <Table striped bordered condensed hover>
+            <Table striped bordered condensed>
               <thead>
                 <tr>
                   <th>Name</th>
                 </tr>
               </thead>
               <tbody>
-              {this.unassignedStudents().map((studentId, i) => (
-                <tr key={i}>
-                  <td onClick={() => this.addToGroup(studentId)}>
-                    {this.props.users.find(student => student.id === studentId).name}
-                  </td>
-                </tr>
-              ))}
+                {this.unassignedStudents().map((studentId, i) => (
+                  <tr key={i}>
+                    <td
+                      className="hoverBlue"
+                      onClick={() => this.addToGroup(studentId)}
+                    >
+                      {this.props.users.find(student => student.id === studentId).name}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </Table>
           </Col>
@@ -305,4 +310,26 @@ const styles = {
   generateGroupsButton: {
     marginLeft: '20px',
   },
+};
+
+function rowGroupStyle(groupIndex, isSelected) {
+  const style = {};
+  // stripe
+  if (groupIndex % 2 === 0) {
+    style.backgroundColor = '#f9f9f9';
+  }
+
+  if (isSelected) {
+    style.borderLeft = 'solid 7px #2CA083';
+  }
+  return style;
+}
+
+// tried with styles, tried with Radius... only this worked
+const cssStyles = {
+  __html: `
+    .hoverBlue:hover { background-color: rgba(66, 139, 202, 0.5); }
+    .hoverRed:hover { background-color: rgba(217, 83, 79, 0.5); }
+    .hoverGreen:hover { background-color: rgba(44, 160, 131, 0.5); }
+  `,
 };
