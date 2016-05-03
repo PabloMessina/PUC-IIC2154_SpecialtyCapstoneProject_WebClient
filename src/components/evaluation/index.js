@@ -16,14 +16,14 @@ const SECTIONS = [
     path: 'description',
   },
   {
-    name: 'Questions',
-    description: 'List of questions',
-    path: 'questions',
-  },
-  {
     name: 'Students',
     description: 'Participants and groups',
     path: 'students',
+  },
+  {
+    name: 'Questions',
+    description: 'List of questions',
+    path: 'questions',
   },
   {
     name: 'Results',
@@ -48,6 +48,7 @@ export default class EvaluationCreate extends Component {
       groups: React.PropTypes.array,
       users: React.PropTypes.array,
       attendants: React.PropTypes.array,
+      answers: React.PropTypes.object,
       // React Router
       params: React.PropTypes.object,
       children: React.PropTypes.any,
@@ -70,6 +71,7 @@ export default class EvaluationCreate extends Component {
        { id: 4, name: 'Bustamante Jose' },
       ],
       questions: [],
+      answers: {},
       groups: [[]],
       attendants: [],
     };
@@ -86,6 +88,7 @@ export default class EvaluationCreate extends Component {
       users: props.users,
       questions: props.questions,
       groups: props.groups,
+      answers: props.answers,
       attendants: props.attendants,
     };
 
@@ -99,6 +102,7 @@ export default class EvaluationCreate extends Component {
     this.onQuestionsChange = this.onQuestionsChange.bind(this);
     this.onGroupsChange = this.onGroupsChange.bind(this);
     this.onAttendantsChange = this.onAttendantsChange.bind(this);
+    this.onAnswerChange = this.onAnswerChange.bind(this);
   }
 
   componentDidMount() {
@@ -133,6 +137,13 @@ export default class EvaluationCreate extends Component {
 
   onAttendantsChange(attendants) {
     if (attendants) this.setState({ attendants });
+  }
+
+  onAnswerChange(id, answer) {
+    if (id) {
+      const answers = { ...this.state.answers, [id]: answer };
+      this.setState({ answers });
+    }
   }
 
   fetchCourse(courseId) {
@@ -190,7 +201,7 @@ export default class EvaluationCreate extends Component {
   }
 
   render() {
-    const { course, instance, organization, evaluation, users, questions, groups, attendants } = this.state;
+    const { course, instance, organization, evaluation, users, questions, answers, groups, attendants } = this.state;
 
     return (
       <Grid style={styles.container}>
@@ -255,12 +266,14 @@ export default class EvaluationCreate extends Component {
               evaluation,
               users,
               questions,
+              answers,
               groups,
               attendants,
               onEvaluationChange: this.onEvaluationChange,
               onQuestionsChange: this.onQuestionsChange,
               onGroupsChange: this.onGroupsChange,
               onAttendantsChange: this.onAttendantsChange,
+              onAnswerChange: this.onAnswerChange,
             })}
           </Col>
         </Row>

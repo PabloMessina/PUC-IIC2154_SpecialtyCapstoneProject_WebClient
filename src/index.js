@@ -48,7 +48,6 @@ import EvaluationRecorrection from './components/evaluation/recorrection';
 
 import AtlasCreate from './components/atlas-create/';
 import AtlasBook from './components/atlas-book/';
-import Questions from './components/questions/';
 
 import Renderer3D from './components/renderer-3d/';
 import RendererWrapper from './components/renderer-wrapper/';
@@ -194,8 +193,8 @@ const Routing = (
         component={AtlasBook}
         onEnter={populate({ field: 'atlasId', to: 'atlas', service: 'atlases' })}
       />
+
       <Route path="template" component={Template} />
-      <Route path="questions" component={Questions} />
     </Route>
   </Router>
 );

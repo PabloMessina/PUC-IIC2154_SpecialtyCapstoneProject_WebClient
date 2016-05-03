@@ -11,10 +11,7 @@ import {
   Col,
   Row,
 } from 'react-bootstrap';
-import MultiChoice from '../questions/multi-choice';
-import TShort from '../questions/tshort';
-import TrueFalse from '../questions/true-false';
-import NewQuestion from '../questions/new-question';
+import { TrueFalse, MultiChoice, TShort } from '../questions';
 import Icon from 'react-fa';
 
 import renderIf from 'render-if';
@@ -33,58 +30,15 @@ const defaultTags = [
   { label: 'Tag 4', value: 'Tag 4' },
   { label: 'Tag 5', value: 'Tag 5' },
 ];
-const defaultQuestions = [
-  {
-    _id: 1,
-    _type: 'multiChoice',
-    question: { text: '¿Sed ut posuere velit?' },
-    tags: ['Tag 1', 'Tag 2'],
-    fields: {
-      selectable: 1,
-      choices: [{ text: 'Option 1' }, { text: 'Option 2' }],
-      answers: [1],
-    },
-  }, {
-    _id: 2,
-    _type: 'multiChoice',
-    question: { text: ' Phasellus nec tortor vel dui ultrices facilisis.' +
-      'Vestibulum nec turpis vitae est interdum porttitor sed nec enim.' +
-      'Curabitur vel viverra mi, tempor aliquet nisl.' },
-    tags: ['Tag 1'],
-    fields: {
-      selectable: 1,
-      choices: [{ text: 'Option 1' }, { text: 'Option 2' }],
-      answers: [1],
-    },
-  }, {
-    _id: 3,
-    _type: 'tshort',
-    question: { text: 'Aliquam tempor risus dui, non sodales velit tempor quis.' +
-      'Quisque eleifend diam purus, eu porttitor mauris tempor vel.' +
-      'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
-    tags: ['Tag 2', 'Tag 3', 'Tag 4'],
-    fields: {
-      answers: ['Answ 1', 'Answ 2', 'Answ 3'],
-    },
-  }, {
-    _id: 4,
-    _type: 'tshort',
-    question: { text: 'Quisque eleifend diam purus, eu porttitor mauris tempor vel.' +
-      'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
-    tags: ['Tag 2', 'Tag 3', 'Tag 4'],
-    fields: {
-      answers: ['Answ 1', 'Answ 2'],
-    },
-  }, {
-    _id: 5,
-    _type: 'trueFalse',
-    question: { text: 'Quisque eleifend diam purus, eu porttitor mauris tempor vel.' +
-    'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. ' },
-    tags: ['Tag 5'],
-    fields: {
-      answer: 1,
-    },
-  }];
+
+function questionFactory(qtype, props) {
+  switch (qtype) {
+    case 'trueFalse': return <TrueFalse {...props} />;
+    case 'multiChoice': return <MultiChoice {...props} />;
+    case 'tshort': return <TShort {...props} />;
+    default: return null;
+  }
+}
 
 export default class Questions extends Component {
 
@@ -101,9 +55,12 @@ export default class Questions extends Component {
       organization: React.PropTypes.object,
       course: React.PropTypes.object,
       evaluation: React.PropTypes.object,
+      answers: React.PropTypes.object,
       questions: React.PropTypes.array,
+
       onEvaluationChange: React.PropTypes.func,
       onQuestionsChange: React.PropTypes.func,
+      onAnswerChange: React.PropTypes.func,
     };
   }
 
@@ -112,9 +69,9 @@ export default class Questions extends Component {
       mode: 'Select',
       tags: [],
       allTags: defaultTags,
-      allQuestions: [...defaultQuestions],
+      allQuestions: require('./TEMP'),
       hideQuestions: [],
-      bufferQuestion: { _id: 0, _type: 'trueFalse', question: { text: '' }, tags: [], fields: {} },
+      bufferQuestion: { id: 0, qtype: 'trueFalse', question: { text: '' }, tags: [], fields: {} },
     };
   }
 
@@ -129,13 +86,14 @@ export default class Questions extends Component {
     };
 
     this.changeTags = this.changeTags.bind(this);
-    this.questionFactory = this.questionFactory.bind(this);
     this.addQuestion = this.addQuestion.bind(this);
     this.matchQuestions = this.matchQuestions.bind(this);
     this.refreshAllQuestions = this.refreshAllQuestions.bind(this);
     this.onSubmitNewQuestion = this.onSubmitNewQuestion.bind(this);
     this.removeQuestion = this.removeQuestion.bind(this);
     this.setTypeBuffer = this.setTypeBuffer.bind(this);
+
+    this.renderQuestion = this.renderQuestion.bind(this);
   }
 
   onSubmitNewQuestion(object) {
@@ -147,7 +105,7 @@ export default class Questions extends Component {
 
   setTypeBuffer(value) {
     const bufferQuestion = this.state.bufferQuestion;
-    bufferQuestion._type = Object.keys(questionTypes)[value];
+    bufferQuestion.qtype = Object.keys(questionTypes)[value];
     this.setState({ bufferQuestion });
   }
 
@@ -155,18 +113,9 @@ export default class Questions extends Component {
     return this.setState({ tags });
   }
 
-  questionFactory(_type, props) {
-    switch (_type) {
-      case 'trueFalse': return <TrueFalse {...props} />;
-      case 'multiChoice': return <MultiChoice {...props} />;
-      case 'tshort': return <TShort {...props} />;
-      default: return null;
-    }
-  }
-
   addQuestion(question) {
     const questions = [...this.props.questions];
-    if (!questions.find(q => q._id === question._id)) {
+    if (!questions.find(q => q.id === question.id)) {
       this.props.onQuestionsChange([...questions, question]);
     }
   }
@@ -177,7 +126,7 @@ export default class Questions extends Component {
       questions.splice(index, 1);
       this.props.onQuestionsChange(questions);
     } else {
-      this.setState({ hideQuestions: [...this.state.hideQuestions, question._id] });
+      this.setState({ hideQuestions: [...this.state.hideQuestions, question.id] });
     }
   }
 
@@ -195,50 +144,36 @@ export default class Questions extends Component {
     this.setState({ hideQuestions: [] });
   }
 
-  renderLeft(evaluation, questions) {
+  renderQuestion(question, identifier) {
+    const { answers, onAnswerChange } = this.props;
+    const props = {
+      identifier,
+      question,
+      onAnswerChange: answer => onAnswerChange(question.id, answer),
+      answer: answers[question.id],
+    };
+    return (
+      <div key={question.id} style={styles.question}>
+        {questionFactory(question.qtype, props)}
+        <hr />
+      </div>
+    );
+  }
+
+  renderEvaluation(evaluation, questions) {
     return (
       <Panel>
         <h3>{evaluation.title || 'No title'}</h3>
         <p>{evaluation.description || ''}</p>
-
         <hr />
-
-        {questions.map((question, index) => {
-          const props = {
-            question: question.question,
-            tags: question.tags,
-            fields: question.fields,
-            permission: 'reader',
-          };
-          return (<div key={index} style={styles.question}>
-            <div style={styles.questionTitleTags}>
-              <p style={styles.questionTypesTitle}>#{question._id} - {questionTypes[question._type]}</p>
-              <div style={styles.tagsContainer}>
-                {question.tags.map((tag, j) =>
-                  <p key={j} style={styles.tag}>{tag}</p>
-                )}
-              </div>
-            </div>
-            {this.questionFactory(question._type, props)}
-            <div style={styles.questionIcons}>
-              <Icon
-                name="close fa-2x"
-                style={styles.removeIcon}
-                onClick={() => this.removeQuestion(question, index, 'evaluation')}
-              />
-            </div>
-            <hr />
-          </div>);
-        })}
+        {questions.map(this.renderQuestion)}
       </Panel>
     );
   }
 
-  renderRigth(questions, filteredQuestions) {
+  renderQuestionPool(questions, filteredQuestions) {
     return (
-      <Panel>
-        <h4>Question pool</h4>
-        <hr />
+      <Panel header="Question pool">
         <Form style={styles.formQuestions}>
           <DropdownButton
             id="mode-dropdown"
@@ -253,7 +188,7 @@ export default class Questions extends Component {
             <DropdownButton
               style={styles.button}
               bsStyle={'default'}
-              title={questionTypes[this.state.bufferQuestion._type]}
+              title={questionTypes[this.state.bufferQuestion.qtype]}
               onSelect={this.setTypeBuffer}
               id={0}
             >
@@ -261,7 +196,7 @@ export default class Questions extends Component {
                 <MenuItem
                   key={index}
                   eventKey={index}
-                  active={this.state.bufferQuestion._type === tag}
+                  active={this.state.bufferQuestion.qtype === tag}
                 >
                   {tag}
                 </MenuItem>
@@ -287,52 +222,7 @@ export default class Questions extends Component {
 
         <div>
           {renderIf(this.state.mode === 'Select')(() =>
-          filteredQuestions.map((question, index) => {
-            if (!questions.includes(question) &&
-                !this.state.hideQuestions.includes(question._id)) {
-              const props = {
-                question: question.question,
-                tags: question.tags,
-                fields: question.fields,
-                permission: 'reader',
-              };
-              return (
-                <div key={index} style={styles.question}>
-                  <div style={styles.questionTitleTags}>
-                    <p style={styles.questionTypesTitle}>#{question._id} - {questionTypes[question._type]}</p>
-                    <div style={styles.tagsContainer}>
-                      {question.tags.map((tag, j) =>
-                        <p key={j} style={styles.tag}>{tag}</p>
-                      )}
-                    </div>
-                  </div>
-                  {this.questionFactory(question._type, props)}
-                  <div style={styles.questionIcons}>
-                    <Icon
-                      name="check fa-2x"
-                      style={styles.addIcon}
-                      onClick={() => this.addQuestion(question)}
-                    />
-                    <Icon
-                      name="close fa-2x"
-                      style={styles.removeIcon}
-                      onClick={() => this.removeQuestion(question, index, 'allQuestions')}
-                    />
-                  </div>
-                  <hr />
-                </div>);
-            } return null;
-          })
-          )}
-          {renderIf(this.state.mode === 'Custom')(() => {
-            const props = {
-              _id: this.state.allQuestions.length + 1,
-              typeQuestion: this.state.bufferQuestion._type,
-              tags: this.state.tags.map((item) => item.label),
-              onSubmit: this.onSubmitNewQuestion,
-            };
-            return (<NewQuestion {...props} />);
-          }
+            filteredQuestions.map(this.renderQuestion)
           )}
         </div>
       </Panel>
@@ -345,12 +235,11 @@ export default class Questions extends Component {
 
     return (
       <Row style={styles.container}>
-        <Col style={styles.left} xs={12} sm={7} md={7}>
-          {this.renderLeft(evaluation, questions)}
+        <Col style={styles.rigth} xs={12} sm={12} md={5}>
+          {this.renderQuestionPool(questions, filteredQuestions)}
         </Col>
-
-        <Col style={styles.rigth} xs={12} sm={5} md={5}>
-          {this.renderRigth(questions, filteredQuestions)}
+        <Col style={styles.left} xs={12} sm={12} md={7}>
+          {this.renderEvaluation(evaluation, questions)}
         </Col>
       </Row>
     );
@@ -364,13 +253,13 @@ const styles = {
   },
   rigth: {
     padding: 10,
-    borderStyle: 'solid',
-    borderLeftWidth: 1,
-    borderLeftStyle: 'solid',
-    borderLeftColor: 'rgb(231, 231, 231)',
-    borderRightWidth: 0,
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
+    // borderStyle: 'solid',
+    // borderLeftWidth: 1,
+    // borderLeftStyle: 'solid',
+    // borderLeftColor: 'rgb(231, 231, 231)',
+    // borderRightWidth: 0,
+    // borderTopWidth: 0,
+    // borderBottomWidth: 0,
   },
   selectTag: {
     width: '100%',
