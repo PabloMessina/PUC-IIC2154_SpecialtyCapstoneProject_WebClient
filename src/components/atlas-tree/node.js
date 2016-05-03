@@ -37,7 +37,6 @@ export default class Node extends Component {
   static get defaultProps() {
     return {
       collapsed: false,
-      section: { title: 'Untitled', sections: [] },
       anidation: [],
     };
   }
@@ -47,21 +46,29 @@ export default class Node extends Component {
     this.state = {
       tree: props.tree,
       collapsed: props.collapsed,
-      section: props.section,
+      sectionIndex: props.sectionIndex,
+      sectionParentId: props.sectionParentId,
       hover: false,
     };
 
     this.collapse = this.collapse.bind(this);
     this.addSection = this.addSection.bind(this);
+    this.getSection = this.getSection.bind(this);
   }
 
   collapse() {
     this.setState({ collapsed: !this.state.collapsed });
   }
 
+  getSection() {
+    const { tree, sectionParentId, sectionIndex } = this.props;
+    if (!tree[sectionParentId]) return null;
+
+    return tree[sectionParentId][sectionIndex];
+  }
 
   addSection() {
-    const section = this.state.section;
+    const section = this.getSection();
     const parentId = section._id === 'undefined' ? null : section._id;
     const newSection = {
       versionId: section.versionId,
@@ -76,17 +83,23 @@ export default class Node extends Component {
   }
 
   render() {
-    const { anidation, root, tree, selectedSectionId } = this.props;
-    const { hover, collapsed, section } = this.state;
-    const { _id, title } = section;
+    const { sectionIndex, sectionParentId, anidation, root, tree, selectedSectionId } = this.props;
+    const { hover, collapsed } = this.state;
+    const section = this.getSection();
+    const { _id, title } = section || { _id: 'undefined', title: 'Title'};
 
-    const selected = _id === selectedSectionId;
-    const sections = tree[_id];
-    const onSelectSection = () => this.props.onSelectSection(section);
+    // Is this section the selected one?
+    const selected = selectedSectionId === _id;
+    // Subsections
+    const subsections = tree[_id];
+
+    const onSelectSection = () => this.props.onSelectSection(section, sectionIndex);
+
+    // Change color on mouse hover
     const hoverStyle = hover || selected ? { color: Colors.MAIN } : { color: '#4A4A4A' };
 
-    const hasSubtree = sections && sections.length > 0 && !collapsed;
-    // const fontSize = Math.max(FONT.MAX - (FONT.DELTA * anidation.length), FONT.MIN);
+    // Only render children if they exist
+    const hasSubtree = subsections && subsections.length > 0 && !collapsed;
 
     return (
       <div style={styles.container}>
@@ -122,14 +135,15 @@ export default class Node extends Component {
 
         {renderIf(hasSubtree)(() => (
           <div style={styles.subtree}>
-            {sections.map((section, i) => (
+            {subsections.map((section, i) => (
               <Node
                 key={i}
                 static={this.props.static}
                 selectedSectionId={this.props.selectedSectionId}
                 onSelectSection={this.props.onSelectSection}
                 onAddSection={this.props.onAddSection}
-                section={section}
+                sectionParentId={section.parentId}
+                sectionIndex={i}
                 tree={this.props.tree}
                 anidation={[...anidation, i + 1]}
               />

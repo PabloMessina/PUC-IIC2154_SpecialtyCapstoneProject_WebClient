@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import ReactQuill from 'react-quill';
+import renderIf from 'render-if';
 
 import _ from 'lodash';
 
@@ -58,7 +59,9 @@ export default class AtlasSection extends Component {
     return (
       <div style={styles.container}>
 
-        <input style={styles.title} onChange={this.onChangeTitle} value={section.title} />
+        {renderIf(section.title)(() => (
+          <input style={styles.title} onChange={this.onChangeTitle} value={section.title} />
+          ))}
         <ReactQuill
           theme="snow"
           value={{ ops: section.content }}
