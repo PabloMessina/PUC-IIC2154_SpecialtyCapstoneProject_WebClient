@@ -29,15 +29,16 @@ export default class AtlasTree extends Component {
 
   componentWillReceiveProps(nextProps) {
     const tree = nextProps.tree;
-    if (tree.undefined && this.state.selectedSectionId === '') {
+    if (tree && tree.undefined && this.state.selectedSectionId === '') {
       this.setState({
         selectedSectionId: tree.undefined[0]._id,
       });
     }
   }
 
-  onSelectSection(section) {
-    this.props.onSelectSection(section);
+  // TODO: add sectionIndex to api's section model
+  onSelectSection(section, sectionIndex) {
+    this.props.onSelectSection(section.parentId, sectionIndex);
     this.setState({
       selectedSectionId: section._id,
     });
@@ -47,15 +48,17 @@ export default class AtlasTree extends Component {
     const { title, tree, versionId } = this.props;
     return (
       <div style={styles.container}>
-        <Node
-          root
-          static={this.props.static}
-          selectedSectionId={this.state.selectedSectionId}
-          onSelectSection={this.onSelectSection}
-          onAddSection={this.props.onAddSection}
-          section={{ title, _id: 'undefined', versionId }}
-          tree={tree}
-        />
+
+        {renderIf(tree)(() => (
+          <Node
+            root
+            tree={tree}
+            static={this.props.static}
+            selectedSectionId={this.state.selectedSectionId}
+            onSelectSection={this.onSelectSection}
+            onAddSection={this.props.onAddSection}
+          />
+        ))}
       </div>
     );
   }
