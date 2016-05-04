@@ -114,6 +114,7 @@ export default class CourseTab extends Component {
 
     const query = {
       organizationId,
+      $populate: 'user',
     };
     return membershipService.find({ query })
       .then(result => result.data)

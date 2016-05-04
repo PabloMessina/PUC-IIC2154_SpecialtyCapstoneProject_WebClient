@@ -48,6 +48,7 @@ export default class NavigationBar extends Component {
     if (user) {
       const query = {
         userId: user.id,
+        $populate: 'organization',
       };
       membershipService.find({ query })
         .then(result => result.data)

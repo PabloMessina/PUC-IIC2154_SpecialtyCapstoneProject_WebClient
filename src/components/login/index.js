@@ -34,8 +34,8 @@
     constructor(props) {
       super(props);
       this.state = {
-        email: 'felipe@uc.cl',
-        password: 'felipe',
+        email: 'ramon@lavecindad.com',
+        password: '12345678',
         error: null,
       };
 
