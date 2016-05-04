@@ -41,11 +41,13 @@ export default class CourseInstances extends Component {
 
   onTabChange(selected) {
     // Sometimes is null and causes navigation bugs
-    if (selected) {
-      const courseId = this.props.course.id;
+    const courseId = this.props.course.id;
+    if (selected === 2) {
+      browserHistory.replace(`/courses/show/${courseId}/instances/settings`);
+    } else {
       browserHistory.replace(`/courses/show/${courseId}/instances/${selected}`);
-      this.setState({ selected });
     }
+    this.setState({ selected });
   }
 
   fetchInstances(courseId) {
@@ -68,7 +70,8 @@ export default class CourseInstances extends Component {
 
   render() {
     const { organization, course } = this.props;
-    const instance = this.state.instances.find(i => i.id === this.state.selected);
+    const { selected, instances } = this.state;
+    const instance = instances.find(i => i.id === this.state.selected);
 
     const settings = (
       <span><Icon style={styles.icon} name="cogs" /> Settings</span>
@@ -95,8 +98,8 @@ export default class CourseInstances extends Component {
         <br />
 
         {/* Render 'instance' child */}
-        {renderIf(this.props.children && instance)(() =>
-          React.cloneElement(this.props.children, { organization, course, instance })
+        {renderIf(this.props.children && (instance || selected === 2))(() =>
+          React.cloneElement(this.props.children, { organization, course, instance, instances })
         )}
 
       </div>
