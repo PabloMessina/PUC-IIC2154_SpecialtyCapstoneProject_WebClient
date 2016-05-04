@@ -59,11 +59,9 @@ export default class Node extends Component {
   }
 
   addSection() {
-    const { versionId, _id } = this.getSection() || { versionId: this.props.versionId, _id: 'undefined' };
-    const newSection = {
-      versionId,
-      parentId: _id,
-    };
+    const { versionId, _id } = this.getSection() || { versionId: this.props.versionId };
+    const newSection = { versionId };
+    if (_id) newSection.parentId = _id;
 
     sectionService.create(newSection)
     .then(result => {
