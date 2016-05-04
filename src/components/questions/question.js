@@ -8,6 +8,7 @@ export const QuestionPropTypes = {
   identifier: React.PropTypes.any,
   mode: React.PropTypes.string,
   showType: React.PropTypes.bool,
+  disabled: React.PropTypes.bool,
   padding: React.PropTypes.number,
   onAnswerChange: React.PropTypes.func,
 };
@@ -87,6 +88,7 @@ const styles = {
   question: {
     display: 'flex',
     flexDirection: 'row',
+    // backgroundColor: 'white',
   },
   body: {
     display: 'flex',

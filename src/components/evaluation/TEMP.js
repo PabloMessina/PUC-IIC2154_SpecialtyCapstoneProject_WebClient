@@ -1,6 +1,6 @@
 module.exports = [{
     id: 1,
-    qtype: 'multiChoice1',
+    qtype: 'multiChoice',
     content: {
         insert: '¿Sed ut posuere velit?'
     },
@@ -12,8 +12,8 @@ module.exports = [{
         }, {
             text: 'Option 2'
         }],
-        answers: [1],
     },
+    answer: [1],
 }, {
     id: 2,
     qtype: 'multiChoice',
@@ -30,8 +30,8 @@ module.exports = [{
         }, {
             text: 'Option 2'
         }],
-        answers: [1],
     },
+    answer: [1],
 }, {
     id: 3,
     qtype: 'tshort',
@@ -41,9 +41,8 @@ module.exports = [{
             'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. '
     },
     tags: ['Tag 2', 'Tag 3', 'Tag 4'],
-    fields: {
-        answers: ['Answ 1', 'Answ 2', 'Answ 3'],
-    },
+    fields: {},
+    answer: ['Answ 1', 'Answ 2', 'Answ 3'],
 }, {
     id: 4,
     qtype: 'tshort',
@@ -52,9 +51,8 @@ module.exports = [{
             'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. '
     },
     tags: ['Tag 2', 'Tag 3', 'Tag 4'],
-    fields: {
-        answers: ['Answ 1', 'Answ 2'],
-    },
+    fields: {},
+    answer: ['Answ 1', 'Answ 2'],
 }, {
     id: 5,
     qtype: 'trueFalse',
@@ -63,7 +61,6 @@ module.exports = [{
             'Sed scelerisque nulla quis egestas ornare. Maecenas at mauris dolor. '
     },
     tags: ['Tag 5'],
-    fields: {
-        answer: 1,
-    },
+    fields: {},
+    answer: 1,
 }];

@@ -30,7 +30,7 @@ class TShort extends Component {
   }
 
   renderReader() {
-    const { answer } = this.props;
+    const { answer, disabled } = this.props;
 
     return (
       <div style={styles.container}>
@@ -39,6 +39,7 @@ class TShort extends Component {
             <FormControl
               style={styles.input}
               type="text"
+              disabled
               placeholder="Your answer"
               value={answer[0]}
               onChange={this.onTextChange}

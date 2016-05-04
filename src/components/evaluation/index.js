@@ -103,6 +103,8 @@ export default class EvaluationCreate extends Component {
     this.onGroupsChange = this.onGroupsChange.bind(this);
     this.onAttendantsChange = this.onAttendantsChange.bind(this);
     this.onAnswerChange = this.onAnswerChange.bind(this);
+    this.onQuestionAdd = this.onQuestionAdd.bind(this);
+    this.onQuestionRemove = this.onQuestionRemove.bind(this);
   }
 
   componentDidMount() {
@@ -143,6 +145,17 @@ export default class EvaluationCreate extends Component {
     if (id) {
       const answers = { ...this.state.answers, [id]: answer };
       this.setState({ answers });
+    }
+  }
+
+  onQuestionAdd(question) {
+    if (question) this.setState({ questions: [...this.state.questions, question] });
+  }
+
+  onQuestionRemove(question) {
+    if (question) {
+      const questions = this.state.questions.filter(q => q.id !== question.id);
+      this.setState({ questions });
     }
   }
 
@@ -269,6 +282,8 @@ export default class EvaluationCreate extends Component {
               answers,
               groups,
               attendants,
+              onQuestionAdd: this.onQuestionAdd,
+              onQuestionRemove: this.onQuestionRemove,
               onEvaluationChange: this.onEvaluationChange,
               onQuestionsChange: this.onQuestionsChange,
               onGroupsChange: this.onGroupsChange,

@@ -45,7 +45,7 @@ export default class Questions extends Component {
   static get propTypes() {
     return {
       mode: React.PropTypes.string,
-      allQuestions: React.PropTypes.array,
+      pool: React.PropTypes.array,
       tags: React.PropTypes.array,
       allTags: React.PropTypes.array,
       hideQuestions: React.PropTypes.array,
@@ -61,6 +61,8 @@ export default class Questions extends Component {
       onEvaluationChange: React.PropTypes.func,
       onQuestionsChange: React.PropTypes.func,
       onAnswerChange: React.PropTypes.func,
+      onQuestionRemove: React.PropTypes.func,
+      onQuestionAdd: React.PropTypes.func,
     };
   }
 
@@ -69,7 +71,7 @@ export default class Questions extends Component {
       mode: 'Select',
       tags: [],
       allTags: defaultTags,
-      allQuestions: require('./TEMP'),
+      pool: require('./TEMP'),
       hideQuestions: [],
       bufferQuestion: { id: 0, qtype: 'trueFalse', question: { text: '' }, tags: [], fields: {} },
     };
@@ -81,7 +83,7 @@ export default class Questions extends Component {
       tags: props.tags,
       mode: props.mode,
       hideQuestions: props.hideQuestions,
-      allQuestions: props.allQuestions,
+      pool: props.pool,
       bufferQuestion: props.bufferQuestion,
     };
 
@@ -94,11 +96,14 @@ export default class Questions extends Component {
     this.setTypeBuffer = this.setTypeBuffer.bind(this);
 
     this.renderQuestion = this.renderQuestion.bind(this);
+    this.updateEvaluation = this.updateEvaluation.bind(this);
+    this.renderEvaluation = this.renderEvaluation.bind(this);
+    this.renderQuestionPool = this.renderQuestionPool.bind(this);
   }
 
   onSubmitNewQuestion(object) {
-    const allQuestions = [...this.state.allQuestions, object];
-    this.setState({ allQuestions });
+    const pool = [...this.state.pool, object];
+    this.setState({ pool });
     this.setState({ mode: 'Select' });
     this.addQuestion(object);
   }
@@ -136,7 +141,7 @@ export default class Questions extends Component {
 
   matchQuestions() {
     const tags = this.state.tags;
-    return this.state.allQuestions
+    return this.state.pool
       .filter(question => tags.every(tag => question.tags.indexOf(tag.label) > -1));
   }
 
@@ -144,34 +149,61 @@ export default class Questions extends Component {
     this.setState({ hideQuestions: [] });
   }
 
-  renderQuestion(question, identifier) {
-    const { answers, onAnswerChange } = this.props;
-    const props = {
+  renderQuestion(props, identifier) {
+    const { onAnswerChange } = this.props;
+    const question = props.question;
+    const element = questionFactory(question.qtype, {
+      ...props,
       identifier,
-      question,
       onAnswerChange: answer => onAnswerChange(question.id, answer),
-      answer: answers[question.id],
-    };
+    });
     return (
       <div key={question.id} style={styles.question}>
-        {questionFactory(question.qtype, props)}
+        {element}
         <hr />
       </div>
     );
   }
 
-  renderEvaluation(evaluation, questions) {
+  renderEvaluation() {
+    const { evaluation, questions, answers } = this.props;
+    const objects = questions.map(question => ({
+      question,
+      answer: answers[question.id],
+      disabled: false,
+    }));
     return (
       <Panel>
         <h3>{evaluation.title || 'No title'}</h3>
         <p>{evaluation.description || ''}</p>
         <hr />
-        {questions.map(this.renderQuestion)}
+        {objects.map((question, i) => (
+          <div key={i} style={styles.wrapper}>
+            {this.renderQuestion(question, i)}
+            <div style={styles.icons} onClick={() => this.props.onQuestionRemove(question.question)}>
+              <Icon size="lg" name="minus" style={{ color: Colors.RED }} />
+            </div>
+          </div>
+        ))}
       </Panel>
     );
   }
 
-  renderQuestionPool(questions, filteredQuestions) {
+  renderQuestionPool() {
+    const { pool, tags } = this.state;
+    const { questions } = this.props;
+
+    const objects = pool
+      .filter(question => tags.every(tag => question.tags.indexOf(tag.label) > -1))
+      .filter(question => questions.findIndex(q => q.id === question.id) === -1)
+      .map(question => ({
+        question,
+        answer: question.answer,
+        disabled: true,
+        // TODO: add gradient
+        // style: { height: 200, overflow: 'hidden' },
+      }));
+
     return (
       <Panel header="Question pool">
         <Form style={styles.formQuestions}>
@@ -220,26 +252,31 @@ export default class Questions extends Component {
           <Icon name="refresh" style={styles.formIcon} onClick={this.refreshAllQuestions} />
         </Form>
 
+        <hr />
+
         <div>
           {renderIf(this.state.mode === 'Select')(() =>
-            filteredQuestions.map(this.renderQuestion)
-          )}
+            objects.map((question, i) => (
+              <div key={i} style={styles.wrapper}>
+                {this.renderQuestion(question, i)}
+                <div style={styles.icons} onClick={() => this.props.onQuestionAdd(question.question)}>
+                  <Icon size="lg" name="plus" style={{ color: Colors.MAIN }} />
+                </div>
+              </div>
+          )))}
         </div>
       </Panel>
     );
   }
 
   render() {
-    const filteredQuestions = this.matchQuestions();
-    const { evaluation, questions } = this.props;
-
     return (
       <Row style={styles.container}>
         <Col style={styles.rigth} xs={12} sm={12} md={5}>
-          {this.renderQuestionPool(questions, filteredQuestions)}
+          {this.renderQuestionPool()}
         </Col>
         <Col style={styles.left} xs={12} sm={12} md={7}>
-          {this.renderEvaluation(evaluation, questions)}
+          {this.renderEvaluation()}
         </Col>
       </Row>
     );
@@ -249,10 +286,9 @@ export default class Questions extends Component {
 const styles = {
   container: {},
   left: {
-    padding: 10,
+
   },
   rigth: {
-    padding: 10,
     // borderStyle: 'solid',
     // borderLeftWidth: 1,
     // borderLeftStyle: 'solid',
@@ -276,51 +312,43 @@ const styles = {
     paddingLeft: 10,
     paddingRight: 10,
   },
-  questionTypesTitle: {
-    fontSize: 24,
-  },
-  tag: {
-    backgroundColor: Colors.MAIN,
-    color: Colors.WHITE,
-    margin: 3,
-    padding: 3,
-    paddingLeft: 15,
-    paddingRight: 15,
-    borderRadius: 5,
-  },
-  tagsContainer: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  questionTitleTags: {
+  // questionTypesTitle: {
+  //   fontSize: 24,
+  // },
+  // tag: {
+  //   backgroundColor: Colors.MAIN,
+  //   color: Colors.WHITE,
+  //   margin: 3,
+  //   padding: 3,
+  //   paddingLeft: 15,
+  //   paddingRight: 15,
+  //   borderRadius: 5,
+  // },
+  // tagsContainer: {
+  //   display: 'flex',
+  //   flexDirection: 'row',
+  //   justifyContent: 'flex-end',
+  // },
+  // questionTitleTags: {
+  //   display: 'flex',
+  //   flexDirection: 'row',
+  //   justifyContent: 'space-between',
+  //   alignItems: 'center',
+  //   marginBottom: 10,
+  // },
+  wrapper: {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
   },
-  questionIcons: {
+  icons: {
     display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  addIcon: {
-    color: Colors.MAIN,
-    paddingRight: 10,
-  },
-  removeIcon: {
-    color: Colors.RED,
-    paddingLeft: 10,
+    flexDirection: 'column',
+    paddingTop: 50, marginRight: 10,
   },
   formIcon: {
     marginLeft: 10,
     marginRight: 5,
-  },
-  toolbar: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'center',
   },
   button: {
     margin: 5,

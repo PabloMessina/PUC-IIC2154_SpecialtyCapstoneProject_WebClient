@@ -43,7 +43,7 @@ class MultiChoice extends Component {
   }
 
   renderReader() {
-    const { question, answer } = this.props;
+    const { question, answer, disabled } = this.props;
     const { fields } = question;
     const { selectable, choices } = fields;
 
@@ -51,7 +51,12 @@ class MultiChoice extends Component {
       <div style={styles.container}>
         <div style={styles.column}>
           {choices.map((choice, i) => (
-            <Checkbox key={i} checked={answer.includes(i)} onChange={() => this.onCheck(answer, i, selectable)}>
+            <Checkbox
+              key={i}
+              disabled={disabled}
+              checked={answer.includes(i)}
+              onChange={() => this.onCheck(answer, i, selectable)}
+            >
               {choice.text}
             </Checkbox>
           ))}

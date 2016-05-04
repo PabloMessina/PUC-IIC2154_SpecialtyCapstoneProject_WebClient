@@ -24,14 +24,16 @@ class TrueFalse extends Component {
   }
 
   render() {
-    const { answer, onAnswerChange } = this.props;
+    const { answer, disabled, onAnswerChange } = this.props;
 
     const left = {
+      disabled,
       style: answer === 1 ? { ...styles.button, ...styles.buttonTrue } : styles.button,
       onClick: () => onAnswerChange(answer === 1 ? 0 : 1),
     };
 
     const right = {
+      disabled,
       style: answer === -1 ? { ...styles.button, ...styles.buttonFalse } : styles.button,
       onClick: () => onAnswerChange(answer === -1 ? 0 : -1),
     };
