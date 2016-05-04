@@ -96,6 +96,39 @@ const ThreeUtils = {
   },
 
   /**
+   * Convert from screen coordinates to world coordinates, making sure the world
+   * point is placed on the camera's plane: z = 0
+   */
+  screenToWorldOnCameraPlane(screenX, screenY, screenWidth, screenHeight, camera) {
+    const x = (screenX / screenWidth) * 2 - 1;
+    const y = (screenY / screenHeight) * 2 - 1;
+    const v3 = new THREE.Vector3(x, y, 1);
+    const invProjMatrix = new THREE.Matrix4()
+      .getInverse(camera.projectionMatrix);
+    return v3.applyMatrix4(invProjMatrix)
+      .setZ(0)
+      .applyMatrix4(camera.matrixWorld);
+  },
+
+  /**
+   * [getPlaneRayIntersection : returns intersection point between ray and plane]
+   * @param  {[Vector3]} pNormal [plane's normal]
+   * @param  {[Vector3]} pPos    [plane's positon]
+   * @param  {[Vector3]} rDir    [ray's direction]
+   * @param  {[Vector3]} rPos    [ray's position]
+   */
+  getPlaneRayIntersection(pNormal, pPos, rDir, rPos) {
+    const m = rDir.dot(pNormal);
+    const n = rPos.dot(pNormal) - pPos.dot(pNormal);
+    if (m === 0) {
+      console.log("WARNING: division by 0 detected");
+      return null;
+    }
+    const t = - n / m;
+    return new THREE.Vector3().copy(rPos).addScaledVector(rDir, t);
+  },
+
+  /**
    * Return whether the vector is (0,0,0) or not
    */
   isZero(v3) {
@@ -117,6 +150,7 @@ const ThreeUtils = {
     const borderColor = params.borderColor || 'rgb(0,0,0,0.5)';
     const borderThickness = params.borderThickness || 1;
     const worldFontHeight = params.worldFontHeight || 1;
+    const opacity = params.opacity;
     // create canvas and get its 2D context
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -128,8 +162,9 @@ const ThreeUtils = {
     // get text's dimensions
     const textWidth = Math.ceil(ctx.measureText(text).width);
     const textHeight = getFontHeight(fontStyle);
+    const charWidth = textWidth / (text.length ? text.length : 1);
     // resize canvas to fit text
-    canvas.width = textWidth * 1.40;
+    canvas.width = Math.max(textWidth + 7 * charWidth);
     canvas.height = textHeight * 2;
     // restore context's settings again after resizing
     ctx.font = fontStyle;
@@ -142,7 +177,7 @@ const ThreeUtils = {
     roundRect(ctx, 0, 0, canvas.width, canvas.height, canvas.height * 0.6);
     // draw text
     ctx.fillStyle = foregroundColor;
-    ctx.fillText(text, textWidth * 0.2, textHeight * 0.5);
+    ctx.fillText(text, 3.5 * charWidth, canvas.height * 0.2);
     // generate texture from canvas
     const texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;
@@ -150,11 +185,80 @@ const ThreeUtils = {
     texture.minFilter = THREE.LinearMipMapLinearFilter;
     // generate texture
     const material = new THREE.SpriteMaterial({ map: texture });
+    if (opacity) {
+      material.transparent = true;
+      material.opacity = opacity;
+    }
     // generate and return sprite
     const sprite = new THREE.Sprite(material);
     const factor = worldFontHeight / canvas.height;
     sprite.scale.set(canvas.width * factor, canvas.height * factor, 1);
     return sprite;
+  },
+
+  /**
+   * Returns a unit normal Vector3 in world coordinates pointing forward from
+   * the camera's point of view
+   */
+  getCameraForwardNormal(camera) {
+    return new THREE.Vector3(0, 0, -1)
+      .applyMatrix4(camera.matrixWorld)
+      .sub(camera.position)
+      .normalize();
+  },
+
+  /**
+   * [get the closest object (and its group) among all the intersected objects
+   * from the list of object groups provided]
+   */
+  getClosestIntersectedObject(screenX, screenY, screenWidth, screenHeight,
+    raycaster, camera, ...groups) {
+    // convert from screen to clipping coordinates
+    const clippingCoords = new THREE.Vector2(
+      (screenX / screenWidth) * 2 - 1,
+      (screenY / screenHeight) * 2 - 1
+    );
+    // set up raycaster
+    raycaster.setFromCamera(clippingCoords, camera);
+    // intersect each group and keep track of the closest object
+    let closestObj = null;
+    let closestGroup = null;
+    let minD = null;
+    groups.forEach((group) => {
+      const intersects = raycaster.intersectObjects(group.children);
+      if (intersects.length > 0) {
+        const dist = intersects[0].distance;
+        if (minD === null || minD > dist) {
+          minD = dist;
+          closestObj = intersects[0].object;
+          closestGroup = group;
+        }
+      }
+    });
+    // return the object and the group it belongs to (if any)
+    // otherwise return null
+    return closestObj ? { object: closestObj, group: closestGroup } : null;
+  },
+
+  /**
+   * [returns a plane with same dimensions, position and orientaton as
+   * as the given sprite]
+   * @param  {[THREE.Sprite]} sprite [the sprite]
+   * @param  {[THREE.Camera]} camera [to set the orientation towards
+   * the camera, as a typical sprite]
+   * @return {[THREE.Mesh]}        [the plane]
+   */
+  createPlaneFromSprite(sprite, camera) {
+    const bbox = new THREE.BoundingBoxHelper(sprite);
+    bbox.update();
+    const width = bbox.box.max.x - bbox.box.min.x;
+    const height = bbox.box.max.y - bbox.box.min.y;
+    const planeGeo = new THREE.PlaneGeometry(width, height);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const spritePlane = new THREE.Mesh(planeGeo, mat);
+    spritePlane.position.copy(sprite.position);
+    spritePlane.quaternion.copy(camera.quaternion);
+    return spritePlane;
   },
 };
 
