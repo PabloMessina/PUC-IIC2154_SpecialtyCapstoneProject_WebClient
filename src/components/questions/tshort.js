@@ -39,7 +39,7 @@ class TShort extends Component {
             <FormControl
               style={styles.input}
               type="text"
-              disabled
+              disabled={disabled}
               placeholder="Your answer"
               value={answer[0]}
               onChange={this.onTextChange}

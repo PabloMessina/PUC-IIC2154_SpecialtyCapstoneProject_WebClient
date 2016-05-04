@@ -32,7 +32,7 @@ export default function compose(ComposedComponent) {
     }
 
     static get defaultProps() {
-      return { showType: true, mode: MODES[0], padding: 20 };
+      return { showType: true, mode: MODES[0], padding: 20, disabled: false };
     }
 
     constructor(props) {
