@@ -23,10 +23,11 @@ export default class AtlasSection extends Component {
 
   constructor(props) {
     super(props);
-    this.onChange = this.onChange.bind(this);
+    this.onChangeContent = this.onChangeContent.bind(this);
     this.onChangeTitle = this.onChangeTitle.bind(this);
   }
 
+  // Only update if contents or title have changed
   shouldComponentUpdate(nextProps) {
     const contentChanged = !_.isEqual(nextProps.section.content, this.props.section.content);
     const titleChanged = !_.isEqual(nextProps.section.title, this.props.section.title);
@@ -34,7 +35,7 @@ export default class AtlasSection extends Component {
     return contentChanged || titleChanged;
   }
 
-  onChange(content) {
+  onChangeContent(content) {
     if (!_.isEqual(content.ops, this.props.section.content)) {
       this.props.onChangeContent(content.ops);
     }
@@ -48,7 +49,7 @@ export default class AtlasSection extends Component {
   }
 
   toolbarItems() {
-    const items = {};
+    // const items = {};
   }
 
   render() {
@@ -66,7 +67,7 @@ export default class AtlasSection extends Component {
           theme="snow"
           value={{ ops: section.content }}
           readOnly={this.props.static}
-          onChange={this.onChange}
+          onChange={this.onChangeContent}
         >
 
           <ReactQuill.Toolbar

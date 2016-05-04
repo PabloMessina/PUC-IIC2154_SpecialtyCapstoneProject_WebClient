@@ -2,19 +2,9 @@ import React, { Component } from 'react';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
 import app from '../../app.js';
-// import Icon from 'react-fa';
-// import Icon from 'react-native-vector-icons/FontAwesome';
-// import StyleSheet from 'react-native-debug-stylesheet';
-// import StyleSheet from 'react-native-debug-stylesheet';
 import { Colors } from '../../styles';
 
 const sectionService = app.service('/sections');
-
-const FONT = {
-  MIN: 10,
-  MAX: 20,
-  DELTA: 2,
-};
 
 export default class Node extends Component {
 
@@ -22,11 +12,14 @@ export default class Node extends Component {
     return {
       style: React.PropTypes.any,
       tree: React.PropTypes.object,
+      title: React.PropTypes.string,
       root: React.PropTypes.bool,
       selectedSectionId: React.PropTypes.string,
       onSelectSection: React.PropTypes.func,
       onAddSection: React.PropTypes.func,
-      section: React.PropTypes.object,
+      versionId: React.PropTypes.string,
+      sectionParentId: React.PropTypes.string,
+      sectionIndex: React.PropTypes.number,
       level: React.PropTypes.number,
       anidation: React.PropTypes.array,
       collapsed: React.PropTypes.bool,
@@ -44,20 +37,14 @@ export default class Node extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      tree: props.tree,
       collapsed: props.collapsed,
-      sectionIndex: props.sectionIndex,
-      sectionParentId: props.sectionParentId,
       hover: false,
     };
 
     this.collapse = this.collapse.bind(this);
     this.addSection = this.addSection.bind(this);
+    this.deleteSection = this.deleteSection.bind(this);
     this.getSection = this.getSection.bind(this);
-  }
-
-  collapse() {
-    this.setState({ collapsed: !this.state.collapsed });
   }
 
   getSection() {
@@ -67,12 +54,15 @@ export default class Node extends Component {
     return tree[sectionParentId][sectionIndex];
   }
 
+  collapse() {
+    this.setState({ collapsed: !this.state.collapsed });
+  }
+
   addSection() {
-    const section = this.getSection();
-    const parentId = section._id === 'undefined' ? null : section._id;
+    const { versionId, _id } = this.getSection() || { versionId: this.props.versionId, _id: 'undefined' };
     const newSection = {
-      versionId: section.versionId,
-      parentId,
+      versionId,
+      parentId: _id,
     };
 
     sectionService.create(newSection)
@@ -82,11 +72,25 @@ export default class Node extends Component {
     .catch(error => console.log(error));
   }
 
+  deleteSection() {
+    /* const { versionId, parentId } = this.getSection() || { versionId: this.props.versionId, parentId: 'undefined' };
+    const newSection = {
+      versionId,
+      parentId,
+    };
+
+    sectionService.delete(newSection)
+    .then(result => {
+      this.props.onAddSection(result);
+    })
+    .catch(error => console.log(error)); */
+  }
+
   render() {
-    const { sectionIndex, sectionParentId, anidation, root, tree, selectedSectionId } = this.props;
+    const { sectionIndex, anidation, root, tree, selectedSectionId } = this.props;
     const { hover, collapsed } = this.state;
     const section = this.getSection();
-    const { _id, title } = section || { _id: 'undefined', title: 'Title'};
+    const { _id, title } = section || { _id: 'undefined', title: this.props.title };
 
     // Is this section the selected one?
     const selected = selectedSectionId === _id;
@@ -108,7 +112,7 @@ export default class Node extends Component {
           <span style={styles.title}>
             {title}
             {renderIf(!this.props.static)(() => (
-              <Icon name="plus" style={styles.plusIcon} onClick={this.addSection} />
+              <Icon name="plus" style={styles.icon} onClick={this.addSection} />
               ))
             }
           </span>
@@ -127,7 +131,10 @@ export default class Node extends Component {
             </span>
 
             {renderIf(!this.props.static)(() => (
-              <Icon name="plus" style={styles.plusIcon} onClick={this.addSection} />
+              <span>
+                <Icon name="plus" style={styles.icon} onClick={this.addSection} />
+                <Icon name="trash" style={styles.icon} onClick={this.deleteSection} />
+              </span>
               ))
             }
           </span>
@@ -135,14 +142,14 @@ export default class Node extends Component {
 
         {renderIf(hasSubtree)(() => (
           <div style={styles.subtree}>
-            {subsections.map((section, i) => (
+            {subsections.map((subsection, i) => (
               <Node
                 key={i}
                 static={this.props.static}
-                selectedSectionId={this.props.selectedSectionId}
+                selectedSectionId={selectedSectionId}
                 onSelectSection={this.props.onSelectSection}
                 onAddSection={this.props.onAddSection}
-                sectionParentId={section.parentId}
+                sectionParentId={subsection.parentId}
                 sectionIndex={i}
                 tree={this.props.tree}
                 anidation={[...anidation, i + 1]}
@@ -178,7 +185,7 @@ const styles = {
 
 
   },
-  plusIcon: {
+  icon: {
     marginLeft: 10,
     fontSize: 12,
     alignSelf: 'center',

@@ -1,6 +1,4 @@
 import React, { Component } from 'react';
-// import Button from 'react-native-button';
-// import renderIf from 'render-if';
 import Node from './node.js';
 import renderIf from 'render-if';
 
@@ -52,7 +50,9 @@ export default class AtlasTree extends Component {
         {renderIf(tree)(() => (
           <Node
             root
+            title={title}
             tree={tree}
+            versionId={versionId}
             static={this.props.static}
             selectedSectionId={this.state.selectedSectionId}
             onSelectSection={this.onSelectSection}
