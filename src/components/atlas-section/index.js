@@ -57,6 +57,7 @@ export default class AtlasSection extends Component {
 
     const toolbar = this.props.static ? [] : ReactQuill.Toolbar.defaultItems;
 
+    console.log(section.title)
     return (
       <div style={styles.container}>
 
@@ -96,7 +97,7 @@ const styles = {
     position: 'absolute',
     width: '80%',
     right: 0,
-    bottom: 88,
+    bottom: 170,
     top: 64,
   },
   title: {
