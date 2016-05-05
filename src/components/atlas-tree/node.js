@@ -17,6 +17,7 @@ export default class Node extends Component {
       selectedSectionId: React.PropTypes.string,
       onSelectSection: React.PropTypes.func,
       onAddSection: React.PropTypes.func,
+      onRemoveSection: React.PropTypes.func,
       versionId: React.PropTypes.string,
       sectionParentId: React.PropTypes.string,
       sectionIndex: React.PropTypes.number,
@@ -42,8 +43,6 @@ export default class Node extends Component {
     };
 
     this.collapse = this.collapse.bind(this);
-    this.addSection = this.addSection.bind(this);
-    this.deleteSection = this.deleteSection.bind(this);
     this.getSection = this.getSection.bind(this);
   }
 
@@ -58,50 +57,26 @@ export default class Node extends Component {
     this.setState({ collapsed: !this.state.collapsed });
   }
 
-  addSection() {
-    const { versionId, _id } = this.getSection() || { versionId: this.props.versionId };
-    const newSection = { versionId };
-    if (_id) newSection.parentId = _id;
-
-    sectionService.create(newSection)
-    .then(result => {
-      this.props.onAddSection(result);
-    })
-    .catch(error => console.log(error));
-  }
-
-  deleteSection() {
-    /* const { versionId, parentId } = this.getSection() || { versionId: this.props.versionId, parentId: 'undefined' };
-    const newSection = {
-      versionId,
-      parentId,
-    };
-
-    sectionService.delete(newSection)
-    .then(result => {
-      this.props.onAddSection(result);
-    })
-    .catch(error => console.log(error)); */
-  }
-
   render() {
-    const { sectionIndex, anidation, root, tree, selectedSectionId } = this.props;
+    const { sectionIndex, sectionParentId, anidation, root, tree, selectedSectionId } = this.props;
     const { hover, collapsed } = this.state;
     const section = this.getSection();
-    const { _id, title } = section || { _id: 'undefined', title: this.props.title };
+    const { _id, title } = section || { title: this.props.title };
 
     // Is this section the selected one?
     const selected = selectedSectionId === _id;
     // Subsections
     const subsections = tree[_id];
 
-    const onSelectSection = () => this.props.onSelectSection(section, sectionIndex);
+    const onSelectSection = () => this.props.onSelectSection(sectionParentId, sectionIndex);
 
     // Change color on mouse hover
     const hoverStyle = hover || selected ? { color: Colors.MAIN } : { color: '#4A4A4A' };
 
     // Only render children if they exist
     const hasSubtree = subsections && subsections.length > 0 && !collapsed;
+    const addSection = () => this.props.onAddSection(_id);
+    const removeSection = () => this.props.onRemoveSection(section, sectionIndex);
 
     return (
       <div style={styles.container}>
@@ -110,7 +85,7 @@ export default class Node extends Component {
           <span style={styles.title}>
             {title}
             {renderIf(!this.props.static)(() => (
-              <Icon name="plus" style={styles.icon} onClick={this.addSection} />
+              <Icon name="plus" style={styles.icon} onClick={addSection} />
               ))
             }
           </span>
@@ -130,8 +105,8 @@ export default class Node extends Component {
 
             {renderIf(!this.props.static)(() => (
               <span>
-                <Icon name="plus" style={styles.icon} onClick={this.addSection} />
-                <Icon name="trash" style={styles.icon} onClick={this.deleteSection} />
+                <Icon name="plus" style={styles.icon} onClick={addSection} />
+                <Icon name="trash" style={styles.icon} onClick={removeSection} />
               </span>
               ))
             }
@@ -147,6 +122,7 @@ export default class Node extends Component {
                 selectedSectionId={selectedSectionId}
                 onSelectSection={this.props.onSelectSection}
                 onAddSection={this.props.onAddSection}
+                onRemoveSection={this.props.onRemoveSection}
                 sectionParentId={subsection.parentId}
                 sectionIndex={i}
                 tree={this.props.tree}

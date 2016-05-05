@@ -41,6 +41,7 @@ export default class AtlasBook extends Component {
     this.tryPatchSection = this.tryPatchSection.bind(this);
     this.onSelectSection = this.onSelectSection.bind(this);
     this.onAddSection = this.onAddSection.bind(this);
+    this.onRemoveSection = this.onRemoveSection.bind(this);
     this.onChangeContent = this.onChangeContent.bind(this);
     this.onChangeTitle = this.onChangeTitle.bind(this);
     this.currentSection = this.currentSection.bind(this);
@@ -55,17 +56,58 @@ export default class AtlasBook extends Component {
     clearInterval(this.patchTimer);
   }
 
-  onAddSection(section) {
-    const tree = this.state.tree;
-    const parentId = section.parentId;
+  onAddSection(parentId) {
+    const { tree, versionId } = this.state;
 
-    // If it is defined, push, if not, set.
-    const action = tree[parentId] ? '$push' : '$set';
-    this.setState({
-      tree: update(tree, { [parentId]: { [action]: [section] } }),
-    });
+    const newSection = { versionId };
+    if (parentId) newSection.parentId = parentId;
+
+    // Create section in server and set state on success
+    sectionService.create(newSection)
+    .then(result => {
+      // If it is defined, push, if not, set.
+      const action = tree[parentId] ? '$push' : '$set';
+      this.setState({
+        tree: update(tree, { [parentId]: { [action]: [result] } }),
+      });
+    })
+    .catch(error => console.log(error));
   }
 
+  onRemoveSection(section, sectionIndex) {
+    const tree = this.state.tree;
+    const { _id, parentId } = section;
+    const currentSection = this.currentSection();
+
+    // All nodes that have the same parent
+    const siblings = tree[parentId];
+
+    // Can't delete last root section
+    // TODO: Create server validations
+    if (!parentId && siblings.length <= 1) return;
+
+    // Remove from server and set state on success
+    sectionService.remove(_id)
+    .then(result => {
+      console.log(result);
+      const newState = {};
+
+      // Check if deleted section is selected and is last child
+      if (siblings[sectionIndex]._id === currentSection._id && sectionIndex === siblings.length - 1) {
+        if (sectionIndex === 0) {
+          // There are no children left, select parent
+          newState.sectionParentId = 'undefined';
+        } else {
+          // Go to next sibling
+          newState.sectionIndex = sectionIndex - 1;
+        }
+      }
+      // Update state
+      newState.tree = update(tree, { [parentId]: { $splice: [[sectionIndex, 1]] } });
+      this.setState(newState);
+    })
+    .catch(error => console.log(error));
+  }
 
   /**
    * Returns the currently selected section
@@ -199,8 +241,10 @@ export default class AtlasBook extends Component {
           tree={this.state.tree}
           title={this.props.params.atlas.title}
           versionId={this.state.versionId}
+          selectedSectionId={section._id}
           onSelectSection={this.onSelectSection}
           onAddSection={this.onAddSection}
+          onRemoveSection={this.onRemoveSection}
         />
         <AtlasSection
           section={section}
