@@ -142,15 +142,17 @@ const ThreeUtils = {
    * foregroundColor, borderColor, borderThickness, worldFontHeight, etc.]
    * @return {[THREE::Sprite]}
    */
-  makeTextSprite(text, params) {
+  makeTextSprite(text, opacity, worldReferenceSize, params) {
     // read params
-    const fontStyle = params.fontStyle || '100px Georgia';
+    const font = params.font || 'Georgia';
+    const fontSize = params.fontSize || 50;
+    const fontStyle = `${fontSize}px ${font}`;
     const foregroundColor = params.foregroundColor || 'rgb(0,0,255)';
-    const backgroundColor = params.backgroundColor || 'rgba(0,255,255,0.5)';
+    const backgroundColor = params.backgroundColor || 'rgb(0,255,255)';
     const borderColor = params.borderColor || 'rgb(0,0,0,0.5)';
-    const borderThickness = params.borderThickness || 1;
-    const worldFontHeight = params.worldFontHeight || 1;
-    const opacity = params.opacity;
+    const borderThickness = params.borderThickness || (fontSize * 0.025);
+    const worldFontSizeCoef = params.worldFontSizeCoef || 0.045;
+    const worldFontSize = worldReferenceSize * worldFontSizeCoef;
     // create canvas and get its 2D context
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -164,20 +166,24 @@ const ThreeUtils = {
     const textHeight = getFontHeight(fontStyle);
     const charWidth = textWidth / (text.length ? text.length : 1);
     // resize canvas to fit text
-    canvas.width = Math.max(textWidth + 7 * charWidth);
-    canvas.height = textHeight * 2;
+    canvas.width = textWidth + 4 * charWidth + 2 * borderThickness;
+    canvas.height = textHeight * 2 + borderThickness * 2;
     // restore context's settings again after resizing
     ctx.font = fontStyle;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     // draw background and border
-    ctx.lineWidth = borderThickness;
-    ctx.strokeStyle = borderColor;
-    ctx.fillStyle = backgroundColor;
-    roundRect(ctx, 0, 0, canvas.width, canvas.height, canvas.height * 0.6);
+    roundRect(ctx,
+      borderThickness * 0.5, borderThickness * 0.5,
+      canvas.width - borderThickness,
+      canvas.height - borderThickness,
+      canvas.height * 0.35,
+      backgroundColor,
+      borderThickness,
+      borderColor);
     // draw text
     ctx.fillStyle = foregroundColor;
-    ctx.fillText(text, 3.5 * charWidth, canvas.height * 0.2);
+    ctx.fillText(text, (canvas.width - textWidth) * 0.5, (canvas.height - textHeight) * 0.5);
     // generate texture from canvas
     const texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;
@@ -191,7 +197,7 @@ const ThreeUtils = {
     }
     // generate and return sprite
     const sprite = new THREE.Sprite(material);
-    const factor = worldFontHeight / canvas.height;
+    const factor = worldFontSize / textHeight;
     sprite.scale.set(canvas.width * factor, canvas.height * factor, 1);
     return sprite;
   },
@@ -230,7 +236,7 @@ const ThreeUtils = {
         const dist = intersects[0].distance;
         if (minD === null || minD > dist) {
           minD = dist;
-          closestObj = intersects[0].object;
+          closestObj = intersects[0];
           closestGroup = group;
         }
       }
@@ -276,7 +282,7 @@ function getFontHeight(fontStyle) {
     const dummy = document.createElement('div');
     const dummyText = document.createTextNode('MÉq');
     dummy.appendChild(dummyText);
-    dummy.setAttribute('style', 'font:' + fontStyle + ';position:absolute;top:0;left:0');
+    dummy.setAttribute('style', `font:${fontStyle};position:absolute;top:0;left:0`);
     body.appendChild(dummy);
     fontHeight = dummy.offsetHeight;
     body.removeChild(dummy);
@@ -288,7 +294,8 @@ function getFontHeight(fontStyle) {
 /**
  * [roundRect : drawss a rectangle with rounded corners]
  */
-function roundRect(ctx, x, y, width, height, radius) {
+function roundRect(ctx, x, y, width, height, radius, backgroundColor,
+  borderThickness, borderColor) {
   ctx.beginPath();
   ctx.moveTo(x + radius, y);
   ctx.lineTo(x + width - radius, y);
@@ -300,8 +307,14 @@ function roundRect(ctx, x, y, width, height, radius) {
   ctx.lineTo(x, y + radius);
   ctx.quadraticCurveTo(x, y, x + radius, y);
   ctx.closePath();
+  ctx.strokeStyle = borderColor;
+  ctx.fillStyle = backgroundColor;
   ctx.fill();
-  ctx.stroke();
+  console.log("borderThickness = ", borderThickness);
+  if (borderThickness > 0.1) {
+    ctx.lineWidth = borderThickness;
+    ctx.stroke();
+  }
 }
 
 export default ThreeUtils;
