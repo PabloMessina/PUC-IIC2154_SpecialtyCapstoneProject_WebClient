@@ -11,39 +11,15 @@ export default class AtlasTree extends Component {
       title: React.PropTypes.string,
       tree: React.PropTypes.object,
       versionId: React.PropTypes.string.isRequired,
+      selectedSectionId: React.PropTypes.string,
       onSelectSection: React.PropTypes.func,
       onAddSection: React.PropTypes.func,
+      onRemoveSection: React.PropTypes.func,
     };
-  }
-
-  constructor(props) {
-    super(props);
-    this.state = {
-      selectedSectionId: '',
-    };
-
-    this.onSelectSection = this.onSelectSection.bind(this);
-  }
-
-  componentWillReceiveProps(nextProps) {
-    const tree = nextProps.tree;
-    if (tree && tree.undefined && this.state.selectedSectionId === '') {
-      this.setState({
-        selectedSectionId: tree.undefined[0]._id,
-      });
-    }
-  }
-
-  // TODO: add sectionIndex to api's section model
-  onSelectSection(section, sectionIndex) {
-    this.props.onSelectSection(section.parentId, sectionIndex);
-    this.setState({
-      selectedSectionId: section._id,
-    });
   }
 
   render() {
-    const { title, tree, versionId } = this.props;
+    const { title, tree, versionId, selectedSectionId } = this.props;
     return (
       <div style={styles.container}>
 
@@ -54,9 +30,10 @@ export default class AtlasTree extends Component {
             tree={tree}
             versionId={versionId}
             static={this.props.static}
-            selectedSectionId={this.state.selectedSectionId}
-            onSelectSection={this.onSelectSection}
+            selectedSectionId={selectedSectionId}
+            onSelectSection={this.props.onSelectSection}
             onAddSection={this.props.onAddSection}
+            onRemoveSection={this.props.onRemoveSection}
           />
         ))}
       </div>
