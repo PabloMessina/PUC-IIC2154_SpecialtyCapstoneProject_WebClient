@@ -1,6 +1,4 @@
 import React, { Component } from 'react';
-// import Button from 'react-native-button';
-// import renderIf from 'render-if';
 import Node from './node.js';
 import renderIf from 'render-if';
 
@@ -12,23 +10,32 @@ export default class AtlasTree extends Component {
       static: React.PropTypes.bool,
       title: React.PropTypes.string,
       tree: React.PropTypes.object,
+      versionId: React.PropTypes.string.isRequired,
+      selectedSectionId: React.PropTypes.string,
       onSelectSection: React.PropTypes.func,
       onAddSection: React.PropTypes.func,
+      onRemoveSection: React.PropTypes.func,
     };
   }
 
   render() {
-    const { title, tree } = this.props;
+    const { title, tree, versionId, selectedSectionId } = this.props;
     return (
       <div style={styles.container}>
-        <Node
-          root
-          static={this.props.static}
-          onSelectSection={this.props.onSelectSection}
-          onAddSection={this.props.onAddSection}
-          section={{ title, _id: 'undefined' }}
-          tree={tree}
-        />
+
+        {renderIf(tree)(() => (
+          <Node
+            root
+            title={title}
+            tree={tree}
+            versionId={versionId}
+            static={this.props.static}
+            selectedSectionId={selectedSectionId}
+            onSelectSection={this.props.onSelectSection}
+            onAddSection={this.props.onAddSection}
+            onRemoveSection={this.props.onRemoveSection}
+          />
+        ))}
       </div>
     );
   }

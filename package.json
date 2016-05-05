@@ -23,6 +23,7 @@
     "neal-react": "^0.2.5",
     "n3d-threejs": "^75.0.0",
     "react": "^15.0.1",
+    "react-addons-update": "^15.0.2",
     "react-bootstrap": "^0.29.2",
     "react-dom": "^15.0.1",
     "react-fa": "^4.0.1",

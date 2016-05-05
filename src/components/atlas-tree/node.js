@@ -2,19 +2,9 @@ import React, { Component } from 'react';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
 import app from '../../app.js';
-// import Icon from 'react-fa';
-// import Icon from 'react-native-vector-icons/FontAwesome';
-// import StyleSheet from 'react-native-debug-stylesheet';
-// import StyleSheet from 'react-native-debug-stylesheet';
-// import { Colors } from '../../styles';
+import { Colors } from '../../styles';
 
 const sectionService = app.service('/sections');
-
-const FONT = {
-  MIN: 10,
-  MAX: 20,
-  DELTA: 2,
-};
 
 export default class Node extends Component {
 
@@ -22,10 +12,15 @@ export default class Node extends Component {
     return {
       style: React.PropTypes.any,
       tree: React.PropTypes.object,
+      title: React.PropTypes.string,
       root: React.PropTypes.bool,
+      selectedSectionId: React.PropTypes.string,
       onSelectSection: React.PropTypes.func,
       onAddSection: React.PropTypes.func,
-      section: React.PropTypes.object,
+      onRemoveSection: React.PropTypes.func,
+      versionId: React.PropTypes.string,
+      sectionParentId: React.PropTypes.string,
+      sectionIndex: React.PropTypes.number,
       level: React.PropTypes.number,
       anidation: React.PropTypes.array,
       collapsed: React.PropTypes.bool,
@@ -36,74 +31,69 @@ export default class Node extends Component {
   static get defaultProps() {
     return {
       collapsed: false,
-      section: { name: 'Untitled', sections: [] },
       anidation: [],
-      selected: false,
     };
   }
 
   constructor(props) {
     super(props);
     this.state = {
-      tree: props.tree,
       collapsed: props.collapsed,
-      section: props.section,
-      selected: props.selected,
       hover: false,
     };
 
     this.collapse = this.collapse.bind(this);
-    this.addSection = this.addSection.bind(this);
+    this.getSection = this.getSection.bind(this);
+  }
+
+  getSection() {
+    const { tree, sectionParentId, sectionIndex } = this.props;
+    if (!tree[sectionParentId]) return null;
+
+    return tree[sectionParentId][sectionIndex];
   }
 
   collapse() {
     this.setState({ collapsed: !this.state.collapsed });
   }
 
-
-  addSection() {
-    const section = this.state.section;
-    const newSection = {
-      versionId: section.versionId,
-      parentId: section._id,
-    };
-
-    sectionService.create(newSection)
-    .then(result => {
-      this.props.onAddSection(result);
-    })
-    .catch(error => console.log(error));
-  }
-
-  onClick() {
-    this.props.onSelectSection(this.state.section);
-    // this.setState({ selected: true })
-  }
-
-
   render() {
-    
-    const { anidation, root, tree } = this.props;
-    const { hover, selected, collapsed, section} = this.state;
-    const { _id, title } = section;
+    const { sectionIndex, sectionParentId, anidation, root, tree, selectedSectionId } = this.props;
+    const { hover, collapsed } = this.state;
+    const section = this.getSection();
+    const { _id, title } = section || { title: this.props.title };
 
-    const sections = tree[_id];
-    const onSelectSection = () => this.props.onSelectSection(section);
-    const hoverStyle = hover || selected ? { color: 'blue' } : { color: '#4A4A4A' };
+    // Is this section the selected one?
+    const selected = selectedSectionId === _id;
+    // Subsections
+    const subsections = tree[_id];
 
-    const hasSubtree = sections && sections.length > 0 && !collapsed;
-    // const fontSize = Math.max(FONT.MAX - (FONT.DELTA * anidation.length), FONT.MIN);
+    const onSelectSection = () => this.props.onSelectSection(sectionParentId, sectionIndex);
+
+    // Change color on mouse hover
+    const hoverStyle = hover || selected ? { color: Colors.MAIN } : { color: '#4A4A4A' };
+
+    // Only render children if they exist
+    const hasSubtree = subsections && subsections.length > 0 && !collapsed;
+    const addSection = () => this.props.onAddSection(_id);
+    const removeSection = () => this.props.onRemoveSection(section, sectionIndex);
 
     return (
       <div style={styles.container}>
 
         {renderIf(root)(() => (
-          <span style={styles.title}>{title}</span>
+          <span style={styles.title}>
+            {title}
+            {renderIf(!this.props.static)(() => (
+              <Icon name="plus" style={styles.icon} onClick={addSection} />
+              ))
+            }
+          </span>
         ))}
 
         {renderIf(!root)(() => (
           <span
-            style={Object.assign(styles.sectionNav, hoverStyle)}
+            style={Object.assign({}, styles.sectionNav, hoverStyle)}
             onMouseEnter={() => this.setState({ hover: true })}
             onMouseLeave={() => this.setState({ hover: false })}
           >
@@ -114,7 +104,10 @@ export default class Node extends Component {
             </span>
 
             {renderIf(!this.props.static)(() => (
-              <Icon name="plus" style={styles.plusIcon} onClick={this.addSection} />
+              <span>
+                <Icon name="plus" style={styles.icon} onClick={addSection} />
+                <Icon name="trash" style={styles.icon} onClick={removeSection} />
+              </span>
               ))
             }
           </span>
@@ -122,13 +115,16 @@ export default class Node extends Component {
 
         {renderIf(hasSubtree)(() => (
           <div style={styles.subtree}>
-            {sections.map((section, i) => (
+            {subsections.map((subsection, i) => (
               <Node
                 key={i}
                 static={this.props.static}
+                selectedSectionId={selectedSectionId}
                 onSelectSection={this.props.onSelectSection}
                 onAddSection={this.props.onAddSection}
-                section={section}
+                onRemoveSection={this.props.onRemoveSection}
+                sectionParentId={subsection.parentId}
+                sectionIndex={i}
                 tree={this.props.tree}
                 anidation={[...anidation, i + 1]}
               />
@@ -163,7 +159,7 @@ const styles = {
 
 
   },
-  plusIcon: {
+  icon: {
     marginLeft: 10,
     fontSize: 12,
     alignSelf: 'center',
