@@ -42,7 +42,7 @@ class MultiChoice extends Component {
     }
   }
 
-  renderReader() {
+  renderResponder() {
     const { question, answer, disabled } = this.props;
     const { fields } = question;
     const { selectable, choices } = fields;
@@ -68,11 +68,15 @@ class MultiChoice extends Component {
     );
   }
 
+  renderEditor() {
+
+  }
+
   render() {
     switch (this.props.mode) {
       case 'editor': return this.renderEditor();
       case 'responder': return this.renderResponder();
-      case 'reader': return this.renderReader();
+      case 'reader': return this.renderResponder();
       default: return null;
     }
   }
