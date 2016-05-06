@@ -43,11 +43,13 @@ export default class CourseInstances extends Component {
 
   onTabChange(selected) {
     // Sometimes is null and causes navigation bugs
+    if (!selected) return;
+
     const courseId = this.props.course.id;
     if (selected === 2) {
       browserHistory.replace(`/courses/show/${courseId}/instances/settings`);
     } else {
-      browserHistory.replace(`/courses/show/${courseId}/instances/${selected}`);
+      browserHistory.replace(`/courses/show/${courseId}/instances/show/${selected}`);
     }
     this.setState({ selected });
   }
@@ -60,7 +62,7 @@ export default class CourseInstances extends Component {
       .then(result => result.data)
       .then(instances => {
         let selected = this.state.selected;
-        if (!selected && instances.length) selected = instances[0].id;
+        if (!this.state.selected && instances.length) selected = instances[0].id;
         this.setState({ instances, selected, loading: false });
       });
   }
