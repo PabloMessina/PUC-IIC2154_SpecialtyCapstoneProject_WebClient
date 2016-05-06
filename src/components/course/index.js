@@ -6,6 +6,7 @@ import {
   Breadcrumb,
 } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
+import renderIf from 'render-if';
 // import Icon from 'react-fa';
 
 import app from '../../app';
@@ -99,7 +100,9 @@ export default class Course extends Component {
         <br />
 
         <div style={styles.content}>
-          {React.cloneElement(this.props.children, { organization, course })}
+          {renderIf(this.props.children)(() => (
+            React.cloneElement(this.props.children, { organization, course })
+          ))}
         </div>
 
       </Grid>

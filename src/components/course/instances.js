@@ -4,6 +4,8 @@ import Icon from 'react-fa';
 import renderIf from 'render-if';
 import { browserHistory } from 'react-router';
 
+import Instance from './instance/';
+
 import app from '../../app';
 const instanceService = app.service('/instances');
 
@@ -41,11 +43,13 @@ export default class CourseInstances extends Component {
 
   onTabChange(selected) {
     // Sometimes is null and causes navigation bugs
+    if (!selected) return;
+
     const courseId = this.props.course.id;
     if (selected === 2) {
       browserHistory.replace(`/courses/show/${courseId}/instances/settings`);
     } else {
-      browserHistory.replace(`/courses/show/${courseId}/instances/${selected}`);
+      browserHistory.replace(`/courses/show/${courseId}/instances/show/${selected}`);
     }
     this.setState({ selected });
   }
@@ -57,14 +61,9 @@ export default class CourseInstances extends Component {
     return instanceService.find({ query })
       .then(result => result.data)
       .then(instances => {
-        // Display first tab if none is selected
         let selected = this.state.selected;
-        if (!selected && instances.length) {
-          // Set first as selected
-          selected = instances[0].id;
-          this.onTabChange(selected);
-        }
-        return this.setState({ instances, loading: false });
+        if (!this.state.selected && instances.length) selected = instances[0].id;
+        this.setState({ instances, selected, loading: false });
       });
   }
 
@@ -76,6 +75,8 @@ export default class CourseInstances extends Component {
     const settings = (
       <span><Icon style={styles.icon} name="cogs" /> Settings</span>
     );
+
+    const subprops = { organization, course, instance, instances };
 
     return (
       <div style={styles.container}>
@@ -99,8 +100,11 @@ export default class CourseInstances extends Component {
 
         {/* Render 'instance' child */}
         {renderIf(this.props.children && (instance || selected === 2))(() =>
-          React.cloneElement(this.props.children, { organization, course, instance, instances })
+          React.cloneElement(this.props.children, subprops)
         )}
+        {renderIf(!this.props.children && instance && selected !== 2)(() => (
+          <Instance {...subprops} />
+        ))}
 
       </div>
     );
