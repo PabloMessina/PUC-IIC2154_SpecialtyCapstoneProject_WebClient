@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import ReactQuill from 'react-quill';
-import renderIf from 'render-if';
 
 import _ from 'lodash';
 
@@ -25,6 +24,7 @@ export default class AtlasSection extends Component {
     super(props);
     this.onChangeContent = this.onChangeContent.bind(this);
     this.onChangeTitle = this.onChangeTitle.bind(this);
+    this.onTitleLostFocus = this.onTitleLostFocus.bind(this);
   }
 
   // Only update if contents or title have changed
@@ -43,8 +43,15 @@ export default class AtlasSection extends Component {
 
   onChangeTitle(event) {
     const title = event.target.value;
-    if (!_.isEqual(title, this.props.section.title)) {
+
+    if (title !== this.props.section.title) {
       this.props.onChangeTitle(title);
+    }
+  }
+
+  onTitleLostFocus() {
+    if (this.props.section.title === '') {
+      this.props.onChangeTitle('Untitled');
     }
   }
 
@@ -57,13 +64,16 @@ export default class AtlasSection extends Component {
 
     const toolbar = this.props.static ? [] : ReactQuill.Toolbar.defaultItems;
 
-    console.log(section.title)
     return (
       <div style={styles.container}>
 
-        {renderIf(section.title)(() => (
-          <input style={styles.title} onChange={this.onChangeTitle} value={section.title} />
-          ))}
+        <input
+          style={styles.title}
+          onChange={this.onChangeTitle}
+          onBlur={this.onTitleLostFocus}
+          value={section.title}
+        />
+
         <ReactQuill
           theme="snow"
           value={{ ops: section.content }}
@@ -106,6 +116,7 @@ const styles = {
     padding: 16,
     fontWeight: 'bold',
     fontSize: 30,
+    width: '100%',
   },
   bar: {
     backgroundColor: 'white',
