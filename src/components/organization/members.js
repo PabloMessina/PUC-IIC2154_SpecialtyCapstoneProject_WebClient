@@ -146,7 +146,6 @@ export default class CourseTab extends Component {
                 <ControlLabel>Names</ControlLabel>
                 <Select
                   multi
-                  disabled={this.state.disabled}
                   value={this.state.selected}
                   options={users}
                   isLoading={this.state.loading}
