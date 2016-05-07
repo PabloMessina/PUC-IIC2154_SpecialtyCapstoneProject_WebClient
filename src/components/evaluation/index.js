@@ -103,6 +103,7 @@ export default class EvaluationCreate extends Component {
     this.onGroupsChange = this.onGroupsChange.bind(this);
     this.onAttendantsChange = this.onAttendantsChange.bind(this);
     this.onAnswerChange = this.onAnswerChange.bind(this);
+    this.onFieldsChange = this.onFieldsChange.bind(this);
     this.onQuestionAdd = this.onQuestionAdd.bind(this);
     this.onQuestionRemove = this.onQuestionRemove.bind(this);
   }
@@ -148,6 +149,15 @@ export default class EvaluationCreate extends Component {
     }
   }
 
+  onFieldsChange(id, fields) {
+    if (id) {
+      const questions = this.state.questions;
+      const index = this.state.question.findIndex(q => q.id === id);
+      if (index > -1) questions[index].fields = fields;
+      this.setState({ questions });
+    }
+  }
+
   onQuestionAdd(question) {
     if (question) this.setState({ questions: [...this.state.questions, question] });
   }
@@ -168,6 +178,7 @@ export default class EvaluationCreate extends Component {
   }
 
   fetchInstance(instanceId) {
+    debugger;
     return instanceService.get(instanceId)
       .then(instance => {
         this.setState({ instance });
@@ -289,6 +300,7 @@ export default class EvaluationCreate extends Component {
               onGroupsChange: this.onGroupsChange,
               onAttendantsChange: this.onAttendantsChange,
               onAnswerChange: this.onAnswerChange,
+              onFieldsChange: this.onFieldsChange,
             })}
           </Col>
         </Row>

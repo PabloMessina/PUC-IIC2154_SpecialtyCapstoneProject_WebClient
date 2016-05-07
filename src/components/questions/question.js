@@ -11,6 +11,7 @@ export const QuestionPropTypes = {
   disabled: React.PropTypes.bool,
   padding: React.PropTypes.number,
   onAnswerChange: React.PropTypes.func,
+  onFieldsChange: React.PropTypes.func,
 };
 
 const QTYPE = {

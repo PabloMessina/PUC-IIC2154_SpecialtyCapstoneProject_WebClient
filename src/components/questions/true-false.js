@@ -19,6 +19,7 @@ class TrueFalse extends Component {
   }
 
   constructor(props) {
+    debugger;
     super(props);
     this.state = {};
   }

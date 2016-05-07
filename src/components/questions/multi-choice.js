@@ -1,9 +1,13 @@
 import React, { Component } from 'react';
-import { Checkbox } from 'react-bootstrap';
+import {
+  Checkbox,
+  Button,
+  FormControl,
+} from 'react-bootstrap';
+import renderIf from 'render-if';
 
 import { Colors } from '../../styles';
 import compose, { QuestionPropTypes } from './question';
-
 
 class MultiChoice extends Component {
 
@@ -16,9 +20,11 @@ class MultiChoice extends Component {
   }
 
   constructor(props) {
+    debugger;
     super(props);
     this.state = {};
     this.onCheck = this.onCheck.bind(this);
+    this.onFieldsChange = this.onFieldsChange.bind(this);
   }
 
   onCheck(answers, i, selectable) {
@@ -40,6 +46,14 @@ class MultiChoice extends Component {
       if (selected > selectable) Array(selected - selectable).fill(0).forEach(() => changed.shift());
       return onAnswerChange(changed);
     }
+  }
+
+  onFieldsChange(event, index) {
+    debugger;
+    // const answer = this.props.answer;
+    // fields.choices[index].text = event.target.value;
+    // this.props.changeFields(this.props._id, fields);
+    // this.props.onFieldsChange();
   }
 
   renderResponder() {
@@ -69,7 +83,57 @@ class MultiChoice extends Component {
   }
 
   renderEditor() {
+    const { question, answer, disabled } = this.props;
+    const { fields } = question;
+    const { selectable, choices } = fields;
 
+    return (
+      <form style={styles.container}>
+        <div style={styles.column}>
+          {choices.map((choice, i) => (
+            <div key={i} style={styles.choice}>
+              <Checkbox
+                checked={answer.includes(i)}
+                disabled={disabled}
+                onChange={() => this.onCheck(answer, i, selectable)}
+              />
+              <FormControl
+                type="text"
+                value={choice.text}
+                placeholder="Enter option"
+                onChange={(e) => this.onFieldsChange(e, i)}
+                disabled={disabled}
+              />
+              {renderIf(disabled && i > 0)(() => (
+                <Button
+                  style={styles.button}
+                  bsStyle="link"
+                  bsSize="large"
+                  type="button"
+                  onClick={e => this.removeChoice(e, i)}
+                >
+                  -
+                </Button>
+              ))}
+            </div>
+          ))}
+          <p style={styles.instruction}>
+            Select {selectable} option{selectable > 1 ? 's' : ''}
+          </p>
+          {renderIf(!disabled)(() =>
+            <Button
+              style={[styles.button, styles.add]}
+              bsStyle="link"
+              type="button"
+              onClick={this.addChoice}
+            >
+              Add a choice
+            </Button>
+          )}
+
+        </div>
+      </form>
+    );
   }
 
   render() {

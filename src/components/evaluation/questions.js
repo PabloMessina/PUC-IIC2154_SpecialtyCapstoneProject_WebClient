@@ -61,6 +61,7 @@ export default class Questions extends Component {
       onEvaluationChange: React.PropTypes.func,
       onQuestionsChange: React.PropTypes.func,
       onAnswerChange: React.PropTypes.func,
+      onFieldsChange: React.PropTypes.func,
       onQuestionRemove: React.PropTypes.func,
       onQuestionAdd: React.PropTypes.func,
     };
@@ -73,7 +74,7 @@ export default class Questions extends Component {
       allTags: defaultTags,
       pool: require('./TEMP'),
       hideQuestions: [],
-      bufferQuestion: { id: 0, qtype: 'trueFalse', question: { text: '' }, tags: [], fields: {} },
+      bufferQuestion: { id: 0, qtype: 'trueFalse', content: { insert: '' }, tags: [], fields: {}, answer: {} },
     };
   }
 
@@ -99,6 +100,8 @@ export default class Questions extends Component {
     this.updateEvaluation = this.updateEvaluation.bind(this);
     this.renderEvaluation = this.renderEvaluation.bind(this);
     this.renderQuestionPool = this.renderQuestionPool.bind(this);
+    this.renderQuestionList = this.renderQuestionList.bind(this);
+    this.renderCustomQuestion = this.renderCustomQuestion.bind(this);
   }
 
   onSubmitNewQuestion(object) {
@@ -149,14 +152,58 @@ export default class Questions extends Component {
     this.setState({ hideQuestions: [] });
   }
 
+  renderQuestionList(questions) {
+    const { pool, tags } = this.state;
+
+    const objects = pool
+      .filter(question => tags.every(tag => question.tags.indexOf(tag.label) > -1))
+      .filter(question => questions.findIndex(q => q.id === question.id) === -1)
+      .map(question => ({
+        question,
+        answer: question.answer,
+        disabled: true,
+        // TODO: add gradient
+        // style: { height: 200, overflow: 'hidden' },
+      }));
+
+    return (
+      <div>
+        {objects.map((object, i) => (
+          <div key={i} style={styles.wrapper}>
+            {this.renderQuestion(object, i)}
+            <div style={styles.icons} onClick={() => this.props.onQuestionAdd(object.question)}>
+              <Icon size="lg" name="plus" style={{ color: Colors.MAIN }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  renderCustomQuestion() {
+    const question = this.state.bufferQuestion;
+    // const question = this.state.pool[0];
+    const object = {
+      question,
+      answer: question.answer,
+      disabled: false,
+      mode: 'editor',
+    };
+
+    return this.renderQuestion(object, 0);
+  }
+
   renderQuestion(props, identifier) {
-    const { onAnswerChange } = this.props;
+    debugger;
+    const { onAnswerChange, onFieldsChange } = this.props;
     const question = props.question;
     const element = questionFactory(question.qtype, {
       ...props,
       identifier,
       onAnswerChange: answer => onAnswerChange(question.id, answer),
+      onFieldsChange: field => onFieldsChange(question.id, field),
     });
+    debugger;
     return (
       <div key={question.id} style={styles.question}>
         {element}
@@ -190,19 +237,7 @@ export default class Questions extends Component {
   }
 
   renderQuestionPool() {
-    const { pool, tags } = this.state;
     const { questions } = this.props;
-
-    const objects = pool
-      .filter(question => tags.every(tag => question.tags.indexOf(tag.label) > -1))
-      .filter(question => questions.findIndex(q => q.id === question.id) === -1)
-      .map(question => ({
-        question,
-        answer: question.answer,
-        disabled: true,
-        // TODO: add gradient
-        // style: { height: 200, overflow: 'hidden' },
-      }));
 
     return (
       <Panel header="Question pool">
@@ -256,14 +291,11 @@ export default class Questions extends Component {
 
         <div>
           {renderIf(this.state.mode === 'Select')(() =>
-            objects.map((question, i) => (
-              <div key={i} style={styles.wrapper}>
-                {this.renderQuestion(question, i)}
-                <div style={styles.icons} onClick={() => this.props.onQuestionAdd(question.question)}>
-                  <Icon size="lg" name="plus" style={{ color: Colors.MAIN }} />
-                </div>
-              </div>
-          )))}
+            this.renderQuestionList(questions)
+          )}
+          {renderIf(this.state.mode === 'Custom')(() =>
+            this.renderCustomQuestion()
+          )}
         </div>
       </Panel>
     );
