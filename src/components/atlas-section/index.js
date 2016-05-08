@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import ReactQuill from 'react-quill';
 import renderIf from 'render-if';
+import RichEditor from '../rich-editor';
 
 import _ from 'lodash';
 
@@ -32,6 +33,7 @@ export default class AtlasSection extends Component {
     const contentChanged = !_.isEqual(nextProps.section.content, this.props.section.content);
     const titleChanged = !_.isEqual(nextProps.section.title, this.props.section.title);
 
+    return true;
     return contentChanged || titleChanged;
   }
 
@@ -55,38 +57,14 @@ export default class AtlasSection extends Component {
   render() {
     const section = this.props.section;
 
-    const toolbar = this.props.static ? [] : ReactQuill.Toolbar.defaultItems;
-
-    console.log(section.title)
     return (
       <div style={styles.container}>
 
         {renderIf(section.title)(() => (
           <input style={styles.title} onChange={this.onChangeTitle} value={section.title} />
-          ))}
-        <ReactQuill
-          theme="snow"
-          value={{ ops: section.content }}
-          readOnly={this.props.static}
-          onChange={this.onChangeContent}
-        >
+        ))}
 
-          <ReactQuill.Toolbar
-            style={styles.bar}
-            key="toolbar"
-            ref="toolbar"
-            items={toolbar}
-          />
-
-
-          <div
-            style={styles.editor}
-            key="editor"
-            ref="editor"
-            className="quill-contents"
-          />
-
-        </ReactQuill>
+        <RichEditor />
       </div>
     );
   }
