@@ -31,7 +31,7 @@ export default class CourseTab extends Component {
       // Current members
       memberships: [],
       // Other state values
-      role: ROLES[0],
+      role: ROLES[0].value,
       loading: false,
       error: null,
     };
@@ -52,7 +52,7 @@ export default class CourseTab extends Component {
   }
 
   onPermissionSelect(key, user, membership) {
-    if (key < ROLES.length) {
+    if (ROLES[key]) {
       // Role changed
       const permission = ROLES[key].value;
       return membershipService.patch(membership.id, { permission });
@@ -66,7 +66,7 @@ export default class CourseTab extends Component {
     const newMemberships = this.state.selected.map(user => ({
       userId: user.id,
       organizationId: this.props.organization.id,
-      permission: this.state.role.value,
+      permission: this.state.role,
     }));
 
     return Promise.all(newMemberships.map(m => membershipService.create(m)))
@@ -83,21 +83,17 @@ export default class CourseTab extends Component {
 
   fetchMemberships(organizationId) {
     const renew = (membership) => {
-      const index = this.state.memberships.map(m => m.id).indexOf(membership.id);
-      if (index) {
-        userService.get(membership.userId).then(user => {
-          const memberships = [...this.state.memberships];
-          memberships[index] = membership;
-          memberships[index].user = user;
-          this.setState({ memberships });
-        });
+      const index = this.state.memberships.findIndex(p => p.id === membership.id);
+      if (index > -1) {
+        const memberships = [...this.state.memberships];
+        memberships[index] = { ...memberships[index], ...membership };
+        this.setState({ memberships });
       }
     };
 
     membershipService.on('created', membership => {
       userService.get(membership.userId).then(user => {
-        membership.user = user;
-        this.setState({ memberships: [...this.state.memberships, membership] });
+        this.setState({ memberships: [...this.state.memberships, { ...membership, user }] });
       });
     });
 
@@ -105,7 +101,7 @@ export default class CourseTab extends Component {
     membershipService.on('updated', renew);
     membershipService.on('removed', membership => {
       const index = this.state.memberships.map(m => m.id).indexOf(membership.id);
-      if (index) {
+      if (index > -1) {
         const memberships = [...this.state.memberships];
         memberships.splice(index, 1);
         this.setState({ memberships });
@@ -146,7 +142,6 @@ export default class CourseTab extends Component {
                 <ControlLabel>Names</ControlLabel>
                 <Select
                   multi
-                  disabled={this.state.disabled}
                   value={this.state.selected}
                   options={users}
                   isLoading={this.state.loading}
@@ -174,7 +169,7 @@ export default class CourseTab extends Component {
           <hr />
           <Row>
             <Col xs={12}>
-              <Table responsive hover striped>
+              <Table hover striped>
                 <thead>
                   <tr>
                     <th>Name</th>
@@ -185,8 +180,8 @@ export default class CourseTab extends Component {
                 <tbody>
                 {this.state.memberships.map(({ user, ...membership }) => (
                   <tr key={user.id}>
-                    <th style={styles.cell}>{user.name}</th>
-                    <th style={styles.cell}>
+                    <td style={styles.cell}>{user.name}</td>
+                    <td style={styles.cell}>
                       <DropdownButton
                         id="membership-dropdown"
                         bsStyle="link"
@@ -203,8 +198,8 @@ export default class CourseTab extends Component {
                           Remove
                         </MenuItem>
                       </DropdownButton>
-                    </th>
-                    <th style={styles.cell}>{moment(membership.createdAt).format('LL')}</th>
+                    </td>
+                    <td style={styles.cell}>{moment(membership.createdAt).format('LL')}</td>
                   </tr>
                 ))}
                 </tbody>
