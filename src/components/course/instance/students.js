@@ -45,13 +45,16 @@ export default class InstanceStudents extends Component {
 
   onSubmit(e) {
     e.preventDefault();
-    console.log(this.state.selected);
     const newParticipant = this.state.selected.map(user => ({
       userId: user.id,
-      permission: this.state.role.value,
+      permission: this.state.role,
+      name: user.label,
     }));
-    this.setState({ participants: newParticipant });
-    this.setState({ selected: [] });
+    // this.setState({ participants: newParticipant });
+
+    return Promise.all(newParticipant.map(p => participantService.create(p)))
+      .then(() => this.setState({ selected: [] }))
+      .catch(error => console.log(error));
   }
 
   onPermissionSelect(key, participant) {
@@ -94,6 +97,7 @@ export default class InstanceStudents extends Component {
     });
     const permissions = {};
     ROLES.forEach(({ value, label }) => (permissions[value] = label));
+
     return (
       <Grid style={styles.container}>
         <Col xs={12} md={6}>
@@ -136,13 +140,12 @@ export default class InstanceStudents extends Component {
                   <tr>
                     <th>Name</th>
                     <th>Role</th>
-                    <th>Added at</th>
                   </tr>
                 </thead>
                 <tbody>
                 {this.state.participants.map(participant => (
-                  <tr key={participant.id}>
-                    <td>{participant.user.name}</td>
+                  <tr key={participant.userId}>
+                    <td>{participant.name}</td>
                     <td>
                       <DropdownButton
                         id="participant-dropdown"
@@ -161,7 +164,6 @@ export default class InstanceStudents extends Component {
                         </MenuItem>
                       </DropdownButton>
                     </td>
-                    <td>{participant.user.name}</td>
                   </tr>
                 ))}
                 </tbody>
