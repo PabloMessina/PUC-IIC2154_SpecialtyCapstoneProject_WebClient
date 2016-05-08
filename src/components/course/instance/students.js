@@ -9,6 +9,7 @@ const userService = app.service('/users');
 const ROLES = [
   { value: 'read', label: 'Student' },
   { value: 'write', label: 'Teacher' },
+  { value: 'admin', label: 'Admin' },
 ];
 
 export default class InstanceStudents extends Component {
@@ -25,7 +26,7 @@ export default class InstanceStudents extends Component {
       loading: false,
       users: [],
       selected: [],
-      role: ROLES[0],
+      role: ROLES[0].value,
     };
     this.fetchUsers = this.fetchUsers.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
@@ -34,7 +35,7 @@ export default class InstanceStudents extends Component {
 
   componentDidMount() {
     this.fetchUsers();
-    this.fetchParticipants();
+    this.fetchParticipants(this.props.instance.id);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -47,10 +48,9 @@ export default class InstanceStudents extends Component {
     e.preventDefault();
     const newParticipant = this.state.selected.map(user => ({
       userId: user.id,
+      instanceId: this.props.instance.id,
       permission: this.state.role,
-      name: user.label,
     }));
-    // this.setState({ participants: newParticipant });
 
     return Promise.all(newParticipant.map(p => participantService.create(p)))
       .then(() => this.setState({ selected: [] }))
@@ -58,7 +58,7 @@ export default class InstanceStudents extends Component {
   }
 
   onPermissionSelect(key, participant) {
-    if (key < ROLES.length) {
+    if (ROLES[key]) {
       // Role changed
       const permission = ROLES[key].value;
       return participantService.patch(participant.id, { permission });
@@ -68,20 +68,49 @@ export default class InstanceStudents extends Component {
   }
 
   fetchUsers() {
+    // TODO: fetch only from current organization
     this.setState({ loading: true });
     return userService.find()
-    .then(result => result.data)
-    .then(users => this.setState({ users, loading: false }));
+      .then(result => result.data)
+      .then(users => this.setState({ users, loading: false }));
   }
 
-  fetchParticipants() {
+  fetchParticipants(instanceId) {
+    this.setState({ loading: true });
+
+    const renew = (participant) => {
+      const index = this.state.participants.findIndex(p => p.id === participant.id);
+      if (index > -1) {
+        const participants = [...this.state.participants];
+        participants[index] = { ...participants[index], ...participant };
+        this.setState({ participants });
+      }
+    };
+
+    participantService.on('created', participant => {
+      userService.get(participant.userId).then(user => {
+        this.setState({ participants: [...this.state.participants, { ...participant, user }] });
+      });
+    });
+
+    participantService.on('patched', renew);
+    participantService.on('updated', renew);
+    participantService.on('removed', participant => {
+      const index = this.state.participants.findIndex(p => p.id === participant.id);
+      if (index) {
+        const participants = [...this.state.participants];
+        participants.splice(index, 1);
+        this.setState({ participants });
+      }
+    });
+
     const query = {
-      instanceId: this.props.instance.id,
+      instanceId,
       $populate: 'user',
     };
     return participantService.find({ query })
       .then(result => result.data)
-      .then(participants => this.setState({ participants }));
+      .then(participants => this.setState({ participants, loading: false }));
   }
 
   render() {
@@ -135,7 +164,7 @@ export default class InstanceStudents extends Component {
           <hr />
           <Row>
             <Col xs={12}>
-              <Table responsive hover striped>
+              <Table hover striped>
                 <thead>
                   <tr>
                     <th>Name</th>
@@ -145,7 +174,7 @@ export default class InstanceStudents extends Component {
                 <tbody>
                 {this.state.participants.map(participant => (
                   <tr key={participant.userId}>
-                    <td>{participant.name}</td>
+                    <td style={styles.cell}>{participant.user.name}</td>
                     <td>
                       <DropdownButton
                         id="participant-dropdown"
@@ -153,13 +182,13 @@ export default class InstanceStudents extends Component {
                         title={permissions[participant.permission]}
                         onSelect={key => this.onPermissionSelect(key, participant)}
                       >
-                        {ROLES.map((role) => (
-                          <MenuItem>
+                        {ROLES.map((role, i) => (
+                          <MenuItem key={i} eventKey={i} active={participant.permission === role.value}>
                             {role.label}
                           </MenuItem>
                         ))}
                         <MenuItem divider />
-                        <MenuItem>
+                        <MenuItem bsStyle="danger" eventKey={ROLES.length}>
                           Remove
                         </MenuItem>
                       </DropdownButton>
@@ -187,5 +216,8 @@ export default class InstanceStudents extends Component {
 const styles = {
   container: {
 
+  },
+  cell: {
+    verticalAlign: 'middle',
   },
 };
