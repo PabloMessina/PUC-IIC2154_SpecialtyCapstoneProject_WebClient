@@ -15,28 +15,23 @@ class TrueFalse extends Component {
   }
 
   static get defaultProps() {
-    return { answer: 0 };
-  }
-
-  constructor(props) {
-    debugger;
-    super(props);
-    this.state = {};
+    return { answer: { value: 0 } };
   }
 
   render() {
     const { answer, disabled, onAnswerChange } = this.props;
+    const value = answer.value;
 
     const left = {
       disabled,
-      style: answer === 1 ? { ...styles.button, ...styles.buttonTrue } : styles.button,
-      onClick: () => onAnswerChange(answer === 1 ? 0 : 1),
+      style: value === 1 ? { ...styles.button, ...styles.buttonTrue } : styles.button,
+      onClick: () => onAnswerChange({ value: value === 1 ? 0 : 1 }),
     };
 
     const right = {
       disabled,
-      style: answer === -1 ? { ...styles.button, ...styles.buttonFalse } : styles.button,
-      onClick: () => onAnswerChange(answer === -1 ? 0 : -1),
+      style: value === -1 ? { ...styles.button, ...styles.buttonFalse } : styles.button,
+      onClick: () => onAnswerChange({ value: value === -1 ? 0 : -1 }),
     };
 
     return (

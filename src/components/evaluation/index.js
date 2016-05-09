@@ -5,7 +5,6 @@ import renderIf from 'render-if';
 
 import app from '../../app';
 const organizationService = app.service('/organizations');
-const userService = app.service('/users');
 const courseService = app.service('/courses');
 const instanceService = app.service('/instances');
 
@@ -178,7 +177,6 @@ export default class EvaluationCreate extends Component {
   }
 
   fetchInstance(instanceId) {
-    debugger;
     return instanceService.get(instanceId)
       .then(instance => {
         this.setState({ instance });

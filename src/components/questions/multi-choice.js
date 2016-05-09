@@ -16,49 +16,70 @@ class MultiChoice extends Component {
   }
 
   static get defaultProps() {
-    return { answer: [] };
+    return { answer: { choices: [] }, fields: { choices: [] } };
   }
 
   constructor(props) {
-    debugger;
     super(props);
-    this.state = {};
     this.onCheck = this.onCheck.bind(this);
-    this.onFieldsChange = this.onFieldsChange.bind(this);
+    this.onTextChange = this.onTextChange.bind(this);
+    this.onRemoveChoice = this.onRemoveChoice.bind(this);
+    this.onAddChoice = this.onAddChoice.bind(this);
   }
 
-  onCheck(answers, i, selectable) {
-    const { onAnswerChange } = this.props;
-    const index = answers.indexOf(i);
+  onCheck(i, selectable = Infinity) {
+    const { answer } = this.props;
+    const index = answer.choices.indexOf(i);
 
     // Remove if present
     if (index >= 0) {
-      const changed = [...answers];
-      changed.splice(index, 1);
-      return onAnswerChange(changed);
+      const choices = [...answer.choices];
+      choices.splice(index, 1);
+      return this.props.onAnswerChange({ choices });
 
-    // Add to answerss
+    // Add to answer
     } else {
-      const changed = [...answers, i];
-      const selected = changed.length;
+      const choices = [...answer.choices, i];
+      const selected = choices.length;
 
       // Remove early selected till match max selection size and left one space for the current value
-      if (selected > selectable) Array(selected - selectable).fill(0).forEach(() => changed.shift());
-      return onAnswerChange(changed);
+      if (selected > selectable) Array(selected - selectable).fill(0).forEach(() => choices.shift());
+      return this.props.onAnswerChange({ choices });
     }
   }
 
-  onFieldsChange(event, index) {
-    debugger;
-    // const answer = this.props.answer;
-    // fields.choices[index].text = event.target.value;
-    // this.props.changeFields(this.props._id, fields);
-    // this.props.onFieldsChange();
+  onTextChange(value, index) {
+    const { fields } = this.props;
+    const choices = fields.choices && fields.choices.length ? fields.choices : [''];
+    // Update value of changed
+    choices[index] = { text: value };
+    // Call event
+    this.props.onFieldsChange({ choices });
+  }
+
+  onRemoveChoice(index) {
+    const { fields, answer } = this.props;
+
+    // Remove field
+    const fchoices = fields.choices && fields.choices.length ? fields.choices : [''];
+    fchoices.splice(index, 1);
+
+    // Keep in sync with current answers
+    let achoices = answer.choices && answer.choices.length ? answer.choices : [];
+    achoices = achoices.filter(c => c !== index).map(c => (c > index ? c - 1 : c));
+
+    this.props.onFieldsChange({ choices: fchoices });
+    this.props.onAnswerChange({ choices: achoices });
+  }
+
+  onAddChoice() {
+    const { fields } = this.props;
+    const choices = fields.choices && fields.choices.length ? fields.choices : [''];
+    this.props.onFieldsChange({ choices: [...choices, ''] });
   }
 
   renderResponder() {
-    const { question, answer, disabled } = this.props;
-    const { fields } = question;
+    const { fields, answer, disabled } = this.props;
     const { selectable, choices } = fields;
 
     return (
@@ -68,8 +89,8 @@ class MultiChoice extends Component {
             <Checkbox
               key={i}
               disabled={disabled}
-              checked={answer.includes(i)}
-              onChange={() => this.onCheck(answer, i, selectable)}
+              checked={answer.choices.includes(i)}
+              onChange={() => this.onCheck(i, selectable)}
             >
               {choice.text}
             </Checkbox>
@@ -83,53 +104,52 @@ class MultiChoice extends Component {
   }
 
   renderEditor() {
-    const { question, answer, disabled } = this.props;
-    const { fields } = question;
-    const { selectable, choices } = fields;
+    const { fields, answer, disabled } = this.props;
+    const selectable = answer.choices.length || 0;
+    const choices = fields.choices && fields.choices.length ? fields.choices : [''];
 
     return (
       <form style={styles.container}>
         <div style={styles.column}>
           {choices.map((choice, i) => (
-            <div key={i} style={styles.choice}>
+            <div key={i} style={styles.row}>
               <Checkbox
-                checked={answer.includes(i)}
+                checked={answer.choices.indexOf(i) > -1}
                 disabled={disabled}
-                onChange={() => this.onCheck(answer, i, selectable)}
+                onChange={() => this.onCheck(i)}
               />
               <FormControl
                 type="text"
                 value={choice.text}
                 placeholder="Enter option"
-                onChange={(e) => this.onFieldsChange(e, i)}
+                onChange={e => this.onTextChange(e.target.value, i)}
                 disabled={disabled}
               />
-              {renderIf(disabled && i > 0)(() => (
+              {renderIf(!disabled && choices.length > 1)(() => (
                 <Button
-                  style={styles.button}
+                  style={styles.addButton}
                   bsStyle="link"
-                  bsSize="large"
                   type="button"
-                  onClick={e => this.removeChoice(e, i)}
+                  onClick={() => this.onRemoveChoice(i)}
                 >
                   -
                 </Button>
               ))}
             </div>
           ))}
-          <p style={styles.instruction}>
-            Select {selectable} option{selectable > 1 ? 's' : ''}
-          </p>
           {renderIf(!disabled)(() =>
             <Button
               style={[styles.button, styles.add]}
               bsStyle="link"
               type="button"
-              onClick={this.addChoice}
+              onClick={this.onAddChoice}
             >
               Add a choice
             </Button>
           )}
+          <p style={styles.instruction}>
+            Number of correct answers {selectable}
+          </p>
 
         </div>
       </form>
@@ -159,6 +179,17 @@ const styles = {
     marginTop: 5,
     fontSize: 14,
     color: Colors.GRAY,
+  },
+  row: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  button: {
+    textDecoration: 'none',
+    alignSelf: 'center',
   },
 };
 

@@ -13,7 +13,9 @@ module.exports = [{
             text: 'Option 2'
         }],
     },
-    answer: [1],
+    answer: {
+      choices: [1],
+    },
 }, {
     id: 2,
     qtype: 'multiChoice',
@@ -31,7 +33,9 @@ module.exports = [{
             text: 'Option 2'
         }],
     },
-    answer: [1],
+    answer: {
+      choices: [1],
+    },
 }, {
     id: 3,
     qtype: 'tshort',
@@ -42,7 +46,9 @@ module.exports = [{
     },
     tags: ['Tag 2', 'Tag 3', 'Tag 4'],
     fields: {},
-    answer: ['Answ 1', 'Answ 2', 'Answ 3'],
+    answer: {
+      options: ['Answ 1', 'Answ 2', 'Answ 3'],
+    },
 }, {
     id: 4,
     qtype: 'tshort',
@@ -52,7 +58,9 @@ module.exports = [{
     },
     tags: ['Tag 2', 'Tag 3', 'Tag 4'],
     fields: {},
-    answer: ['Answ 1', 'Answ 2'],
+    answer: {
+      options: ['Answ 1', 'Answ 2'],
+    },
 }, {
     id: 5,
     qtype: 'trueFalse',
@@ -62,5 +70,7 @@ module.exports = [{
     },
     tags: ['Tag 5'],
     fields: {},
-    answer: 1,
+    answer: {
+      value: 1,
+    },
 }];

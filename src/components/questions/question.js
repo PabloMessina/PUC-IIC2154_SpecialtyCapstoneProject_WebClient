@@ -2,8 +2,9 @@ import React, { Component } from 'react';
 import renderIf from 'render-if';
 
 export const QuestionPropTypes = {
-  question: React.PropTypes.object,
   style: React.PropTypes.object,
+  question: React.PropTypes.object,
+  fields: React.PropTypes.object,
   answer: React.PropTypes.any,
   identifier: React.PropTypes.any,
   mode: React.PropTypes.string,
@@ -92,6 +93,7 @@ const styles = {
     // backgroundColor: 'white',
   },
   body: {
+    flex: 1,
     display: 'flex',
     flexDirection: 'column',
   },
