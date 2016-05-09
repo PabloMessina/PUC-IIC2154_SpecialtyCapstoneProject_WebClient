@@ -6,7 +6,7 @@ import ThreeUtils from '../../_3Dlibrary/ThreeUtils';
 
 // button constants
 const LEFT_BUTTON = 0;
-const RIGH_BUTTON = 2;
+const RIGHT_BUTTON = 2;
 
 // colors
 const BLACK = 'rgb(0,0,0)';
@@ -54,6 +54,7 @@ export default class Renderer3D extends Component {
     this.showLabels = this.showLabels.bind(this);
     this.setNormalLabelStyle = this.setNormalLabelStyle.bind(this);
     this.setHighlightedLabelStyle = this.setHighlightedLabelStyle.bind(this);
+    this.removeSelectedLabel = this.removeSelectedLabel.bind(this);
   }
 
   componentDidMount() {
@@ -108,9 +109,9 @@ export default class Renderer3D extends Component {
     // initialize raycaster
     const raycaster = new THREE.Raycaster();
 
-    // save inner variables and data structures into "this._state"
-    // that we don't want to expose to the client code (that's why _state
-    // instead of state)
+    // save inner variables and data structures
+    // that we don't want to expose to the client code
+    // into "this._state" (that's why _state instead of state)
     this._state = {
       renderer,
       scene,
@@ -147,7 +148,6 @@ export default class Renderer3D extends Component {
       mouseClipping: new THREE.Vector2(),
       selectedLabel: null,
       draggingSelectedLabel: false,
-      updatingLabelPosition: false,
       // draggable label vars
       draggingTempLabel: false,
       tempDraggableLabel: null,
@@ -360,7 +360,7 @@ export default class Renderer3D extends Component {
       return Promise.reject('mtl file not found');
     }
     if (objFile === null) { // check obj file was provided
-      return Promise.reject('mtl file not found');
+      return Promise.reject('obj file not found');
     }
     // use MTLLoader to load materials from MTL file
     return MTLLoader.loadMaterials(mtlFile, texturePaths)
@@ -399,18 +399,38 @@ export default class Renderer3D extends Component {
       // remove from scene the previous meshes, lines,
       // spheres, sprites, labels, if any
       if (this._state.meshGroup !== null) {
-        this._state.meshGroup.children.length = 0;
+        for (let i = this._state.meshGroup.children.length - 1; i >= 0; --i) {
+          const mesh = this._state.meshGroup.children[i];
+          this._state.meshGroup.remove(mesh);
+        }
+        for (let i = this._state.lineGroup.children.length - 1; i >= 0; --i) {
+          const line = this._state.lineGroup.children[i];
+          this._state.lineGroup.remove(line);
+        }
+        for (let i = this._state.spriteGroup.children.length - 1; i >= 0; --i) {
+          const sprite = this._state.spriteGroup.children[i];
+          this._state.spriteGroup.remove(sprite);
+        }
+        for (let i = this._state.sphereGroup.children.length - 1; i >= 0; --i) {
+          const sphere = this._state.sphereGroup.children[i];
+          this._state.sphereGroup.remove(sphere);
+        }
         this._state.scene.remove(this._state.meshGroup);
+        this._state.selectedLabel = null;
+        this._state.labelSet.clear();
+        // notify parent of changes
+        this.props.labelCountChangedCallback(this._state.labelSet.size);
+        this.props.selectedLabelChangedCallback(this._state.selectedLabel);
       }
-      this._state.lineGroup.children.length = 0;
-      this._state.spriteGroup.children.length = 0;
-      this._state.sphereGroup.children.length = 0;
-      this._state.labelSet.clear();
-      this.props.labelCountChanged(this._state.labelSet.size); // notify parent
       // set the new meshGroup
       this._state.meshGroup = meshGroup;
       // add to scene
       this._state.scene.add(meshGroup);
+      // reenable labels
+      this._state.labelsEnabled = true;
+
+      // notify parent
+      this.props.modelLoadedCallback();
 
       // run animation cycle to reflect changes on the screen
       this.animateForAWhile();
@@ -422,13 +442,6 @@ export default class Renderer3D extends Component {
 
   loadAnnotations(annotations) {
     if (!annotations) return; // make sure annotations is defined
-
-    // clear previous spheres, lines and sprites
-    this._state.lineGroup.children.length = 0;
-    this._state.spriteGroup.children.length = 0;
-    this._state.sphereGroup.children.length = 0;
-
-    // render new annotaitons
     // TODO: implement this
   }
 
@@ -448,6 +461,10 @@ export default class Renderer3D extends Component {
     this.load3DModelFromFiles(files)
     .then(() => {
       this.loadAnnotations(annotations);
+    })
+    .catch(error => {
+      alert(error);
+      console.log('error = ', error);
     });
   }
 
@@ -591,6 +608,7 @@ export default class Renderer3D extends Component {
                 if (prevLabel) this.unhighlightLabel(prevLabel);
                 this.highlightLabel(label);
                 this._state.selectedLabel = label;
+                this.props.selectedLabelChangedCallback(this._state.selectedLabel);
               }
               // starts dragging label
               this._state.draggingSelectedLabel = true;
@@ -625,7 +643,8 @@ export default class Renderer3D extends Component {
                   this._state.selectedLabel = null;
                   this._state.labelSet.delete(label);
                   // notify parent of changes
-                  this.props.labelCountChanged(this._state.labelSet.size);
+                  this.props.labelCountChangedCallback(this._state.labelSet.size);
+                  this.props.selectedLabelChangedCallback(this._state.selectedLabel);
                 }
 
               // case 2.2) a different label selected
@@ -633,6 +652,7 @@ export default class Renderer3D extends Component {
                 if (prevLabel) this.unhighlightLabel(prevLabel);
                 this.highlightLabel(label);
                 this._state.selectedLabel = label;
+                this.props.selectedLabelChangedCallback(this._state.selectedLabel);
               }
               shouldOrbit = false;
             }
@@ -647,7 +667,7 @@ export default class Renderer3D extends Component {
         // refresh canvas
         this.animateForAWhile();
       }
-    } else if (event.button === RIGH_BUTTON) {
+    } else if (event.button === RIGHT_BUTTON) {
       if (this._state.meshGroup !== null && this._state.labelsEnabled) {
         /**
          * Conditions:
@@ -751,7 +771,7 @@ export default class Renderer3D extends Component {
             // add new label to set
             this._state.labelSet.add(labelObj);
             // and notify parent of changes
-            this.props.labelCountChanged(this._state.labelSet.size);
+            this.props.labelCountChangedCallback(this._state.labelSet.size);
           }
           //----------------------------------------
           // Things that happen for both cases 2.1 and 2.2
@@ -759,6 +779,7 @@ export default class Renderer3D extends Component {
           // highlight label
           this.highlightLabel(labelToHighlight);
           this._state.selectedLabel = labelToHighlight;
+          this.props.selectedLabelChangedCallback(this._state.selectedLabel);
           // remove dragged elements directly from scene (because they were added
           // directly into scene for temporal dragging purposes)
           this._state.scene.remove(dragLabel.sprite);
@@ -829,6 +850,7 @@ export default class Renderer3D extends Component {
             if (this._state.selectedLabel !== null) {
               this.unhighlightLabel(this._state.selectedLabel);
               this._state.selectedLabel = null;
+              this.props.selectedLabelChangedCallback(this._state.selectedLabel);
             }
 
             // add elements into scene
@@ -937,6 +959,37 @@ export default class Renderer3D extends Component {
     this.animateForAWhile();
   }
 
+  removeSelectedLabel() {
+    const slabel = this._state.selectedLabel;
+    if (slabel) {
+      // remove sprite
+      this._state.spriteGroup.remove(slabel.sprite);
+      // remove sprite plane
+      this._state.spritePlaneGroup.remove(slabel.spritePlane);
+      delete this._state.spritePlaneToLabelMap[slabel.spritePlane.uuid];
+      // remove spheres
+      for (const sphere of slabel.spheres) {
+        this._state.sphereGroup.remove(sphere);
+        delete this._state.sphereToLineMap[sphere.uuid];
+        delete this._state.sphereToLabelMap[sphere.uuid];
+      }
+      // remove lines
+      for (const line of slabel.lines) {
+        this._state.lineGroup.remove(line);
+      }
+      // remove label
+      this._state.labelSet.delete(slabel);
+      this._state.selectedLabel = null;
+      // interrupt any possible dragging in process
+      this._state.draggingSelectedLabel = false;
+      // refresh scene
+      this.animateForAWhile();
+      // notify parents about changes
+      this.props.selectedLabelChangedCallback(null);
+      this.props.labelCountChangedCallback(this._state.labelSet.size);
+    }
+  }
+
   /**
    * Handle mouse move events
    */
@@ -1027,7 +1080,6 @@ export default class Renderer3D extends Component {
    * Handle Mouse Up events
    */
   handleMouseUp(event) {
-    console.log("====> handleMouseUp()");
     if (event.button === LEFT_BUTTON) {
       this._state.orbitingCamera = false;
       this._state.cameraOrbitUpdatePending = false;
@@ -1112,7 +1164,9 @@ Renderer3D.propTypes = {
   localFiles: React.PropTypes.object,
   remoteFiles: React.PropTypes.array,
   annotations: React.PropTypes.array,
-  labelCountChanged: React.PropTypes.func.isRequired,
+  labelCountChangedCallback: React.PropTypes.func.isRequired,
+  selectedLabelChangedCallback: React.PropTypes.func.isRequired,
+  modelLoadedCallback: React.PropTypes.func.isRequired,
   highlightedLabelStyle: React.PropTypes.object.isRequired,
   normalLabelStyle: React.PropTypes.object.isRequired,
 };

@@ -53,6 +53,9 @@ export default class RendererWrapper extends Component {
       labelCount: 0,
       labelStyleMode: 'normal',
       labelDropdownOpen: false,
+      hasLoadedModel: false,
+      hasSelectedLabel: false,
+      showingLabels: true,
     };
 
     this._state = {
@@ -64,10 +67,13 @@ export default class RendererWrapper extends Component {
     this.refocusOnModel = this.refocusOnModel.bind(this);
     this.showLabels = this.showLabels.bind(this);
     this.hideLabes = this.hideLabes.bind(this);
+    this.removeSelectedLabel = this.removeSelectedLabel.bind(this);
     this.onLabelCountChanged = this.onLabelCountChanged.bind(this);
     this.onLabelStyleChanged = this.onLabelStyleChanged.bind(this);
     this.onLabelRadioBtnChanged = this.onLabelRadioBtnChanged.bind(this);
     this.onLabelDropDownToggle = this.onLabelDropDownToggle.bind(this);
+    this.onSelectedLabelChanged = this.onSelectedLabelChanged.bind(this);
+    this.onModelLoaded = this.onModelLoaded.bind(this);
     this.onMouseDown = this.onMouseDown.bind(this);
   }
 
@@ -95,10 +101,16 @@ export default class RendererWrapper extends Component {
 
   showLabels() {
     this.refs.r3d.showLabels();
+    this.setState({ showingLabels: true });
   }
 
   hideLabes() {
     this.refs.r3d.hideLabes();
+    this.setState({ showingLabels: false });
+  }
+
+  removeSelectedLabel() {
+    this.refs.r3d.removeSelectedLabel();
   }
 
   onLabelCountChanged(newCount) {
@@ -141,6 +153,16 @@ export default class RendererWrapper extends Component {
     this.setState({ labelDropdownOpen: open });
   }
 
+  onSelectedLabelChanged(label) {
+    if (this.state.hasSelectedLabel !== !!label) {
+      this.setState({ hasSelectedLabel: !!label });
+    }
+  }
+
+  onModelLoaded() {
+    if (!this.state.hasLoadedModel) this.setState({ hasLoadedModel: true });
+  }
+
   render() {
     // check label style to use
     let initialLabelStyle;
@@ -170,12 +192,14 @@ export default class RendererWrapper extends Component {
               <div ref="labelSettingsDiv" style={styles.labelSettingsDivStyle}>
                 <label><input type="radio" name="labelType" value="normal"
                   checked={this.state.labelStyleMode === 'normal'}
-                  onChange={this.onLabelRadioBtnChanged} /> Normal Label
+                  onChange={this.onLabelRadioBtnChanged}
+                /> Normal Label
                 </label>
                 <br />
                 <label><input type="radio" name="labelType" value="highlighted"
                   checked={this.state.labelStyleMode === 'highlighted'}
-                  onChange={this.onLabelRadioBtnChanged} /> Highlighted Label
+                  onChange={this.onLabelRadioBtnChanged}
+                /> Highlighted Label
                 </label>
                 <hr />
                 <LabelStyleControl
@@ -185,7 +209,10 @@ export default class RendererWrapper extends Component {
               </div>
             </Dropdown.Menu>
           </Dropdown>
-          <Button onClick={this.refocusOnModel} bsSize="small">REFOCUS</Button>
+          <Button
+            disabled={!this.state.hasLoadedModel}
+            onClick={this.refocusOnModel} bsSize="small"
+          >REFOCUS</Button>
           <ToggleButton
             enabled={this.state.labelCount > 0}
             disabledMessage="No labels in scene"
@@ -194,15 +221,21 @@ export default class RendererWrapper extends Component {
             turnedOnCallback={this.showLabels}
             turnedOffCallback={this.hideLabes}
           />
+          <Button
+            disabled={!(this.state.hasSelectedLabel && this.state.showingLabels)}
+            onClick={this.removeSelectedLabel}
+          >Remove Label</Button>
         </ButtonToolbar>
         <Renderer3D ref="r3d"
           canEdit={this.state.edit}
           annotations={this.state.annotations}
           localFiles={this.state.localFiles}
           remoteFiles={this.state.remoteFiles}
-          labelCountChanged={this.onLabelCountChanged}
           normalLabelStyle={this.state.normalLabelStyle}
           highlightedLabelStyle={this.state.highlightedLabelStyle}
+          labelCountChangedCallback={this.onLabelCountChanged}
+          selectedLabelChangedCallback={this.onSelectedLabelChanged}
+          modelLoadedCallback={this.onModelLoaded}
         />
       </div>
     );

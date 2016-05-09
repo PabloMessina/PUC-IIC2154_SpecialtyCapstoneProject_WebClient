@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { Button } from 'react-bootstrap';
 
 export default class ToggleButton extends Component {
 
@@ -12,25 +13,15 @@ export default class ToggleButton extends Component {
     super(props);
     this.state = {
       turnedOn: true,
-      currentMessage: props.turnedOnMessage,
     };
     this.handleClick = this.handleClick.bind(this);
+    this.getCurrentMessage = this.getCurrentMessage.bind(this);
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.enabled) {
-      if (this.state.turnedOn) {
-        this.setState({
-          currentMessage: nextProps.turnedOnMessage,
-        });
-      } else {
-        this.setState({
-          currentMessage: nextProps.turnedOffMessage,
-        });
-      }
-    } else {
+    if (!this.props.enabled && nextProps.enabled) {
       this.setState({
-        currentMessage: nextProps.disabledMessage,
+        turnedOn: true,
       });
     }
   }
@@ -40,24 +31,33 @@ export default class ToggleButton extends Component {
       if (this.state.turnedOn) {
         this.setState({
           turnedOn: false,
-          currentMessage: this.props.turnedOffMessage,
         });
         this.props.turnedOffCallback();
       } else {
         this.setState({
           turnedOn: true,
-          currentMessage: this.props.turnedOnMessage,
         });
         this.props.turnedOnCallback();
       }
     }
   }
 
+  getCurrentMessage() {
+    if (this.props.enabled) {
+      console.log("getCurrentMessage(): turnedOn = ", this.state.turnedOn);
+      return this.state.turnedOn ? this.props.turnedOnMessage :
+        this.props.turnedOffMessage;
+    }
+    return this.props.disabledMessage;
+  }
+
   render() {
     return (
-      <button ref="button" onClick={this.handleClick}>
-      {this.state.currentMessage}
-      </button>
+      <Button ref="button"
+        onClick={this.handleClick}
+        disabled={!this.props.enabled}
+      > {this.getCurrentMessage()}
+      </Button>
     );
   }
 }

@@ -36,7 +36,7 @@ export default class LabelStyleControl extends Component {
     return (
       <div>
         <label>Font: <select ref="fontSelect" value={font} onChange={this.onLabelStyleChanged}>
-          {fonts.map(f => <option>{f}</option>)}
+          {fonts.map(f => <option key={f}>{f}</option>)}
           </select>
         </label>
         <br />
