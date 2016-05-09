@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { FormGroup, FormControl } from 'react-bootstrap';
 import renderIf from 'render-if';
 
 export const QuestionPropTypes = {
@@ -13,6 +14,7 @@ export const QuestionPropTypes = {
   padding: React.PropTypes.number,
   onAnswerChange: React.PropTypes.func,
   onFieldsChange: React.PropTypes.func,
+  onBodyChange: React.PropTypes.func,
 };
 
 const QTYPE = {
@@ -43,7 +45,7 @@ export default function compose(ComposedComponent) {
     }
 
     render() {
-      const { question, identifier, style, showType, padding, ...props } = this.props;
+      const { question, mode, identifier, style, showType, padding, ...props } = this.props;
 
       const pad = { paddingLeft: padding, paddingRight: padding };
 
@@ -68,15 +70,27 @@ export default function compose(ComposedComponent) {
             ))}
 
             {/* Render common question wording */}
-            <div style={styles.texts}>
-              {contents.map((content, i) => (
-                <p key={i}>{content.insert || content}</p>
-              ))}
-            </div>
+            {renderIf(mode === 'editor')(() =>
+              <FormGroup controlId="description">
+                <FormControl
+                  componentClass="textarea"
+                  value={question.content.insert}
+                  placeholder="Question body"
+                  onChange={e => this.props.onBodyChange({ insert: e.target.value })}
+                />
+              </FormGroup>
+            )}
+            {renderIf(mode !== 'editor')(() =>
+              <div style={styles.texts}>
+                {contents.map((content, i) => (
+                  <p key={i}>{content.insert || content}</p>
+                ))}
+              </div>
+            )}
 
             {/* Render specific content */}
             <div style={{ ...pad, ...styles.component }}>
-              <ComposedComponent {...props} question={question} />
+              <ComposedComponent {...props} question={question} mode={mode} />
             </div>
 
           </div>

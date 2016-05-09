@@ -164,6 +164,7 @@ export default class Questions extends Component {
       mode: 'editor',
       onAnswerChange: answer => this.setState({ temporal: { ...this.state.temporal, answer } }),
       onFieldsChange: fields => this.setState({ temporal: { ...this.state.temporal, fields } }),
+      onBodyChange: content => this.setState({ temporal: { ...this.state.temporal, content } }),
     });
 
     return (
