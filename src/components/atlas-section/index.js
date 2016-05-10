@@ -85,12 +85,6 @@ const styles = {
     fontWeight: 'bold',
     fontSize: 30,
   },
-  bar: {
-    backgroundColor: 'white',
-    width: '100%',
-    zIndex: 1,
-    borderBottom: '1px solid rgba(0,0,0,0.07)',
-  },
   editor: {
     fontSize: '20',
     overflow: 'auto',

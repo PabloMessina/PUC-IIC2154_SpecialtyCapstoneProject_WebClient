@@ -3,9 +3,9 @@ import { RichUtils } from 'draft-js';
 import StyleButton from './style-button';
 
 const INLINE_STYLES = [
-  { label: 'Bold', style: 'BOLD' },
-  { label: 'Italic', style: 'ITALIC' },
-  { label: 'Underline', style: 'UNDERLINE' },
+  { icon: 'bold', style: 'BOLD' },
+  { icon: 'italic', style: 'ITALIC' },
+  { icon: 'underline', style: 'UNDERLINE' },
   { label: 'Monospace', style: 'CODE' },
 ];
 
@@ -25,23 +25,23 @@ export default class InlineControls extends Component {
   render() {
     const currentStyle = this.props.editorState.getCurrentInlineStyle();
     return (
-      <div style={styles.controls}>
-        {INLINE_STYLES.map(type =>
-          <StyleButton
-            key={type.label}
-            active={currentStyle.has(type.style)}
-            label={type.label}
-            onToggle={this.onToggle}
-            style={type.style}
-          />
-        )}
+      <div>
+        {INLINE_STYLES.map(type => {
+          const { label, icon, style } = type;
+          const active = currentStyle.has(style);
+          return (
+            <StyleButton
+              key={style}
+              active={active}
+              label={label}
+              icon={icon}
+              onToggle={this.onToggle}
+              style={style}
+            />
+          );
+        })}
       </div>
     );
   }
 }
 
-const styles = {
-  controls: {
-
-  },
-};

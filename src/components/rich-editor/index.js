@@ -44,18 +44,25 @@ export default class RichEditor extends Component {
 
   render() {
     const { editorState } = this.state;
+    console.log(editorState.getCurrentContent())
+    console.log(convertToRaw(editorState.getCurrentContent()))
 
     return (
-      <div>
-        <BlockControls
-          editorState={editorState}
-          onChange={this.onChange}
-        />
-        <InlineControls
-          editorState={editorState}
-          onChange={this.onChange}
-        />
-        <div onClick={this.focus}>
+      <div style={styles.container}>
+        <div style={styles.controls}>
+          <InlineControls
+            editorState={editorState}
+            onChange={this.onChange}
+          />
+          <BlockControls
+            editorState={editorState}
+            onChange={this.onChange}
+          />
+        </div>
+        <div
+          onClick={this.focus}
+          style={styles.editor}
+        >
           <Editor
             blockRendererFn={this.blockRenderer}
             customStyleMap={styleMap}
@@ -71,3 +78,23 @@ export default class RichEditor extends Component {
   }
 }
 
+const styles = {
+  container: {
+    width: '100%',
+  },
+  editor: {
+    padding: 50,
+    fontSize: '20',
+    overflow: 'auto',
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  controls: {
+    display: 'flex',
+    padding: 20,
+    backgroundColor: 'white',
+    zIndex: 1,
+    borderBottom: '1px solid rgba(0,0,0,0.07)',
+  },
+};

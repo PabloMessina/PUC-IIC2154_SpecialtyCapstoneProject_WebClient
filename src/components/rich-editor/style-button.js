@@ -1,4 +1,6 @@
 import React, { Component } from 'react';
+import renderIf from 'render-if';
+import Icon from 'react-fa';
 
 export default class StyleButton extends Component {
   constructor() {
@@ -10,16 +12,19 @@ export default class StyleButton extends Component {
   }
 
   render() {
+    const { label, icon, active } = this.props;
     let style;
-    if (this.props.active) {
+    if (active) {
       style = { ...styles.styleButton, ...styles.activeButton };
     } else {
       style = styles.styleButton;
     }
-
     return (
       <span style={style} onMouseDown={this.onToggle}>
-        {this.props.label}
+        {renderIf(icon)(() => (
+          <Icon name={icon} />
+        ))}
+        {label}
       </span>
     );
   }

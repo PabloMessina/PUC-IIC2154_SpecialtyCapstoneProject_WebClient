@@ -10,12 +10,12 @@ const BLOCK_TYPES = [
   { label: 'H5', blockType: 'header-five' },
   { label: 'H6', blockType: 'header-six' },
   { label: 'Blockquote', blockType: 'blockquote' },
-  { label: 'UL', blockType: 'unordered-list-item' },
-  { label: 'OL', blockType: 'ordered-list-item' },
-  { label: 'Code Block', blockType: 'code-block' },
-  { label: 'Audio', blockType: 'audio' },
-  { label: 'Image', blockType: 'image' },
-  { label: 'Video', blockType: 'video' },
+  { icon: 'list-ul', blockType: 'unordered-list-item' },
+  { icon: 'list-ol', blockType: 'ordered-list-item' },
+  { icon: 'code', blockType: 'code-block' },
+  { icon: 'headphones', blockType: 'audio' },
+  { icon: 'image', blockType: 'image' },
+  { icon: 'video-camera', blockType: 'video' },
   { label: 'Formula', blockType: 'latex' },
 ];
 
@@ -75,22 +75,26 @@ export default class BlockControls extends Component {
   render() {
     const { editorState } = this.props;
     const selection = editorState.getSelection();
-    const blockType = editorState
+    const activeBlockType = editorState
     .getCurrentContent()
     .getBlockForKey(selection.getStartKey())
     .getType();
 
     return (
       <div style={styles.controls} >
-        {BLOCK_TYPES.map((type) =>
-          <StyleButton
-            key={type.label}
-            active={type.blockType === blockType}
-            label={type.label}
-            onToggle={this.onBlockToggle}
-            style={type.blockType}
-          />
-        )}
+        {BLOCK_TYPES.map((type) => {
+          const { label, icon, blockType } = type;
+          return (
+            <StyleButton
+              key={blockType}
+              active={blockType === activeBlockType}
+              label={label}
+              icon={icon}
+              onToggle={this.onBlockToggle}
+              style={blockType}
+            />
+          );
+        })}
       </div>
     );
   }
