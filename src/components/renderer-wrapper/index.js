@@ -30,8 +30,16 @@ export default class RendererWrapper extends Component {
           show: false,
         },
       ],
-      localFiles: null,
-      remoteFiles: null,
+      remoteFiles: [
+        // 'http://localhost:5000/M_10___Default1.jpg',
+        // 'http://localhost:5000/nRBC.mtl',
+        // 'http://localhost:5000/nRBC.obj',
+        // 'https://lopezjuri.com/videos/M_10___Default1.jpg',
+        // 'https://lopezjuri.com/videos/nRBC.mtl',
+        // 'https://lopezjuri.com/videos/nRBC.obj',
+        'https://lopezjuri.com/videos/Heart.mtl',
+        'https://lopezjuri.com/videos/Heart.obj',
+      ],
       highlightedLabelStyle: {
         font: 'Georgia',
         fontSize: 120,
@@ -56,6 +64,7 @@ export default class RendererWrapper extends Component {
       hasLoadedModel: false,
       hasSelectedLabel: false,
       showingLabels: true,
+      loadingModel: false,
     };
 
     this._state = {
@@ -73,7 +82,10 @@ export default class RendererWrapper extends Component {
     this.onLabelRadioBtnChanged = this.onLabelRadioBtnChanged.bind(this);
     this.onLabelDropDownToggle = this.onLabelDropDownToggle.bind(this);
     this.onSelectedLabelChanged = this.onSelectedLabelChanged.bind(this);
-    this.onModelLoaded = this.onModelLoaded.bind(this);
+    this.onLoadingStarting = this.onLoadingStarting.bind(this);
+    this.onLoadingCompleted = this.onLoadingCompleted.bind(this);
+    this.onLoadingProgress = this.onLoadingProgress.bind(this);
+    this.onLoadingError = this.onLoadingError.bind(this);
     this.onMouseDown = this.onMouseDown.bind(this);
   }
 
@@ -87,12 +99,6 @@ export default class RendererWrapper extends Component {
 
   onMouseDown(e) {
     this._state.lastClickedElem = e.target;
-  }
-
-  onFilesChanged() {
-    const files = this.refs.filesInput.files;
-    this.refs.r3d.loadModel(files, this.state.annotations);
-    this.setState({ localFiles: files });
   }
 
   refocusOnModel() {
@@ -159,8 +165,42 @@ export default class RendererWrapper extends Component {
     }
   }
 
-  onModelLoaded() {
-    if (!this.state.hasLoadedModel) this.setState({ hasLoadedModel: true });
+  onFilesChanged() {
+    const files = this.refs.filesInput.files;
+    this.refs.r3d.loadModel(files, this.state.annotations);
+  }
+
+  onLoadingStarting() {
+    this.setState({
+      loadingModel: true,
+      progressPercentage: 0,
+      progressMessage: 'Beginning to load model ...',
+    });
+  }
+
+  onLoadingProgress(message, lengthSoFar, totalLength) {
+    const percentage = (lengthSoFar / totalLength * 100).toFixed(2);
+    console.log("onLoadingProgress=",message,lengthSoFar,totalLength, percentage);
+    this.setState({
+      progressPercentage: percentage,
+      progressMessage: `${message} ${percentage}%`,
+    })
+  }
+
+  onLoadingCompleted() {
+    this.setState({
+      hasLoadedModel: true,
+      loadingModel: false,
+      showingLabels: true,
+    });
+  }
+
+  onLoadingError(error) {
+    console.log("===> onLoadingError(): error = ", error);
+    alert(JSON.stringify(error));
+    this.setState({
+      loadingModel: false,
+    });
   }
 
   render() {
@@ -176,7 +216,7 @@ export default class RendererWrapper extends Component {
     }
 
     return (
-      <div>
+      <div style={styles.globalDivStyle}>
         <input ref="filesInput" type="file" onChange={this.onFilesChanged} multiple></input>
         <ButtonToolbar>
           <Dropdown id="label-dropdown-custom" open={this.state.labelDropdownOpen}
@@ -223,20 +263,27 @@ export default class RendererWrapper extends Component {
           />
           <Button
             disabled={!(this.state.hasSelectedLabel && this.state.showingLabels)}
-            onClick={this.removeSelectedLabel}
+            onClick={this.removeSelectedLabel} bsSize="small"
           >Remove Label</Button>
         </ButtonToolbar>
         <Renderer3D ref="r3d"
           canEdit={this.state.edit}
           annotations={this.state.annotations}
-          localFiles={this.state.localFiles}
           remoteFiles={this.state.remoteFiles}
           normalLabelStyle={this.state.normalLabelStyle}
           highlightedLabelStyle={this.state.highlightedLabelStyle}
           labelCountChangedCallback={this.onLabelCountChanged}
           selectedLabelChangedCallback={this.onSelectedLabelChanged}
-          modelLoadedCallback={this.onModelLoaded}
+          loadingStartingCallback={this.onLoadingStarting}
+          loadingProgressCallback={this.onLoadingProgress}
+          loadingErrorCallback={this.onLoadingError}
+          loadingCompletedCallback={this.onLoadingCompleted}
         />
+        {this.state.loadingModel ? (<div style={styles.progressDiv}>
+            <span height="20px">{this.state.progressMessage}</span> <br />
+            <progress style={styles.progressBar} value={this.state.progressPercentage} max="100" />
+        </div>) : null
+        }
       </div>
     );
   }
@@ -247,4 +294,24 @@ const styles = {
     width: '250px',
     padding: '10px',
   },
+  globalDivStyle: {
+    position: 'relative',
+  },
+  progressDiv: {
+    width: '50%',
+    position: 'absolute',
+    left: '25%',
+    top: '50%',
+    backgroundColor: 'rgba(240,240,240,0.7)',
+  },
+  progressBar: {
+    backgroundColor: '#f3f3f3',
+    border: 0,
+    height: '18px',
+    borderRadius: '9px',
+    width: '100%',
+  },
+  progressSpan: {
+    fontSize: '20px',
+  }
 };

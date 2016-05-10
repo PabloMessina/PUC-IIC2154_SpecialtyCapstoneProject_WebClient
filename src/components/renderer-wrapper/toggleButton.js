@@ -56,6 +56,7 @@ export default class ToggleButton extends Component {
       <Button ref="button"
         onClick={this.handleClick}
         disabled={!this.props.enabled}
+        bsSize="small"
       > {this.getCurrentMessage()}
       </Button>
     );

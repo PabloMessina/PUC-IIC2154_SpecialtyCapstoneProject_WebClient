@@ -54,7 +54,7 @@ export default class LabelStyleControl extends Component {
         <br />
         <label>FontSize: </label>
         <input ref="fontSizeInput"
-          type="range" min={20} max={90} step={2}
+          type="range" min={25} max={100} step={2}
           value={fontSize} onChange={this.onLabelStyleChanged} />
           <span>{fontSize}</span>
         <br />

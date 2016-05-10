@@ -15,12 +15,15 @@ const GREEN_US = 'rgb(0,168,150)';
 
 const DEFAULT_LABEL_MESSAGE = 'Add name...';
 
+// file extensions
+const OBJ_EXT = '.obj';
+const MTL_EXT = '.mtl';
+
 export default class Renderer3D extends Component {
 
   static get defaultProps() {
     return {
       canEdit: true,
-      localFiles: null,
       remoteFiles: null,
       annotations: null,
     };
@@ -33,6 +36,8 @@ export default class Renderer3D extends Component {
     this.threeRender = this.threeRender.bind(this);
     this.threeAnimate = this.threeAnimate.bind(this);
     this.load3DModelFromFiles = this.load3DModelFromFiles.bind(this);
+    this.load3DModelFromUrls = this.load3DModelFromUrls.bind(this);
+    this.loadMeshGroup = this.loadMeshGroup.bind(this);
     this.handleWheel = this.handleWheel.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
@@ -47,6 +52,7 @@ export default class Renderer3D extends Component {
     this.handleKeydown = this.handleKeydown.bind(this);
     this.updateSpritePlaneOrientations =
       this.updateSpritePlaneOrientations.bind(this);
+    this.getViewportCoords = this.getViewportCoords.bind(this);
 
     // API functions
     this.loadModel = this.loadModel.bind(this);
@@ -148,6 +154,7 @@ export default class Renderer3D extends Component {
       mouseClipping: new THREE.Vector2(),
       selectedLabel: null,
       draggingSelectedLabel: false,
+      vpBCR: this.refs.viewport.getBoundingClientRect(),
       // draggable label vars
       draggingTempLabel: false,
       tempDraggableLabel: null,
@@ -155,19 +162,21 @@ export default class Renderer3D extends Component {
       dragPlane: { normal: null, position: null },
     };
 
-    // try to load files provided (if any)
-    if (this.props.localFiles) {
-      // we are receving new files, we must parse them
-      const promise = this.load3DModelFromFiles(this.props.localFiles);
-      // if we also received annotations, we load the annotations
-      if (this.props.annotations) {
-        promise.then(() => {
-          this.loadAnnotations(this.props.annotations);
+    /**/
+    if (this.props.remoteFiles) {
+      const remoteFiles = this.props.remoteFiles;
+      this.props.loadingStartingCallback();
+      setTimeout(() => {
+        this.load3DModelFromUrls(remoteFiles)
+        .then(() => {
+          this.props.loadingCompletedCallback();
+        })
+        .catch(error => {
+          this.props.loadingErrorCallback(error);
         });
-      }
-      // check for errors
-      promise.catch((reason) => { alert(reason); });
+      }, 2000);
     }
+    //*/
 
     // run animation
     this.animateForAWhile();
@@ -314,6 +323,54 @@ export default class Renderer3D extends Component {
     }
   }
 
+  load3DModelFromUrls(urls) {
+    let objUrl = null;
+    let mtlUrl = null;
+    const textureUrls = {};
+
+    for (let i = 0; i < urls.length; ++i) {
+      const url = urls[i];
+      console.log("url ", i, " = ", url);
+
+      if (url.length > OBJ_EXT.length &&
+        url.substr(url.length - OBJ_EXT.length, url.length)
+        .toLowerCase() === OBJ_EXT) {
+        objUrl = url; // obj url
+      } else if (url.length > MTL_EXT.length &&
+        url.substr(url.length - MTL_EXT.length, url.length)
+        .toLowerCase() === MTL_EXT) {
+        mtlUrl = url; // mtl file
+      } else {
+        // save url of texture file
+        const filename = url.substring(url.lastIndexOf('/') + 1);
+        textureUrls[filename] = url;
+      }
+    }
+
+    if (mtlUrl === null) { // check mtl url was provided
+      return Promise.reject('mtl url not found');
+    }
+    if (objUrl === null) { // check obj file was provided
+      return Promise.reject('obj url not found');
+    }
+
+    const progressCallback = this.props.loadingProgressCallback;
+    progressCallback(`Loading MTL file from ${mtlUrl} ...`, 0, 1);
+
+    return MTLLoader.loadMaterialsFromUrl(mtlUrl, textureUrls)
+    .then((materials) => {
+      progressCallback(`Loading OBJ file from ${objUrl} ...`, 0, 1);
+      return OBJLoader.loadObjectsFromUrl(objUrl, materials, (lengthSoFar, totalLength) => {
+        progressCallback(`Loading OBJ file from ${objUrl} ...`, lengthSoFar, totalLength);
+      })
+    })
+    .then((meshGroup) => {
+      // on success, proceed to incorporte the meshes into the scene
+      // and render them
+      this.loadMeshGroup(meshGroup);
+    });
+  }
+
   /**
    * [load3DModelFromFiles : Reads the files that are expected to contain all the information
    * necessary to render a 3D Model, and then renders that model.
@@ -327,9 +384,6 @@ export default class Renderer3D extends Component {
     let objFile = null;
     let mtlFile = null;
     const texturePaths = {};
-    // fixed extensions
-    const objExt = '.obj';
-    const mtlExt = '.mtl';
 
     // ------------------------------------------------
     // iterate through files and select them according
@@ -339,13 +393,13 @@ export default class Renderer3D extends Component {
       const fname = file.name;
       console.log("file ", i, " = ",file);
 
-      if (fname.length > objExt.length &&
-        fname.substr(fname.length - objExt.length, fname.length)
-        .toLowerCase() === objExt) {
+      if (fname.length > OBJ_EXT.length &&
+        fname.substr(fname.length - OBJ_EXT.length, fname.length)
+        .toLowerCase() === OBJ_EXT) {
         objFile = file; // obj file
-      } else if (fname.length > mtlExt.length &&
-        fname.substr(fname.length - mtlExt.length, fname.length)
-        .toLowerCase() === mtlExt) {
+      } else if (fname.length > MTL_EXT.length &&
+        fname.substr(fname.length - MTL_EXT.length, fname.length)
+        .toLowerCase() === MTL_EXT) {
         mtlFile = file; // mtl file
       } else {
         // save path to texture image file
@@ -362,82 +416,95 @@ export default class Renderer3D extends Component {
     if (objFile === null) { // check obj file was provided
       return Promise.reject('obj file not found');
     }
+
+    const progressCallback = this.props.loadingProgressCallback;
+    progressCallback(`Loading MTL file ${mtlFile.name} ...`, 0, mtlFile.size);
     // use MTLLoader to load materials from MTL file
-    return MTLLoader.loadMaterials(mtlFile, texturePaths)
+    return MTLLoader.loadMaterialsFromFile(mtlFile, texturePaths)
     .then((materials) => {
-      console.log("-----------------------");
-      console.log("success: materials = ", materials);
+      progressCallback(`Loading MTL file ${mtlFile.name} ...`, mtlFile.size, mtlFile.size);
       // on success, proceed to use the OBJLoader to load the 3D objects
       // from OBJ file
-      return OBJLoader.loadObjects(objFile, materials);
+      return OBJLoader.loadObjectsFromFile(objFile, materials, (lengthSoFar, totalLength) => {
+        progressCallback(`Loading OBJ file ${objFile.name} ...`, lengthSoFar, totalLength);
+      });
     })
     .then((meshGroup) => {
       // on success, proceed to incorporte the meshes into the scene
       // and render them
-      console.log("----------------------");
-      console.log("success: meshGroup = ", meshGroup);
-      // compute bounding box
-      this._state.boundingBox = ThreeUtils.getMeshesBoundingBox(meshGroup.children);
-      // compute the center
-      this._state.meshCenter
-        .copy(this._state.boundingBox.min)
-        .add(this._state.boundingBox.max)
-        .multiplyScalar(0.5);
-      // compute the mesh diameter
-      this._state.meshDiameter =
-        this._state.boundingBox.min.distanceTo(this._state.boundingBox.max);
-      // center the camera on boundingBox
-      ThreeUtils.centerCameraOnBoundingBox(
-        this._state.camera,
-        this._state.cameraLight,
-        this._state.boundingBox,
-        this.refs.viewport.offsetWidth,
-        this.refs.viewport.offsetHeight
-      );
-      this._state.zoom = this._state.camera.zoom; // keep the zoom up to date
-
-      // remove from scene the previous meshes, lines,
-      // spheres, sprites, labels, if any
-      if (this._state.meshGroup !== null) {
-        for (let i = this._state.meshGroup.children.length - 1; i >= 0; --i) {
-          const mesh = this._state.meshGroup.children[i];
-          this._state.meshGroup.remove(mesh);
-        }
-        for (let i = this._state.lineGroup.children.length - 1; i >= 0; --i) {
-          const line = this._state.lineGroup.children[i];
-          this._state.lineGroup.remove(line);
-        }
-        for (let i = this._state.spriteGroup.children.length - 1; i >= 0; --i) {
-          const sprite = this._state.spriteGroup.children[i];
-          this._state.spriteGroup.remove(sprite);
-        }
-        for (let i = this._state.sphereGroup.children.length - 1; i >= 0; --i) {
-          const sphere = this._state.sphereGroup.children[i];
-          this._state.sphereGroup.remove(sphere);
-        }
-        this._state.scene.remove(this._state.meshGroup);
-        this._state.selectedLabel = null;
-        this._state.labelSet.clear();
-        // notify parent of changes
-        this.props.labelCountChangedCallback(this._state.labelSet.size);
-        this.props.selectedLabelChangedCallback(this._state.selectedLabel);
-      }
-      // set the new meshGroup
-      this._state.meshGroup = meshGroup;
-      // add to scene
-      this._state.scene.add(meshGroup);
-      // reenable labels
-      this._state.labelsEnabled = true;
-
-      // notify parent
-      this.props.modelLoadedCallback();
-
-      // run animation cycle to reflect changes on the screen
-      this.animateForAWhile();
-    })
-    .catch((error) => {
-      console.log("===> MTLLoader promise chain: error = ", error);
+      this.loadMeshGroup(meshGroup);
     });
+  }
+
+  loadMeshGroup(meshGroup) {
+    // compute bounding box
+    this._state.boundingBox = ThreeUtils.getMeshesBoundingBox(meshGroup.children);
+    // compute the center
+    this._state.meshCenter
+      .copy(this._state.boundingBox.min)
+      .add(this._state.boundingBox.max)
+      .multiplyScalar(0.5);
+    // compute the mesh diameter
+    this._state.meshDiameter =
+      this._state.boundingBox.min.distanceTo(this._state.boundingBox.max);
+    // center the camera on boundingBox
+    ThreeUtils.centerCameraOnBoundingBox(
+      this._state.camera,
+      this._state.cameraLight,
+      this._state.boundingBox,
+      this.refs.viewport.offsetWidth,
+      this.refs.viewport.offsetHeight
+    );
+    this._state.zoom = this._state.camera.zoom; // keep the zoom up to date
+
+    // remove from scene the previous meshes, lines,
+    // spheres, sprites, labels, if any
+    if (this._state.meshGroup !== null) {
+      for (let i = this._state.meshGroup.children.length - 1; i >= 0; --i) {
+        const mesh = this._state.meshGroup.children[i];
+        this._state.meshGroup.remove(mesh);
+      }
+      for (let i = this._state.lineGroup.children.length - 1; i >= 0; --i) {
+        const line = this._state.lineGroup.children[i];
+        this._state.lineGroup.remove(line);
+      }
+      for (let i = this._state.spriteGroup.children.length - 1; i >= 0; --i) {
+        const sprite = this._state.spriteGroup.children[i];
+        this._state.spriteGroup.remove(sprite);
+      }
+      for (let i = this._state.sphereGroup.children.length - 1; i >= 0; --i) {
+        const sphere = this._state.sphereGroup.children[i];
+        this._state.sphereGroup.remove(sphere);
+      }
+      this._state.scene.remove(this._state.meshGroup);
+      this._state.selectedLabel = null;
+      this._state.labelSet.clear();
+      // notify parent of changes
+      this.props.labelCountChangedCallback(this._state.labelSet.size);
+      this.props.selectedLabelChangedCallback(this._state.selectedLabel);
+    }
+    // set the new meshGroup
+    this._state.meshGroup = meshGroup;
+    // add to scene
+    this._state.scene.add(meshGroup);
+    // reenable labels
+    this._state.scene.remove(this._state.sphereGroup);
+    this._state.scene.remove(this._state.lineGroup);
+    this._state.scene.remove(this._state.spriteGroup);
+    this._state.scene.remove(this._state.spritePlaneGroup);
+    this._state.scene.add(this._state.sphereGroup);
+    this._state.scene.add(this._state.lineGroup);
+    this._state.scene.add(this._state.spriteGroup);
+    this._state.scene.add(this._state.spritePlaneGroup);
+    this._state.labelsEnabled = true;
+
+    // clear mappings
+    this._state.spritePlaneToLabelMap = {};
+    this._state.sphereToLineMap = {};
+    this._state.sphereToLabelMap = {};
+
+    // run animation cycle to reflect changes on the screen
+    this.animateForAWhile();
   }
 
   loadAnnotations(annotations) {
@@ -458,13 +525,16 @@ export default class Renderer3D extends Component {
    * @return {[type]}             [description]
    */
   loadModel(files, annotations) {
+    this.props.loadingStartingCallback();
     this.load3DModelFromFiles(files)
     .then(() => {
       this.loadAnnotations(annotations);
     })
+    .then(() => {
+      this.props.loadingCompletedCallback();
+    })
     .catch(error => {
-      alert(error);
-      console.log('error = ', error);
+      this.props.loadingErrorCallback(error);
     });
   }
 
@@ -550,8 +620,9 @@ export default class Renderer3D extends Component {
     console.log("====> handleMouseDown()");
 
     const viewport = this.refs.viewport;
-    const screenX = event.pageX - viewport.offsetLeft;
-    const screenY = viewport.offsetHeight + viewport.offsetTop - event.pageY;
+    const vpcoords = this.getViewportCoords(event);
+    const screenX = vpcoords.x;
+    const screenY = vpcoords.y;
 
     if (event.button === LEFT_BUTTON) {
       if (this._state.meshGroup !== null && !this._state.draggingTempLabel) {
@@ -661,8 +732,8 @@ export default class Renderer3D extends Component {
         if (shouldOrbit) {
           // initiate a camera orbit around 3D Model
           this._state.orbitingCamera = true;
-          this._state.mouseLeft1.x = event.pageX - viewport.offsetLeft;
-          this._state.mouseLeft1.y = viewport.offsetHeight + viewport.offsetTop - event.pageY;
+          this._state.mouseLeft1.x = screenX;
+          this._state.mouseLeft1.y = screenY;
         }
         // refresh canvas
         this.animateForAWhile();
@@ -994,11 +1065,10 @@ export default class Renderer3D extends Component {
    * Handle mouse move events
    */
   handleMouseMove(event) {
+    this._state.mouseViewportCoords = this.getViewportCoords(event);
+    const screenX = this._state.mouseViewportCoords.x;
+    const screenY = this._state.mouseViewportCoords.y;
     const viewport = this.refs.viewport;
-    const screenX = event.pageX - viewport.offsetLeft;
-    const screenY = viewport.offsetHeight + viewport.offsetTop - event.pageY;
-    this._state.mouseViewportCoords.x = screenX;
-    this._state.mouseViewportCoords.y = screenY;
 
     // if dragging a temporal label
     if (this._state.draggingTempLabel) {
@@ -1074,6 +1144,15 @@ export default class Renderer3D extends Component {
         this.animateForAWhile();
       }
     }
+  }
+
+  getViewportCoords(event) {
+    const vp = this.refs.viewport;
+    const bcr = this._state.vpBCR;
+    return {
+      x: event.clientX - bcr.left,
+      y: vp.offsetHeight + bcr.top - event.clientY,
+    };
   }
 
   /**
@@ -1161,12 +1240,14 @@ export default class Renderer3D extends Component {
 
 Renderer3D.propTypes = {
   canEdit: React.PropTypes.bool,
-  localFiles: React.PropTypes.object,
   remoteFiles: React.PropTypes.array,
   annotations: React.PropTypes.array,
   labelCountChangedCallback: React.PropTypes.func.isRequired,
   selectedLabelChangedCallback: React.PropTypes.func.isRequired,
-  modelLoadedCallback: React.PropTypes.func.isRequired,
+  loadingStartingCallback: React.PropTypes.func.isRequired,
+  loadingProgressCallback: React.PropTypes.func.isRequired,
+  loadingErrorCallback: React.PropTypes.func.isRequired,
+  loadingCompletedCallback: React.PropTypes.func.isRequired,
   highlightedLabelStyle: React.PropTypes.object.isRequired,
   normalLabelStyle: React.PropTypes.object.isRequired,
 };
