@@ -168,32 +168,46 @@ export default class Questions extends Component {
     });
 
     return (
-      <Panel collapsible defaultExpanded bsStyle="primary" header={<h3>Custom question</h3>}>
-        <DropdownButton
-          style={styles.button}
-          bsStyle="default"
-          title={QUESTION_TYPES[temporal.qtype]}
-          onSelect={qtype => this.setState({ temporal: { ...temporal, qtype, fields: undefined, answer: undefined } })}
-          id="questiom-type-dropdown"
-        >
-          {Object.keys(QUESTION_TYPES).map(tag =>
-            <MenuItem
-              key={tag}
-              eventKey={tag}
-              active={temporal.qtype === tag}
-            >
-              {QUESTION_TYPES[tag]}
-            </MenuItem>
-          )}
-        </DropdownButton>
-        <Select
-          multi
-          simpleValue={false}
-          value={selected}
-          options={tags}
-          onChange={(value, labels) => this.setState({ selected: labels })}
-          placeholder={'Tags'}
-        />
+      <Panel
+        collapsible
+        defaultExpanded
+        bsStyle="primary"
+        header={<h3>Custom question</h3>}
+      >
+        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit,
+          sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+        </p>
+        <div style={styles.customContainer}>
+          <DropdownButton
+            style={styles.button}
+            bsStyle="default"
+            title={QUESTION_TYPES[temporal.qtype]}
+            onSelect={qtype =>
+              this.setState({ temporal: { ...temporal, qtype, fields: undefined, answer: undefined } })
+            }
+            id="questiom-type-dropdown"
+          >
+            {Object.keys(QUESTION_TYPES).map(tag =>
+              <MenuItem
+                key={tag}
+                eventKey={tag}
+                active={temporal.qtype === tag}
+              >
+                {QUESTION_TYPES[tag]}
+              </MenuItem>
+            )}
+          </DropdownButton>
+          <div style={styles.select}>
+            <Select
+              multi
+              simpleValue={false}
+              value={selected}
+              options={tags}
+              onChange={(value, labels) => this.setState({ selected: labels })}
+              placeholder={'Tags'}
+            />
+          </div>
+        </div>
         <hr />
         {element}
       </Panel>
@@ -343,5 +357,11 @@ const styles = {
   },
   button: {
     margin: 5,
+  },
+  customContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
   },
 };

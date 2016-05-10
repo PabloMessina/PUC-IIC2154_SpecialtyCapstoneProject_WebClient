@@ -7,6 +7,7 @@ import app from '../../app';
 const organizationService = app.service('/organizations');
 const courseService = app.service('/courses');
 const instanceService = app.service('/instances');
+const evaluationService = app.service('/evaluations');
 
 const SECTIONS = [
   {
@@ -105,6 +106,7 @@ export default class EvaluationCreate extends Component {
     this.onFieldsChange = this.onFieldsChange.bind(this);
     this.onQuestionAdd = this.onQuestionAdd.bind(this);
     this.onQuestionRemove = this.onQuestionRemove.bind(this);
+    this.onSubmitDescription = this.onSubmitDescription.bind(this);
   }
 
   componentDidMount() {
@@ -166,6 +168,14 @@ export default class EvaluationCreate extends Component {
       const questions = this.state.questions.filter(q => q.id !== question.id);
       this.setState({ questions });
     }
+  }
+
+  onSubmitDescription() {
+    const evaluation = this.state.evaluation;
+    return evaluationService.patch(evaluation.id, { ...evaluation, id: undefined })
+      .catch(err => {
+        console.log(err);
+      });
   }
 
   fetchCourse(courseId) {
@@ -299,6 +309,7 @@ export default class EvaluationCreate extends Component {
               onAttendantsChange: this.onAttendantsChange,
               onAnswerChange: this.onAnswerChange,
               onFieldsChange: this.onFieldsChange,
+              onSubmitDescription: this.onSubmitDescription,
             })}
           </Col>
         </Row>
