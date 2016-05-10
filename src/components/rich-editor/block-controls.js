@@ -16,6 +16,7 @@ const BLOCK_TYPES = [
   { label: 'Audio', blockType: 'audio' },
   { label: 'Image', blockType: 'image' },
   { label: 'Video', blockType: 'video' },
+  { label: 'Formula', blockType: 'latex' },
 ];
 
 export default class BlockControls extends Component {
@@ -40,6 +41,20 @@ export default class BlockControls extends Component {
     );
   }
 
+  addLatex() {
+    const entityKey = Entity.create(
+      'latex',
+      'IMMUTABLE',
+      { content: 'Click\\ me...' }
+    );
+
+    return AtomicBlockUtils.insertAtomicBlock(
+      this.props.editorState,
+      entityKey,
+      ' '
+    );
+  }
+
   onBlockToggle(type) {
     let state;
     switch (type) {
@@ -47,6 +62,9 @@ export default class BlockControls extends Component {
       case 'image':
       case 'video':
         state = this.addMedia(type);
+        break;
+      case 'latex':
+        state = this.addLatex();
         break;
       default:
         state = RichUtils.toggleBlockType(this.props.editorState, type);

@@ -5,10 +5,10 @@ import {
   EditorState,
   RichUtils,
 } from 'draft-js';
-import { blockRenderer } from './block-renderer';
 import styleMap from './inline-styles';
 import InlineControls from './inline-controls.js';
 import BlockControls from './block-controls';
+import { createBlockRenderer } from './block-renderer.js';
 
 export default class RichEditor extends Component {
   constructor(props) {
@@ -17,6 +17,14 @@ export default class RichEditor extends Component {
     this.state = {
       editorState: EditorState.createEmpty(),
     };
+
+    this.blockRenderer = createBlockRenderer(
+      (modifier, blockKey) => {
+        this.onChange(
+          modifier(this.state.editorState, blockKey)
+        );
+      }
+    );
 
     this.focus = () => this.refs.editor.focus();
     this.onChange = (editorState) => this.setState({ editorState });
@@ -49,7 +57,7 @@ export default class RichEditor extends Component {
         />
         <div onClick={this.focus}>
           <Editor
-            blockRendererFn={blockRenderer}
+            blockRendererFn={this.blockRenderer}
             customStyleMap={styleMap}
             editorState={editorState}
             handleKeyCommand={this.handleKeyCommand}

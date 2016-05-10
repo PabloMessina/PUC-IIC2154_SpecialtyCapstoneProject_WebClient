@@ -1,18 +1,20 @@
 import React from 'react';
+import TeXBlock from './tex-block';
+import { removeTeXBlock } from './modifiers/tex-modifiers';
 import {
   Entity,
 } from 'draft-js';
 
 const Audio = (props) => {
-  return <audio controls src={props.src} style={styles.media} />;
+  return <audio controls src={props.blockProps.src} style={styles.media} />;
 };
 
 const Image = (props) => {
-  return <img src={props.src} style={styles.media} />;
+  return <img src={props.blockProps.src} style={styles.media} />;
 };
 
 const Video = (props) => {
-  return <video controls src={props.src} style={styles.media} />;
+  return <video controls src={props.blockProps.src} style={styles.media} />;
 };
 
 const styles = {
@@ -21,32 +23,40 @@ const styles = {
   },
 };
 
-const blocks = {
-  audio: { component: Audio, editable: false },
-  image: { component: Image, editable: false },
-  video: { component: Video, editable: false },
-  // 3d: { component: 3DView, editable: false },
-  // 3d-video: { component: 3DVideo, editable: false },
-  // You can see where this is going :)
-};
-
-const Block = (props) => {
-  const entity = Entity.get(props.block.getEntityAt(0));
-  const componentProps = entity.getData();
-  const type = entity.getType();
-  const { component } = blocks[type];
-
-  return component(componentProps);
-};
-
-export const blockRenderer = (block) => {
-  // const editable = blocks[type].editable;
-  if (block.getType() === 'atomic') {
-    return {
-      component: Block,
-      editable: false,
+export const createBlockRenderer = (modifyBlock) => {
+  const getBlock = (type, props) => {
+    const blocks = {
+      audio: { component: Audio, editable: false},
+      image: { component: Image, editable: false },
+      video: { component: Video, editable: false },
+      latex: {
+        component: TeXBlock,
+        editable: false,
+        props: {
+          onRemove: (blockKey) => modifyBlock(removeTeXBlock, blockKey),
+        },
+      },
+      // 3d: { component: 3DView, editable: false },
+      // 3d-video: { component: 3DVideo, editable: false },
+      // You can see where this is going :)
     };
-  }
+    const block = blocks[type];
+    block.props = { ...block.props, ...props };
+    console.log(block)
+    return block;
+  };
 
-  return null;
+  // Block renderer
+  return (block) => {
+    if (block.getType() === 'atomic') {
+      const entity = Entity.get(block.getEntityAt(0));
+      if (entity) {
+        const type = entity.getType();
+        const props = entity.getData();
+        return getBlock(type, props);
+      }
+    }
+
+    return null;
+  };
 };
