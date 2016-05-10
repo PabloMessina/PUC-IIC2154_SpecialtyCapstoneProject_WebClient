@@ -82,12 +82,15 @@ export default class Node extends Component {
       <div style={styles.container}>
 
         {renderIf(root)(() => (
-          <span style={styles.title}>
+          <span
+            onMouseEnter={() => this.setState({ hover: true })}
+            onMouseLeave={() => this.setState({ hover: false })}
+            style={styles.title}
+          >
             {title}
-            {renderIf(!this.props.static)(() => (
+            {renderIf(!this.props.static && hover)(() => (
               <Icon name="plus" style={styles.icon} onClick={addSection} />
-              ))
-            }
+            ))}
           </span>
         ))}
 
@@ -103,13 +106,12 @@ export default class Node extends Component {
               <span style={styles.anidation}>{anidation.join('.')}.</span> {title}
             </span>
 
-            {renderIf(!this.props.static)(() => (
+            {renderIf(!this.props.static && hover)(() => (
               <span>
                 <Icon name="plus" style={styles.icon} onClick={addSection} />
                 <Icon name="trash" style={styles.icon} onClick={removeSection} />
               </span>
-              ))
-            }
+            ))}
           </span>
         ))}
 
