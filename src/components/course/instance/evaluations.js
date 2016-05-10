@@ -116,8 +116,6 @@ export default class InstanceEvaluations extends Component {
       }
     });
 
-    debugger;
-
     return (
       <div style={styles.container}>
         <Row style={styles.seccion}>
