@@ -39,6 +39,8 @@ export default class RendererWrapper extends Component {
         worldFontSizeCoef: 1 / 18,
       },
       labelsChangedCallback: () => { console.log("default wrapper::labelsChangedCallback()"); },
+      highlightedLabelStyleChangedCallback: (style) => { console.log("highstyle = ", style); },
+      normalLabelStyleChangedCallback: (style) => { console.log("normalstyle = ", style); },
     };
   }
 
@@ -132,10 +134,12 @@ export default class RendererWrapper extends Component {
       case 'normal':
         this.setState({ normalLabelStyle: newLabelStyle });
         this.refs.r3d.setNormalLabelStyle(newLabelStyle);
+        this.props.normalLabelStyleChangedCallback(newLabelStyle);
         break;
       default: // highlighted
         this.setState({ highlightedLabelStyle: newLabelStyle });
         this.refs.r3d.setHighlightedLabelStyle(newLabelStyle);
+        this.props.highlightedLabelStyleChangedCallback(newLabelStyle);
         break;
     }
   }
@@ -297,6 +301,8 @@ RendererWrapper.propTypes = {
   highlightedLabelStyle: React.PropTypes.object,
   normalLabelStyle: React.PropTypes.object,
   labelsChangedCallback: React.PropTypes.func.isRequired,
+  highlightedLabelStyleChangedCallback: React.PropTypes.func.isRequired,
+  normalLabelStyleChangedCallback: React.PropTypes.func.isRequired,
 };
 
 const styles = {
