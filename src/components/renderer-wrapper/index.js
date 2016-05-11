@@ -11,35 +11,15 @@ const BLUE = '#0000ff';
 
 export default class RendererWrapper extends Component {
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      edit: true,
-      annotations: [
-        {
-          text: 'Aurícula derecha',
-          pointPositions: [[232, 123, 542]],
-          labelPosition: [1, 2, 3],
-          selected: true,
-        },
-        {
-          text: 'Aurícula izquierda',
-          pointPositions: [[232, 123, 542], [123, 432, 132]],
-          labelPosition: [1, 2, 3],
-          selected: false,
-          show: false,
-        },
-      ],
-      remoteFiles: [
-        // 'http://localhost:5000/M_10___Default1.jpg',
-        // 'http://localhost:5000/nRBC.mtl',
-        // 'http://localhost:5000/nRBC.obj',
-        // 'https://lopezjuri.com/videos/M_10___Default1.jpg',
-        // 'https://lopezjuri.com/videos/nRBC.mtl',
-        // 'https://lopezjuri.com/videos/nRBC.obj',
-        'https://lopezjuri.com/videos/Heart.mtl',
-        'https://lopezjuri.com/videos/Heart.obj',
-      ],
+  static get defaultProps() {
+    return {
+      canEdit: true,
+      remoteFiles: {
+        mtl: 'https://lopezjuri.com/videos/Heart.mtl',
+        obj: 'https://lopezjuri.com/videos/Heart.obj',
+        images: [],
+      },
+      labels: null,
       highlightedLabelStyle: {
         font: 'Georgia',
         fontSize: 120,
@@ -58,6 +38,14 @@ export default class RendererWrapper extends Component {
         foregroundColor: BLACK,
         worldFontSizeCoef: 1 / 18,
       },
+      labelsChangedCallback: () => { console.log("default wrapper::labelsChangedCallback()"); },
+    };
+  }
+
+  constructor(props) {
+    super(props);
+    // state used in render
+    this.state = {
       labelCount: 0,
       labelStyleMode: 'normal',
       labelDropdownOpen: false,
@@ -65,11 +53,17 @@ export default class RendererWrapper extends Component {
       hasSelectedLabel: false,
       showingLabels: true,
       loadingModel: false,
+      canEdit: props.canEdit,
+      labels: props.labels,
+      remoteFiles: props.remoteFiles,
+      normalLabelStyle: props.normalLabelStyle,
+      highlightedLabelStyle: props.highlightedLabelStyle,
     };
-
-    this._state = {
+    // state not used in render
+    this.mystate = {
       labelDropdownX: null,
       labelDropdownY: null,
+      lastClickedElem: null,
     };
 
     this.onFilesChanged = this.onFilesChanged.bind(this);
@@ -77,7 +71,7 @@ export default class RendererWrapper extends Component {
     this.showLabels = this.showLabels.bind(this);
     this.hideLabes = this.hideLabes.bind(this);
     this.removeSelectedLabel = this.removeSelectedLabel.bind(this);
-    this.onLabelCountChanged = this.onLabelCountChanged.bind(this);
+    this.onLabelsChanged = this.onLabelsChanged.bind(this);
     this.onLabelStyleChanged = this.onLabelStyleChanged.bind(this);
     this.onLabelRadioBtnChanged = this.onLabelRadioBtnChanged.bind(this);
     this.onLabelDropDownToggle = this.onLabelDropDownToggle.bind(this);
@@ -98,7 +92,7 @@ export default class RendererWrapper extends Component {
   }
 
   onMouseDown(e) {
-    this._state.lastClickedElem = e.target;
+    this.mystate.lastClickedElem = e.target;
   }
 
   refocusOnModel() {
@@ -122,6 +116,14 @@ export default class RendererWrapper extends Component {
   onLabelCountChanged(newCount) {
     this.setState({
       labelCount: newCount,
+    });
+  }
+
+  onLabelsChanged(labels) {
+    console.log("===> onLabelsChanged(): labels = ", labels);
+    this.props.labelsChangedCallback(labels);
+    this.setState({
+      labelCount: labels ? labels.length : 0,
     });
   }
 
@@ -150,7 +152,7 @@ export default class RendererWrapper extends Component {
 
   onLabelDropDownToggle(open) {
     if (!open) {
-      let elem = this._state.lastClickedElem;
+      let elem = this.mystate.lastClickedElem;
       while (elem) {
         if (elem === this.refs.labelSettingsDiv) return;
         elem = elem.parentElement;
@@ -167,7 +169,7 @@ export default class RendererWrapper extends Component {
 
   onFilesChanged() {
     const files = this.refs.filesInput.files;
-    this.refs.r3d.loadModel(files, this.state.annotations);
+    this.refs.r3d.loadModel(files, this.state.labels);
   }
 
   onLoadingStarting() {
@@ -180,7 +182,6 @@ export default class RendererWrapper extends Component {
 
   onLoadingProgress(message, lengthSoFar, totalLength) {
     const percentage = (lengthSoFar / totalLength * 100).toFixed(2);
-    console.log("onLoadingProgress=",message,lengthSoFar,totalLength, percentage);
     this.setState({
       progressPercentage: percentage,
       progressMessage: `${message} ${percentage}%`,
@@ -196,7 +197,6 @@ export default class RendererWrapper extends Component {
   }
 
   onLoadingError(error) {
-    console.log("===> onLoadingError(): error = ", error);
     alert(JSON.stringify(error));
     this.setState({
       loadingModel: false,
@@ -267,12 +267,13 @@ export default class RendererWrapper extends Component {
           >Remove Label</Button>
         </ButtonToolbar>
         <Renderer3D ref="r3d"
-          canEdit={this.state.edit}
-          annotations={this.state.annotations}
+          canEdit={this.state.canEdit}
+          labels={this.state.labels}
           remoteFiles={this.state.remoteFiles}
           normalLabelStyle={this.state.normalLabelStyle}
           highlightedLabelStyle={this.state.highlightedLabelStyle}
-          labelCountChangedCallback={this.onLabelCountChanged}
+
+          labelsChangedCallback={this.onLabelsChanged}
           selectedLabelChangedCallback={this.onSelectedLabelChanged}
           loadingStartingCallback={this.onLoadingStarting}
           loadingProgressCallback={this.onLoadingProgress}
@@ -288,6 +289,15 @@ export default class RendererWrapper extends Component {
     );
   }
 }
+
+RendererWrapper.propTypes = {
+  canEdit: React.PropTypes.bool,
+  remoteFiles: React.PropTypes.object,
+  labels: React.PropTypes.array,
+  highlightedLabelStyle: React.PropTypes.object,
+  normalLabelStyle: React.PropTypes.object,
+  labelsChangedCallback: React.PropTypes.func.isRequired,
+};
 
 const styles = {
   labelSettingsDivStyle: {
@@ -313,5 +323,5 @@ const styles = {
   },
   progressSpan: {
     fontSize: '20px',
-  }
+  },
 };
