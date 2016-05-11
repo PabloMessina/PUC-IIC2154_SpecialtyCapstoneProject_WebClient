@@ -35,7 +35,7 @@ const MTLLoader = {
   loadMaterialsFromUrl: (mtlUrl, textureUrls) => (
     fetch(mtlUrl, { method: 'GET', mode: 'cors' })
     .then(response => response.text())
-    .then((text) => (new Promise((resolve, reject) => {
+    .then(text => (new Promise((resolve, reject) => {
       parseMtlText(text, textureUrls, resolve, reject);
     })))
   ),

@@ -25,8 +25,9 @@ const OBJLoader = {
   /**
    * [Parses local OBJ file and return a promise that gets resolved
    * with a collection of meshes]
-   * @param  {[File]}     objFile   [text file with OBJ format]
-   * @param  {[Material]} materials [list of THREE.js materials]
+   * @param  {[File]}       objFile   [text file with OBJ format]
+   * @param  {[Material]}   materials [list of THREE.js materials]
+   * @param  {[function]}   progressCallback
    * @return {[Promise]}            [promise that is resolved with a mesh collection]
    */
   loadObjectsFromFile: (objFile, materials, progressCallback) => {
@@ -280,7 +281,8 @@ const OBJLoader = {
    * [Parses OBJ file fetched from url through ajax
    * and returns a promise that gets resolved with a collection of meshes]
    * @param  {[string]}     objUrl   [remote obj file url]
-   * @param  {[object]} materials [map from strings to THREE.Materials]
+   * @param  {[object]}     materials [map from strings to THREE.Materials]
+   * @param  {[function]}   progressCallback
    * @return {[Promise]}            [promise that is resolved with a mesh collection]
    */
   loadObjectsFromUrl: (objUrl, materials, progressCallback) => {
