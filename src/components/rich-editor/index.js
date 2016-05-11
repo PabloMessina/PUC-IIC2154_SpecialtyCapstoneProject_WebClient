@@ -44,7 +44,6 @@ export default class RichEditor extends Component {
 
   render() {
     const { editorState } = this.state;
-    console.log(editorState.getCurrentContent())
     console.log(convertToRaw(editorState.getCurrentContent()))
 
     return (
@@ -92,7 +91,8 @@ const styles = {
   },
   controls: {
     display: 'flex',
-    padding: 20,
+    paddingLeft: 20,
+    paddingBottom: 5,
     backgroundColor: 'white',
     zIndex: 1,
     borderBottom: '1px solid rgba(0,0,0,0.07)',

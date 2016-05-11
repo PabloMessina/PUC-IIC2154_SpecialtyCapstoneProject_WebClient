@@ -26,7 +26,7 @@ const styles = {
 export const createBlockRenderer = (modifyBlock) => {
   const getBlock = (type, props) => {
     const blocks = {
-      audio: { component: Audio, editable: false},
+      audio: { component: Audio, editable: false },
       image: { component: Image, editable: false },
       video: { component: Video, editable: false },
       latex: {
@@ -36,13 +36,12 @@ export const createBlockRenderer = (modifyBlock) => {
           onRemove: (blockKey) => modifyBlock(removeTeXBlock, blockKey),
         },
       },
-      // 3d: { component: 3DView, editable: false },
+      model: { component: null, editable: false },
       // 3d-video: { component: 3DVideo, editable: false },
       // You can see where this is going :)
     };
     const block = blocks[type];
     block.props = { ...block.props, ...props };
-    console.log(block)
     return block;
   };
 

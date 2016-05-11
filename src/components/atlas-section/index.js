@@ -83,7 +83,7 @@ const styles = {
     border: 'none',
     padding: 16,
     fontWeight: 'bold',
-    fontSize: 30,
+    fontSize: 24,
   },
   editor: {
     fontSize: '20',

@@ -1,10 +1,15 @@
 import React, { Component } from 'react';
 import renderIf from 'render-if';
 import Icon from 'react-fa';
+import { Colors } from '../../styles';
 
 export default class StyleButton extends Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
+    this.state = {
+      hover: false,
+    };
+
     this.onToggle = (e) => {
       e.preventDefault();
       this.props.onToggle(this.props.style);
@@ -13,14 +18,22 @@ export default class StyleButton extends Component {
 
   render() {
     const { label, icon, active } = this.props;
-    let style;
+    const hover = this.state.hover;
+    let style = styles.styleButton;
     if (active) {
-      style = { ...styles.styleButton, ...styles.activeButton };
-    } else {
-      style = styles.styleButton;
+      style = { ...style, ...styles.activeButton };
     }
+    if (hover) {
+      style = { ...style, ...styles.hoverButton };
+    }
+
     return (
-      <span style={style} onMouseDown={this.onToggle}>
+      <span
+        style={style}
+        onMouseDown={this.onToggle}
+        onMouseEnter={() => this.setState({ hover: true })}
+        onMouseLeave={() => this.setState({ hover: false })}
+      >
         {renderIf(icon)(() => (
           <Icon name={icon} />
         ))}
@@ -38,11 +51,14 @@ const styles = {
     padding: '2px 0',
   },
   activeButton: {
-    fontWeight: 'bold',
+    color: Colors.MAIN,
+  },
+  hoverButton: {
+    color: Colors.MAIN,
   },
   controls: {
     fontFamily: '"Helvetica", sans-serif',
-    fontSize: 14,
+    fontSize: 16,
     marginBottom: 5,
     userSelect: 'none',
   },
