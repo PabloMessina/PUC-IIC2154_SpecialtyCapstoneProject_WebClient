@@ -10,10 +10,10 @@ import authentication from 'feathers-authentication/client';
  * App singleton instance
  *
  * Usage:
- * import app, { login, logout } from '../../app';
+ * import app, { join, login, auth, logout, user } from '../../app';
  */
 
-const host = 'http://localhost:3030';
+const host = 'https://karp.ing.puc.cl';
 const socket = io(host);
 
 // Set up Feathers client side
@@ -31,14 +31,32 @@ app.configure(authentication({ storage: window.localStorage }));
  * @param  {options.password} User password
  * @return {Promise}
  */
-export function login({ email, password }) {
-  const options = {
-    email,
-    password,
-    type: 'local',
-  };
-  return app.authenticate(options).catch(err => {
-    console.log(`Auth error for ${email}`);
+export function login(options) {
+  return app.authenticate({ type: 'local', ...options }).catch(err => {
+    console.log(`Auth error for ${options.email}`);
+    console.log(err);
+    throw err;
+  });
+}
+
+/**
+ * Use local saved credentials to auth with server
+ * @return {Promise}
+ */
+export function auth() {
+  return app.authenticate();
+}
+
+/**
+ * Create new user account
+ * @param  {options.email} User email address
+ * @param  {options.password} User password
+ * @param  {options.name} User name
+ * @return {Promise}
+ */
+export function join(options) {
+  return app.service('users').create({ type: 'local', ...options }).catch(err => {
+    console.log(`User creation error for ${options.email}`);
     console.log(err);
     throw err;
   });
@@ -50,6 +68,14 @@ export function login({ email, password }) {
  */
 export function logout() {
   return app.logout();
+}
+
+/**
+ * Get current user
+ * @return {Object} Current user
+ */
+export function currentUser() {
+  return app.get('user');
 }
 
 export default app;
