@@ -3,17 +3,14 @@
  */
 const BufferedReader = {
   /**
-   * @file
-   *    the file to read from
-   * @chunkSize
-   *    the number of bytes to read from the file each time
-   * @callback is the client callback function that gets called
-   *    every time something important happens.
-   *    It will be passed on 3 arguments: [line, error, eof]
-   *    The client must check whether error or eof are null or not
-   *    before reading the lineF
+   * [reads file internally chunk by chunk, and notifies client code about every line
+   * detected along the way and the amount of filed consumed so far (pogress) for every chunk]
+   * @param  {[FILE]} file
+   * @param  {[float]} chunkSize
+   * @param  {[function]} lineDetectedcallback [(line, error, eof)]
+   * @param  {[function]} progressCallback     [(lengthSoFar, totalLength)]
    */
-  readLineByLine: (file, chunkSize, callback) => {
+  readLineByLine: (file, chunkSize, lineDetectedCallback, progressCallback) => {
     const fr = new FileReader();
     let offset = 0;
     let line = '';
@@ -38,25 +35,25 @@ const BufferedReader = {
           break;
         } else {
           line += result.substring(start, end);
-          if (line !== '') callback(line, null, null); // line found
+          if (line !== '') lineDetectedCallback(line, null, false); // line found
           line = ''; // reset line
           start = end + 1;
         }
       }
+      progressCallback(offset, file.size); // notify progress
       readNextChunk();
     };
 
     // function called when an error is raised
     fr.onerror = (err) => {
-      callback(null, err, false);
+      lineDetectedCallback(null, err, false);
     };
 
     // function to read by chunks
     function readNextChunk() {
-      console.log('reading a chunk');
       // check we are still within the limits
       if (offset >= file.size) {
-        callback(null, null, true); // EOF detected
+        lineDetectedCallback(null, null, true); // EOF detected
         return;
       }
       // read next slice

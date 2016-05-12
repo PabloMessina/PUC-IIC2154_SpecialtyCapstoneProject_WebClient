@@ -96,6 +96,39 @@ const ThreeUtils = {
   },
 
   /**
+   * Convert from screen coordinates to world coordinates, making sure the world
+   * point is placed on the camera's plane: z = 0
+   */
+  screenToWorldOnCameraPlane(screenX, screenY, screenWidth, screenHeight, camera) {
+    const x = (screenX / screenWidth) * 2 - 1;
+    const y = (screenY / screenHeight) * 2 - 1;
+    const v3 = new THREE.Vector3(x, y, 1);
+    const invProjMatrix = new THREE.Matrix4()
+      .getInverse(camera.projectionMatrix);
+    return v3.applyMatrix4(invProjMatrix)
+      .setZ(0)
+      .applyMatrix4(camera.matrixWorld);
+  },
+
+  /**
+   * [getPlaneRayIntersection : returns intersection point between ray and plane]
+   * @param  {[Vector3]} pNormal [plane's normal]
+   * @param  {[Vector3]} pPos    [plane's positon]
+   * @param  {[Vector3]} rDir    [ray's direction]
+   * @param  {[Vector3]} rPos    [ray's position]
+   */
+  getPlaneRayIntersection(pNormal, pPos, rDir, rPos) {
+    const m = rDir.dot(pNormal);
+    const n = rPos.dot(pNormal) - pPos.dot(pNormal);
+    if (m === 0) {
+      console.log("WARNING: division by 0 detected");
+      return null;
+    }
+    const t = - n / m;
+    return new THREE.Vector3().copy(rPos).addScaledVector(rDir, t);
+  },
+
+  /**
    * Return whether the vector is (0,0,0) or not
    */
   isZero(v3) {
@@ -109,14 +142,17 @@ const ThreeUtils = {
    * foregroundColor, borderColor, borderThickness, worldFontHeight, etc.]
    * @return {[THREE::Sprite]}
    */
-  makeTextSprite(text, params) {
+  makeTextSprite(text, opacity, worldReferenceSize, params) {
     // read params
-    const fontStyle = params.fontStyle || '100px Georgia';
+    const font = params.font || 'Georgia';
+    const fontSize = params.fontSize || 50;
+    const fontStyle = `${fontSize}px ${font}`;
     const foregroundColor = params.foregroundColor || 'rgb(0,0,255)';
-    const backgroundColor = params.backgroundColor || 'rgba(0,255,255,0.5)';
+    const backgroundColor = params.backgroundColor || 'rgb(0,255,255)';
     const borderColor = params.borderColor || 'rgb(0,0,0,0.5)';
-    const borderThickness = params.borderThickness || 1;
-    const worldFontHeight = params.worldFontHeight || 1;
+    const borderThickness = params.borderThickness || (fontSize * 0.025);
+    const worldFontSizeCoef = params.worldFontSizeCoef || 0.045;
+    const worldFontSize = worldReferenceSize * worldFontSizeCoef;
     // create canvas and get its 2D context
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -128,21 +164,26 @@ const ThreeUtils = {
     // get text's dimensions
     const textWidth = Math.ceil(ctx.measureText(text).width);
     const textHeight = getFontHeight(fontStyle);
+    const charWidth = textWidth / (text.length ? text.length : 1);
     // resize canvas to fit text
-    canvas.width = textWidth * 1.40;
-    canvas.height = textHeight * 2;
+    canvas.width = textWidth + 4 * charWidth + 2 * borderThickness;
+    canvas.height = textHeight * 2 + borderThickness * 2;
     // restore context's settings again after resizing
     ctx.font = fontStyle;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     // draw background and border
-    ctx.lineWidth = borderThickness;
-    ctx.strokeStyle = borderColor;
-    ctx.fillStyle = backgroundColor;
-    roundRect(ctx, 0, 0, canvas.width, canvas.height, canvas.height * 0.6);
+    roundRect(ctx,
+      borderThickness * 0.5, borderThickness * 0.5,
+      canvas.width - borderThickness,
+      canvas.height - borderThickness,
+      canvas.height * 0.35,
+      backgroundColor,
+      borderThickness,
+      borderColor);
     // draw text
     ctx.fillStyle = foregroundColor;
-    ctx.fillText(text, textWidth * 0.2, textHeight * 0.5);
+    ctx.fillText(text, (canvas.width - textWidth) * 0.5, (canvas.height - textHeight) * 0.5);
     // generate texture from canvas
     const texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;
@@ -150,11 +191,80 @@ const ThreeUtils = {
     texture.minFilter = THREE.LinearMipMapLinearFilter;
     // generate texture
     const material = new THREE.SpriteMaterial({ map: texture });
+    if (opacity) {
+      material.transparent = true;
+      material.opacity = opacity;
+    }
     // generate and return sprite
     const sprite = new THREE.Sprite(material);
-    const factor = worldFontHeight / canvas.height;
+    const factor = worldFontSize / textHeight;
     sprite.scale.set(canvas.width * factor, canvas.height * factor, 1);
     return sprite;
+  },
+
+  /**
+   * Returns a unit normal Vector3 in world coordinates pointing forward from
+   * the camera's point of view
+   */
+  getCameraForwardNormal(camera) {
+    return new THREE.Vector3(0, 0, -1)
+      .applyMatrix4(camera.matrixWorld)
+      .sub(camera.position)
+      .normalize();
+  },
+
+  /**
+   * [get the closest object (and its group) among all the intersected objects
+   * from the list of object groups provided]
+   */
+  getClosestIntersectedObject(screenX, screenY, screenWidth, screenHeight,
+    raycaster, camera, ...groups) {
+    // convert from screen to clipping coordinates
+    const clippingCoords = new THREE.Vector2(
+      (screenX / screenWidth) * 2 - 1,
+      (screenY / screenHeight) * 2 - 1
+    );
+    // set up raycaster
+    raycaster.setFromCamera(clippingCoords, camera);
+    // intersect each group and keep track of the closest object
+    let closestObj = null;
+    let closestGroup = null;
+    let minD = null;
+    groups.forEach((group) => {
+      const intersects = raycaster.intersectObjects(group.children);
+      if (intersects.length > 0) {
+        const dist = intersects[0].distance;
+        if (minD === null || minD > dist) {
+          minD = dist;
+          closestObj = intersects[0];
+          closestGroup = group;
+        }
+      }
+    });
+    // return the object and the group it belongs to (if any)
+    // otherwise return null
+    return closestObj ? { object: closestObj, group: closestGroup } : null;
+  },
+
+  /**
+   * [returns a plane with same dimensions, position and orientaton as
+   * as the given sprite]
+   * @param  {[THREE.Sprite]} sprite [the sprite]
+   * @param  {[THREE.Camera]} camera [to set the orientation towards
+   * the camera, as a typical sprite]
+   * @return {[THREE.Mesh]}        [the plane]
+   */
+  createPlaneFromSprite(sprite, camera) {
+    const bbox = new THREE.BoundingBoxHelper(sprite);
+    bbox.update();
+    const width = bbox.box.max.x - bbox.box.min.x;
+    const height = bbox.box.max.y - bbox.box.min.y;
+    const planeGeo = new THREE.PlaneGeometry(width, height);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const spritePlane = new THREE.Mesh(planeGeo, mat);
+    spritePlane.position.copy(sprite.position);
+    spritePlane.quaternion.copy(camera.quaternion);
+    return spritePlane;
   },
 };
 
@@ -172,7 +282,7 @@ function getFontHeight(fontStyle) {
     const dummy = document.createElement('div');
     const dummyText = document.createTextNode('MÉq');
     dummy.appendChild(dummyText);
-    dummy.setAttribute('style', 'font:' + fontStyle + ';position:absolute;top:0;left:0');
+    dummy.setAttribute('style', `font:${fontStyle};position:absolute;top:0;left:0`);
     body.appendChild(dummy);
     fontHeight = dummy.offsetHeight;
     body.removeChild(dummy);
@@ -184,7 +294,8 @@ function getFontHeight(fontStyle) {
 /**
  * [roundRect : drawss a rectangle with rounded corners]
  */
-function roundRect(ctx, x, y, width, height, radius) {
+function roundRect(ctx, x, y, width, height, radius, backgroundColor,
+  borderThickness, borderColor) {
   ctx.beginPath();
   ctx.moveTo(x + radius, y);
   ctx.lineTo(x + width - radius, y);
@@ -196,8 +307,14 @@ function roundRect(ctx, x, y, width, height, radius) {
   ctx.lineTo(x, y + radius);
   ctx.quadraticCurveTo(x, y, x + radius, y);
   ctx.closePath();
+  ctx.strokeStyle = borderColor;
+  ctx.fillStyle = backgroundColor;
   ctx.fill();
-  ctx.stroke();
+  console.log("borderThickness = ", borderThickness);
+  if (borderThickness > 0.1) {
+    ctx.lineWidth = borderThickness;
+    ctx.stroke();
+  }
 }
 
 export default ThreeUtils;
