@@ -215,7 +215,7 @@ export default class Questions extends Component {
         <hr />
         {objects.map((question, i) => (
           <div key={i} style={styles.wrapper}>
-            {this.renderQuestion(question, i)}
+            {this.renderQuestion(question, i + 1)}
             <div style={styles.icons} onClick={() => onQuestionRemove(question.question)}>
               <Icon size="lg" name="minus" style={{ color: Colors.RED }} />
             </div>
@@ -264,7 +264,7 @@ const styles = {
     alignItems: 'center',
   },
   question: {
-
+    flex: 1,
   },
   wrapper: {
     display: 'flex',
@@ -274,7 +274,9 @@ const styles = {
   icons: {
     display: 'flex',
     flexDirection: 'column',
-    paddingTop: 50, marginRight: 10,
+    paddingTop: 50,
+    marginRight: 10,
+    marginLeft: 10,
   },
   formIcon: {
     marginLeft: 5,
