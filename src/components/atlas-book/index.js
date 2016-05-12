@@ -129,6 +129,7 @@ export default class AtlasBook extends Component {
    */
   onSelectSection(sectionParentId, sectionIndex) {
     this.tryPatchSection();
+
     this.setState({
       sectionParentId,
       sectionIndex,

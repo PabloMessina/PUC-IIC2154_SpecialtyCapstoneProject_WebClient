@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-import ReactQuill from 'react-quill';
 import renderIf from 'render-if';
+import RichEditor from '../rich-editor';
 
 import _ from 'lodash';
 
@@ -36,9 +36,7 @@ export default class AtlasSection extends Component {
   }
 
   onChangeContent(content) {
-    if (!_.isEqual(content.ops, this.props.section.content)) {
-      this.props.onChangeContent(content.ops);
-    }
+    this.props.onChangeContent(content);
   }
 
   onChangeTitle(event) {
@@ -48,45 +46,21 @@ export default class AtlasSection extends Component {
     }
   }
 
-  toolbarItems() {
-    // const items = {};
-  }
-
   render() {
     const section = this.props.section;
 
-    const toolbar = this.props.static ? [] : ReactQuill.Toolbar.defaultItems;
-
-    console.log(section.title)
     return (
       <div style={styles.container}>
 
         {renderIf(section.title)(() => (
           <input style={styles.title} onChange={this.onChangeTitle} value={section.title} />
-          ))}
-        <ReactQuill
-          theme="snow"
-          value={{ ops: section.content }}
-          readOnly={this.props.static}
-          onChange={this.onChangeContent}
-        >
+        ))}
 
-          <ReactQuill.Toolbar
-            style={styles.bar}
-            key="toolbar"
-            ref="toolbar"
-            items={toolbar}
-          />
-
-
-          <div
-            style={styles.editor}
-            key="editor"
-            ref="editor"
-            className="quill-contents"
-          />
-
-        </ReactQuill>
+        <RichEditor
+          sectionId={section._id}
+          content={section.content}
+          onChangeContent={this.onChangeContent}
+        />
       </div>
     );
   }
@@ -105,13 +79,7 @@ const styles = {
     border: 'none',
     padding: 16,
     fontWeight: 'bold',
-    fontSize: 30,
-  },
-  bar: {
-    backgroundColor: 'white',
-    width: '100%',
-    zIndex: 1,
-    borderBottom: '1px solid rgba(0,0,0,0.07)',
+    fontSize: 24,
   },
   editor: {
     fontSize: '20',
