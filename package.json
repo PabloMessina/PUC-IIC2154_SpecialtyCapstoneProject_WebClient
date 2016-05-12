@@ -30,7 +30,6 @@
     "react-dom": "^15.0.1",
     "react-fa": "^4.0.1",
     "react-infinite-grid": "^0.4.0",
-    "react-quill": "git+https://github.com/vdrg/react-quill.git",
     "react-rater": "^0.3.0",
     "react-router": "^2.3.0",
     "react-select": "^0.9.1",

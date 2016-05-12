@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
 import {
   convertToRaw,
+  convertFromRaw,
   Editor,
   EditorState,
   RichUtils,
 } from 'draft-js';
+import isEmpty from 'lodash/isEmpty';
 import styleMap from './inline-styles';
 import InlineControls from './inline-controls.js';
 import BlockControls from './block-controls';
@@ -15,6 +17,7 @@ export default class RichEditor extends Component {
     super(props);
 
     this.state = {
+      // editorState: EditorState.createWithContent(props.content),
       editorState: EditorState.createEmpty(),
     };
 
@@ -27,9 +30,28 @@ export default class RichEditor extends Component {
     );
 
     this.focus = () => this.refs.editor.focus();
-    this.onChange = (editorState) => this.setState({ editorState });
+    this.onChange = (editorState) => {
+      this.props.onChangeContent(convertToRaw(editorState.getCurrentContent()));
+      this.setState({ editorState });
+    };
 
     this.handleKeyCommand = this.handleKeyCommand.bind(this);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.sectionId === this.props.sectionId) return;
+
+    const content = nextProps.content;
+
+    let editorState = null;
+    if (isEmpty(content)) {
+      editorState = EditorState.createEmpty();
+    } else {
+      content.entityMap = content.entityMap || [];
+      const contentState = convertFromRaw(content);
+      editorState = EditorState.createWithContent(contentState);
+    }
+    this.setState({ editorState });
   }
 
   handleKeyCommand(command) {
@@ -44,7 +66,6 @@ export default class RichEditor extends Component {
 
   render() {
     const { editorState } = this.state;
-    console.log(convertToRaw(editorState.getCurrentContent()))
 
     return (
       <div style={styles.container}>

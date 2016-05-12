@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import ReactQuill from 'react-quill';
 import renderIf from 'render-if';
 import RichEditor from '../rich-editor';
 
@@ -33,14 +32,15 @@ export default class AtlasSection extends Component {
     const contentChanged = !_.isEqual(nextProps.section.content, this.props.section.content);
     const titleChanged = !_.isEqual(nextProps.section.title, this.props.section.title);
 
-    return true;
     return contentChanged || titleChanged;
   }
 
   onChangeContent(content) {
-    if (!_.isEqual(content.ops, this.props.section.content)) {
-      this.props.onChangeContent(content.ops);
-    }
+    // if (!_.isEqual(content.ops, this.props.section.content)) {
+      // this.props.onChangeContent(content.ops);
+    // }
+    //    console.log(content)
+    this.props.onChangeContent(content);
   }
 
   onChangeTitle(event) {
@@ -48,10 +48,6 @@ export default class AtlasSection extends Component {
     if (!_.isEqual(title, this.props.section.title)) {
       this.props.onChangeTitle(title);
     }
-  }
-
-  toolbarItems() {
-    // const items = {};
   }
 
   render() {
@@ -64,7 +60,11 @@ export default class AtlasSection extends Component {
           <input style={styles.title} onChange={this.onChangeTitle} value={section.title} />
         ))}
 
-        <RichEditor />
+        <RichEditor
+          sectionId={section._id}
+          content={section.content}
+          onChangeContent={this.onChangeContent}
+        />
       </div>
     );
   }
