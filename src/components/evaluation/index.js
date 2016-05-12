@@ -172,7 +172,8 @@ export default class EvaluationCreate extends Component {
 
   onSubmitDescription() {
     const evaluation = this.state.evaluation;
-    return evaluationService.patch(evaluation.id, { ...evaluation, id: undefined })
+    return evaluationService
+      .patch(evaluation.id, { ...evaluation, id: undefined })
       .catch(err => {
         console.log(err);
       });
@@ -291,26 +292,28 @@ export default class EvaluationCreate extends Component {
         <hr />
         <Row>
           <Col xs={12}>
-            {React.cloneElement(this.props.children, {
-              organization,
-              course,
-              instance,
-              evaluation,
-              users,
-              questions,
-              answers,
-              groups,
-              attendants,
-              onQuestionAdd: this.onQuestionAdd,
-              onQuestionRemove: this.onQuestionRemove,
-              onEvaluationChange: this.onEvaluationChange,
-              onQuestionsChange: this.onQuestionsChange,
-              onGroupsChange: this.onGroupsChange,
-              onAttendantsChange: this.onAttendantsChange,
-              onAnswerChange: this.onAnswerChange,
-              onFieldsChange: this.onFieldsChange,
-              onSubmitDescription: this.onSubmitDescription,
-            })}
+            {renderIf(course && instance && organization)(() =>
+              React.cloneElement(this.props.children, {
+                organization,
+                course,
+                instance,
+                evaluation,
+                users,
+                questions,
+                answers,
+                groups,
+                attendants,
+                onQuestionAdd: this.onQuestionAdd,
+                onQuestionRemove: this.onQuestionRemove,
+                onEvaluationChange: this.onEvaluationChange,
+                onQuestionsChange: this.onQuestionsChange,
+                onGroupsChange: this.onGroupsChange,
+                onAttendantsChange: this.onAttendantsChange,
+                onAnswerChange: this.onAnswerChange,
+                onFieldsChange: this.onFieldsChange,
+                onSubmitDescription: this.onSubmitDescription,
+              })
+            )}
           </Col>
         </Row>
       </Grid>

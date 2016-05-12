@@ -1,38 +1,22 @@
 /* eslint no-underscore-dangle:0 */
 
 import React, { Component } from 'react';
-
 import Select from 'react-select';
 import {
-  DropdownButton,
-  MenuItem,
   Form,
   Button,
   Panel,
   Col,
   Row,
 } from 'react-bootstrap';
-import { TrueFalse, MultiChoice, TShort } from '../questions';
 import Icon from 'react-fa';
 
-// import renderIf from 'render-if';
+import app from '../../app';
+const questionService = app.service('/questions');
 
+import { TrueFalse, MultiChoice, TShort } from '../questions';
+import CreateQuestionModal from '../create-question/modal';
 import { Colors } from '../../styles';
-
-const QUESTION_TYPES = {
-  multiChoice: 'Multi choice',
-  tshort: 'Short text',
-  trueFalse: 'True - False',
-};
-
-const EMPTY_QUESTION = {
-  id: 1,
-  qtype: Object.keys(QUESTION_TYPES)[0],
-  content: {
-    insert: '¿Sed ut posuere velit?',
-  },
-  tags: [''],
-};
 
 function questionFactory(qtype, props) {
   switch (qtype) {
@@ -52,8 +36,6 @@ export default class Questions extends Component {
       selected: React.PropTypes.array,
       tags: React.PropTypes.array,
       hidden: React.PropTypes.array,
-      // In memory new custom question
-      temporal: React.PropTypes.any,
 
       // From parent
       organization: React.PropTypes.object,
@@ -73,7 +55,6 @@ export default class Questions extends Component {
 
   static get defaultProps() {
     return {
-      mode: 'Select',
       selected: [],
       tags: [
         { label: 'Tag 1', value: 'Tag 1' },
@@ -82,27 +63,60 @@ export default class Questions extends Component {
         { label: 'Tag 4', value: 'Tag 4' },
         { label: 'Tag 5', value: 'Tag 5' },
       ],
-      pool: require('./TEMP'),
+      pool: [],
       hidden: [],
-      temporal: EMPTY_QUESTION,
     };
   }
 
   constructor(props) {
     super(props);
     this.state = {
+      // All tags
       tags: props.tags,
+      // Selected tags
       selected: props.selected,
-      mode: props.mode,
+      // hidden questions
       hidden: props.hidden,
+      // all the questions
       pool: props.pool,
-      temporal: props.temporal,
+      // is creating a new question
+      creating: false,
+      // common error
+      error: null,
     };
 
     this.renderQuestion = this.renderQuestion.bind(this);
     this.renderEvaluation = this.renderEvaluation.bind(this);
     this.renderQuestionPool = this.renderQuestionPool.bind(this);
     this.renderQuestionList = this.renderQuestionList.bind(this);
+    this.onModalClose = this.onModalClose.bind(this);
+    this.onModalSave = this.onModalSave.bind(this);
+  }
+
+  componentDidMount() {
+    if (this.props.organization) this.fetchQuestions(this.props.organization.id);
+  }
+
+  onModalClose(/* question */) {
+    this.setState({ creating: false });
+  }
+
+  onModalSave(question) {
+    const data = { ...question, id: undefined, organizationId: this.props.organization.id };
+
+    return questionService.create(data)
+      .then(created => {
+        this.setState({ creating: false, error: null });
+        this.props.onQuestionAdd(created);
+      })
+      .catch(error => this.setState({ error }));
+  }
+
+  fetchQuestions(organizationId) {
+    const query = { organizationId };
+    return questionService.find({ query })
+    .then(result => result.data)
+    .then(questions => this.setState({ pool: questions }));
   }
 
   renderQuestionList(questions) {
@@ -151,66 +165,6 @@ export default class Questions extends Component {
         {element}
         <hr />
       </div>
-    );
-  }
-
-  renderAddCustom() {
-    const { temporal, selected, tags } = this.state;
-    const element = questionFactory(temporal.qtype, {
-      question: temporal,
-      answer: temporal.answer,
-      fields: temporal.fields,
-      disabled: false,
-      mode: 'editor',
-      onAnswerChange: answer => this.setState({ temporal: { ...this.state.temporal, answer } }),
-      onFieldsChange: fields => this.setState({ temporal: { ...this.state.temporal, fields } }),
-      onBodyChange: content => this.setState({ temporal: { ...this.state.temporal, content } }),
-    });
-
-    return (
-      <Panel
-        collapsible
-        defaultExpanded
-        bsStyle="primary"
-        header={<h3>Custom question</h3>}
-      >
-        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit,
-          sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-        </p>
-        <div style={styles.customContainer}>
-          <DropdownButton
-            style={styles.button}
-            bsStyle="default"
-            title={QUESTION_TYPES[temporal.qtype]}
-            onSelect={qtype =>
-              this.setState({ temporal: { ...temporal, qtype, fields: undefined, answer: undefined } })
-            }
-            id="questiom-type-dropdown"
-          >
-            {Object.keys(QUESTION_TYPES).map(tag =>
-              <MenuItem
-                key={tag}
-                eventKey={tag}
-                active={temporal.qtype === tag}
-              >
-                {QUESTION_TYPES[tag]}
-              </MenuItem>
-            )}
-          </DropdownButton>
-          <div style={styles.select}>
-            <Select
-              multi
-              simpleValue={false}
-              value={selected}
-              options={tags}
-              onChange={(value, labels) => this.setState({ selected: labels })}
-              placeholder={'Tags'}
-            />
-          </div>
-        </div>
-        <hr />
-        {element}
-      </Panel>
     );
   }
 
@@ -274,9 +228,12 @@ export default class Questions extends Component {
   render() {
     return (
       <Row style={styles.container}>
+        <CreateQuestionModal show={this.state.creating} onHide={this.onModalClose} onSave={this.onModalSave} />
         <Col style={styles.rigth} xs={12} sm={12} md={5}>
           <Col xs={12}>
-            {this.renderAddCustom()}
+            <Button style={styles.custom} block bsStyle="default" onClick={() => this.setState({ creating: true })}>
+              <h5>Add custom question</h5>
+            </Button>
           </Col>
           <Col xs={12}>
             {this.renderQuestionPool()}
@@ -296,13 +253,7 @@ const styles = {
 
   },
   rigth: {
-    // borderStyle: 'solid',
-    // borderLeftWidth: 1,
-    // borderLeftStyle: 'solid',
-    // borderLeftColor: 'rgb(231, 231, 231)',
-    // borderRightWidth: 0,
-    // borderTopWidth: 0,
-    // borderBottomWidth: 0,
+
   },
   select: {
     flex: 1,
@@ -313,34 +264,8 @@ const styles = {
     alignItems: 'center',
   },
   question: {
-    // margin: 10,
-    // paddingLeft: 10,
-    // paddingRight: 10,
+
   },
-  // QUESTION_TYPESTitle: {
-  //   fontSize: 24,
-  // },
-  // tag: {
-  //   backgroundColor: Colors.MAIN,
-  //   color: Colors.WHITE,
-  //   margin: 3,
-  //   padding: 3,
-  //   paddingLeft: 15,
-  //   paddingRight: 15,
-  //   borderRadius: 5,
-  // },
-  // tagsContainer: {
-  //   display: 'flex',
-  //   flexDirection: 'row',
-  //   justifyContent: 'flex-end',
-  // },
-  // questionTitleTags: {
-  //   display: 'flex',
-  //   flexDirection: 'row',
-  //   justifyContent: 'space-between',
-  //   alignItems: 'center',
-  //   marginBottom: 10,
-  // },
   wrapper: {
     display: 'flex',
     flexDirection: 'row',
@@ -355,13 +280,14 @@ const styles = {
     marginLeft: 5,
     marginRight: 5,
   },
-  button: {
-    margin: 5,
+  custom: {
+    marginBottom: 15,
+    borderColor: Colors.MAIN,
+    color: Colors.MAIN,
   },
   customContainer: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
   },
 };

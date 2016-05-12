@@ -26,6 +26,7 @@ import DocumentDescription from './components/document-description';
 import OrganizationCreate from './components/organization-create/';
 import Organization from './components/organization';
 import OrganizationCoursesTab from './components/organization/courses';
+import OrganizationQuestionTab from './components/organization/questions';
 import OrganizationAtlasesTab from './components/organization/atlases';
 import OrganizationMembersTab from './components/organization/members';
 import OrganizationSettingsTab from './components/organization/settings';
@@ -139,7 +140,7 @@ const Routing = (
         <IndexRedirect to="courses" />
         <Route path="courses" component={OrganizationCoursesTab} />
         <Route path="atlases" component={OrganizationAtlasesTab} />
-        <Route path="questions" component={OrganizationMembersTab} />
+        <Route path="questions" component={OrganizationQuestionTab} />
         <Route path="members" component={OrganizationMembersTab} />
         <Route path="settings" component={OrganizationSettingsTab}>
           <IndexRedirect to="general" />
