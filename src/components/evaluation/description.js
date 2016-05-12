@@ -1,17 +1,19 @@
 import React, { Component } from 'react';
 import {
   Row,
-  Col,
-  Panel,
-  Radio,
-  Checkbox,
-  FormGroup,
   ControlLabel,
+  Col,
   FormControl,
-  HelpBlock,
+  Radio,
   InputGroup,
+  Panel,
+  HelpBlock,
+  Button,
+  FormGroup,
+  Checkbox,
 } from 'react-bootstrap';
 
+import { Colors } from '../../styles';
 
 const ATTENDANCES = [
   {
@@ -45,6 +47,7 @@ export default class MinTemplate extends Component {
       course: React.PropTypes.object,
       evaluation: React.PropTypes.object,
       onEvaluationChange: React.PropTypes.func,
+      onSubmitDescription: React.PropTypes.func,
     };
   }
 
@@ -54,11 +57,17 @@ export default class MinTemplate extends Component {
       checked: this.props.evaluation.discount !== 0,
     };
     this.onChange = this.onChange.bind(this);
+    this.onSubmit = this.onSubmit.bind(this);
   }
 
   onChange(field, value) {
     const evaluation = { [field]: value };
     if (this.props.onEvaluationChange) this.props.onEvaluationChange(evaluation);
+  }
+
+  onSubmit(e) {
+    e.preventDefault();
+    if (this.props.onSubmitDescription) this.props.onSubmitDescription();
   }
 
   discountMessage(discount) {
@@ -90,7 +99,7 @@ export default class MinTemplate extends Component {
       <div style={styles.container}>
         <Row>
           <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
-            <form onSubmit={this.onSubmit}>
+            <form onSubmit={this.onSubmit} style={styles.form}>
 
               <FormGroup controlId="title">
                 <ControlLabel>Title</ControlLabel>
@@ -178,7 +187,13 @@ export default class MinTemplate extends Component {
                 </Checkbox>
                 <HelpBlock>{secret ? PRIVACY.PRIVATE : PRIVACY.PUBLIC}</HelpBlock>
               </FormGroup>
-
+              <Button
+                bsStyle="primary"
+                type="submit"
+                style={styles.submit}
+              >
+                Submit
+              </Button>
             </form>
           </Col>
           <Col xsOffset={0} xs={12} sm={3}>
@@ -198,5 +213,13 @@ export default class MinTemplate extends Component {
 const styles = {
   container: {
 
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  submit: {
+    flex: 1,
+    alignSelf: 'flex-end',
   },
 };

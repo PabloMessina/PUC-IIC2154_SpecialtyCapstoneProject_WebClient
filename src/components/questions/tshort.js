@@ -1,110 +1,78 @@
 import React, { Component } from 'react';
 import {
-  Form,
   Button,
-  FormControl,
   ControlLabel,
   FormGroup,
+  FormControl,
 } from 'react-bootstrap';
-
 import renderIf from 'render-if';
-import { Colors } from '../../styles';
 
 
-export default class TShort extends Component {
+import compose, { QuestionPropTypes } from './question';
+
+
+class TShort extends Component {
 
   static get propTypes() {
-    return {
-      _id: React.PropTypes.number,
-      question: React.PropTypes.any,
-      tags: React.PropTypes.array,
-      fields: React.PropTypes.any,
-      changeQuestion: React.PropTypes.func,
-      changeFields: React.PropTypes.func,
-      permission: React.PropTypes.string,
-    };
+    return QuestionPropTypes;
   }
 
   static get defaultProps() {
-    return {
-      _id: 0,
-      question: { text: '' },
-      tags: [],
-      fields: {
-        answers: [],
-      },
-      permission: 'reader',
-    };
+    return { answer: { options: [] } };
   }
 
   constructor(props) {
     super(props);
-    this.renderEditor = this.renderEditor.bind(this);
-    this.renderResponder = this.renderResponder.bind(this);
-    this.renderReader = this.renderReader.bind(this);
-    this.changeQuestion = this.changeQuestion.bind(this);
-    this.changeFields = this.changeFields.bind(this);
-    this.addAnswer = this.addAnswer.bind(this);
-    this.removeAnswer = this.removeAnswer.bind(this);
+    this.state = {};
+    this.onTextChange = this.onTextChange.bind(this);
+    this.onAddAnswer = this.onAddAnswer.bind(this);
+    this.onRemoveAnswer = this.onRemoveAnswer.bind(this);
   }
 
-  changeQuestion(event) {
-    this.props.changeQuestion(this.props._id, {
-      text: event.target.value,
-    });
+  onAddAnswer() {
+    const { answer } = this.props;
+    const options = answer.options && answer.options.length ? answer.options : [''];
+    this.props.onAnswerChange({ options: [...options, ''] });
   }
 
-  changeFields(event, index) {
-    const fields = this.props.fields;
-    if (this.props.permission === 'editor') {
-      fields.answers[index] = event.target.value;
-      this.props.changeFields(this.props._id, fields);
-    } else if (this.props.permission === 'reader') {
-      this.props.changeFields(this.props._id, { answers: [event.target.value] });
-    }
+  onRemoveAnswer(event, index) {
+    event.preventDefault();
+
+    const { answer } = this.props;
+    const options = answer.options && answer.options.length ? answer.options : [''];
+    options.splice(index, 1);
+    this.props.onAnswerChange({ options });
   }
 
-  addAnswer() {
-    const fields = this.props.fields;
-    fields.answers.push('');
-    this.props.changeFields(this.props._id, fields);
-  }
-
-  removeAnswer(event, index) {
-    const fields = this.props.fields;
-    fields.answers.splice(index, 1);
-    this.props.changeFields(this.props._id, fields);
+  onTextChange(value, index) {
+    const { answer } = this.props;
+    const options = answer.options && answer.options.length ? answer.options : [''];
+    options[index] = value;
+    this.props.onAnswerChange({ options });
   }
 
   renderEditor() {
+    const { answer, disabled } = this.props;
+    const options = answer.options && answer.options.length ? answer.options : [''];
+
     return (
-      <Form style={styles.form}>
+      <form style={styles.container}>
         <FormGroup>
-          <ControlLabel>Statement</ControlLabel>
-          <FormControl
-            style={styles.textArea}
-            componentClass="textarea"
-            placeholder="Add a statement"
-            value={this.props.question.text}
-            onChange={this.changeQuestion}
-          />
-        </FormGroup>
-        <FormGroup>
-          <ControlLabel>Choices </ControlLabel>
-          {this.props.fields.answers.map((answer, i) => (
+          {options.map((option, i) => (
             <FormGroup key={i} style={styles.row}>
               <FormControl
                 type="text"
-                placeholder="Ingrese su respuesta"
-                value={answer}
-                onChange={e => this.changeFields(e, i)}
+                placeholder={i > 0 ? 'Enter alternative answer' : 'Enter answer'}
+                value={option}
+                disabled={disabled}
+                onChange={e => this.onTextChange(e.target.value, i)}
               />
-              {renderIf(i > 0)(() => (
+              {renderIf(!disabled && i > 0)(() => (
                 <Button
+                  style={styles.addButton}
                   bsStyle="link"
-                  bsSize="large"
                   type="button"
-                  onClick={e => this.removeAnswer(e, i)}
+                  onClick={e => this.onRemoveAnswer(e, i)}
                 >
                   -
                 </Button>
@@ -113,101 +81,65 @@ export default class TShort extends Component {
           ))}
         </FormGroup>
         <Button
-          style={[styles.button, styles.add]}
+          style={styles.addButton}
           bsStyle="link"
           type="button"
-          value="Agregar respuesta"
-          onClick={this.addAnswer}
+          disabled={disabled}
+          onClick={this.onAddAnswer}
         >
-          Agregar respuesta
+          Add another posible answer
         </Button>
-      </Form>
+      </form>
     );
   }
+
 
   renderResponder() {
-    return (
-      <Form style={styles.form}>
-        <FormGroup>
-          <ControlLabel>{this.props.question.text}</ControlLabel>
-          <FormControl
-            style={styles.input}
-            type="text"
-            placeholder="Ingrese su respuesta"
-            value={this.props.fields.answers[0]}
-            onChange={e => this.changeFields(e)}
-          />
-        </FormGroup>
-      </Form>
-    );
-  }
+    const { answer, disabled } = this.props;
+    const options = answer.options;
 
-  renderReader() {
     return (
-      <div>
-        <p>{this.props.question.text}</p>
-        <p style={styles.instruction}>Choices</p>
-        <ul>
-          {this.props.fields.answers.map((answer, index) => <li key={index} style={styles.input}>{answer}</li>)}
-        </ul>
-      </div>
+      <form style={styles.container}>
+        {options.map((option, i) =>
+          <FormGroup key={i}>
+            <FormControl
+              style={styles.input}
+              type="text"
+              disabled={disabled}
+              placeholder="Your answer"
+              value={option}
+              onChange={e => this.onTextChange(e.target.value, i)}
+            />
+          </FormGroup>
+        )}
+      </form>
     );
   }
 
   render() {
-    return (
-      <div>
-      {(() => {
-        switch (this.props.permission) {
-          case 'editor': return (this.renderEditor());
-          case 'responder': return (this.renderResponder());
-          case 'reader': return (this.renderReader());
-          default: return null;
-        }})()}
-      </div>
-    );
+    switch (this.props.mode) {
+      case 'editor': return this.renderEditor();
+      case 'responder': return this.renderResponder();
+      case 'reader': return this.renderResponder();
+      default: return null;
+    }
   }
 }
 
 const styles = {
   container: {
-  },
-  title: {
-    fontSize: 18,
-    margin: 0,
-  },
-  form: {
-    margin: 0,
-  },
-  tag: {
-    marginLeft: 3,
-    marginRight: 3,
-  },
-  header: {
-    padding: -5,
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    marginTop: 15,
   },
   row: {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center',
-  },
-  input: {
-    alignSelf: 'center',
-  },
-  textArea: {
-    alignSelf: 'center',
-    margin: 0,
-  },
-  column: {
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-around',
+    marginBottom: 4,
   },
   button: {
     textDecoration: 'none',
   },
 };
+
+export default compose(TShort);

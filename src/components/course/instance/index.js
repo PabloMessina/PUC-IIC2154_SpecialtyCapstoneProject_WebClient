@@ -44,7 +44,7 @@ export default class Instance extends Component {
 
   renderListElement(element, i) {
     const { course, instance } = this.props;
-    const url = `/courses/show/${course.id}/instances/${instance.id}/${element.path}`;
+    const url = `/courses/show/${course.id}/instances/show/${instance.id}/${element.path}`;
     return (
       <ListGroupItem key={i} onClick={() => browserHistory.push(url)}>
         <Icon style={styles.icon} name={element.icon} /> {element.name}

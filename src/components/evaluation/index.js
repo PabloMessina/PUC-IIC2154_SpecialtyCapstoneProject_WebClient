@@ -5,9 +5,10 @@ import renderIf from 'render-if';
 
 import app from '../../app';
 const organizationService = app.service('/organizations');
-const userService = app.service('/users');
 const courseService = app.service('/courses');
 const instanceService = app.service('/instances');
+const evaluationService = app.service('/evaluations');
+const evaluationsQuestionService = app.service('/evaluations-questions');
 
 const SECTIONS = [
   {
@@ -16,14 +17,14 @@ const SECTIONS = [
     path: 'description',
   },
   {
-    name: 'Questions',
-    description: 'List of questions',
-    path: 'questions',
-  },
-  {
     name: 'Students',
     description: 'Participants and groups',
     path: 'students',
+  },
+  {
+    name: 'Questions',
+    description: 'List of questions',
+    path: 'questions',
   },
   {
     name: 'Results',
@@ -48,6 +49,7 @@ export default class EvaluationCreate extends Component {
       groups: React.PropTypes.array,
       users: React.PropTypes.array,
       attendants: React.PropTypes.array,
+      answers: React.PropTypes.object,
       // React Router
       params: React.PropTypes.object,
       children: React.PropTypes.any,
@@ -70,6 +72,7 @@ export default class EvaluationCreate extends Component {
        { id: 4, name: 'Bustamante Jose' },
       ],
       questions: [],
+      answers: {},
       groups: [[]],
       attendants: [],
     };
@@ -84,36 +87,44 @@ export default class EvaluationCreate extends Component {
       // Current evaluation
       evaluation: props.params.evaluation,
       users: props.users,
-      questions: props.questions,
+      questions: props.params.evaluation.questions || props.questions,
       groups: props.groups,
+      answers: props.answers,
       attendants: props.attendants,
+      syncing: false,
     };
+
+    // console.log(JSON.stringify(this.state.evaluation, null, 4));
 
     this.renderSection = this.renderSection.bind(this);
 
     this.fetchOrganization = this.fetchOrganization.bind(this);
     this.fetchCourse = this.fetchCourse.bind(this);
     this.fetchInstance = this.fetchInstance.bind(this);
+    this.fetchAll = this.fetchAll.bind(this);
 
     this.onEvaluationChange = this.onEvaluationChange.bind(this);
     this.onQuestionsChange = this.onQuestionsChange.bind(this);
     this.onGroupsChange = this.onGroupsChange.bind(this);
     this.onAttendantsChange = this.onAttendantsChange.bind(this);
+    this.onAnswerChange = this.onAnswerChange.bind(this);
+    this.onFieldsChange = this.onFieldsChange.bind(this);
+    this.onQuestionAdd = this.onQuestionAdd.bind(this);
+    this.onQuestionRemove = this.onQuestionRemove.bind(this);
+    this.onSubmitDescription = this.onSubmitDescription.bind(this);
   }
 
   componentDidMount() {
-    const instanceId = this.state.evaluation.instanceId;
-    return this.fetchInstance(instanceId)
-      .then(instance => this.fetchCourse(instance.courseId))
-      .then(course => this.fetchOrganization(course.organizationId));
+    this.fetchAll(this.state.evaluation);
   }
 
   componentWillReceiveProps(nextProps) {
     // Because router onEnter is not called when navigation between childrens.
-    const course = nextProps.params.course;
-    if (course && course.id !== this.state.course.id) {
-      this.setState({ course });
-      this.fetchOrganization(course.organizationId);
+    const evaluation = nextProps.params.evaluation;
+    if (evaluation && evaluation.id !== this.state.evaluation.id) {
+      const questions = evaluation.questions || [];
+      this.setState({ evaluation, questions });
+      this.fetchAll(evaluation);
     }
   }
 
@@ -133,6 +144,58 @@ export default class EvaluationCreate extends Component {
 
   onAttendantsChange(attendants) {
     if (attendants) this.setState({ attendants });
+  }
+
+  onAnswerChange(id, answer) {
+    if (id) {
+      const answers = { ...this.state.answers, [id]: answer };
+      this.setState({ answers });
+    }
+  }
+
+  onFieldsChange(id, fields) {
+    if (id) {
+      const questions = this.state.questions;
+      const index = this.state.question.findIndex(q => q.id === id);
+      if (index > -1) questions[index].fields = fields;
+      this.setState({ questions });
+    }
+  }
+
+  onQuestionAdd(question) {
+    if (!question) return null;
+    this.setState({ syncing: true });
+
+    const questionId = question.id;
+    const evaluationId = this.state.evaluation.id;
+    return evaluationsQuestionService.create({ questionId, evaluationId })
+      .then(evaluationsQuestion => [...this.state.questions, { ...question, evaluationsQuestion }])
+      .then(questions => this.setState({ questions, syncing: false }))
+      .catch(error => this.setState({ error, syncing: false }));
+  }
+
+  onQuestionRemove(question) {
+    if (!question) return null;
+    this.setState({ syncing: true });
+
+    return evaluationsQuestionService.remove(question.evaluationsQuestion.id)
+      .then(() => this.state.questions.filter(q => q.id !== question.id))
+      .then(questions => this.setState({ questions, syncing: false }))
+      .catch(error => this.setState({ error, syncing: false }));
+  }
+
+  onSubmitDescription() {
+    const evaluation = this.state.evaluation;
+    return evaluationService
+      .patch(evaluation.id, { ...evaluation, id: undefined })
+      .catch(error => this.setState({ error }));
+  }
+
+  fetchAll(evaluation) {
+    const instanceId = evaluation.instanceId;
+    return this.fetchInstance(instanceId)
+      .then(instance => this.fetchCourse(instance.courseId))
+      .then(course => this.fetchOrganization(course.organizationId));
   }
 
   fetchCourse(courseId) {
@@ -190,7 +253,7 @@ export default class EvaluationCreate extends Component {
   }
 
   render() {
-    const { course, instance, organization, evaluation, users, questions, groups, attendants } = this.state;
+    const { course, instance, organization, evaluation, users, questions, answers, groups, attendants } = this.state;
 
     return (
       <Grid style={styles.container}>
@@ -224,13 +287,20 @@ export default class EvaluationCreate extends Component {
         </Breadcrumb>
 
         <Row>
-          <Col xs={12} md={9}>
+          <Col xs={12} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <h2>
               Evaluation
               {renderIf(this.state.evaluation && this.state.evaluation.title)(() => (
                 <small style={{ marginLeft: 4 }}> {this.state.evaluation.title}</small>
               ))}
             </h2>
+            <div>
+              {renderIf(this.state.syncing)(() =>
+                <span style={{ color: 'grey' }}>
+                  Syncing...
+                </span>
+              )}
+            </div>
             {/*
             {renderIf(this.state.evaluation && this.state.evaluation.description)(() => (
               <p style={{ marginLeft: 4 }}> {this.state.evaluation.description}</p>
@@ -248,20 +318,28 @@ export default class EvaluationCreate extends Component {
         <hr />
         <Row>
           <Col xs={12}>
-            {React.cloneElement(this.props.children, {
-              organization,
-              course,
-              instance,
-              evaluation,
-              users,
-              questions,
-              groups,
-              attendants,
-              onEvaluationChange: this.onEvaluationChange,
-              onQuestionsChange: this.onQuestionsChange,
-              onGroupsChange: this.onGroupsChange,
-              onAttendantsChange: this.onAttendantsChange,
-            })}
+            {renderIf(course && instance && organization)(() =>
+              React.cloneElement(this.props.children, {
+                organization,
+                course,
+                instance,
+                evaluation,
+                users,
+                questions,
+                answers,
+                groups,
+                attendants,
+                onQuestionAdd: this.onQuestionAdd,
+                onQuestionRemove: this.onQuestionRemove,
+                onEvaluationChange: this.onEvaluationChange,
+                onQuestionsChange: this.onQuestionsChange,
+                onGroupsChange: this.onGroupsChange,
+                onAttendantsChange: this.onAttendantsChange,
+                onAnswerChange: this.onAnswerChange,
+                onFieldsChange: this.onFieldsChange,
+                onSubmitDescription: this.onSubmitDescription,
+              })
+            )}
           </Col>
         </Row>
       </Grid>
