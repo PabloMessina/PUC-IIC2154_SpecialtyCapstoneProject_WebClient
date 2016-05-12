@@ -17,7 +17,6 @@ export default class RichEditor extends Component {
     super(props);
 
     this.state = {
-      // editorState: EditorState.createWithContent(props.content),
       editorState: EditorState.createEmpty(),
     };
 

@@ -17,12 +17,6 @@ const Video = (props) => {
   return <video controls src={props.blockProps.src} style={styles.media} />;
 };
 
-const styles = {
-  media: {
-    width: '60%',
-  },
-};
-
 export const createBlockRenderer = (modifyBlock) => {
   const getBlock = (type, props) => {
     const blocks = {
@@ -58,4 +52,10 @@ export const createBlockRenderer = (modifyBlock) => {
 
     return null;
   };
+};
+
+const styles = {
+  media: {
+    width: '60%',
+  },
 };

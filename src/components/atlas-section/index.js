@@ -36,10 +36,6 @@ export default class AtlasSection extends Component {
   }
 
   onChangeContent(content) {
-    // if (!_.isEqual(content.ops, this.props.section.content)) {
-      // this.props.onChangeContent(content.ops);
-    // }
-    //    console.log(content)
     this.props.onChangeContent(content);
   }
 

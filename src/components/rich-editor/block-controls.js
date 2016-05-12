@@ -95,25 +95,22 @@ export default class BlockControls extends Component {
     const { editorState } = this.props;
     const selection = editorState.getSelection();
     const activeBlockType = editorState
-    .getCurrentContent()
-    .getBlockForKey(selection.getStartKey())
-    .getType();
+      .getCurrentContent()
+      .getBlockForKey(selection.getStartKey())
+      .getType();
 
     return (
       <div style={styles.controls} >
-        {BLOCK_TYPES.map((type) => {
-          const { label, icon, blockType } = type;
-          return (
-            <StyleButton
-              key={blockType}
-              active={blockType === activeBlockType}
-              label={label}
-              icon={icon}
-              onToggle={this.onBlockToggle}
-              style={blockType}
-            />
-          );
-        })}
+        {BLOCK_TYPES.map(({ label, icon, blockType }) =>
+          <StyleButton
+            key={blockType}
+            active={blockType === activeBlockType}
+            label={label}
+            icon={icon}
+            onToggle={this.onBlockToggle}
+            style={blockType}
+          />
+        )}
       </div>
     );
   }
