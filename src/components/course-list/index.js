@@ -45,7 +45,7 @@ export default class CourseList extends Component {
           </Media.Left>
           <Media.Body>
             <Media.Heading style={{ cursor: 'pointer' }}>
-              <span onClick={() => this.onClick(course)}>{course.name}</span>
+              <a href="#" onClick={() => this.onClick(course)}>{course.name}</a>
             </Media.Heading>
             <p>{course.description}</p>
           </Media.Body>

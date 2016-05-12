@@ -1,6 +1,16 @@
 import React, { Component } from 'react';
-import { Table } from 'react-bootstrap';
-// import renderIf from 'render-if';
+import {
+  Row,
+  Col,
+  Button,
+  FormGroup,
+  ControlLabel,
+  FormControl,
+  HelpBlock,
+} from 'react-bootstrap';
+
+import app, { currentUser } from '../../app';
+const userService = app.service('/users');
 
 /**
  * Component life-cycle:
@@ -13,40 +23,78 @@ import { Table } from 'react-bootstrap';
  */
 
 export default class General extends Component {
+  static get propTypes() {
+    return {
+      user: React.PropTypes.object,
+    };
+  }
+
+  static get defaultProps() {
+    return {
+
+    };
+  }
+
+  constructor(props) {
+    super(props);
+    const user = this.props.user || currentUser();
+    this.state = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      password: user.password,
+    };
+    this.onSubmit = this.onSubmit.bind(this);
+  }
+
+  onSubmit(e) {
+    const patch = {
+      name: this.state.name,
+      email: this.state.email,
+    };
+    return userService.patch(this.state.id, patch)
+      .then(user => this.setState({ user }))
+      .catch(error => console.log(error));
+  }
 
   render() {
     return (
       <div style={styles.container}>
         <h1>General</h1>
-        <Table responsive>
-          <tbody>
-            <tr>
-              <td bold>Name</td>
-              <td>Juan Perez</td>
-              <td href="#"><a>Edit</a></td>
-            </tr>
-            <tr>
-              <td>Email</td>
-              <td>jperez@uc.cl</td>
-              <td href="#"><a>Edit</a></td>
-            </tr>
-            <tr>
-              <td>Password</td>
-              <td>******</td>
-              <td href="#"><a>Edit</a></td>
-            </tr>
-            <tr>
-              <td>Organizations</td>
-              <td>Universidad Católica</td>
-              <td href="#"><a>Edit</a></td>
-            </tr>
-            <tr>
-              <td>Role</td>
-              <td>Estudiante</td>
-              <td href="#"><a>Edit</a></td>
-            </tr>
-          </tbody>
-        </Table>
+        <br/>
+        <form style={styles.container} >
+          <FormGroup controlId="name">
+            <ControlLabel>Name</ControlLabel>
+            <FormControl
+              type="text"
+              value={this.state.name}
+              label="Name"
+              onChange={e => this.setState({ name: e.target.value })}
+            />
+          </FormGroup>
+          <FormGroup controlId="email">
+            <ControlLabel>Email</ControlLabel>
+            <FormControl
+              type="text"
+              value={this.state.email}
+              label="email"
+              onChange={e => this.setState({ email: e.target.value })}
+            />
+          </FormGroup><FormGroup controlId="password">
+            <ControlLabel>Password</ControlLabel>
+            <FormControl
+              type="text"
+              value={this.state.password}
+              label="Password"
+              onChange={e => this.setState({ password: e.target.value })}
+            />
+          </FormGroup>
+        </form>
+        <hr />
+
+        <Button bsStyle="primary" type="submit" onSubmit={this.onSubmit} >
+          Submit Changes
+        </Button>
       </div>
     );
   }

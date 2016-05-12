@@ -26,6 +26,7 @@ import DocumentDescription from './components/document-description';
 import OrganizationCreate from './components/organization-create/';
 import Organization from './components/organization';
 import OrganizationCoursesTab from './components/organization/courses';
+import OrganizationQuestionTab from './components/organization/questions';
 import OrganizationAtlasesTab from './components/organization/atlases';
 import OrganizationMembersTab from './components/organization/members';
 import OrganizationSettingsTab from './components/organization/settings';
@@ -49,7 +50,6 @@ import EvaluationRecorrection from './components/evaluation/recorrection';
 
 import AtlasCreate from './components/atlas-create/';
 import AtlasBook from './components/atlas-book/';
-import Questions from './components/questions/';
 
 import Renderer3D from './components/renderer-3d/';
 import RendererWrapper from './components/renderer-wrapper/';
@@ -79,21 +79,27 @@ function requireAnnon(nextState, replace) {
   }
 }
 
-function populate(...names) {
+function fetching(...names) {
   return function func(nextState, replace, next) {
     // Auth if user is not present
     const user = currentUser() ? Promise.resolve(true) : auth();
 
     // Auth user (if needed) then perform parallel requests to the server
     const requests = user.then(() => {
-      const promises = names.map(({ field, to, service }) => {
-        // Get object in params if present
-        const param = nextState.params[to];
-        if (param) return param;
+      const promises = names.map(({ field, to, service, populate }) => {
+        // TODO: Get object in params if present
+        // const param = nextState.params[to];
+        // if (param) return param;
 
         // Get object from Web API
-        const identifier = nextState.params[field];
-        return app.service(service || `/${to}s`).get(identifier)
+        const query = {
+          id: nextState.params[field],
+          $limit: 1,
+          $populate: populate,
+        };
+        return app.service(service || `/${to}s`).find({ query })
+          // TODO: redirect to 404 if not found
+          .then(result => (result.total ? result.data[0] : {}))
           .then(object => (nextState.params[to] = object));
       });
       return Promise.all(promises);
@@ -119,7 +125,7 @@ const Routing = (
       <Route
         path="documents/:docId"
         component={DocumentDescription}
-        onEnter={populate({ field: 'docId', to: 'atlas', service: 'atlases' })}
+        onEnter={fetching({ field: 'docId', to: 'atlas', service: 'atlases' })}
       />
 
       <Route path="settings" component={Settings} >
@@ -135,12 +141,12 @@ const Routing = (
       <Route
         path="organizations/show/:organizationId"
         component={Organization}
-        onEnter={populate({ field: 'organizationId', to: 'organization' })}
+        onEnter={fetching({ field: 'organizationId', to: 'organization' })}
       >
         <IndexRedirect to="courses" />
         <Route path="courses" component={OrganizationCoursesTab} />
         <Route path="atlases" component={OrganizationAtlasesTab} />
-        <Route path="questions" component={OrganizationMembersTab} />
+        <Route path="questions" component={OrganizationQuestionTab} />
         <Route path="members" component={OrganizationMembersTab} />
         <Route path="settings" component={OrganizationSettingsTab}>
           <IndexRedirect to="general" />
@@ -152,18 +158,18 @@ const Routing = (
       <Route
         path="organizations/show/:organizationId/courses/create"
         component={CourseCreate}
-        onEnter={populate({ field: 'organizationId', to: 'organization' })}
+        onEnter={fetching({ field: 'organizationId', to: 'organization' })}
       />
 
       <Route
         path="courses/show/:courseId"
         component={Course}
-        onEnter={populate({ field: 'courseId', to: 'course' })}
+        onEnter={fetching({ field: 'courseId', to: 'course' })}
       >
         <IndexRedirect to="instances" />
         <Route path="instances" component={CourseInstances}>
           <Route path="settings" component={CourseSettings} />
-          <Route path=":instanceId" component={CourseInstance}>
+          <Route path="show/:instanceId" component={CourseInstance}>
             <IndexRedirect to="evaluations" />
             <Route path="students" component={CourseInstanceStudents} />
             <Route path="analytics" component={CourseInstanceStudents} />
@@ -175,7 +181,7 @@ const Routing = (
       <Route
         path="evaluations/show/:evaluationId"
         component={Evaluation}
-        onEnter={populate({ field: 'evaluationId', to: 'evaluation' })}
+        onEnter={fetching({ field: 'evaluationId', to: 'evaluation', populate: ['attendance', 'question'] })}
       >
         <IndexRedirect to="description" />
         <Route path="description" component={EvaluationDescripction} />
@@ -188,16 +194,16 @@ const Routing = (
       <Route
         path="organizations/show/:organizationId/atlases/create"
         component={AtlasCreate}
-        onEnter={populate({ field: 'organizationId', to: 'organization' })}
+        onEnter={fetching({ field: 'organizationId', to: 'organization' })}
       />
 
       <Route
         path="editor/:atlasId"
         component={AtlasBook}
-        onEnter={populate({ field: 'atlasId', to: 'atlas', service: 'atlases' })}
+        onEnter={fetching({ field: 'atlasId', to: 'atlas', service: 'atlases' })}
       />
+
       <Route path="template" component={Template} />
-      <Route path="questions" component={Questions} />
     </Route>
   </Router>
 );

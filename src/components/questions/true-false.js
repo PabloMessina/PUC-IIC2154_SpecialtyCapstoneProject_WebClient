@@ -1,161 +1,54 @@
 import React, { Component } from 'react';
 import {
-  Form,
   Button,
-  FormControl,
-  ControlLabel,
   FormGroup,
 } from 'react-bootstrap';
 
 import { Colors } from '../../styles';
+import compose, { QuestionPropTypes } from './question';
 
-export default class TrueFalse extends Component {
+
+class TrueFalse extends Component {
 
   static get propTypes() {
-    return {
-      _id: React.PropTypes.number,
-      question: React.PropTypes.any,
-      tags: React.PropTypes.array,
-      fields: React.PropTypes.any,
-      changeQuestion: React.PropTypes.func,
-      changeFields: React.PropTypes.func,
-      permission: React.PropTypes.string,
-    };
+    return QuestionPropTypes;
   }
 
   static get defaultProps() {
-    return {
-      _id: 0,
-      question: { text: '' },
-      tags: [],
-      fields: {
-        answer: 0,
-      },
-      permission: 'reader',
-    };
-  }
-
-  constructor(props) {
-    super(props);
-    this.renderEditor = this.renderEditor.bind(this);
-    this.renderResponder = this.renderResponder.bind(this);
-    this.renderReader = this.renderReader.bind(this);
-    this.changeQuestion = this.changeQuestion.bind(this);
-    this.changeFields = this.changeFields.bind(this);
-  }
-
-  changeQuestion(event) {
-    this.props.changeQuestion(this.props._id, {
-      text: event.target.value,
-    });
-  }
-
-  changeFields(value) {
-    const fields = this.props.fields;
-    fields.answer = fields.answer === value ? 0 : value;
-    this.props.changeFields(this.props._id, fields);
-  }
-
-  renderEditor() {
-    return (
-      <Form>
-        <FormGroup>
-          <ControlLabel style={styles.instruction}>Statement</ControlLabel>
-          <FormControl
-            style={styles.textArea}
-            componentClass="textarea"
-            placeholder="Add a statement"
-            value={this.props.question.text}
-            onChange={this.changeQuestion}
-          />
-        </FormGroup>
-        <FormGroup style={styles.buttons}>
-          <Button
-            bsStyle="default"
-            style={this.props.fields.answer === 1 ? styles.buttonTrue : styles.button}
-            onClick={() => this.changeFields(1)}
-          >
-            True
-          </Button>
-          <Button
-            bsStyle="default"
-            style={this.props.fields.answer === -1 ? styles.buttonFalse : styles.button}
-            onClick={() => this.changeFields(-1)}
-          >
-            False
-          </Button>
-        </FormGroup>
-    </Form>
-    );
-  }
-
-  renderResponder() {
-    return (
-      <Form>
-        <ControlLabel>{this.props.question.text}</ControlLabel>
-        <FormGroup style={styles.buttons}>
-          <Button
-            bsStyle="default"
-            style={this.props.fields.answer === 1 ? styles.buttonTrue : styles.button}
-            onClick={() => this.changeFields(1)}
-          >
-            True
-          </Button>
-          <Button
-            bsStyle="default"
-            style={this.props.fields.answer === -1 ? styles.buttonFalse : styles.button}
-            onClick={() => this.changeFields(-1)}
-          >
-            False
-          </Button>
-        </FormGroup>
-      </Form>
-    );
-  }
-
-  renderReader() {
-    return (
-      <div>
-        <p>{this.props.question.text}</p>
-        <div style={styles.buttons}>
-          <Button
-            bsStyle="default"
-            style={this.props.fields.answer === 1 ? styles.buttonTrue : styles.button}
-            disabled
-            onClick={() => this.onClick(1)}
-          >
-            True
-          </Button>
-          <Button
-            bsStyle="default"
-            style={this.props.fields.answer === -1 ? styles.buttonFalse : styles.button}
-            disabled
-            onClick={() => this.onClick(-1)}
-          >
-            False
-          </Button>
-        </div>
-      </div>
-    );
+    return { answer: { value: 0 } };
   }
 
   render() {
+    const { answer, disabled, onAnswerChange } = this.props;
+    const value = answer.value;
+
+    const left = {
+      disabled,
+      style: value === 1 ? { ...styles.button, ...styles.buttonTrue } : styles.button,
+      onClick: () => onAnswerChange({ value: value === 1 ? 0 : 1 }),
+    };
+
+    const right = {
+      disabled,
+      style: value === -1 ? { ...styles.button, ...styles.buttonFalse } : styles.button,
+      onClick: () => onAnswerChange({ value: value === -1 ? 0 : -1 }),
+    };
+
     return (
-      <div>
-        {(() => {
-          switch (this.props.permission) {
-            case 'editor': return (this.renderEditor());
-            case 'responder': return (this.renderResponder());
-            case 'reader': return (this.renderReader());
-            default: return null;
-          }})()}
-      </div>
+      <form style={styles.container}>
+        <FormGroup style={styles.buttons}>
+          <Button {...left}>True</Button>
+          <div style={{ width: 20 }} />
+          <Button {...right}>False</Button>
+        </FormGroup>
+      </form>
     );
   }
 }
 
 const styles = {
   container: {
+    marginTop: 15,
   },
   buttons: {
     display: 'flex',
@@ -164,6 +57,8 @@ const styles = {
   },
   button: {
     // backgroundColor: Colors.GRAY,
+    display: 'flex',
+    flex: 1,
   },
   buttonTrue: {
     backgroundColor: Colors.MAIN,
@@ -174,3 +69,5 @@ const styles = {
     color: Colors.WHITE,
   },
 };
+
+export default compose(TrueFalse);
