@@ -51,8 +51,8 @@ import EvaluationRecorrection from './components/evaluation/recorrection';
 import AtlasCreate from './components/atlas-create/';
 import AtlasBook from './components/atlas-book/';
 
-import Renderer3D from './components/renderer-3d/';
 import RendererWrapper from './components/renderer-wrapper/';
+import ImageWithLabels from './components/image-with-labels/';
 
 // Development help
 // Go AtlasBook: http://localhost:3000/template
@@ -118,8 +118,8 @@ const Routing = (
       <Route path="login" component={Login} onEnter={requireAnnon} />
       <Route path="signup" component={SignUp} onEnter={requireAnnon} />
 
-      <Route path="renderer-3d" component={Renderer3D} />
       <Route path="renderer-wrapper" component={RendererWrapper} />
+      <Route path="image-with-labels" component={ImageWithLabels} />
 
       <Route path="documents" component={DocumentList} onEnter={requireAuth} />
       <Route
