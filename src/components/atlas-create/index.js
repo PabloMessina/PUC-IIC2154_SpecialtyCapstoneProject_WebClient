@@ -25,7 +25,7 @@ export default class AtlasCreate extends Component {
     return {
       title: React.PropTypes.string,
       authors: React.PropTypes.array,
-      tags: React.PropTypes.tags,
+      tags: React.PropTypes.array,
       description: React.PropTypes.string,
       cover: React.PropTypes.string,
       imagePreviewUrl: React.PropTypes.string,
@@ -70,6 +70,7 @@ export default class AtlasCreate extends Component {
     this.deleteAuthor = this.deleteAuthor.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
     this.handleSelectChange = this.handleSelectChange.bind(this);
+    this.mapArray = this.mapArray.bind(this);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -82,18 +83,28 @@ export default class AtlasCreate extends Component {
 
   onSubmit(e) {
     e.preventDefault();
-
+    const tagsArray = [];
+    const tags = this.state.tags;
+    Object.keys(tags).forEach((key, index) => {
+      const tag = tags[key];
+      tagsArray[index] = tag.value;
+    });
     const newAtlas = {
       title: this.state.title,
       description: this.state.description,
       cover: { url: this.state.cover },
       organizationId: this.state.organization.id,
-      tags: this.state.tags,
+      tags: tagsArray,
     };
 
     atlasService.create(newAtlas)
       .then(atlas => browserHistory.push(`/editor/${atlas.id}/`))
       .catch(error => this.setState({ error }));
+  }
+
+  mapArray(item) {
+    const array = [item.value].join();
+    return array;
   }
 
   changeAuthor(event, index) {
@@ -117,7 +128,6 @@ export default class AtlasCreate extends Component {
 
   // To handle the changes in the tags
   handleSelectChange(value, tags) {
-    this.forceUpdate();
     return this.setState({ tags });
   }
 

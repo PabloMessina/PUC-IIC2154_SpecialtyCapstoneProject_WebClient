@@ -9,6 +9,10 @@ export default class AtlasThumbnail extends Component {
     const route = `/documents/${this.props.document.id}`;
     const doc = this.props.document;
     let image = doc.cover.url;
+    let tags = doc.tags;
+    if (tags.length === 0) {
+      tags = ['No tags'];
+    }
     image = image || 'http://sightlinemediaentertainment.com/wp-content/uploads/2015/09/placeholder-cover.jpg';
     return (
       <Panel style={styles.box} onClick={() => browserHistory.push(route)}>
@@ -17,7 +21,7 @@ export default class AtlasThumbnail extends Component {
           <p style={styles.name}>{doc.title}</p>
         </div>
         <div style={styles.texts}>
-          <p style={styles.author}>{doc.tags}</p>
+          <p style={styles.author}>{tags}</p>
         </div>
         <Rater total={5} rating={2} />
       </Panel>
@@ -60,7 +64,7 @@ const styles = {
     backgroundImage: 'linear-gradient(left, rgba(255,255,255,0) 0%, white 80%, white 100%',
   },
   texts: {
-    maxWidth: '100%',
+    width: '100%',
     maxHeight: '20%',
     overflow: 'hidden',
   },

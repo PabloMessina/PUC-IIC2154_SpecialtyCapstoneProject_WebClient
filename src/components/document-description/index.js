@@ -1,11 +1,13 @@
 import React, { Component } from 'react';
-import { Grid, Image, Panel, Col, Row, Button, Media, Glyphicon, Nav, NavItem } from 'react-bootstrap';
+import { Grid, Image, Panel, Col, Row, Button, Glyphicon, Nav, NavItem } from 'react-bootstrap';
 import Icon from 'react-fa';
+import { browserHistory } from 'react-router';
+import moment from 'moment';
+
 import app, { currentUser } from '../../app';
 import { Colors } from '../../styles';
-import { browserHistory } from 'react-router';
 const atlasesService = app.service('/atlases');
-const annotationService = app.service('/annotations');
+// const annotationService = app.service('/annotations');
 // const bookmarkService = app.service('/annotations');
 
 // TODO descomentar feathers y asegurar conexion
@@ -23,6 +25,7 @@ export default class DocumentDescription extends Component {
     super(props);
     this.state = {
       atlas: props.atlas,
+      tags: [],
       selectedTab: 1,
       annotations: [{
         content: 'Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis. Fusce condimentum nunc ac nisi vulputate fringilla. Donec lacinia congue felis in faucibus',
@@ -54,8 +57,7 @@ export default class DocumentDescription extends Component {
         sectionId: 'Seccion 12.3',
         createdAt: '05-11-2015',
         updatedAt: '22-12-2015',
-      },
-        ],
+      }],
       bookmarks: [{
         sectionId: '19.4',
         savedAs: 'Musculos Faciales y Movimiento Mandibular',
@@ -68,8 +70,7 @@ export default class DocumentDescription extends Component {
       }, {
         sectionId: '17',
         savedAs: 'Repasar',
-      },
-    ],
+      }],
     };
     this.handleSelect = this.handleSelect.bind(this);
     this.handleDeleteAnnotation = this.handleDeleteAnnotation.bind(this);
@@ -140,7 +141,7 @@ export default class DocumentDescription extends Component {
    * @param {integer} id {id value of annotation for backEnd deletion}
    */
   handleDeleteAnnotation(key, id) {
-    if (window.confirm("Delete annotation? Deleted annotations cannot be recovered")) {
+    if (window.confirm('Delete annotation? Deleted annotations cannot be recovered')) {
       // Delete annotation from state
       const annotations = [...this.state.annotations];
       annotations.splice(key, 1);
@@ -166,7 +167,7 @@ export default class DocumentDescription extends Component {
    * @param {integer} id {id value of bookmark for backEnd deletion}
    */
   handleDeleteBookmark(key, id) {
-    if (window.confirm("Delete bookmark? Deleted bookmarks cannot be recovered")) {
+    if (window.confirm('Delete bookmark? Deleted bookmarks cannot be recovered')) {
       // Delete annotation from state
       const bookmarks = [...this.state.bookmarks];
       bookmarks.splice(key, 1);
@@ -186,71 +187,69 @@ export default class DocumentDescription extends Component {
   }
 
   renderAnnotations() {
-    return (
-      this.state.annotations.map((annotation, key) =>
-        <div key={key} style={styles.contentContainer}>
-          <div style={styles.rowUp}>
-            <div style={styles.annotationTitle}>
-              <h3> {annotation.sectionId} </h3>
-            </div>
-            <div>
-              <Button bsStyle="link" bsSize="small" style={styles.buttonPanel}>
-                <Icon
-                  name="fa fa-pencil"
-                /> Edit
-              </Button>
-              <Button
-                style={styles.buttonPanel}
-                bsStyle="link"
-                bsSize="small"
-                value={key}
-                onClick={e => this.handleDeleteAnnotation(e.target.value)}
-              >
-                <Icon name="fa fa-trash-o" /> Delete
-              </Button>
-            </div>
+    return this.state.annotations.map((annotation, key) =>
+      <div key={key} style={styles.contentContainer}>
+        <div style={styles.rowUp}>
+          <div style={styles.annotationTitle}>
+            <h3> {annotation.sectionId} </h3>
           </div>
-          <div> {annotation.content} </div>
-          <hr />
+          <div>
+            <Button bsStyle="link" bsSize="small" style={styles.buttonPanel}>
+              <Icon
+                name="fa fa-pencil"
+              /> Edit
+            </Button>
+            <Button
+              style={styles.buttonPanel}
+              bsStyle="link"
+              bsSize="small"
+              value={key}
+              onClick={e => this.handleDeleteAnnotation(e.target.value)}
+            >
+              <Icon name="fa fa-trash-o" /> Delete
+            </Button>
+          </div>
         </div>
-  ));
+        <div> {annotation.content} </div>
+        <hr />
+      </div>
+    );
   }
 
   renderBookmarks() {
-    return (
-      this.state.bookmarks.map((bookmark, key) =>
-        <div key={key}>
-          <div style={styles.rowUp}>
-            <div>
-              <h3> {bookmark.sectionId} {bookmark.savedAs} </h3>
-            </div>
-            <div>
-              <Button
-                value={key}
-                style={styles.buttonPanel}
-                bsStyle="link"
-                bsSize="small"
-              >
-                <Icon
-                  name="fa fa-pencil"
-                /> Edit
-              </Button>
-              <Button
-                value={key}
-                style={styles.buttonPanel}
-                bsStyle="link"
-                bsSize="small"
-                onClick={e => this.handleDeleteBookmark(e.target.value)}
-              >
-                <Icon
-                  name="fa fa-trash-o"
-                /> Delete
-              </Button>
-            </div>
+    return this.state.bookmarks.map((bookmark, key) =>
+      <div key={key}>
+        <div style={styles.rowUp}>
+          <div>
+            <h3> {bookmark.sectionId} {bookmark.savedAs} </h3>
           </div>
-          <hr />
+          <div>
+            <Button
+              value={key}
+              style={styles.buttonPanel}
+              bsStyle="link"
+              bsSize="small"
+            >
+              <Icon
+                name="fa fa-pencil"
+              /> Edit
+            </Button>
+            <Button
+              value={key}
+              style={styles.buttonPanel}
+              bsStyle="link"
+              bsSize="small"
+              onClick={e => this.handleDeleteBookmark(e.target.value)}
+            >
+              <Icon
+                name="fa fa-trash-o"
+              /> Delete
+            </Button>
+          </div>
         </div>
-  ));
+        <hr />
+      </div>
+    );
   }
 
   render() {
@@ -319,6 +318,9 @@ const styles = {
   button: {
     backgroundColor: Colors.MAIN,
     color: Colors.WHITE,
+  },
+  tags: {
+    color: Colors.MAIN,
   },
   rowUp: {
     display: 'flex',
