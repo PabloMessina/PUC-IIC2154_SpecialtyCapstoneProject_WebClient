@@ -7,10 +7,6 @@ import {
 } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
-// import Icon from 'react-fa';
-
-import app from '../../app';
-const organizationService = app.service('/organizations');
 
 /**
  * Component life-cycle:
@@ -36,37 +32,23 @@ export default class Course extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      organization: null,
+      organization: props.params.course.organization,
       course: props.params.course,
-      instances: [],
+      instances: props.params.course.instances,
       instance: -1, // index
     };
-    this.fetchOrganization = this.fetchOrganization.bind(this);
-  }
-
-  componentDidMount() {
-    // Fetch organization
-    // const query = this.props.location.query;
-    const course = this.state.course;
-    this.fetchOrganization(course.organizationId);
   }
 
   componentWillReceiveProps(nextProps) {
     // Because router onEnter is not called when navigation between childrens.
     const course = nextProps.params.course;
     if (course && course.id !== this.state.course.id) {
-      this.setState({ course });
-      this.fetchOrganization(course.organizationId);
+      this.setState({ course, organization: course.organization, instances: course.instances });
     }
   }
 
-  fetchOrganization(organizationId) {
-    return organizationService.get(organizationId)
-      .then(organization => this.setState({ organization }));
-  }
-
   render() {
-    const { course, organization } = this.state;
+    const { organization, course, instances } = this.state;
 
     return (
       <Grid style={styles.container}>
@@ -101,7 +83,7 @@ export default class Course extends Component {
 
         <div style={styles.content}>
           {renderIf(this.props.children)(() => (
-            React.cloneElement(this.props.children, { organization, course })
+            React.cloneElement(this.props.children, { organization, course, instances })
           ))}
         </div>
 
