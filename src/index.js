@@ -183,7 +183,11 @@ const Routing = (
       <Route
         path="evaluations/show/:evaluationId"
         component={Evaluation}
-        onEnter={fetching({ field: 'evaluationId', to: 'evaluation', populate: ['attendance', 'question'] })}
+        onEnter={fetching({
+          field: 'evaluationId',
+          to: 'evaluation',
+          populate: ['instance', 'attendance', 'question'],
+        })}
       >
         <IndexRedirect to="description" />
         <Route path="description" component={EvaluationDescripction} />

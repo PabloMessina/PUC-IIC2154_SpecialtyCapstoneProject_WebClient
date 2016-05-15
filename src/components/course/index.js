@@ -82,9 +82,9 @@ export default class Course extends Component {
         <br />
 
         <div style={styles.content}>
-          {renderIf(this.props.children)(() => (
+          {renderIf(this.props.children)(() =>
             React.cloneElement(this.props.children, { organization, course, instances })
-          ))}
+          )}
         </div>
 
       </Grid>

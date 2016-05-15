@@ -28,6 +28,7 @@
     "react-addons-update": "^15.0.2",
     "react-bootstrap": "^0.29.2",
     "react-dom": "^15.0.1",
+    "react-easy-transition": "0.0.3",
     "react-fa": "^4.0.1",
     "react-infinite-grid": "^0.4.0",
     "react-rater": "=0.3.0",

@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
 import { Grid, Row, Col, ButtonGroup, Button, Breadcrumb } from 'react-bootstrap';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
+import EasyTransition from 'react-easy-transition';
 import renderIf from 'render-if';
 
 import app from '../../app';
 const organizationService = app.service('/organizations');
 const courseService = app.service('/courses');
-const instanceService = app.service('/instances');
 const evaluationService = app.service('/evaluations');
 const evaluationsQuestionService = app.service('/evaluations-questions');
 
@@ -38,7 +38,7 @@ const SECTIONS = [
   },
 ];
 
-export default class EvaluationCreate extends Component {
+class EvaluationCreate extends Component {
 
   static get propTypes() {
     return {
@@ -51,6 +51,7 @@ export default class EvaluationCreate extends Component {
       attendants: React.PropTypes.array,
       answers: React.PropTypes.object,
       // React Router
+      router: React.PropTypes.object,
       params: React.PropTypes.object,
       children: React.PropTypes.any,
       location: React.PropTypes.any,
@@ -81,9 +82,6 @@ export default class EvaluationCreate extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      tabStates: Array(SECTIONS.length).fill('default'),
-      organization: null,
-      course: null,
       // Current evaluation
       evaluation: props.params.evaluation,
       users: props.users,
@@ -91,18 +89,23 @@ export default class EvaluationCreate extends Component {
       groups: props.groups,
       answers: props.answers,
       attendants: props.attendants,
+      // Other
+      organization: null,
+      course: null,
+      instance: props.params.evaluation.instance,
       syncing: false,
+      tabStates: Array(SECTIONS.length).fill('default'),
     };
 
     // console.log(JSON.stringify(this.state.evaluation, null, 4));
-
     this.renderSection = this.renderSection.bind(this);
+    this.renderSections = this.renderSections.bind(this);
 
     this.fetchOrganization = this.fetchOrganization.bind(this);
     this.fetchCourse = this.fetchCourse.bind(this);
-    this.fetchInstance = this.fetchInstance.bind(this);
     this.fetchAll = this.fetchAll.bind(this);
 
+    this.onNavigateTo = this.onNavigateTo.bind(this);
     this.onEvaluationChange = this.onEvaluationChange.bind(this);
     this.onQuestionsChange = this.onQuestionsChange.bind(this);
     this.onGroupsChange = this.onGroupsChange.bind(this);
@@ -123,7 +126,7 @@ export default class EvaluationCreate extends Component {
     const evaluation = nextProps.params.evaluation;
     if (evaluation && evaluation.id !== this.state.evaluation.id) {
       const questions = evaluation.questions || [];
-      this.setState({ evaluation, questions });
+      this.setState({ evaluation, questions, instance: evaluation.instance });
       this.fetchAll(evaluation);
     }
   }
@@ -147,10 +150,7 @@ export default class EvaluationCreate extends Component {
   }
 
   onAnswerChange(id, answer) {
-    if (id) {
-      const answers = { ...this.state.answers, [id]: answer };
-      this.setState({ answers });
-    }
+    if (id) this.setState({ answers: { ...this.state.answers, [id]: answer } });
   }
 
   onFieldsChange(id, fields) {
@@ -191,10 +191,12 @@ export default class EvaluationCreate extends Component {
       .catch(error => this.setState({ error }));
   }
 
+  onNavigateTo(url) {
+    this.props.router.push(url);
+  }
+
   fetchAll(evaluation) {
-    const instanceId = evaluation.instanceId;
-    return this.fetchInstance(instanceId)
-      .then(instance => this.fetchCourse(instance.courseId))
+    return this.fetchCourse(evaluation.instance.courseId)
       .then(course => this.fetchOrganization(course.organizationId));
   }
 
@@ -206,20 +208,18 @@ export default class EvaluationCreate extends Component {
       });
   }
 
-  fetchInstance(instanceId) {
-    return instanceService.get(instanceId)
-      .then(instance => {
-        this.setState({ instance });
-        return instance;
-      });
-  }
-
   fetchOrganization(organizationId) {
     return organizationService.get(organizationId)
       .then(organization => {
         this.setState({ organization });
         return organization;
       });
+  }
+
+  get selected() {
+    const location = this.props.location.pathname.split('/').filter(Boolean);
+    const [/* evaluations */, /* show */, /* :id */, selected] = location;
+    return selected;
   }
 
   renderSections() {
@@ -233,8 +233,7 @@ export default class EvaluationCreate extends Component {
   renderSection(section, i) {
     const evaluation = this.state.evaluation;
     const { name, description, path } = section;
-    const paths = this.props.location.pathname.split('/');
-    const active = paths[paths.length - 1];
+    const selected = this.selected;
     const url = `/evaluations/show/${evaluation.id}/${path}`;
 
     return (
@@ -242,9 +241,9 @@ export default class EvaluationCreate extends Component {
         style={styles.tab}
         key={i}
         href="#"
-        active={path === active}
+        active={path === selected}
         bsStyle={this.state.tabStates[i]}
-        onClick={() => browserHistory.push(url)}
+        onClick={() => this.props.router.push(url)}
       >
         <h5 style={styles.tabTitle}>{name}</h5>
         <small style={styles.tabDescription}>{description}</small>
@@ -264,20 +263,22 @@ export default class EvaluationCreate extends Component {
           <Breadcrumb.Item>
             Organizations
           </Breadcrumb.Item>
-          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
+          <Breadcrumb.Item onClick={() => this.onNavigateTo(`/organizations/show/${organization.id}`)}>
             {organization ? organization.name : 'Loading...'}
           </Breadcrumb.Item>
           <Breadcrumb.Item>
             Courses
           </Breadcrumb.Item>
-          <Breadcrumb.Item onClick={() => browserHistory.push(`/courses/show/${course.id}`)}>
+          <Breadcrumb.Item onClick={() => this.onNavigateTo(`/courses/show/${course.id}`)}>
             {course ? course.name : 'Loading...'}
           </Breadcrumb.Item>
-          <Breadcrumb.Item onClick={() => browserHistory.push(`/courses/show/${course.id}/instances/${instance.id}`)}>
+          <Breadcrumb.Item
+            onClick={() => this.onNavigateTo(`/courses/show/${course.id}/instances/show/${instance.id}`)}
+          >
             {instance ? instance.period : 'Loading...'}
           </Breadcrumb.Item>
           <Breadcrumb.Item
-            onClick={() => browserHistory.push(`/courses/show/${course.id}/instances/${instance.id}/evaluations`)}
+            onClick={() => this.onNavigateTo(`/courses/show/${course.id}/instances/show/${instance.id}/evaluations`)}
           >
             Evaluations
           </Breadcrumb.Item>
@@ -287,11 +288,11 @@ export default class EvaluationCreate extends Component {
         </Breadcrumb>
 
         <Row>
-          <Col xs={12} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <Col xs={12} style={styles.header}>
             <h2>
               Evaluation
-              {renderIf(this.state.evaluation && this.state.evaluation.title)(() => (
-                <small style={{ marginLeft: 4 }}> {this.state.evaluation.title}</small>
+              {renderIf(evaluation && evaluation.title)(() => (
+                <small style={{ marginLeft: 4 }}> {evaluation.title}</small>
               ))}
             </h2>
             <div>
@@ -319,26 +320,33 @@ export default class EvaluationCreate extends Component {
         <Row>
           <Col xs={12}>
             {renderIf(course && instance && organization)(() =>
-              React.cloneElement(this.props.children, {
-                organization,
-                course,
-                instance,
-                evaluation,
-                users,
-                questions,
-                answers,
-                groups,
-                attendants,
-                onQuestionAdd: this.onQuestionAdd,
-                onQuestionRemove: this.onQuestionRemove,
-                onEvaluationChange: this.onEvaluationChange,
-                onQuestionsChange: this.onQuestionsChange,
-                onGroupsChange: this.onGroupsChange,
-                onAttendantsChange: this.onAttendantsChange,
-                onAnswerChange: this.onAnswerChange,
-                onFieldsChange: this.onFieldsChange,
-                onSubmitDescription: this.onSubmitDescription,
-              })
+              <EasyTransition
+                path={this.selected}
+                initialStyle={{ opacity: 0 }}
+                transition="opacity 0.1s ease-in"
+                finalStyle={{ opacity: 1 }}
+              >
+                {React.cloneElement(this.props.children, {
+                  organization,
+                  course,
+                  instance,
+                  evaluation,
+                  users,
+                  questions,
+                  answers,
+                  groups,
+                  attendants,
+                  onQuestionAdd: this.onQuestionAdd,
+                  onQuestionRemove: this.onQuestionRemove,
+                  onEvaluationChange: this.onEvaluationChange,
+                  onQuestionsChange: this.onQuestionsChange,
+                  onGroupsChange: this.onGroupsChange,
+                  onAttendantsChange: this.onAttendantsChange,
+                  onAnswerChange: this.onAnswerChange,
+                  onFieldsChange: this.onFieldsChange,
+                  onSubmitDescription: this.onSubmitDescription,
+                })}
+              </EasyTransition>
             )}
           </Col>
         </Row>
@@ -347,9 +355,16 @@ export default class EvaluationCreate extends Component {
   }
 }
 
+export default withRouter(EvaluationCreate);
+
 const styles = {
   container: {
 
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
   },
   bar: {
     marginTop: 15,

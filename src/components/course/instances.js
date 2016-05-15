@@ -3,6 +3,7 @@ import { Row, Tabs, Tab } from 'react-bootstrap';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
 import { withRouter } from 'react-router';
+import EasyTransition from 'react-easy-transition';
 
 
 class CourseInstances extends Component {
@@ -48,9 +49,9 @@ class CourseInstances extends Component {
     if (!selected || this.selected === selected) return;
 
     const courseId = this.props.course.id;
-    if (selected === 'SETTINGS') {
+    if (selected === 'settings') {
       this.props.router.replace(`/courses/show/${courseId}/instances/settings`);
-    } else if (selected === 'CREATE') {
+    } else if (selected === 'create') {
       this.props.router.replace(`/courses/show/${courseId}/instances/create`);
     } else {
       this.props.router.replace(`/courses/show/${courseId}/instances/show/${selected}`);
@@ -75,9 +76,11 @@ class CourseInstances extends Component {
 
   render() {
     const { organization, course, instances } = this.props;
-    const selected = this.selected;
+    // Selected could be a instance or 'settings' or 'create'
+    const selected = this.selected || this.subpath;
+    // null if selected is 'settings' or 'create'
     const instance = instances.find(i => i.id === selected);
-
+    // Pass this props to children
     const subprops = { organization, course, instance, instances };
 
     return (
@@ -93,8 +96,8 @@ class CourseInstances extends Component {
             {instances.map(ins => (
               <Tab key={ins.id} eventKey={ins.id} title={ins.period} />
             ))}
-            <Tab eventKey="CREATE" title={<Icon name="plus" />} />
-            <Tab eventKey="SETTINGS" title={this.renderSettingsIcon()} tabClassName="pull-right" />
+            <Tab eventKey="create" title={<Icon name="plus" />} />
+            <Tab eventKey="settings" title={this.renderSettingsIcon()} tabClassName="pull-right" />
           </Tabs>
         </Row>
 
@@ -102,7 +105,14 @@ class CourseInstances extends Component {
 
         {/* Render 'instance' child */}
         {renderIf(this.props.children)(() =>
-          React.cloneElement(this.props.children, subprops)
+          <EasyTransition
+            path={this.subpath}
+            initialStyle={{ opacity: 0 }}
+            transition="opacity 0.1s ease-in"
+            finalStyle={{ opacity: 1 }}
+          >
+            {React.cloneElement(this.props.children, subprops)}
+          </EasyTransition>
         )}
 
       </div>
