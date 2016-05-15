@@ -40,6 +40,7 @@ import CourseInstance from './components/course/instance';
 import CourseInstanceStudents from './components/course/instance/students';
 import CourseInstanceEvaluations from './components/course/instance/evaluations';
 import CourseSettings from './components/course/setting';
+import CourseInstanceCreate from './components/course/instance-create';
 
 import Evaluation from './components/evaluation';
 import EvaluationDescripction from './components/evaluation/description';
@@ -164,11 +165,12 @@ const Routing = (
       <Route
         path="courses/show/:courseId"
         component={Course}
-        onEnter={fetching({ field: 'courseId', to: 'course' })}
+        onEnter={fetching({ field: 'courseId', to: 'course', populate: ['organization', 'instance'] })}
       >
         <IndexRedirect to="instances" />
         <Route path="instances" component={CourseInstances}>
           <Route path="settings" component={CourseSettings} />
+          <Route path="create" component={CourseInstanceCreate} />
           <Route path="show/:instanceId" component={CourseInstance}>
             <IndexRedirect to="evaluations" />
             <Route path="students" component={CourseInstanceStudents} />
@@ -181,7 +183,11 @@ const Routing = (
       <Route
         path="evaluations/show/:evaluationId"
         component={Evaluation}
-        onEnter={fetching({ field: 'evaluationId', to: 'evaluation', populate: ['attendance', 'question'] })}
+        onEnter={fetching({
+          field: 'evaluationId',
+          to: 'evaluation',
+          populate: ['instance', 'attendance', 'question'],
+        })}
       >
         <IndexRedirect to="description" />
         <Route path="description" component={EvaluationDescripction} />

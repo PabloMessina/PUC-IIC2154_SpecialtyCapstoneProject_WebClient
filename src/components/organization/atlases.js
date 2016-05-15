@@ -55,7 +55,7 @@ export default class AtlasTab extends Component {
     return (
       <Grid style={styles.container}>
         <Col xs={12} md={9}>
-          <AtlasGrid />
+          <AtlasGrid atlases={this.state.atlases} />
         </Col>
         <Col xs={12} md={3}>
           <Panel>

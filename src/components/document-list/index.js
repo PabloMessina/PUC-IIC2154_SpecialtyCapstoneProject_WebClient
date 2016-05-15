@@ -4,7 +4,8 @@ import AtlasGrid from './atlas-grid';
 import renderIf from 'render-if';
 import Select from 'react-select';
 import { Colors } from '../../styles';
-import AtlasThumbnail from './atlas-thumbnail';
+import app from '../../app';
+const atlasesService = app.service('/atlases');
 
 export default class DocumentList extends Component {
 
@@ -17,10 +18,11 @@ export default class DocumentList extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      atlases: props.atlases,
+      atlases: [],
       advanced: false,
       lista: [],
       tags: [],
+      organization: 'all',
       allTags: [
         { label: 'Anatomy', value: 'Anatomy' },
         { label: 'Cardiology', value: 'Cardiology' },
@@ -29,30 +31,49 @@ export default class DocumentList extends Component {
         { label: 'Technology', value: 'Technology' },
       ],
     };
+    this.handleSelectChange = this.handleSelectChange.bind(this);
+    this.fetchAtlases = this.fetchAtlases.bind(this);
+  }
+  componentDidMount() {
+    this.fetchAtlases();
   }
 
-  // For the first actualization and when you press the button search
-  filterDocuments() {
-    this.state.lista = [];
-    this.state.atlases.forEach((doc) => {
-      const search = this.findOne(this.state.tags, doc.tags);
-      if (search || this.state.tags.length === 0) {
-        this.state.lista.push(
-          <div style={styles.column} xs={2} md={3}>
-            <AtlasThumbnail id={doc.id} document={doc} />
-          </div>
-        );
-      }
+  // To handle the changes in the tags
+  handleSelectChange(value, tags) {
+    return this.setState({ tags });
+  }
+
+  // To fetch the atlases from the server. First we parse the object given by the Select component.
+  // Then, if the input is not empty, we filter by tags
+  fetchAtlases() {
+    const query = {};
+    // Parse array to fit API :
+    const tagsArray = [];
+    const tags = this.state.tags;
+    Object.keys(tags).forEach((key, index) => {
+      const tag = tags[key];
+      tagsArray[index] = tag.value;
     });
+    // Check if there is something in the input :
+    if (Object.keys(tagsArray).length > 0) {
+      query.tags = tagsArray;
+    }
+    return atlasesService.find({ query })
+      .then(results => {
+        this.setState({ atlases: results.data });
+      });
   }
 
   render() {
-    this.filterDocuments();
-    // Use <FormControl type="text" placeholder="" /> instead of Select for simple search
+    // Still need to fix the onSubmit Function of the Form
     return (
       <Grid style={styles.container}>
         <Row style={styles.search}>
-          <Form style={styles.form} horizontal>
+          <Form
+            style={styles.form}
+            horizontal
+            onSubmit={(e) => e.preventDefault()}
+          >
             <h1 style={styles.title}>Search</h1>
             <FormGroup controlId="formHorizontalSearch">
               <Col sm={10}>
@@ -69,7 +90,7 @@ export default class DocumentList extends Component {
                 </div>
               </Col>
               <Col sm={2}>
-                <Button style={styles.button} onClick={this.filterDocuments()}>
+                <Button style={styles.button} onClick={this.fetchAtlases}>
                   Search
                 </Button>
               </Col>
@@ -110,7 +131,7 @@ export default class DocumentList extends Component {
           </Form>
         </Row>
         <Row>
-          <AtlasGrid />
+          <AtlasGrid atlases={this.state.atlases} />
         </Row>
       </Grid>
     );
@@ -119,7 +140,7 @@ export default class DocumentList extends Component {
 
 DocumentList.propTypes = {
   children: React.PropTypes.object,
-  atlases: React.PropTypes.object,
+  atlases: React.PropTypes.array,
 };
 
 
