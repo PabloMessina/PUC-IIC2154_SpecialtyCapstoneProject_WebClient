@@ -1,78 +1,104 @@
-import React, { Component } from 'react';
-import { Image } from 'react-bootstrap';
-import {
-  Section,
-  Team,
-  TeamMember,
-} from 'neal-react';
+import React, { Component, PropTypes } from 'react';
+import { Grid, Row, Col, Tabs, Tab, Image } from 'react-bootstrap';
+import Icon from 'react-fa';
+import { withRouter } from 'react-router';
+import EasyTransition from 'react-easy-transition';
+import renderIf from 'render-if';
+
+import { currentUser } from '../../app';
 
 
-export default class Dashboard extends Component {
+const TABS = [{
+  name: 'Academic',
+  icon: 'graduation-cap ',
+  path: 'academic',
+}];
+
+class Dashboard extends Component {
+
+  static get propTypes() {
+    return {
+      router: PropTypes.object,
+      children: PropTypes.any,
+      location: PropTypes.object,
+    };
+  }
+
+  constructor(props) {
+    super(props);
+    this.state = {
+
+    };
+    this.onTabChange = this.onTabChange.bind(this);
+  }
+
+  onTabChange(path) {
+    if (path && this.selected !== path) {
+      this.props.router.replace(`/dashboard/${path}`);
+    }
+  }
+
+  get selected() {
+    const paths = this.props.location.pathname.split('/').filter(Boolean);
+    const [/* dashboard */, active] = paths;
+    return active;
+  }
+
   render() {
-    const imgiOsAndroid = 'http://www.icm.church/hp_wordpress/wp-content/uploads/2015/09/app-store.png';
+    const user = currentUser();
+
+    const title = ({ name, icon }) => (
+      <span><Icon style={styles.icon} name={icon} /> {name}</span>
+    );
+
     return (
-      <div style={styles.panel}>
-        <h1 style={styles.title}>Welcome</h1>
-        <div style={styles.divs}>
-          <p style={styles.text}>
-            This application is a recopilation of a series of Atlasses,
-            with interactive content, evaluations, real time working and automatics saves.
-          </p>
+      <Grid style={styles.container}>
+        <Row>
+          <Col xsHidden sm={2}>
+            <Image style={{ padding: 20 }} src="http://placehold.it/400x400" responsive circle />
+          </Col>
+          <Col xs={12} sm={10}>
+            <h2>Welcome {user.name}</h2>
+            <p>
+              Lorem ipsum dolor sit amet, consectetur adipisicing elit,
+              sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+            </p>
 
-        </div>
+            <Tabs
+              style={styles.tabs}
+              activeKey={this.selected}
+              id="tabs"
+              onSelect={this.onTabChange}
+            >
+              {TABS.map(({ path, ...options }, i) => <Tab key={i} eventKey={path} title={title(options)} />)}
+            </Tabs>
 
-
-        <Section style={styles.divs}>
-          <Team>
-            <TeamMember style={styles.image} name="Create Organizations" title="" imageUrl="https://www.colorado.gov/pacific/sites/default/files/u/1461/icon_22901.gif">
-            Lorem ipsum dolor sit amet,
-            consectetur adipiscing elit,
-            sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-            Ut enim ad minim veniam,
-            quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-            </TeamMember>
-            <TeamMember style={styles.image} name="Make Evaluations" title="" imageUrl="https://www.plannedparenthood.org/files/4814/2307/6322/planned-parenthood-online-health-services-how-does-it-work-step-3-std-testing.svg">
-            Lorem ipsum dolor sit amet,
-            consectetur adipiscing elit,
-            sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-            Ut enim ad minim veniam,
-            quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-            </TeamMember>
-            <TeamMember style={styles.image} name="Create Atlases" title="" imageUrl="http://freevector.co/wp-content/uploads/2009/03/8172-open-book-icon1.png">
-            Lorem ipsum dolor sit amet,
-            consectetur adipiscing elit,
-            sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-            Ut enim ad minim veniam,
-            quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-            </TeamMember>
-          </Team>
-        </Section>
-
-        <Image style={styles.image} src={imgiOsAndroid} />
-
-      </div>
+          </Col>
+        </Row>
+        <Row style={{ paddingTop: 20 }}>
+          {renderIf(this.props.children)(() =>
+            <EasyTransition
+              path={this.selected}
+              initialStyle={{ opacity: 0 }}
+              transition="opacity 0.1s ease-in"
+              finalStyle={{ opacity: 1 }}
+            >
+              {this.props.children}
+            </EasyTransition>
+          )}
+        </Row>
+      </Grid>
     );
   }
 }
+
+export default withRouter(Dashboard);
+
 const styles = {
-  title: {
-    textAlign: 'center',
-    fontSize: 25,
-    margin: 20,
+  container: {
+    marginTop: 10,
   },
-  panel: {
-    textAlign: 'center',
-    fontFamily: 'Raleway, Helvetica Neue, Helvetica, Arial, sans-serif',
-  },
-  image: {
-    width: '25%',
-    height: '8%',
-  },
-  text: {
-    fontSize: 25,
-    margin: 20,
-  },
-  divs: {
-    marginBottom: 50,
+  tabs: {
+    marginTop: 30,
   },
 };

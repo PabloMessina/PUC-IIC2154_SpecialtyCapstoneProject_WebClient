@@ -9,9 +9,11 @@ import { Router, Route, IndexRoute, IndexRedirect, browserHistory } from 'react-
 import app, { auth, currentUser } from './app';
 
 import Main from './components/main';
-import Dashboard from './components/dashboard';
 import Login from './components/login/';
 import SignUp from './components/signup/';
+
+import Dashboard from './components/dashboard';
+import DashboardAcademic from './components/dashboard/academic';
 
 import Settings from './components/settings';
 import NotificationSettings from './components/settings/notifications';
@@ -114,7 +116,12 @@ function fetching(...names) {
 const Routing = (
   <Router history={browserHistory}>
     <Route path="/" component={Main} title="App">
-      <IndexRoute component={Dashboard} />
+      <IndexRedirect to="dashboard" />
+
+      <Route path="dashboard" component={Dashboard}>
+        <IndexRedirect to="academic" />
+        <Route path="academic" component={DashboardAcademic} />
+      </Route>
 
       <Route path="login" component={Login} onEnter={requireAnnon} />
       <Route path="signup" component={SignUp} onEnter={requireAnnon} />

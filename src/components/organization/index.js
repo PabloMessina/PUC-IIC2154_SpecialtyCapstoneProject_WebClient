@@ -6,29 +6,27 @@ import EasyTransition from 'react-easy-transition';
 
 import { Colors } from '../../styles';
 
-const TABS = [
-  {
-    name: 'Courses',
-    icon: 'graduation-cap ',
-    path: 'courses',
-  }, {
-    name: 'Atlases',
-    icon: 'book',
-    path: 'atlases',
-  }, {
-    name: 'Questions',
-    icon: 'list-alt ',
-    path: 'questions',
-  }, {
-    name: 'Members',
-    icon: 'user',
-    path: 'members',
-  }, {
-    name: 'Settings',
-    icon: 'cog',
-    path: 'settings',
-  },
-];
+const TABS = [{
+  name: 'Courses',
+  icon: 'graduation-cap ',
+  path: 'courses',
+}, {
+  name: 'Atlases',
+  icon: 'book',
+  path: 'atlases',
+}, {
+  name: 'Questions',
+  icon: 'list-alt ',
+  path: 'questions',
+}, {
+  name: 'Members',
+  icon: 'user',
+  path: 'members',
+}, {
+  name: 'Settings',
+  icon: 'cog',
+  path: 'settings',
+}];
 
 class Organization extends Component {
 
