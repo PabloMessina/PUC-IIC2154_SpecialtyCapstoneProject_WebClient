@@ -35,8 +35,8 @@ export default class AtlasSection extends Component {
     return contentChanged || titleChanged;
   }
 
-  onChangeContent(content) {
-    this.props.onChangeContent(content);
+  onChangeContent(rawContent) {
+    this.props.onChangeContent(rawContent);
   }
 
   onChangeTitle(event) {
@@ -56,7 +56,6 @@ export default class AtlasSection extends Component {
   render() {
     const section = this.props.section;
 
-
     return (
       <div style={styles.container}>
 
@@ -68,9 +67,9 @@ export default class AtlasSection extends Component {
         />
 
         <RichEditor
-          sectionId={section._id}
-          content={section.content}
-          onChangeContent={this.onChangeContent}
+          contentKey={section._id}
+          initialContent={section.content}
+          onChange={this.onChangeContent}
         />
       </div>
     );

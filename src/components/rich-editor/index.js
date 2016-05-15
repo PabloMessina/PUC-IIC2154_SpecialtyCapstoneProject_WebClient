@@ -8,11 +8,12 @@ import {
 } from 'draft-js';
 import isEmpty from 'lodash/isEmpty';
 import styleMap from './inline-styles';
-import InlineControls from './inline-controls.js';
+import InlineControls from './inline-controls';
 import BlockControls from './block-controls';
-import { createBlockRenderer } from './block-renderer.js';
+import { createBlockRenderer } from './block-renderer';
 
 export default class RichEditor extends Component {
+
   constructor(props) {
     super(props);
 
@@ -30,7 +31,7 @@ export default class RichEditor extends Component {
 
     this.focus = () => this.refs.editor.focus();
     this.onChange = (editorState) => {
-      this.props.onChangeContent(convertToRaw(editorState.getCurrentContent()));
+      this.props.onChange(convertToRaw(editorState.getCurrentContent()));
       this.setState({ editorState });
     };
 
@@ -38,9 +39,9 @@ export default class RichEditor extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.sectionId === this.props.sectionId) return;
+    if (nextProps.contentKey === this.props.contentKey) return;
 
-    const content = nextProps.content;
+    const content = nextProps.initialContent;
 
     let editorState = null;
     if (isEmpty(content)) {

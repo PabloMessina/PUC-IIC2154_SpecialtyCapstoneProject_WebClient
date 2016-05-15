@@ -115,7 +115,7 @@ export default class AtlasBook extends Component {
    */
   currentSection() {
     const { tree, sectionParentId, sectionIndex } = this.state;
-    if (!tree) return { title: '', content: [] };
+    if (!tree) return { title: '', content: null };
 
     return tree[sectionParentId][sectionIndex];
   }
@@ -163,6 +163,7 @@ export default class AtlasBook extends Component {
   onChangeContent(content) {
     // Create a new object from current section and change content
     const section = { ...this.currentSection(), content };
+    console.log(section)
     // Replace section in tree
     this.replaceCurrentSection(section);
     this.shouldPatchContent = true;
