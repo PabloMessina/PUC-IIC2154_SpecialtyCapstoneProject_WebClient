@@ -1,92 +1,99 @@
 import React, { Component } from 'react';
-import { Row, Col, Image, Nav, NavItem, ListGroup, ListGroupItem, Panel, Glyphicon } from 'react-bootstrap';
+import { Grid, Row, Col, Image, Nav, NavItem, ListGroup, ListGroupItem, Panel } from 'react-bootstrap';
+import Icon from 'react-fa';
+import moment from 'moment';
 
 import app, { currentUser } from '../../app';
 const participantService = app.service('/participants');
+const instanceService = app.service('/instances');
 
 export default class UserProfile extends Component {
 
   constructor(props) {
     super(props);
     this.state = {
-      user: [],
+      instances: [],
     };
-    this.fetchUsers = this.fetchUsers.bind(this);
+    this.fetchInstances = this.fetchInstances.bind(this);
   }
 
   componentDidMount() {
-    this.fetchUsers();
+    this.fetchInstances();
   }
 
-  fetchUsers() {
-    const query = {
+  fetchInstances(custom) {
+    let query = {
       userId: currentUser().id,
-      $populate: 'user',
     };
-    participantService.find({ query })
-		.then(result => result.data)
-		.then(participantships => {
-  this.setState({ user: participantships });
-			// console.log(participantships);
-			// ...
-		});
-		// .catch(err => console.log(err));
+    return participantService.find({ query })
+      .then(result => result.data)
+      .then(participants => {
+        query = {
+          id: { $in: participants.map(participant => participant.instanceId) },
+          $populate: ['course'],
+          $sort: { createdAt: -1 },
+          ...custom,
+        };
+        return instanceService.find({ query });
+      })
+      .then(({ data, total }) => this.setState({ instances: data, total }));
   }
 
   render() {
-    console.log(currentUser());
+    const creation = moment(currentUser().createdAt);
     return (
-      <div style={styles.container}>
+      <Grid style={styles.container}>
         <Row className="show-grid">
-          <Col xs={12} md={3}>
+          <Col xsHidden sm={3}>
             <Image src="http://placehold.it/220x229" circle thumbnail responsive />
-            <h1>{currentUser().name}</h1>
-            <h5><Glyphicon glyph="envelope" /> {currentUser().email}</h5>
+            <h2>{currentUser().name}</h2>
+            <p><Icon name="envelope-o" /> {currentUser().email}</p>
             <hr />
-            <h4>Member since: {currentUser().createdAt}</h4>
+            <h5>Member since: {creation.format('MMMM Do YYYY')}</h5>
           </Col>
-          <Col xs={6} md={9}>
+          <Col xs={12} sm={9}>
             <Nav bsStyle="tabs" activeKey={1} onSelect={this.handleSelect}>
-              <NavItem eventKey={1}><Glyphicon glyph="dashboard" /> My Activity</NavItem>
+              <NavItem eventKey={1}><Icon name="tachometer" /> My Activity</NavItem>
             </Nav>
             <br />
-            <div>
-              <Row>
-                <Col md={6}>
-                  <ListGroup>
-                    <ListGroupItem bsStyle="info" style={styles.titles}><Glyphicon glyph="heart-empty" /> Favorite Atlases</ListGroupItem>
+            <Row>
+              <Col sm={6}>
+                <Panel header={<h3><Icon name="clock-o" /> Recent Atlases</h3>}>
+                  <ListGroup fill>
                     <ListGroupItem>Calculus 1</ListGroupItem>
                     <ListGroupItem>Calculus 2</ListGroupItem>
                   </ListGroup>
-                </Col>
-                <Col md={6}>
-                  <ListGroup>
-                    <ListGroupItem bsStyle="info" style={styles.titles}><Glyphicon glyph="education" /> Courses</ListGroupItem>
-                    <ListGroupItem>Anatomy</ListGroupItem>
-                    <ListGroupItem>Calculus 1</ListGroupItem>
+                </Panel>
+              </Col>
+              <Col sm={6}>
+                <Panel header={<h3><Icon name="graduation-cap" /> Courses</h3>}>
+                  <ListGroup fill>
+                    {this.state.instances.map(instance => (
+                      <ListGroupItem>{instance.course.name}</ListGroupItem>
+                    ))}
                   </ListGroup>
-                </Col>
-              </Row>
-              <Row>
-                <Col md={12}>
-                  <Panel header={"Activity"}>
-                    <h4>{currentUser().name} has no activity during this period.</h4>
-                  </Panel>
-                </Col>
-              </Row>
-            </div>
+                </Panel>
+              </Col>
+            </Row>
+            {/*
+            <Row>
+              <Col xs={12}>
+                <Panel bsStyle="info" header={<h3 style={styles.titles}>Activity</h3>}>
+                  <h4>{currentUser().name} has no activity during this period.</h4>
+                </Panel>
+              </Col>
+            </Row>
+            */}
           </Col>
         </Row>
-      </div>
+      </Grid>
     );
   }
 }
 
 const styles = {
   container: {
-    padding: 30,
-    paddingLeft: 130,
-    paddingRight: 130,
+    paddingTop: 20,
   },
   titles: {
     color: 'black',
