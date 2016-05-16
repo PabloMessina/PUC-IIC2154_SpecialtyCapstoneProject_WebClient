@@ -25,6 +25,8 @@ import PaymentsSettings from './components/settings/payments';
 import DocumentList from './components/document-list';
 import DocumentDescription from './components/document-description';
 
+import UserProfile from './components/profile';
+
 import OrganizationCreate from './components/organization-create/';
 import Organization from './components/organization';
 import OrganizationCoursesTab from './components/organization/courses';
@@ -215,6 +217,8 @@ const Routing = (
         component={AtlasBook}
         onEnter={fetching({ field: 'atlasId', to: 'atlas', service: 'atlases' })}
       />
+
+      <Route path="profile" component={UserProfile} />
 
       <Route path="template" component={Template} />
     </Route>
