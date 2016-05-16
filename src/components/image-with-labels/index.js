@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { Button } from 'react-bootstrap';
 import Utils2D from '../../_2Dlibrary/Utils2D';
 
 const LEFT_BUTTON = 0;
@@ -21,6 +22,9 @@ const AREA_THRESHOLD = 50;
 const POLYGON_TYPE = 'POLYGON';
 const ELLIPSE_TYPE = 'ELLIPSE';
 
+const DEFAULT_INPUT_VALUE = 'write something ...';
+const TEMPORARY_INPUT_VALUE = 'temporary label';
+
 export default class TemplateComponent extends Component {
 
   static get defaultProps() {
@@ -28,14 +32,17 @@ export default class TemplateComponent extends Component {
       remoteUrl: 'https://lopezjuri.com/videos/M_10___Default1.jpg',
       maxWidth: 500,
       maxHeight: 400,
+      minWidth: 300,
+      minHeight: 300,
+      canEdit: true,
+      labelsChangedCallback: (labels) => console.log(labels),
     };
   }
 
   constructor(props) {
     super(props);
     this.state = {
-      array: ['zero', 'one', 'two'],
-      something: true,
+      hasSelectedLabel: false,
     };
 
     this.mystate = {
@@ -57,6 +64,8 @@ export default class TemplateComponent extends Component {
       draggingTempLabel: false,
       // other variables
       selectedLabel: null,
+      selectedLabelTextDirty: false,
+      selectedLabelPositionDirty: false,
     };
 
     this.onFileChanged = this.onFileChanged.bind(this);
@@ -65,6 +74,10 @@ export default class TemplateComponent extends Component {
     this.loadImage = this.loadImage.bind(this);
     this.loadRemoteImage = this.loadRemoteImage.bind(this);
     this.loadLocalImage = this.loadLocalImage.bind(this);
+    this.selectLabel = this.selectLabel.bind(this);
+    this.unselectSelectedLabel = this.unselectSelectedLabel.bind(this);
+    this.refreshLabelInput = this.refreshLabelInput.bind(this);
+    this.removeSelectedLabel = this.removeSelectedLabel.bind(this);
 
     // event handlers
     this.onMouseDown = this.onMouseDown.bind(this);
@@ -83,11 +96,6 @@ export default class TemplateComponent extends Component {
     window.addEventListener('mouseup', this.onMouseUp);
   }
 
-  shouldComponentUpdate() {
-    // no need for graphical updates
-    return false;
-  }
-
   componentWillUnmount() {
     // remove event listeners
     window.removeEventListener('mousedown', this.onMouseDown);
@@ -104,14 +112,14 @@ export default class TemplateComponent extends Component {
   }
 
   /** handle mouse down event */
-  onMouseDown(e) {
+  onMouseDown(event) {
     const canvas = this.refs.canvas;
-    const canvCoords = Utils2D.getElementMouseCoords(canvas, e);
+    const canvCoords = Utils2D.getElementMouseCoords(canvas, event);
     const mouseCanvasX = canvCoords.x;
     const mouseCanvasY = canvCoords.y;
 
     /** left button click */
-    if (e.button === LEFT_BUTTON) {
+    if (event.button === LEFT_BUTTON) {
       /** if left click within canvas */
       if (Utils2D.coordsInRectangle(mouseCanvasX, mouseCanvasY,
         0, 0, canvas.width, canvas.height)) {
@@ -126,10 +134,11 @@ export default class TemplateComponent extends Component {
          * 	1) Dragging a temporary label
          * 		1.1) intersection with already existing label
          * 			temporary label gets merged into existing label
-         * 		1.2) inteserction with canvas (no region clicked
+         * 		1.2) no interesection with labels
          * 			a brand new label gets created out of the temporary label
          *
          * 	2) Dragging a temporary point
+         * 		first, ingore if click was on an existing region
          * 		2.1) intersection with a previous temporary point
          * 			- the polygon get closed, points outside loop are ignored,
          * 			a convex hull is generated out of the polygon, if the area
@@ -158,85 +167,131 @@ export default class TemplateComponent extends Component {
           if (label) {
             label.regions.add(tmpLabel.region); // add region into existing label
             this.refs.canvasWrapper.removeChild(tmpLabel.input);
-            this.mystate.selectedLabel = label;
+            this.selectLabel(label);
 
-          /** case 1.2) no intersection with regions */
-          } else if (!this.getIntersectedRegionAndLabel(nccoords.x, nccoords.y)) {
+          /** case 1.2) no intersection with other labels */
+          } else {
             // create a brand new label
             const regions = new Set();
             regions.add(tmpLabel.region);
             const newLabel = { x: tmpLabel.x, y: tmpLabel.y,
               input: tmpLabel.input, regions };
-            newLabel.input.readOnly = false;
             this.mystate.labelSet.add(newLabel); // add label to set
-            this.mystate.selectedLabel = newLabel;
+            this.selectLabel(newLabel);
+            // set input's event handlers
+            const input = newLabel.input;
+            input.onkeydown = (e) => {
+              if (e.keyCode === 13) { // enter
+                this.unselectSelectedLabel();
+                this.renderForAWhile(0);
+              } else {
+                const lastvalue = input.value;
+                setTimeout(() => {
+                  if (input.value !== lastvalue) {
+                    this.mystate.selectedLabelTextDirty = true;
+                    if (input.value === '') {
+                      input.value = DEFAULT_INPUT_VALUE;
+                      this.refreshLabelInput(newLabel, true);
+                    } else {
+                      this.refreshLabelInput(newLabel);
+                    }
+                  }
+                }, 0);
+              }
+            };
+            input.onblur = () => {
+              if (this.mystate.selectedLabelTextDirty) {
+                if (this.props.labelsChangedCallback) {
+                  this.props.labelsChangedCallback(this.exportLabelsToJSON());
+                }
+                this.mystate.selectedLabelTextDirty = false;
+              }
+            };
+            // set input's message and refresh it
+            input.value = DEFAULT_INPUT_VALUE;
+            input.style.background = 'rgba(255,255,255,0.8)';
+            input.style.color = 'rgb(0,0,0)';
+            input.style.borderColor = 'rgb(0,0,0)';
+            input.style.fontStyle = 'normal';
+            this.refreshLabelInput(newLabel, true); // refresh and select text
           }
           // end dragging
           this.mystate.draggingTempLabel = false;
           this.mystate.tmpLabel = null;
+          // notify parent of changes in labels
+          if (this.props.labelsChangedCallback) {
+            this.props.labelsChangedCallback(this.exportLabelsToJSON());
+          }
 
         /** case 2) dragging a temporary point */
         } else if (this.mystate.draggingTempPoint) {
-          // check intersection against dropped points
-          let intersected = false;
-          const tmpPts = this.mystate.tmpPoints;
-          for (let i = 0; i < tmpPts.length - 1; ++i) {
-            const p = tmpPts[i];
-            if (Utils2D.circlesIntersect(p.x * canvas.width, p.y * canvas.height,
-              TMP_CIRCLE_RADIUS, nccoords.x * canvas.width, nccoords.y * canvas.height,
-              TMP_CIRCLE_RADIUS)) {
-              /** case 2.1) previous point intersected */
-              // get convex hull
-              const points = Utils2D.getConvexHull(tmpPts.slice(i, -1));
-              // get its area
-              const area = Utils2D.getAreaOfPolygon(points) * canvas.width * canvas.height;
-              // get its centroid
-              const centroid = Utils2D.getCentroidOfPolygon(points);
+          // make sure that we don't drop points on already existing regions
+          if (!this.getIntersectedRegionAndLabel(nccoords.x, nccoords.y)) {
+            // check intersection against dropped points
+            let intersected = false;
+            const tmpPts = this.mystate.tmpPoints;
+            for (let i = 0; i < tmpPts.length - 1; ++i) {
+              const p = tmpPts[i];
+              if (Utils2D.circlesIntersect(p.x * canvas.width, p.y * canvas.height,
+                TMP_CIRCLE_RADIUS, nccoords.x * canvas.width, nccoords.y * canvas.height,
+                TMP_CIRCLE_RADIUS)) {
+                /** case 2.1) previous point intersected */
+                // get convex hull
+                const points = Utils2D.getConvexHull(tmpPts.slice(i, -1));
+                // get its area
+                const area = Utils2D.getAreaOfPolygon(points) * canvas.width * canvas.height;
+                // get its centroid
+                const centroid = Utils2D.getCentroidOfPolygon(points);
 
-              let newRegion;
-              /** if area above threshold, we create the polygon */
-              if (area > AREA_THRESHOLD) {
-                newRegion = { type: POLYGON_TYPE, points, x: centroid.x, y: centroid.y };
-                this.mystate.regions.push(newRegion);
-              /** otherwise, it's too small so we create an ellipse instead */
-              } else {
-                const { x, y } = centroid || nccoords;
-                newRegion = {
-                  type: ELLIPSE_TYPE, x, y,
-                  rx: DEFAULT_CIRCLE_RADIUS / canvas.width,
-                  ry: DEFAULT_CIRCLE_RADIUS / canvas.height,
-                };
-                this.mystate.regions.push(newRegion);
+                let newRegion;
+                /** if area above threshold, we create the polygon */
+                if (area > AREA_THRESHOLD) {
+                  newRegion = { type: POLYGON_TYPE, points, x: centroid.x, y: centroid.y };
+                  this.mystate.regions.push(newRegion);
+                /** otherwise, it's too small so we create an ellipse instead */
+                } else {
+                  const { x, y } = centroid || nccoords;
+                  newRegion = {
+                    type: ELLIPSE_TYPE, x, y,
+                    rx: DEFAULT_CIRCLE_RADIUS / canvas.width,
+                    ry: DEFAULT_CIRCLE_RADIUS / canvas.height,
+                  };
+                  this.mystate.regions.push(newRegion);
+                }
+
+                /** create a temporary label */
+                // create input
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = TEMPORARY_INPUT_VALUE;
+                input.size = input.value.length;
+                input.style.position = 'absolute';
+                input.style.background = 'rgba(255,255,255,0.3)';
+                input.style.color = 'rgba(0,0,0,0.3)';
+                input.style.borderColor = 'rgba(0,0,0,0.3)';
+                input.style.padding = '5px';
+                input.style.fontStyle = 'italic';
+                input.readOnly = true;
+                this.refs.canvasWrapper.appendChild(input);
+                input.style.left = `${mouseCanvasX - input.offsetWidth * 0.5}px`;
+                input.style.top = `${mouseCanvasY - input.offsetHeight * 0.5}px`;
+                // tmp label
+                this.mystate.tmpLabel = { input, x: nccoords.x, y: nccoords.y, region: newRegion };
+                this.mystate.draggingTempLabel = true;
+
+                /**  stop dragging temporary point */
+                tmpPts.length = 0; // clear array
+                this.mystate.draggingTempPoint = false;
+
+                // end loop
+                intersected = true;
+                break;
               }
-
-              /** create a temporary label */
-              // create input
-              const input = document.createElement('input');
-              input.type = 'text';
-              input.value = 'temporary label';
-              input.style.position = 'absolute';
-              input.style.background = 'rgba(255,255,255,0.7)';
-              input.style.foreground = 'rgba(0,0,0,0.7)';
-              input.readOnly = true;
-              this.refs.canvasWrapper.appendChild(input);
-              input.style.left = `${mouseCanvasX - input.offsetWidth * 0.5}px`;
-              input.style.top = `${mouseCanvasY - input.offsetHeight * 0.5}px`;
-              // tmp label
-              this.mystate.tmpLabel = { input, x: nccoords.x, y: nccoords.y, region: newRegion };
-              this.mystate.draggingTempLabel = true;
-
-              /**  stop dragging temporary point */
-              tmpPts.length = 0; // clear array
-              this.mystate.draggingTempPoint = false;
-
-              // end loop
-              intersected = true;
-              break;
             }
-          }
-          /** case 2.2) no intersection -> add a new point */
-          if (!intersected) {
-            this.mystate.tmpPoints.push({ x: nccoords.x, y: nccoords.y });
+            /** case 2.2) no intersection -> add a new point */
+            if (!intersected) {
+              this.mystate.tmpPoints.push({ x: nccoords.x, y: nccoords.y });
+            }
           }
 
         /** case 3) Nothing being dragged */
@@ -250,31 +305,31 @@ export default class TemplateComponent extends Component {
               /** intersection with label's text input detected */
               this.mystate.draggingExistingLabel = true; // start dragging the label
               this.mystate.draggedLabel = label;
-              this.mystate.selectedLabel = label;
-              label.input.focus();
-              break;
+              this.selectLabel(label); // label gets selected
+              break; // pseudo GOTO
             }
 
             /** case 3.2) check if click on region */
             const ans = this.getIntersectedRegionAndLabel(nccoords.x, nccoords.y);
             if (ans) {
               const prevLabel = this.mystate.selectedLabel;
+              /** label already selected, remove the clicked region */
               if (prevLabel === ans.label) {
                 // remove region from label
                 prevLabel.regions.delete(ans.region);
                 // if label runs out of regions, remove it as well
                 if (prevLabel.regions.size === 0) {
                   // remove whole label
-                  this.mystate.labelSet.delete(prevLabel);
-                  this.refs.canvasWrapper.removeChild(prevLabel.input);
-                  this.mystate.selectedLabel = null;
+                  this.removeSelectedLabel();
+                } else if (this.props.labelsChangedCallback) {
+                  // notify parent of changes in labels
+                  this.props.labelsChangedCallback(this.exportLabelsToJSON());
                 }
+              /** label being selected for the first time */
               } else {
-                // highlight label
-                this.mystate.selectedLabel = ans.label; // select label
-                ans.label.input.focus(); // focus it
+                this.selectLabel(ans.label); // select the label
               }
-              break;
+              break; // pseudo GOTO
             }
 
             /** case 3.3)  DEFAULT: click on canvas */
@@ -283,7 +338,9 @@ export default class TemplateComponent extends Component {
             this.mystate.tmpPoints.push({ x: nccoords.x, y: nccoords.y });
             // start dragging the last point
             this.mystate.draggingTempPoint = true;
-            break; // thanks to hack
+            // if a label was selected, it becomes unselected
+            this.unselectSelectedLabel();
+            break; // pseudo GOTO
           }
         }
 
@@ -324,15 +381,27 @@ export default class TemplateComponent extends Component {
     } else if (this.mystate.draggingExistingLabel) {
       // update label position
       const ncmcoords = Utils2D.getClippedAndNormalizedCoords(mcoords, canvas);
-      const cmcoords = Utils2D.getClippedCoords(mcoords, canvas);
       const label = this.mystate.draggedLabel;
       const input = label.input;
-      label.x = ncmcoords.x;
-      label.y = ncmcoords.y;
-      input.style.left = `${cmcoords.x - input.offsetWidth * 0.5}px`;
-      input.style.top = `${cmcoords.y - input.offsetHeight * 0.5}px`;
+      const w = input.offsetWidth;
+      const h = input.offsetHeight;
+      // left
+      let left = ncmcoords.x * canvas.width - w * 0.5;
+      if (left <= 0) left = 1;
+      else if (left + w >= canvas.width) left = canvas.width - w - 1;
+      input.style.left = `${left}px`;
+      // top
+      let top = ncmcoords.y * canvas.height - h * 0.5;
+      if (top <= 0) top = 1;
+      else if (top + h >= canvas.height) top = canvas.height - h - 1;
+      input.style.top = `${top}px`;
+      // reset label's coords
+      label.x = (left + 0.5 * w) / canvas.width;
+      label.y = (top + 0.5 * h) / canvas.height;
       // refresh scene
       this.renderForAWhile();
+      // remember label position is dirty
+      this.mystate.selectedLabelPositionDirty = true;
     }
   }
 
@@ -340,6 +409,13 @@ export default class TemplateComponent extends Component {
     if (this.mystate.draggingExistingLabel) {
       this.mystate.draggingExistingLabel = false;
       this.mystate.draggedLabel = null;
+      // notify parent of changes in labels (if label's position has changed)
+      if (this.mystate.selectedLabelPositionDirty) {
+        if (this.props.labelsChangedCallback) {
+          this.props.labelsChangedCallback(this.exportLabelsToJSON());
+        }
+        this.mystate.selectedLabelPositionDirty = false;
+      }
     }
   }
 
@@ -371,6 +447,97 @@ export default class TemplateComponent extends Component {
       }
     }
     return null;
+  }
+
+  /** resize and postion label's input according to its value */
+  refreshLabelInput(label, selectText) {
+    const input = label.input;
+    const canvas = this.refs.canvas;
+    this.refs.dummy.innerHTML = label.input.value;
+    setTimeout(() => {
+      const padding = parseFloat(input.style.padding);
+      const w = Math.min(this.refs.dummy.offsetWidth + padding + 10, canvas.width - 4);
+      const h = input.offsetHeight;
+      // left
+      let left = label.x * canvas.width - w * 0.5;
+      if (left <= 0) left = 1;
+      else if (left + w >= canvas.width) left = canvas.width - w - 1;
+      label.x = (left + w * 0.5) / canvas.width;
+      // top
+      let top = label.y * canvas.height - h * 0.5;
+      if (top <= 0) top = 1;
+      else if (top + h >= canvas.height) top = canvas.height - h - 1;
+      label.y = (top + h * 0.5) / canvas.height;
+      // update input's style
+      input.style.width = `${w}px`;
+      input.style.left = `${left}px`;
+      input.style.top = `${top}px`;
+      if (selectText) {
+        input.setSelectionRange(0, input.value.length);
+      }
+      this.renderForAWhile(0);
+    }, 0);
+  }
+
+  /** unselect the current selected label */
+  unselectSelectedLabel() {
+    if (this.mystate.selectedLabel) {
+      this.mystate.selectedLabel.input.blur();
+      this.mystate.selectedLabel.input.readOnly = true;
+      this.mystate.selectedLabel = null;
+      this.setState({ hasSelectedLabel: false });
+      // if text has changed, notify the parent of changes
+      if (this.mystate.selectedLabelTextDirty) {
+        if (this.props.labelsChangedCallback) {
+          this.props.labelsChangedCallback(this.exportLabelsToJSON());
+        }
+        this.mystate.selectedLabelTextDirty = false;
+      }
+    }
+  }
+
+  /** select a label, and unselect the previous one */
+  selectLabel(label) {
+    if (label === this.mystate.selectLabel) return;
+    this.unselectSelectedLabel();
+    this.mystate.selectedLabel = label;
+    setTimeout(() => {
+      label.input.readOnly = false;
+      label.input.focus();
+    }, 0);
+    this.setState({ hasSelectedLabel: true });
+  }
+
+  /** remove the current selected label */
+  removeSelectedLabel() {
+    const label = this.mystate.selectedLabel;
+    if (label) {
+      this.refs.canvasWrapper.removeChild(label.input);
+      this.mystate.labelSet.delete(label);
+      this.mystate.selectedLabel = null;
+      this.setState({ hasSelectedLabel: false });
+      this.renderForAWhile(0);
+      // notify parent of changes in labels
+      if (this.props.labelsChangedCallback) {
+        this.props.labelsChangedCallback(this.exportLabelsToJSON());
+      }
+    }
+  }
+
+  exportLabelsToJSON() {
+    const labelJSONArray = [];
+    for (const label of this.mystate.labelSet) {
+      const regions = [];
+      for (const reg of label.regions) {
+        if (reg.type === POLYGON_TYPE) {
+          regions.push({ type: POLYGON_TYPE, points: reg.points, cx: reg.x, cy: reg.y });
+        } else {
+          regions.push({ type: ELLIPSE_TYPE, x: reg.x, y: reg.y, rx: reg.rx, ry: reg.ry });
+        }
+      }
+      labelJSONArray.push({ regions, x: label.x, y: label.y, text: label.input.value });
+    }
+    return labelJSONArray;
   }
 
   /** load image from local file */
@@ -408,8 +575,15 @@ export default class TemplateComponent extends Component {
     // resize canvas and canvasAux
     const canvasAux = this.mystate.canvasAux;
     const canvas = this.refs.canvas;
-    canvasAux.width = canvas.width = img.width * ratio;
-    canvasAux.height = canvas.height = img.height * ratio;
+    const cw = this.refs.canvasWrapper;
+    const w = Math.max(img.width * ratio, this.props.minWidth);
+    const h = Math.max(img.height * ratio, this.props.minHeight);
+    canvas.width = w;
+    canvas.height = h;
+    canvasAux.width = w;
+    canvasAux.height = h;
+    cw.style.width = `${w}px`;
+    cw.style.height = `${h}px`;
     // draw image into canvasAux
     const ctxAux = canvasAux.getContext('2d');
     ctxAux.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height);
@@ -491,7 +665,7 @@ export default class TemplateComponent extends Component {
         }
       }
 
-      // draw temporary points (polygon), if any */
+      /** 4) draw temporary points (polygon), if any */
       if (this.mystate.draggingTempPoint) {
         ctx.fillStyle = GREEN;
         ctx.strokeStyle = BLACK;
@@ -527,11 +701,14 @@ export default class TemplateComponent extends Component {
     return (
       <div>
         <input ref="fileInput" type="file" onChange={this.onFileChanged}></input>
-        <div style={styles.canvasWrapper2}>
-          <div ref="canvasWrapper" style={styles.canvasWrapper1}>
-            <canvas ref="canvas"></canvas>
-          </div>
+        <Button
+          disabled={!this.state.hasSelectedLabel}
+          onClick={this.removeSelectedLabel} bsSize="small"
+        >remove label</Button>
+        <div ref="canvasWrapper" style={styles.canvasWrapper}>
+          <canvas ref="canvas" style={styles.canvas}></canvas>
         </div>
+        <div type="text" ref="dummy" style={styles.dummy} contentEditable="true" />
       </div>
     );
   }
@@ -541,15 +718,24 @@ TemplateComponent.propTypes = {
   remoteUrl: React.PropTypes.string,
   maxWidth: React.PropTypes.number,
   maxHeight: React.PropTypes.number,
+  minWidth: React.PropTypes.number,
+  minHeight: React.PropTypes.number,
+  canEdit: React.PropTypes.bool,
+  labelsChangedCallback: React.PropTypes.func,
 };
 
 const styles = {
-  canvasWrapper1: {
-    position: 'relative',
-    display: 'inline-block',
+  canvas: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
   },
-  canvasWrapper2: {
+  canvasWrapper: {
+    position: 'relative',
     overflow: 'hidden',
-    display: 'inline-block',
+  },
+  dummy: {
+    position: 'absolute',
+    left: '-1000%',
   },
 };
