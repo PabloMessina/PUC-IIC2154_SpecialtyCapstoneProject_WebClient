@@ -14,6 +14,8 @@ import {
 } from 'react-bootstrap';
 
 import { Colors } from '../../styles';
+import Select from 'react-select';
+import renderIf from 'render-if';
 
 const ATTENDANCES = [
   {
@@ -55,9 +57,22 @@ export default class MinTemplate extends Component {
     super(props);
     this.state = {
       checked: this.props.evaluation.discount !== 0,
+      tag: '',
+      options: [
+        { label: 'Exam', value: 'Exam' },
+        { label: 'Test', value: 'Test' },
+        { label: 'Quiz', value: 'Quiz' },
+      ],
+      saved: '',
     };
     this.onChange = this.onChange.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
+    this.onTagChange = this.onTagChange.bind(this);
+  }
+
+  onTagChange(value, tag) {
+    this.setState({ tag });
+    this.onChange('tag', value);
   }
 
   onChange(field, value) {
@@ -68,6 +83,7 @@ export default class MinTemplate extends Component {
   onSubmit(e) {
     e.preventDefault();
     if (this.props.onSubmitDescription) this.props.onSubmitDescription();
+    this.setState({ saved: 'Evaluation saved!' });
   }
 
   discountMessage(discount) {
@@ -90,6 +106,8 @@ export default class MinTemplate extends Component {
       secret,
       discount,
       randomized,
+      tag,
+      threshold,
       // startAt,
       // finishAt,
     } = this.props.evaluation;
@@ -121,6 +139,23 @@ export default class MinTemplate extends Component {
                   placeholder="Evaluation description..."
                   onChange={e => this.onChange('description', e.target.value)}
                 />
+              </FormGroup>
+
+              <FormGroup controlId="tag">
+                <ControlLabel>Tag</ControlLabel>
+                <Select
+                  simpleValue={false}
+                  disabled={false}
+                  allowCreate
+                  addLabelText={'Create the tag: {label}'}
+                  value={tag}
+                  options={this.state.options}
+                  onChange={this.onTagChange}
+                  placeholder={'Exam, Test, Quiz'}
+                />
+                <HelpBlock>
+                  Here you can put the category of the evaluation.
+                </HelpBlock>
               </FormGroup>
 
               <hr />
@@ -170,6 +205,26 @@ export default class MinTemplate extends Component {
                 <HelpBlock>{this.discountMessage(this.state.checked ? discount : 0)}</HelpBlock>
               </FormGroup>
 
+              <FormGroup>
+                <ControlLabel>Threshold</ControlLabel>
+                <InputGroup>
+
+                  <FormControl
+                    type="number"
+                    value={threshold}
+                    placeholder="0.5"
+                    min="0"
+                    max="1"
+                    step="0.25"
+                    label="Discount"
+                    onChange={e => this.onChange('threshold', e.target.value)}
+                  />
+                </InputGroup>
+                <HelpBlock>
+                  Determinates the percentage of correct answers to score the half of the total points.
+                </HelpBlock>
+              </FormGroup>
+
               <hr />
 
               <FormGroup>
@@ -192,8 +247,14 @@ export default class MinTemplate extends Component {
                 type="submit"
                 style={styles.submit}
               >
-                Submit
+                Save
               </Button>
+              {renderIf(this.state.saved !== '')(() =>
+                <div>
+                  <br />
+                  <p bold style={styles.saved}>{this.state.saved}</p>
+                </div>
+              )}
             </form>
           </Col>
           <Col xsOffset={0} xs={12} sm={3}>
@@ -220,6 +281,9 @@ const styles = {
   },
   submit: {
     flex: 1,
-    alignSelf: 'flex-end',
+    alignSelf: 'flex-start',
+  },
+  saved: {
+    color: Colors.MAIN,
   },
 };

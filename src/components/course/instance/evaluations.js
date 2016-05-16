@@ -85,7 +85,7 @@ export default class InstanceEvaluations extends Component {
         </h5>
         <p style={styles.text}>{evaluation.title}</p>
         <p style={styles.text}>
-          Duration: {moment(evaluation.finishAt).diff(evaluation.startAt, 'minutes')} minutes
+          Duration: {evaluation.duration / 60000} minutes
         </p>
         <hr />
       </div>
@@ -107,7 +107,8 @@ export default class InstanceEvaluations extends Component {
         sections.future.push(evaluation);
 
       // before soon and after now is in 'ready' heather
-      } else if (!evaluation.finishAt || moment(evaluation.startAt).isAfter(moment())) {
+      } else if
+        (moment(evaluation.startAt).isBefore(moment().add(7, 'd')) || moment(evaluation.startAt).isAfter(moment())) {
         sections.soon.push(evaluation);
 
       // enden before now is in 'done' heather
