@@ -1,39 +1,39 @@
 import React, { Component } from 'react';
 import { Grid, Tabs, Tab, Row, Col, Image } from 'react-bootstrap';
 import Icon from 'react-fa';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
+import EasyTransition from 'react-easy-transition';
 
 import { Colors } from '../../styles';
 
-const TABS = [
-  {
-    name: 'Courses',
-    icon: 'graduation-cap ',
-    path: 'courses',
-  }, {
-    name: 'Atlases',
-    icon: 'book',
-    path: 'atlases',
-  }, {
-    name: 'Questions',
-    icon: 'list-alt ',
-    path: 'questions',
-  }, {
-    name: 'Members',
-    icon: 'user',
-    path: 'members',
-  }, {
-    name: 'Settings',
-    icon: 'cog',
-    path: 'settings',
-  },
-];
+const TABS = [{
+  name: 'Courses',
+  icon: 'graduation-cap ',
+  path: 'courses',
+}, {
+  name: 'Atlases',
+  icon: 'book',
+  path: 'atlases',
+}, {
+  name: 'Questions',
+  icon: 'list-alt ',
+  path: 'questions',
+}, {
+  name: 'Members',
+  icon: 'user',
+  path: 'members',
+}, {
+  name: 'Settings',
+  icon: 'cog',
+  path: 'settings',
+}];
 
-export default class Organization extends Component {
+class Organization extends Component {
 
   static get propTypes() {
     return {
       // From react-router
+      router: React.PropTypes.any,
       params: React.PropTypes.object,
       children: React.PropTypes.any,
       location: React.PropTypes.any,
@@ -58,10 +58,16 @@ export default class Organization extends Component {
   }
 
   onTabChange(path) {
-    if (path) {
+    if (path && this.activeTab !== path) {
       const organization = this.state.organization;
-      browserHistory.replace(`/organizations/show/${organization.id}/${path}`);
+      this.props.router.replace(`/organizations/show/${organization.id}/${path}`);
     }
+  }
+
+  get activeTab() {
+    const paths = this.props.location.pathname.split('/').filter(Boolean);
+    const [/* organizations */, /* show */, /* :id */, active] = paths;
+    return active;
   }
 
   renderNavigationTabBar() {
@@ -69,13 +75,10 @@ export default class Organization extends Component {
       <span><Icon style={styles.icon} name={icon} /> {name}</span>
     );
 
-    const paths = this.props.location.pathname.split('/');
-    const active = paths[paths.length - 1];
-
     return (
       <Tabs
         style={styles.tabs}
-        activeKey={active}
+        activeKey={this.activeTab}
         id="tabs"
         onSelect={this.onTabChange}
       >
@@ -111,7 +114,14 @@ export default class Organization extends Component {
                 <Col xs={12}>
                   {this.renderNavigationTabBar()}
                   <div style={styles.tabContent}>
-                    {React.cloneElement(this.props.children, { organization })}
+                    <EasyTransition
+                      path={this.activeTab}
+                      initialStyle={{ opacity: 0 }}
+                      transition="opacity 0.1s ease-in"
+                      finalStyle={{ opacity: 1 }}
+                    >
+                      {React.cloneElement(this.props.children, { organization })}
+                    </EasyTransition>
                   </div>
                 </Col>
               </Row>
@@ -122,6 +132,8 @@ export default class Organization extends Component {
     );
   }
 }
+
+export default withRouter(Organization);
 
 const styles = {
   container: {

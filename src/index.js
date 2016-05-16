@@ -9,9 +9,11 @@ import { Router, Route, IndexRoute, IndexRedirect, browserHistory } from 'react-
 import app, { auth, currentUser } from './app';
 
 import Main from './components/main';
-import Dashboard from './components/dashboard';
 import Login from './components/login/';
 import SignUp from './components/signup/';
+
+import Dashboard from './components/dashboard';
+import DashboardAcademic from './components/dashboard/academic';
 
 import Settings from './components/settings';
 import NotificationSettings from './components/settings/notifications';
@@ -40,6 +42,7 @@ import CourseInstance from './components/course/instance';
 import CourseInstanceStudents from './components/course/instance/students';
 import CourseInstanceEvaluations from './components/course/instance/evaluations';
 import CourseSettings from './components/course/setting';
+import CourseInstanceCreate from './components/course/instance-create';
 
 import Evaluation from './components/evaluation';
 import EvaluationDescripction from './components/evaluation/description';
@@ -51,8 +54,8 @@ import EvaluationRecorrection from './components/evaluation/recorrection';
 import AtlasCreate from './components/atlas-create/';
 import AtlasBook from './components/atlas-book/';
 
-import Renderer3D from './components/renderer-3d/';
 import RendererWrapper from './components/renderer-wrapper/';
+import ImageWithLabels from './components/image-with-labels/';
 
 // Development help
 // Go AtlasBook: http://localhost:3000/template
@@ -113,13 +116,18 @@ function fetching(...names) {
 const Routing = (
   <Router history={browserHistory}>
     <Route path="/" component={Main} title="App">
-      <IndexRoute component={Dashboard} />
+      <IndexRedirect to="dashboard" />
+
+      <Route path="dashboard" component={Dashboard}>
+        <IndexRedirect to="academic" />
+        <Route path="academic" component={DashboardAcademic} />
+      </Route>
 
       <Route path="login" component={Login} onEnter={requireAnnon} />
       <Route path="signup" component={SignUp} onEnter={requireAnnon} />
 
-      <Route path="renderer-3d" component={Renderer3D} />
       <Route path="renderer-wrapper" component={RendererWrapper} />
+      <Route path="image-with-labels" component={ImageWithLabels} />
 
       <Route path="documents" component={DocumentList} onEnter={requireAuth} />
       <Route
@@ -164,11 +172,12 @@ const Routing = (
       <Route
         path="courses/show/:courseId"
         component={Course}
-        onEnter={fetching({ field: 'courseId', to: 'course' })}
+        onEnter={fetching({ field: 'courseId', to: 'course', populate: ['organization', 'instance'] })}
       >
         <IndexRedirect to="instances" />
         <Route path="instances" component={CourseInstances}>
           <Route path="settings" component={CourseSettings} />
+          <Route path="create" component={CourseInstanceCreate} />
           <Route path="show/:instanceId" component={CourseInstance}>
             <IndexRedirect to="evaluations" />
             <Route path="students" component={CourseInstanceStudents} />
@@ -181,7 +190,11 @@ const Routing = (
       <Route
         path="evaluations/show/:evaluationId"
         component={Evaluation}
-        onEnter={fetching({ field: 'evaluationId', to: 'evaluation', populate: ['attendance', 'question'] })}
+        onEnter={fetching({
+          field: 'evaluationId',
+          to: 'evaluation',
+          populate: ['instance', 'attendance', 'question'],
+        })}
       >
         <IndexRedirect to="description" />
         <Route path="description" component={EvaluationDescripction} />
