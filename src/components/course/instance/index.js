@@ -18,6 +18,10 @@ const ELEMENTS = [
     name: 'Analytics',
     icon: 'bar-chart ',
     path: 'analytics',
+  }, {
+    name: 'Bibliography',
+    icon: 'book',
+    path: 'bibliography',
   },
 ];
 
