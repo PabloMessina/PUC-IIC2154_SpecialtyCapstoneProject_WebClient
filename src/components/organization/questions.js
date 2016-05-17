@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PropTypes, Component } from 'react';
 import { Grid,
   Row,
   Col,
@@ -32,7 +32,8 @@ export default class CourseTab extends Component {
 
   static get propTypes() {
     return {
-      organization: React.PropTypes.object,
+      organization: PropTypes.object,
+      membership: PropTypes.object,
     };
   }
 
@@ -158,6 +159,8 @@ export default class CourseTab extends Component {
   }
 
   render() {
+    const { membership } = this.props;
+
     return (
       <Grid style={styles.container}>
         <CreateQuestionModal show={this.state.creating} onHide={this.onModalClose} onSave={this.onModalSave} />
@@ -176,12 +179,14 @@ export default class CourseTab extends Component {
               <p>
                 Some are private to certains courses or people.
               </p>
-              <hr />
-              <div style={styles.createQuestionButtonContainer}>
-                <Button bsStyle="primary" bsSize="small" onClick={() => this.setState({ creating: true })}>
-                  <Icon style={styles.icon} name="plus" /> Create question
-                </Button>
-              </div>
+              {renderIf(['admin', 'write'].includes(membership.permission))(() =>
+                <div>
+                  <hr />
+                  <Button bsStyle="primary" bsSize="small" onClick={() => this.setState({ creating: true })}>
+                    <Icon style={styles.icon} name="plus" /> Create question
+                  </Button>
+                </div>
+              )}
             </Panel>
             {renderIf(this.state.error)(() =>
               <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>

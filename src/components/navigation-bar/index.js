@@ -27,6 +27,7 @@ export default class NavigationBar extends Component {
     super(props);
     this.state = {
       memberships: [],
+      error: null,
     };
     this.onLogout = this.onLogout.bind(this);
     this.fetchMemberships = this.fetchMemberships.bind(this);
@@ -50,11 +51,12 @@ export default class NavigationBar extends Component {
         userId: user.id,
         $populate: 'organization',
       };
-      membershipService.find({ query })
+      return membershipService.find({ query })
         .then(result => result.data)
-        .then(memberships => this.setState({ memberships }));
+        .then(memberships => this.setState({ memberships, error: null }))
+        .catch(error => this.setState({ error }));
     } else {
-      this.setState({ memberships: [] });
+      return this.setState({ memberships: [], error: null });
     }
   }
 

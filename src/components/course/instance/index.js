@@ -28,6 +28,8 @@ class Instance extends Component {
       organization: React.PropTypes.object,
       course: React.PropTypes.object,
       instance: React.PropTypes.object,
+      participant: React.PropTypes.object,
+      membership: React.PropTypes.object,
       // React Router
       router: React.PropTypes.object,
       params: React.PropTypes.object,
@@ -68,7 +70,8 @@ class Instance extends Component {
   }
 
   render() {
-    const { organization, course, instance } = this.props;
+    const { organization, course, instance, participant, membership } = this.props;
+
     return (
       <div style={styles.container}>
         <Row>
@@ -88,7 +91,7 @@ class Instance extends Component {
                 transition="opacity 0.1s ease-in"
                 finalStyle={{ opacity: 1 }}
               >
-                {React.cloneElement(this.props.children, { organization, course, instance })}
+                {React.cloneElement(this.props.children, { organization, course, instance, participant, membership })}
               </EasyTransition>
             )}
           </Col>

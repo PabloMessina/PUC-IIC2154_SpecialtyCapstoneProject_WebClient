@@ -4,6 +4,9 @@ import Icon from 'react-fa';
 import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
 
+import app, { currentUser } from '../../app';
+const membershipService = app.service('/memberships');
+
 import { Colors } from '../../styles';
 
 const TABS = [{
@@ -44,9 +47,14 @@ class Organization extends Component {
     super(props);
     this.state = {
       organization: props.params.organization,
+      membership: {},
     };
     this.renderNavigationTabBar = this.renderNavigationTabBar.bind(this);
     this.onTabChange = this.onTabChange.bind(this);
+  }
+
+  componentDidMount() {
+    this.fetchMembership(this.state.organization.id);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -54,6 +62,7 @@ class Organization extends Component {
     const organization = nextProps.params.organization;
     if (organization && organization.id !== this.state.organization.id) {
       this.setState({ organization });
+      this.fetchMembership(organization.id);
     }
   }
 
@@ -64,6 +73,18 @@ class Organization extends Component {
     }
   }
 
+  fetchMembership(organizationId) {
+    const query = {
+      organizationId,
+      userId: currentUser().id,
+      $limit: 1,
+    };
+    return membershipService.find({ query })
+      .then(result => result.data[0])
+      .then(membership => this.setState({ membership, error: null }))
+      .catch(error => this.setState({ error }));
+  }
+
   get activeTab() {
     const paths = this.props.location.pathname.split('/').filter(Boolean);
     const [/* organizations */, /* show */, /* :id */, active] = paths;
@@ -71,9 +92,12 @@ class Organization extends Component {
   }
 
   renderNavigationTabBar() {
+    const { membership } = this.state;
     const title = ({ name, icon }) => (
       <span><Icon style={styles.icon} name={icon} /> {name}</span>
     );
+
+    const tabs = membership.permission === 'admin' ? TABS : TABS.filter(t => t.path !== 'settings');
 
     return (
       <Tabs
@@ -82,7 +106,7 @@ class Organization extends Component {
         id="tabs"
         onSelect={this.onTabChange}
       >
-        {TABS.map(({ path, ...options }, i) => (
+        {tabs.map(({ path, ...options }, i) => (
           <Tab key={i} eventKey={path} title={title(options)} />
         ))}
       </Tabs>
@@ -90,16 +114,14 @@ class Organization extends Component {
   }
 
   render() {
-    const organization = this.state.organization;
+    const { organization, membership } = this.state;
     const { name, description } = organization;
-    const logo = 'https://d3njjcbhbojbot.cloudfront.net/api/utilities/v1/imageproxy/https://coursera-university-assets.s3.amazonaws.com/89/d0ddf06ad611e4b53d95ff03ce5aa7/360px.png';
-
+    const logo = 'https://coursera-university-assets.s3.amazonaws.com/89/d0ddf06ad611e4b53d95ff03ce5aa7/360px.png';
     return (
       <Grid style={styles.container} fluid>
         <Row style={styles.header}>
           <Col xs={12}>
             <Grid style={styles.content}>
-
               <Row style={styles.banner}>
                 <Col xsOffset={0} xs={12} smOffset={0} sm={11} style={styles.information}>
                   <Image style={styles.logo} src={logo} rounded />
@@ -109,7 +131,6 @@ class Organization extends Component {
                   </div>
                 </Col>
               </Row>
-
               <Row>
                 <Col xs={12}>
                   {this.renderNavigationTabBar()}
@@ -120,7 +141,7 @@ class Organization extends Component {
                       transition="opacity 0.1s ease-in"
                       finalStyle={{ opacity: 1 }}
                     >
-                      {React.cloneElement(this.props.children, { organization })}
+                      {React.cloneElement(this.props.children, { organization, membership })}
                     </EasyTransition>
                   </div>
                 </Col>

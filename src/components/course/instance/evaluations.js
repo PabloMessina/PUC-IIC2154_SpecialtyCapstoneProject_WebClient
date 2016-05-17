@@ -8,6 +8,7 @@ import moment from 'moment';
 import app, { currentUser } from '../../../app';
 
 const evaluationService = app.service('/evaluations');
+const membershipService = app.service('/memberships');
 
 
 export default class InstanceEvaluations extends Component {
@@ -17,6 +18,8 @@ export default class InstanceEvaluations extends Component {
       organization: React.PropTypes.object,
       course: React.PropTypes.object,
       instance: React.PropTypes.object,
+      participant: React.PropTypes.object,
+      membership: React.PropTypes.object,
       // React Router
       params: React.PropTypes.object,
       evaluations: React.PropTypes.array,
@@ -26,6 +29,7 @@ export default class InstanceEvaluations extends Component {
   static get defaultProps() {
     return {
       evaluations: [],
+      participant: {},
     };
   }
 
@@ -33,11 +37,13 @@ export default class InstanceEvaluations extends Component {
     super(props);
     this.state = {
       evaluations: props.evaluations,
+      permission: '',
     };
     this.renderRow = this.renderRow.bind(this);
     this.createEvaluation = this.createEvaluation.bind(this);
     this.fetchEvaluations = this.fetchEvaluations.bind(this);
     this.onEvaluationClick = this.onEvaluationClick.bind(this);
+    this.membership = this.membership.bind(this);
   }
 
   componentDidMount() {
@@ -45,6 +51,7 @@ export default class InstanceEvaluations extends Component {
     // const query = this.props.location.query;
     const instance = this.props.instance;
     this.fetchEvaluations(instance.id);
+    this.membership();
   }
 
   componentWillReceiveProps(nextProps) {
@@ -77,6 +84,15 @@ export default class InstanceEvaluations extends Component {
       .then(evaluations => this.setState({ evaluations }));
   }
 
+  membership() {
+    const user = currentUser();
+    const userId = user.id;
+    membershipService.find({ query: { userId } })
+    .then(results => {
+      this.setState({ permission: results.data.permission });
+    });
+  }
+
   renderRow(evaluation, i) {
     return (
       <div key={i} style={styles.cell}>
@@ -93,6 +109,7 @@ export default class InstanceEvaluations extends Component {
   }
 
   render() {
+    const participant = this.props.participant;
     const evaluations = this.state.evaluations;
     const sections = {
       soon: [],
@@ -121,7 +138,6 @@ export default class InstanceEvaluations extends Component {
       <div style={styles.container}>
         <Row style={styles.seccion}>
           <Col xs={12} md={8}>
-
             <h4 style={styles.title}>Coming Soon</h4>
             {sections.soon.map(this.renderRow)}
             {renderIf(sections.soon.length === 0)(() => (
@@ -155,11 +171,15 @@ export default class InstanceEvaluations extends Component {
               <h5><Icon style={styles.icon} size="lg" name="lightbulb-o" /> Evaluations</h5>
               <hr />
               <p>Measure the learning progress of the classroom with real-time individual and groupal evaluations.</p>
-              <hr />
-              <p>Schedule a evaluation:</p>
-              <Button bsStyle="primary" bsSize="small" onClick={this.createEvaluation}>
-                <Icon style={styles.icon} name="plus" /> Create evaluation
-              </Button>
+              {renderIf(['admin', 'write'].includes(participant.permission))(() =>
+                <div>
+                  <hr />
+                  <p>Schedule an evaluation:</p>
+                  <Button bsStyle="primary" bsSize="small" onClick={this.createEvaluation}>
+                    <Icon style={styles.icon} name="plus" /> Create evaluation
+                  </Button>
+                </div>
+            )}
             </Panel>
           </Col>
 

@@ -1,9 +1,9 @@
-import React, { Component } from 'react';
+import React, { PropTypes, Component } from 'react';
 import { Grid, Row, Col, Panel, Button, Table, ControlLabel, DropdownButton, MenuItem } from 'react-bootstrap';
 import Select from 'react-select';
 import moment from 'moment';
-
-import app from '../../app';
+import renderIf from 'render-if';
+import app, { currentUser } from '../../app';
 const membershipService = app.service('/memberships');
 const userService = app.service('/users');
 
@@ -17,7 +17,8 @@ export default class CourseTab extends Component {
 
   static get propTypes() {
     return {
-      organization: React.PropTypes.object,
+      organization: PropTypes.object,
+      membership: PropTypes.object,
     };
   }
 
@@ -120,6 +121,8 @@ export default class CourseTab extends Component {
   render() {
     // TODO: filter from current selected list
 
+    const { membership } = this.props;
+
     const ids = this.state.memberships.map(m => m.userId);
     const users = this.state.users.map(user => {
       const disabled = ids.indexOf(user.id) > -1;
@@ -133,9 +136,12 @@ export default class CourseTab extends Component {
     const permissions = {};
     ROLES.forEach(({ value, label }) => (permissions[value] = label));
 
+    const canEdit = ['admin', 'write'].includes(membership.permission);
+
     return (
       <Grid style={styles.container}>
         <Col xs={12} md={9}>
+        {renderIf(canEdit)(() =>
           <Row>
             <form onSubmit={this.onSubmit}>
               <Col xs={7}>
@@ -165,31 +171,32 @@ export default class CourseTab extends Component {
                 </Button>
               </Col>
             </form>
+            <hr />
           </Row>
-          <hr />
+      )}
           <Row>
-            <Col xs={12}>
-              <Table hover striped>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Role</th>
-                    <th>Added at</th>
-                  </tr>
-                </thead>
-                <tbody>
-                {this.state.memberships.map(({ user, ...membership }) => (
-                  <tr key={user.id}>
-                    <td style={styles.cell}>{user.name}</td>
-                    <td style={styles.cell}>
+            <Table hover striped>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Added at</th>
+                </tr>
+              </thead>
+              <tbody>
+              {this.state.memberships.map(({ user, ...membrshp }) => (
+                <tr key={user.id}>
+                  <td style={styles.cell}>{user.name}</td>
+                  <td style={styles.cell}>
+                    {renderIf(canEdit)(() =>
                       <DropdownButton
                         id="membership-dropdown"
                         bsStyle="link"
-                        title={permissions[membership.permission]}
-                        onSelect={key => this.onPermissionSelect(key, user, membership)}
+                        title={permissions[membrshp.permission]}
+                        onSelect={key => this.onPermissionSelect(key, user, membrshp)}
                       >
                         {ROLES.map((role, i) => (
-                          <MenuItem key={i} eventKey={i} active={membership.permission === role.value}>
+                          <MenuItem key={i} eventKey={i} active={membrshp.permission === role.value}>
                             {role.label}
                           </MenuItem>
                         ))}
@@ -198,13 +205,16 @@ export default class CourseTab extends Component {
                           Remove
                         </MenuItem>
                       </DropdownButton>
-                    </td>
-                    <td style={styles.cell}>{moment(membership.createdAt).format('LL')}</td>
-                  </tr>
-                ))}
-                </tbody>
-              </Table>
-            </Col>
+                    )}
+                    {renderIf(!canEdit)(() =>
+                      <span>{permissions[membrshp.permission]}</span>
+                    )}
+                  </td>
+                  <td style={styles.cell}>{moment(membrshp.createdAt).format('LL')}</td>
+                </tr>
+              ))}
+              </tbody>
+            </Table>
           </Row>
         </Col>
         <Col xs={12} md={3}>

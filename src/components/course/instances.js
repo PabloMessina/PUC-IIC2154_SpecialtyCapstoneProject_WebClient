@@ -5,6 +5,10 @@ import renderIf from 'render-if';
 import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
 
+import app, { currentUser } from '../../app';
+const membershipService = app.service('/memberships');
+const participantService = app.service('/participants');
+
 
 class CourseInstances extends Component {
 
@@ -24,12 +28,24 @@ class CourseInstances extends Component {
 
   constructor(props) {
     super(props);
+    this.state = {
+      membership: {},
+      participants: [],
+      error: null,
+    };
+    this.fetchMembership = this.fetchMembership.bind(this);
+    this.fetchParticipants = this.fetchParticipants.bind(this);
     this.onTabChange = this.onTabChange.bind(this);
   }
 
   componentDidMount() {
+    this.fetchMembership(this.props.organization.id);
+    this.fetchParticipants(this.props.instances.map(i => i.id));
+
+    // If we are in a subrouter, do not redirect
     if (this.subpath) return;
 
+    // Blank page, make a redirection
     const { course, instances } = this.props;
     this.timer = setTimeout(() => {
       if (instances.length) {
@@ -38,6 +54,20 @@ class CourseInstances extends Component {
         this.props.router.replace(`/courses/show/${course.id}/instances/create`);
       }
     }, 200);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    // Because router onEnter is not called when navigation between childrens.
+    const { organization, instances } = nextProps.params;
+
+    // Check if organization has changed
+    if (organization && organization.id !== this.props.organization.id) {
+      this.fetchMembership(organization.id);
+    }
+    // TODO: check if array is different
+    if (instances && instances.length) {
+      this.fetchParticipants(instances.map(i => i.id));
+    }
   }
 
   componentWillUnmount() {
@@ -70,18 +100,44 @@ class CourseInstances extends Component {
     return subpath;
   }
 
+  fetchMembership(organizationId) {
+    const query = {
+      organizationId,
+      userId: currentUser().id,
+      $limit: 1,
+    };
+    return membershipService.find({ query })
+      .then(result => result.data[0])
+      .then(membership => this.setState({ membership, error: null }))
+      .catch(error => this.setState({ error }));
+  }
+
+  fetchParticipants(instancesId) {
+    const query = {
+      instanceId: { $in: instancesId },
+      userId: currentUser().id,
+    };
+    return participantService.find({ query })
+      .then(result => result.data)
+      .then(participants => this.setState({ participants, error: null }))
+      .catch(error => this.setState({ error }));
+  }
+
   renderSettingsIcon() {
     return <span><Icon style={styles.icon} name="cogs" /> Settings</span>;
   }
 
   render() {
+    const { membership, participants } = this.state;
     const { organization, course, instances } = this.props;
+
     // Selected could be a instance or 'settings' or 'create'
     const selected = this.selected || this.subpath;
     // null if selected is 'settings' or 'create'
     const instance = instances.find(i => i.id === selected);
+    const participant = instance ? participants.find(p => p.instanceId === instance.id) : null;
     // Pass this props to children
-    const subprops = { organization, course, instance, instances };
+    const subprops = { organization, course, instance, instances, membership, participant };
 
     return (
       <div style={styles.container}>
@@ -96,8 +152,10 @@ class CourseInstances extends Component {
             {instances.map(ins => (
               <Tab key={ins.id} eventKey={ins.id} title={ins.period} />
             ))}
-            <Tab eventKey="create" title={<Icon name="plus" />} />
-            <Tab eventKey="settings" title={this.renderSettingsIcon()} tabClassName="pull-right" />
+            {renderIf(['admin', 'write'].includes(membership.permission))(() => [
+              <Tab key="CREATE" eventKey="CREATE" title={<Icon name="plus" />} />,
+              <Tab key="SETTINGS" eventKey="SETTINGS" title={this.renderSettingsIcon()} tabClassName="pull-right" />,
+            ])}
           </Tabs>
         </Row>
 
