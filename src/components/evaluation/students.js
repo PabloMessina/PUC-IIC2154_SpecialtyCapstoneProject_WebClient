@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Checkbox, Col, Table, Button, Glyphicon, Form, FormControl } from 'react-bootstrap';
+import { Checkbox, Row, Col, Table, Button, Glyphicon, Form, FormControl, Panel } from 'react-bootstrap';
 
 // TODO: incluir alumnos en asistencia
 
@@ -38,6 +38,13 @@ export default class Students extends Component {
     this.isNewGroupButtonDisabled = this.isNewGroupButtonDisabled.bind(this);
     this.randomGroupGenerator = this.randomGroupGenerator.bind(this);
     this.unassignedStudents = this.unassignedStudents.bind(this);
+  }
+
+   /**
+    * Sensible default: every evaluation will be answered by a single student
+    */
+  componentWillMount() {
+    this.randomGroupGenerator(1);
   }
 
   /**
@@ -225,35 +232,39 @@ export default class Students extends Component {
     return (
       <div>
         <style dangerouslySetInnerHTML={cssStyles} />
-        <div>
-          <Form
-            inline
-            onSubmit={e => {
-              e.preventDefault();
-              this.randomGroupGenerator(this.state.groupSize);
-            }}
-          >
-            <span>Generate random groups of </span>
-            <FormControl
-              type="number"
-              min="1"
-              max="99"
-              placeholder="3"
-              style={styles.groupSizeInput}
-              onChange={e => { this.setState({ groupSize: e.target.value }); }}
-            />
-            <span> people </span>
-            <Button
-              style={styles.generateGroupsButton}
-              onClick={() => this.randomGroupGenerator(this.state.groupSize)}
+        <Row>
+          <Col xs={12}>
+            <Form
+              inline
+              onSubmit={e => {
+                e.preventDefault();
+                this.randomGroupGenerator(this.state.groupSize);
+              }}
             >
-              Generate
-            </Button>
-          </Form>
-          <br />
-        </div>
-        <div>
-          <Col md={8}>
+              <span>Generate random groups of </span>
+              <FormControl
+                type="number"
+                min="1"
+                max="99"
+                placeholder="3"
+                style={styles.groupSizeInput}
+                onChange={e => { this.setState({ groupSize: e.target.value }); }}
+              />
+              <span> people </span>
+              <Button
+                style={styles.generateGroupsButton}
+                onClick={() => this.randomGroupGenerator(this.state.groupSize)}
+              >
+                Generate
+              </Button>
+              <Button onClick={() => this.randomGroupGenerator(1)}> Reset </Button>
+            </Form>
+            <br />
+          </Col>
+        </Row>
+        <Row>
+          <Col sm={8}>
+            <h4> Selected Students </h4>
             <Table bordered condensed>
               <thead>
                 <tr>
@@ -271,28 +282,33 @@ export default class Students extends Component {
               <span> New Group</span>
             </Button>
           </Col>
-          <Col md={4}>
-            <Table striped bordered condensed>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                </tr>
-              </thead>
-              <tbody>
-                {this.unassignedStudents().map((studentId, i) => (
-                  <tr key={i}>
-                    <td
-                      className="hoverBlue"
-                      onClick={() => this.addToGroup(studentId)}
-                    >
-                      {this.props.users.find(student => student.id === studentId).name}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
+          <Col sm={4}>
+            <Panel>
+              <h4>Students to evaluate</h4>
+              <p>
+                You can also create random groups of your preferred size or arrange them manually.
+              </p>
+            </Panel>
+            <Panel>
+              <h4> Unselected Students </h4>
+              <p>Pick unselected students from this list.</p>
+              <Table striped bordered condensed fill>
+                <tbody>
+                  {this.unassignedStudents().map((studentId, i) => (
+                    <tr key={i}>
+                      <td
+                        className="hoverBlue"
+                        onClick={() => this.addToGroup(studentId)}
+                      >
+                        {this.props.users.find(student => student.id === studentId).name}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Panel>
           </Col>
-        </div>
+        </Row>
       </div>
     );
   }
