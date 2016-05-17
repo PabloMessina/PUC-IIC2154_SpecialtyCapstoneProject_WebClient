@@ -2,8 +2,10 @@ import React, { Component } from 'react';
 import {
   convertToRaw,
   convertFromRaw,
+  CompositeDecorator,
   Editor,
   EditorState,
+  Entity,
   RichUtils,
 } from 'draft-js';
 import isEmpty from 'lodash/isEmpty';
@@ -17,8 +19,17 @@ export default class RichEditor extends Component {
   constructor(props) {
     super(props);
 
+    const decorator = new CompositeDecorator([
+      {
+        strategy: findLinkEntities,
+        component: Link,
+      },
+    ]);
+
     this.state = {
-      editorState: EditorState.createEmpty(),
+      editorState: EditorState.createEmpty(decorator),
+      showURLInput: false,
+      urlValue: '',
     };
 
     this.blockRenderer = createBlockRenderer(
@@ -36,6 +47,12 @@ export default class RichEditor extends Component {
     };
 
     this.handleKeyCommand = this.handleKeyCommand.bind(this);
+
+    this.promptForLink = this.promptForLink.bind(this);
+    this.onURLChange = (e) => this.setState({urlValue: e.target.value});
+    this.confirmLink = this.confirmLink.bind(this);
+    this.onLinkInputKeyDown = this.onLinkInputKeyDown.bind(this);
+    this.removeLink = this.removeLink.bind(this);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -64,8 +81,74 @@ export default class RichEditor extends Component {
     return false;
   }
 
+  promptForLink(e) {
+    e.preventDefault();
+    const {editorState} = this.state;
+    const selection = editorState.getSelection();
+    if (!selection.isCollapsed()) {
+      this.setState({
+        showURLInput: true,
+        urlValue: '',
+      }, () => {
+        setTimeout(() => this.refs.url.focus(), 0);
+      });
+    }
+  }
+
+  confirmLink(e) {
+    e.preventDefault();
+    const {editorState, urlValue} = this.state;
+    const entityKey = Entity.create('link', 'MUTABLE', {url: urlValue});
+    this.setState({
+      editorState: RichUtils.toggleLink(
+        editorState,
+        editorState.getSelection(),
+        entityKey
+      ),
+      showURLInput: false,
+      urlValue: '',
+    }, () => {
+      setTimeout(() => this.refs.editor.focus(), 0);
+    });
+  }
+
+  onLinkInputKeyDown(e) {
+    if (e.which === 13) {
+      this.confirmLink(e);
+    }
+  }
+
+  removeLink(e) {
+    e.preventDefault();
+    const {editorState} = this.state;
+    const selection = editorState.getSelection();
+    if (!selection.isCollapsed()) {
+      this.setState({
+        editorState: RichUtils.toggleLink(editorState, selection, null),
+      });
+    }
+  }
+  
   render() {
     const { editorState } = this.state;
+
+    let urlInput;
+    if (this.state.showURLInput) {
+      urlInput =
+        <div style={styles.urlInputContainer}>
+          <input
+            onChange={this.onURLChange}
+            ref="url"
+            style={styles.urlInput}
+            type="text"
+            value={this.state.urlValue}
+            onKeyDown={this.onLinkInputKeyDown}
+          />
+          <button onMouseDown={this.confirmLink}>
+            Confirm
+          </button>
+        </div>;
+    }
 
     return (
       <div style={styles.container}>
@@ -78,6 +161,17 @@ export default class RichEditor extends Component {
             editorState={editorState}
             onChange={this.onChange}
           />
+          <div>
+            <button
+              onMouseDown={this.promptForLink}
+              style={{marginRight: 10}}>
+              Add Link
+            </button>
+            <button onMouseDown={this.removeLink}>
+              Remove Link
+            </button>
+          </div>
+          {urlInput}
         </div>
         <div
           onClick={this.focus}
@@ -97,6 +191,28 @@ export default class RichEditor extends Component {
     );
   }
 }
+
+function findLinkEntities(contentBlock, callback) {
+  contentBlock.findEntityRanges(
+    (character) => {
+      const entityKey = character.getEntity();
+      return (
+        entityKey !== null &&
+          Entity.get(entityKey).getType() === 'link'
+      );
+    },
+    callback
+  );
+}
+
+const Link = (props) => {
+  const {url} = Entity.get(props.entityKey).getData();
+  return (
+    <a href={url} style={styles.link}>
+      {props.children}
+    </a>
+  );
+};
 
 const styles = {
   container: {
