@@ -79,9 +79,9 @@ class CourseInstances extends Component {
     if (!selected || this.selected === selected) return;
 
     const courseId = this.props.course.id;
-    if (selected === 'settings') {
+    if (selected === 'SETTINGS') {
       this.props.router.replace(`/courses/show/${courseId}/instances/settings`);
-    } else if (selected === 'create') {
+    } else if (selected === 'CREATE') {
       this.props.router.replace(`/courses/show/${courseId}/instances/create`);
     } else {
       this.props.router.replace(`/courses/show/${courseId}/instances/show/${selected}`);
