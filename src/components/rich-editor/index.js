@@ -19,7 +19,7 @@ export default class RichEditor extends Component {
   constructor(props) {
     super(props);
 
-    const decorator = new CompositeDecorator([
+    this.decorator = new CompositeDecorator([
       {
         strategy: findLinkEntities,
         component: Link,
@@ -27,10 +27,12 @@ export default class RichEditor extends Component {
     ]);
 
     this.state = {
-      editorState: EditorState.createEmpty(decorator),
+      editorState: EditorState.createEmpty(this.decorator),
       showURLInput: false,
       urlValue: '',
     };
+
+
 
     this.blockRenderer = createBlockRenderer(
       (modifier, blockKey) => {
@@ -62,11 +64,11 @@ export default class RichEditor extends Component {
 
     let editorState = null;
     if (isEmpty(content)) {
-      editorState = EditorState.createEmpty();
+      editorState = EditorState.createEmpty(this.decorator);
     } else {
       content.entityMap = content.entityMap || [];
       const contentState = convertFromRaw(content);
-      editorState = EditorState.createWithContent(contentState);
+      editorState = EditorState.createWithContent(contentState, this.decorator);
     }
     this.setState({ editorState });
   }
@@ -128,7 +130,7 @@ export default class RichEditor extends Component {
       });
     }
   }
-  
+ 
   render() {
     const { editorState } = this.state;
 
