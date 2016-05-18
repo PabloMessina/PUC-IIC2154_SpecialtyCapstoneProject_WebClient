@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Line as LineChart } from 'react-chartjs';
-import { Row, Col, Table, Button, ButtonGroup, ControlLabel, Panel } from 'react-bootstrap';
+import { Row, Col, Table, Button, ButtonGroup, ControlLabel } from 'react-bootstrap';
 import Select from 'react-select';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
@@ -31,7 +31,12 @@ export default class Summary extends Component {
 
   static get propTypes() {
     return {
+      organization: React.PropTypes.object,
+      course: React.PropTypes.object,
       instance: React.PropTypes.object,
+      // React Router
+      params: React.PropTypes.object,
+      evaluations: React.PropTypes.array,
     };
   }
 
@@ -251,22 +256,13 @@ export default class Summary extends Component {
                     </Button>
                   ))}
                 </ButtonGroup>
-                <br />
-                <br />
-                <Panel>
-                  <h5><Icon style={styles.icon} size="lg" name="question" /> How to use it?</h5>
-                  <hr />
-                  <p>Search students for compare it.</p>
-                  <hr />
-                  <p>Select a evalutaion to filter.</p>
-                </Panel>
               </Col>
             </Row>
           )}
           {renderIf(!this.state.isChart)(() =>
             <Row>
-              <Col xs={9}>
-                <Table striped condensed responsive hover>
+              <Col xs={12}>
+                <Table striped condensed hover>
                   <thead>
                     <tr>
                       <th>Student</th>
@@ -288,18 +284,6 @@ export default class Summary extends Component {
                   ))}
                   </tbody>
                 </Table>
-              </Col>
-              <Col xs={3}>
-                <Panel>
-                  <h5><Icon style={styles.icon} size="lg" name="download" /> Export to Excel</h5>
-                  <hr />
-                  <p>If you want to export all the grades, click on Export buttom</p>
-                  <hr />
-                  <p>Grade table:</p>
-                  <Button bsStyle="primary" bsSize="small" onClick={this.createEvaluation}>
-                    <Icon style={styles.icon} name="plus" /> Export to Excel
-                  </Button>
-                </Panel>
               </Col>
             </Row>
           )}

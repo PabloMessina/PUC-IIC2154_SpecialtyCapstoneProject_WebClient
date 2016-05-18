@@ -1,5 +1,5 @@
 import React, { PropTypes, Component } from 'react';
-import { Row, Col, Panel, Button, Modal, ListGroup, ListGroupItem } from 'react-bootstrap';
+import { Col, Panel, Button, Modal, ListGroup, ListGroupItem } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
 import AtlasGrid from '../../document-list/atlas-grid';
@@ -23,13 +23,13 @@ export default class CourseBibliography extends Component {
       atlases: [],
       bibliographies: [],
     };
-    this.createAtlas = this.createAtlas.bind(this);
+    this.onAtlasCreate = this.onAtlasCreate.bind(this);
+    this.onAtlasSelect = this.onAtlasSelect.bind(this);
     this.fetchAtlases = this.fetchAtlases.bind(this);
     this.fetchBibliographies = this.fetchBibliographies.bind(this);
     this.renderAtlasList = this.renderAtlasList.bind(this);
     this.close = this.close.bind(this);
     this.open = this.open.bind(this);
-    this.onAtlasSelect = this.onAtlasSelect.bind(this);
   }
 
   componentDidMount() {
@@ -37,28 +37,19 @@ export default class CourseBibliography extends Component {
     this.fetchBibliographies(this.props.instance.id);
   }
 
-  fetchBibliographies(instanceId) {
-    const query = {
-      instanceId,
-      $populate: 'atlas',
-    };
-    return biblographyService.find({ query })
-      .then(result => result.data)
-      .then(bibliographies => this.setState({ bibliographies }));
-  }
-
-  fetchAtlases(organizationId) {
-    const query = {
-      organizationId,
-    };
-    return atlasService.find({ query })
-      .then(result => result.data)
-      .then(atlases => this.setState({ atlases }));
-  }
-
-  createAtlas() {
+  onAtlasCreate() {
     const url = `/organizations/show/${this.props.organization.id}/atlases/create`;
     return browserHistory.push(url);
+  }
+
+  onAtlasSelect(atlas) {
+    biblographyService.create({
+      atlasId: atlas.id,
+      instanceId: this.props.instance.id,
+    }).then((bibliography) => {
+      const bibliographies = [...this.state.bibliographies, { ...bibliography, atlas }];
+      this.setState({ bibliographies, error: null });
+    }).catch(error => this.setState({ error }));
   }
 
   close() {
@@ -69,15 +60,23 @@ export default class CourseBibliography extends Component {
     this.setState({ showModal: true });
   }
 
-  onAtlasSelect(element) {
-    biblographyService.create({
-      atlasId: element.id,
-      instanceId: this.props.instance.id,
-    }).then((bibliography) => {
-      bibliography.atlas = element;
-      const bibliographies = [...this.state.bibliographies, bibliography];
-      this.setState({ bibliographies, error: null });
-    }).catch(error => this.setState({ error }));
+  fetchAtlases(organizationId) {
+    const query = {
+      organizationId,
+    };
+    return atlasService.find({ query })
+    .then(result => result.data)
+    .then(atlases => this.setState({ atlases }));
+  }
+
+  fetchBibliographies(instanceId) {
+    const query = {
+      instanceId,
+      $populate: 'atlas',
+    };
+    return biblographyService.find({ query })
+      .then(result => result.data)
+      .then(bibliographies => this.setState({ bibliographies }));
   }
 
   renderAtlasList(element, i) {
@@ -93,44 +92,39 @@ export default class CourseBibliography extends Component {
 
     return (
       <div style={styles.container}>
-        <Row>
-          <Col md={8}>
-            <Panel>
-              <h4>Course Atlases:</h4>
-              <AtlasGrid atlases={bibliographies.map(bibliography => bibliography.atlas)} />
-            </Panel>
-          </Col>
-          <Col md={4}>
-            <Panel>
-              <h4>Bibliography</h4>
-              <p>Every course can have it's own resources and atlases.</p>
-              <hr />
-              <p>You can create a new atlas to add to the course:</p>
-              <Button bsStyle="primary" bsSize="small" onClick={this.createAtlas}>
-                <Icon style={styles.icon} name="plus" /> Create atlas
-              </Button>
-              <hr />
-              <p>You can also add an existing atlas to the course:</p>
-              <Button bsStyle="primary" bsSize="small" onClick={this.open}>
-                <Icon style={styles.icon} name="plus" /> Add atlas
-              </Button>
 
-              <Modal show={this.state.showModal} onHide={this.close}>
-                <Modal.Header closeButton>
-                  <Modal.Title>Add atlas to course</Modal.Title>
-                </Modal.Header>
-                <br />
-                <ListGroup>
-                  {atlases.map((element, i) => this.renderAtlasList(element, i))}
-                </ListGroup>
-                <Modal.Footer>
-                  <Button onClick={this.close}>Close</Button>
-                </Modal.Footer>
-              </Modal>
+        <Modal show={this.state.showModal} onHide={this.close}>
+          <Modal.Header closeButton>
+            <Modal.Title>Add atlas to course</Modal.Title>
+          </Modal.Header>
+          <br />
+          <ListGroup>
+            {atlases.map((element, i) => this.renderAtlasList(element, i))}
+          </ListGroup>
+          <Modal.Footer>
+            <Button onClick={this.close}>Close</Button>
+          </Modal.Footer>
+        </Modal>
 
-            </Panel>
-          </Col>
-        </Row>
+        <Col xs={12} md={8}>
+          <AtlasGrid atlases={bibliographies.map(bibliography => bibliography.atlas)} />
+        </Col>
+        <Col xs={12} md={4}>
+          <Panel>
+            <h4>Bibliography</h4>
+            <p>Every course can have it's own resources and atlases.</p>
+            <hr />
+            <p>You can create a new atlas to add to the course:</p>
+            <Button bsStyle="primary" bsSize="small" onClick={this.onAtlasCreate}>
+              <Icon style={styles.icon} name="plus" /> Create atlas
+            </Button>
+            <hr />
+            <p>You can also add an existing atlas to the course:</p>
+            <Button bsStyle="primary" bsSize="small" onClick={this.open}>
+              <Icon style={styles.icon} name="plus" /> Add atlas
+            </Button>
+          </Panel>
+        </Col>
       </div>
     );
   }

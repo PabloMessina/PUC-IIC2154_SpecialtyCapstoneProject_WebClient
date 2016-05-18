@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Panel, Row, Col, Button } from 'react-bootstrap';
+import { Panel, Col, Button } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
@@ -136,54 +136,51 @@ export default class InstanceEvaluations extends Component {
 
     return (
       <div style={styles.container}>
-        <Row style={styles.seccion}>
-          <Col xs={12} md={8}>
-            <h4 style={styles.title}>Coming Soon</h4>
-            {sections.soon.map(this.renderRow)}
-            {renderIf(sections.soon.length === 0)(() => (
-              <div>
-                <p>There are no evaluations coming soon</p>
-                <hr />
-              </div>
-            ))}
-
-            <h4 style={styles.title}>Future Quizzes</h4>
-            {sections.future.map(this.renderRow)}
-            {renderIf(sections.future.length === 0)(() => (
-              <div>
-                <p>There are no future evaluations</p>
-                <hr />
-              </div>
-            ))}
-
-            <h4 style={styles.title}>Done</h4>
-            {sections.done.map(this.renderRow)}
-            {renderIf(sections.done.length === 0)(() => (
-              <div>
-                <p>There are no evaluations done</p>
-                <hr />
-              </div>
-            ))}
-          </Col>
-
-          <Col xs={12} md={4}>
-            <Panel>
-              <h5><Icon style={styles.icon} size="lg" name="lightbulb-o" /> Evaluations</h5>
+        <Col xs={12} md={8}>
+          <h4 style={styles.title}>Coming Soon</h4>
+          {sections.soon.map(this.renderRow)}
+          {renderIf(sections.soon.length === 0)(() => (
+            <div>
+              <p>There are no evaluations coming soon</p>
               <hr />
-              <p>Measure the learning progress of the classroom with real-time individual and groupal evaluations.</p>
-              {renderIf(['admin', 'write'].includes(participant.permission))(() =>
-                <div>
-                  <hr />
-                  <p>Schedule an evaluation:</p>
-                  <Button bsStyle="primary" bsSize="small" onClick={this.createEvaluation}>
-                    <Icon style={styles.icon} name="plus" /> Create evaluation
-                  </Button>
-                </div>
-            )}
-            </Panel>
-          </Col>
+            </div>
+          ))}
 
-        </Row>
+          <h4 style={styles.title}>Future Quizzes</h4>
+          {sections.future.map(this.renderRow)}
+          {renderIf(sections.future.length === 0)(() => (
+            <div>
+              <p>There are no future evaluations</p>
+              <hr />
+            </div>
+          ))}
+
+          <h4 style={styles.title}>Done</h4>
+          {sections.done.map(this.renderRow)}
+          {renderIf(sections.done.length === 0)(() => (
+            <div>
+              <p>There are no evaluations done</p>
+              <hr />
+            </div>
+          ))}
+        </Col>
+
+        <Col xs={12} md={4}>
+          <Panel>
+            <h5><Icon style={styles.icon} size="lg" name="lightbulb-o" /> Evaluations</h5>
+            <hr />
+            <p>Measure the learning progress of the classroom with real-time individual and groupal evaluations.</p>
+            {renderIf(['admin', 'write'].includes(participant.permission))(() =>
+              <div>
+                <hr />
+                <p>Schedule an evaluation:</p>
+                <Button bsStyle="primary" bsSize="small" onClick={this.createEvaluation}>
+                  <Icon style={styles.icon} name="plus" /> Create evaluation
+                </Button>
+              </div>
+          )}
+          </Panel>
+        </Col>
       </div>
     );
   }
