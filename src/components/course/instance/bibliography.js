@@ -5,7 +5,9 @@ import { browserHistory } from 'react-router';
 import AtlasGrid from '../../document-list/atlas-grid';
 
 import app from '../../../app';
+const biblographyService = app.service('/biblographies');
 const atlasService = app.service('/atlases');
+
 
 export default class CourseBibliography extends Component {
   static get propTypes() {
@@ -19,21 +21,33 @@ export default class CourseBibliography extends Component {
     super(props);
     this.state = {
       atlases: [],
-      bibliography: [],
+      bibliographies: [],
     };
     this.createAtlas = this.createAtlas.bind(this);
-    this.fetch = this.fetch.bind(this);
+    this.fetchAtlases = this.fetchAtlases.bind(this);
+    this.fetchBibliographies = this.fetchBibliographies.bind(this);
     this.renderAtlasList = this.renderAtlasList.bind(this);
     this.close = this.close.bind(this);
     this.open = this.open.bind(this);
-    this.addAtlas = this.addAtlas.bind(this);
+    this.onAtlasSelect = this.onAtlasSelect.bind(this);
   }
 
   componentDidMount() {
-    this.fetch();
+    this.fetchAtlases(this.props.organization.id);
+    this.fetchBibliographies(this.props.instance.id);
   }
 
-  fetch(organizationId) {
+  fetchBibliographies(instanceId) {
+    const query = {
+      instanceId,
+      $populate: 'atlas',
+    };
+    return biblographyService.find({ query })
+      .then(result => result.data)
+      .then(bibliographies => this.setState({ bibliographies }));
+  }
+
+  fetchAtlases(organizationId) {
     const query = {
       organizationId,
     };
@@ -55,24 +69,35 @@ export default class CourseBibliography extends Component {
     this.setState({ showModal: true });
   }
 
-  addAtlas(element) {
-    this.state.bibliography.push(element);
+  onAtlasSelect(element) {
+    biblographyService.create({
+      atlasId: element.id,
+      instanceId: this.props.instance.id,
+    }).then((bibliography) => {
+      bibliography.atlas = element;
+      const bibliographies = [...this.state.bibliographies, bibliography];
+      this.setState({ bibliographies, error: null });
+    }).catch(error => this.setState({ error }));
   }
 
   renderAtlasList(element, i) {
     return (
-      <ListGroupItem key={i} onClick={this.addAtlas(element[i])}>{element.title}</ListGroupItem>
+      <ListGroupItem key={i} onClick={() => this.onAtlasSelect(element)}>{element.title}</ListGroupItem>
     );
   }
 
   render() {
+    const bibliographies = this.state.bibliographies;
+    const atlases = this.state.atlases
+      .filter(atlas => bibliographies.findIndex(b => b.atlasId === atlas.id) === -1);
+
     return (
       <div style={styles.container}>
         <Row>
           <Col md={8}>
             <Panel>
               <h4>Course Atlases:</h4>
-              <AtlasGrid atlases={this.state.atlases} />
+              <AtlasGrid atlases={bibliographies.map(bibliography => bibliography.atlas)} />
             </Panel>
           </Col>
           <Col md={4}>
@@ -89,18 +114,20 @@ export default class CourseBibliography extends Component {
               <Button bsStyle="primary" bsSize="small" onClick={this.open}>
                 <Icon style={styles.icon} name="plus" /> Add atlas
               </Button>
+
               <Modal show={this.state.showModal} onHide={this.close}>
                 <Modal.Header closeButton>
                   <Modal.Title>Add atlas to course</Modal.Title>
                 </Modal.Header>
                 <br />
                 <ListGroup>
-                  {this.state.atlases.map((element, i) => this.renderAtlasList(element, i))}
+                  {atlases.map((element, i) => this.renderAtlasList(element, i))}
                 </ListGroup>
                 <Modal.Footer>
                   <Button onClick={this.close}>Close</Button>
                 </Modal.Footer>
               </Modal>
+
             </Panel>
           </Col>
         </Row>
