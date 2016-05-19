@@ -17,6 +17,7 @@ const questionService = app.service('/questions');
 import { TrueFalse, MultiChoice, TShort } from '../questions';
 import CreateQuestionModal from '../create-question/modal';
 import { Colors } from '../../styles';
+import renderIf from 'render-if';
 
 function questionFactory(qtype, props) {
   switch (qtype) {
@@ -151,12 +152,19 @@ export default class Questions extends Component {
     );
   }
 
-  renderQuestion(props, identifier) {
+  renderQuestion(props, identifier, mode) {
     const { onAnswerChange, onFieldsChange } = this.props;
     const question = props.question;
+    let questionMode = 'reader';
+    switch (mode) {
+      case 'instructor': questionMode = 'editor'; break;
+      case 'student': questionMode = 'responder'; break;
+      default: questionMode = 'responder'; break;
+    }
     const element = questionFactory(question.qtype, {
       ...props,
       identifier,
+      mode: questionMode,
       onAnswerChange: answer => onAnswerChange(question.id, answer),
       onFieldsChange: field => onFieldsChange(question.id, field),
     });
@@ -200,11 +208,11 @@ export default class Questions extends Component {
     );
   }
 
-  renderEvaluation() {
+  renderEvaluation(mode) {
     const { evaluation, questions, answers, onQuestionRemove } = this.props;
     const objects = questions.map(question => ({
       question,
-      answer: answers[question.id],
+      answer: answers[question.id] || question.answer,
       fields: question.fields,
       disabled: false,
     }));
@@ -216,18 +224,42 @@ export default class Questions extends Component {
         {objects.map((question, i) => (
           <div key={i} style={styles.wrapper}>
             {this.renderQuestion(question, i + 1)}
-            <div style={styles.icons} onClick={() => onQuestionRemove(question.question)}>
-              <Icon size="lg" name="minus" style={{ color: Colors.RED }} />
-            </div>
+            {renderIf(mode === 'instructor')(
+              <div style={styles.icons} onClick={() => onQuestionRemove(question.question)}>
+                <Icon size="lg" name="minus" style={{ color: Colors.RED }} />
+              </div>
+            )}
           </div>
         ))}
       </Panel>
     );
   }
 
-  render() {
+  renderMode(mode) {
+    switch (mode) {
+      case 'student': return this.renderStudent();
+      case 'instructor': return this.renderInstructor();
+      default: return null;
+    }
+  }
+
+  renderStudent() {
     return (
-      <Row style={styles.container}>
+      <Row>
+        <Col style={styles.rigth} xs={12} sm={12} md={3}>
+          <Panel>
+            <p>Progress</p>
+          </Panel>
+        </Col>
+        <Col style={styles.left} xs={12} sm={12} md={9}>
+          {this.renderEvaluation('student')}
+        </Col>
+      </Row>
+    );
+  }
+  renderInstructor() {
+    return (
+      <Row>
         <CreateQuestionModal show={this.state.creating} onHide={this.onModalClose} onSave={this.onModalSave} />
         <Col style={styles.rigth} xs={12} sm={12} md={5}>
           <Col xs={12}>
@@ -240,9 +272,18 @@ export default class Questions extends Component {
           </Col>
         </Col>
         <Col style={styles.left} xs={12} sm={12} md={7}>
-          {this.renderEvaluation()}
+          {this.renderEvaluation('instructor')}
         </Col>
       </Row>
+    );
+  }
+
+  render() {
+    const mode = 'student'; // instructor, student
+    return (
+      <div>
+        {this.renderMode(mode)}
+      </div>
     );
   }
 }

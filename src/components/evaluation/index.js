@@ -7,8 +7,11 @@ import renderIf from 'render-if';
 import app from '../../app';
 const organizationService = app.service('/organizations');
 const courseService = app.service('/courses');
+const participantService = app.service('/participants');
 const evaluationService = app.service('/evaluations');
 const evaluationsQuestionService = app.service('/evaluations-questions');
+const answerService = app.service('/answers');
+const attendanceService = app.service('/attendances');
 
 const SECTIONS = [
   {
@@ -38,6 +41,11 @@ const SECTIONS = [
   },
 ];
 
+const MODES = [
+  'instructor',
+  'student',
+];
+
 class EvaluationCreate extends Component {
 
   static get propTypes() {
@@ -46,9 +54,8 @@ class EvaluationCreate extends Component {
       evaluation: React.PropTypes.object,
       // Defaults
       questions: React.PropTypes.array,
-      groups: React.PropTypes.array,
-      users: React.PropTypes.array,
-      attendants: React.PropTypes.array,
+      // groups: React.PropTypes.array,
+      attendances: React.PropTypes.array,
       answers: React.PropTypes.object,
       // React Router
       router: React.PropTypes.object,
@@ -60,22 +67,10 @@ class EvaluationCreate extends Component {
 
   static get defaultProps() {
     return {
-      users: [
-       { id: 3, name: 'Bobadilla Felipe' },
-       { id: 0, name: 'Lopez Patricio' },
-       { id: 1, name: 'Andrighetti Tomas' },
-       { id: 9, name: 'Steinsapir Diego' },
-       { id: 8, name: 'Monsalve Geraldine' },
-       { id: 2, name: 'Astaburuaga Francisco' },
-       { id: 5, name: 'Dragicevic Vicente' },
-       { id: 6, name: 'Halabi Maria Constanza' },
-       { id: 7, name: 'Messina Pablo' },
-       { id: 4, name: 'Bustamante Jose' },
-      ],
       questions: [],
       answers: {},
-      groups: [[]],
-      attendants: [],
+      // groups: [[]],
+      attendances: [],
     };
   }
 
@@ -84,11 +79,12 @@ class EvaluationCreate extends Component {
     this.state = {
       // Current evaluation
       evaluation: props.params.evaluation,
-      users: props.users,
+      // Students rending the evaluation
+      users: [],
       questions: props.params.evaluation.questions || props.questions,
-      groups: props.groups,
+      // groups: props.groups,
       answers: props.answers,
-      attendants: props.attendants,
+      attendances: props.params.evaluation.attendances || props.attendances,
       // Other
       organization: null,
       course: null,
@@ -103,13 +99,18 @@ class EvaluationCreate extends Component {
 
     this.fetchOrganization = this.fetchOrganization.bind(this);
     this.fetchCourse = this.fetchCourse.bind(this);
+    this.fetchUsers = this.fetchUsers.bind(this);
+    this.fetchAttendances = this.fetchAttendances.bind(this);
     this.fetchAll = this.fetchAll.bind(this);
 
     this.onNavigateTo = this.onNavigateTo.bind(this);
     this.onEvaluationChange = this.onEvaluationChange.bind(this);
     this.onQuestionsChange = this.onQuestionsChange.bind(this);
-    this.onGroupsChange = this.onGroupsChange.bind(this);
-    this.onAttendantsChange = this.onAttendantsChange.bind(this);
+    // this.onGroupsChange = this.onGroupsChange.bind(this);
+    // this.onAttendantsChange = this.onAttendantsChange.bind(this);
+    this.onAttendanceAdd = this.onAttendanceAdd.bind(this);
+    this.onAttendanceRemove = this.onAttendanceRemove.bind(this);
+    this.onAttendanceUpdate = this.onAttendanceUpdate.bind(this);
     this.onAnswerChange = this.onAnswerChange.bind(this);
     this.onFieldsChange = this.onFieldsChange.bind(this);
     this.onQuestionAdd = this.onQuestionAdd.bind(this);
@@ -131,6 +132,25 @@ class EvaluationCreate extends Component {
     }
   }
 
+  onAttendanceAdd(attendance) {
+    const attendances = [...this.state.attendances, attendance];
+    this.setState({ attendances });
+  }
+
+  onAttendanceRemove(attendance) {
+    const attendances = this.state.attendances.filter(a => a.id !== attendance.id);
+    this.setState({ attendances });
+  }
+
+  onAttendanceUpdate(attendance) {
+    const attendances = [...this.state.attendances];
+    const index = attendances.findIndex(a => a.id === attendance.id);
+    if (index > -1) {
+      attendances[index] = attendance;
+      this.setState({ attendances });
+    }
+  }
+
   onEvaluationChange(evaluation) {
     if (evaluation) {
       this.setState({ evaluation: { ...this.state.evaluation, ...evaluation } });
@@ -141,16 +161,13 @@ class EvaluationCreate extends Component {
     if (questions) this.setState({ questions });
   }
 
-  onGroupsChange(groups) {
-    if (groups) this.setState({ groups });
-  }
-
-  onAttendantsChange(attendants) {
-    if (attendants) this.setState({ attendants });
-  }
-
   onAnswerChange(id, answer) {
-    if (id) this.setState({ answers: { ...this.state.answers, [id]: answer } });
+    const questions = this.state;
+    if (id) {
+      const indexQ = questions.findIndex((q) => q.id === id);
+      questions[indexQ].answer = answer;
+      this.setState({ answers: { ...this.state.answers, [id]: answer }, questions });
+    }
   }
 
   onFieldsChange(id, fields) {
@@ -197,23 +214,53 @@ class EvaluationCreate extends Component {
 
   fetchAll(evaluation) {
     return this.fetchCourse(evaluation.instance.courseId)
-      .then(course => this.fetchOrganization(course.organizationId));
+      .then(course => this.fetchOrganization(course.organizationId))
+      .then(() => this.fetchUsers(evaluation.instanceId))
+      .catch(error => this.setState({ error }));
+  }
+
+  fetchAttendances(evaluationId) {
+    const query = { evaluationId };
+    return attendanceService.find(query)
+      .then(result => result.data)
+      .then(attendances => {
+        this.setState({ attendances, error: null });
+        return attendances;
+      })
+      .catch(error => this.setState({ error }));
   }
 
   fetchCourse(courseId) {
     return courseService.get(courseId)
       .then(course => {
-        this.setState({ course });
+        this.setState({ course, error: null });
         return course;
-      });
+      })
+      .catch(error => this.setState({ error }));
+  }
+
+  fetchUsers(instanceId) {
+    const query = {
+      instanceId,
+      $populate: ['user'],
+    };
+    return participantService.find({ query })
+      .then(result => result.data)
+      .then(participants => {
+        const users = participants.map(p => p.user);
+        this.setState({ users, error: null });
+        return users;
+      })
+      .catch(error => this.setState({ error }));
   }
 
   fetchOrganization(organizationId) {
     return organizationService.get(organizationId)
       .then(organization => {
-        this.setState({ organization });
+        this.setState({ organization, error: null });
         return organization;
-      });
+      })
+      .catch(error => this.setState({ error }));
   }
 
   get selected() {
@@ -252,7 +299,16 @@ class EvaluationCreate extends Component {
   }
 
   render() {
-    const { course, instance, organization, evaluation, users, questions, answers, groups, attendants } = this.state;
+    const {
+      answers,
+      attendances,
+      course,
+      evaluation,
+      instance,
+      organization,
+      questions,
+      users,
+    } = this.state;
 
     return (
       <Grid style={styles.container}>
@@ -334,14 +390,14 @@ class EvaluationCreate extends Component {
                   users,
                   questions,
                   answers,
-                  groups,
-                  attendants,
+                  attendances,
                   onQuestionAdd: this.onQuestionAdd,
                   onQuestionRemove: this.onQuestionRemove,
                   onEvaluationChange: this.onEvaluationChange,
                   onQuestionsChange: this.onQuestionsChange,
-                  onGroupsChange: this.onGroupsChange,
-                  onAttendantsChange: this.onAttendantsChange,
+                  onAttendanceAdd: this.onAttendanceAdd,
+                  onAttendanceUpdate: this.onAttendanceUpdate,
+                  onAttendanceRemove: this.onAttendanceRemove,
                   onAnswerChange: this.onAnswerChange,
                   onFieldsChange: this.onFieldsChange,
                   onSubmitDescription: this.onSubmitDescription,
