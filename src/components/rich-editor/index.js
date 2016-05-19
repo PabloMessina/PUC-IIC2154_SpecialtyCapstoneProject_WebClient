@@ -98,10 +98,12 @@ export default class RichEditor extends Component {
     return (
       <div style={styles.container}>
 
-        <BlockControls
-          editorState={editorState}
-          onChange={this.onChange}
-        />
+        <div style={styles.controls}>
+          <BlockControls
+            editorState={editorState}
+            onChange={this.onChange}
+          />
+        </div>
         <div
           ref="editorContainer"
           onClick={this.focus}
