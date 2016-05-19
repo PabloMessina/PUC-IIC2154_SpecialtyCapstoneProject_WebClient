@@ -11,6 +11,7 @@ import styleMap from './inline-styles';
 import BlockControls from './controls/block-controls';
 import Decorator from './decorator';
 import Toolbar from './components/toolbar';
+import renderIf from 'render-if';
 import { createBlockRenderer } from './block-renderer';
 
 export default class RichEditor extends Component {
@@ -18,13 +19,10 @@ export default class RichEditor extends Component {
   constructor(props) {
     super(props);
 
-
     this.state = {
       editorState: props.content
         ? EditorState.push(EditorState.createEmpty(Decorator), convertFromRaw(props.content))
         : EditorState.createEmpty(Decorator),
-      showURLInput: false,
-      urlValue: '',
     };
 
     this.blockRenderer = createBlockRenderer(
@@ -93,17 +91,20 @@ export default class RichEditor extends Component {
   }
 
   render() {
+    const { readOnly } = this.props;
     const { editorState } = this.state;
 
     return (
       <div style={styles.container}>
 
-        <div style={styles.controls}>
-          <BlockControls
-            editorState={editorState}
-            onChange={this.onChange}
-          />
-        </div>
+        {renderIf(!readOnly)(() => (
+          <div style={styles.controls}>
+            <BlockControls
+              editorState={editorState}
+              onChange={this.onChange}
+            />
+          </div>
+        ))}
         <div
           ref="editorContainer"
           onClick={this.focus}
@@ -117,6 +118,7 @@ export default class RichEditor extends Component {
             onChange={this.onChange}
             ref="editor"
             spellCheck
+            readOnly={readOnly}
           />
           <Toolbar
             editorState={editorState}
@@ -135,7 +137,7 @@ const styles = {
   },
   editor: {
     padding: 50,
-    fontSize: '20',
+    fontSize: 20,
     overflow: 'auto',
     position: 'relative',
     width: '100%',
