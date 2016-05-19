@@ -5,7 +5,7 @@ import Select from 'react-select';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
 
-import app from '../../../../app';
+import app from '../../../app';
 const participantService = app.service('/participants');
 const evaluationService = app.service('/evaluations');
 

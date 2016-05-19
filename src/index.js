@@ -43,7 +43,7 @@ import CourseInstances from './components/course/instances';
 import CourseInstance from './components/course/instance';
 import CourseInstanceStudents from './components/course/instance/students';
 import CourseInstanceEvaluations from './components/course/instance/evaluations';
-import CourseInstanceAnalytics from './components/course/instance/analytics/index';
+import CourseInstanceAnalytics from './components/course/instance/analytics';
 import CourseInstanceBibliography from './components/course/instance/bibliography';
 import CourseSettings from './components/course/setting';
 import CourseInstanceCreate from './components/course/instance-create';

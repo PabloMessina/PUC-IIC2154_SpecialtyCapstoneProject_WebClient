@@ -63,7 +63,7 @@ class EvaluationsPanel extends Component {
         <hr />
         <p>{evaluation.title}</p>
         <p>{instance && instance.period}</p>
-        <p>{responsable.name}</p>
+        <p>{responsable ? responsable.name : ''}</p>
       </div>
     );
   }
