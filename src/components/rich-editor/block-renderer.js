@@ -1,5 +1,6 @@
 import React from 'react';
 import TeXBlock from './tex-block';
+import RendererWrapper from '../renderer-wrapper';
 import { removeTeXBlock } from './modifiers/tex-modifiers';
 import {
   Entity,
@@ -30,7 +31,10 @@ export const createBlockRenderer = (modifyBlock) => {
           onRemove: (blockKey) => modifyBlock(removeTeXBlock, blockKey),
         },
       },
-      model: { component: null, editable: false },
+      model: {
+        component: RendererWrapper,
+        editable: false,
+      },
       // 3d-video: { component: 3DVideo, editable: false },
       // You can see where this is going :)
     };

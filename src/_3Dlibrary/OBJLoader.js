@@ -334,7 +334,7 @@ const OBJLoader = {
                   line = text.substring(start, end);
                   parseLine(line);
                   start = end + 1;
-                  if (count >= 200000) {
+                  if (count >= 750000) {
                     progressCallback(start, text.length);
                     parseByChunks();
                     break;

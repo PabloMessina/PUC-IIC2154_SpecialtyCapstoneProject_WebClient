@@ -44,7 +44,6 @@ export default class ToggleButton extends Component {
 
   getCurrentMessage() {
     if (this.props.enabled) {
-      console.log("getCurrentMessage(): turnedOn = ", this.state.turnedOn);
       return this.state.turnedOn ? this.props.turnedOnMessage :
         this.props.turnedOffMessage;
     }

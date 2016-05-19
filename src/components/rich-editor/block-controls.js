@@ -16,7 +16,7 @@ const BLOCK_TYPES = [
   { icon: 'headphones', blockType: 'audio' },
   { icon: 'image', blockType: 'image' },
   { icon: 'video-camera', blockType: 'video' },
-  { icon: 'cube', blockType: '3d' },
+  { icon: 'cube', blockType: 'model' },
   { label: 'Formula', blockType: 'latex' },
 ];
 
@@ -83,7 +83,7 @@ export default class BlockControls extends Component {
         state = this.addLatex();
         break;
       case 'model':
-        // state = this.add3D();
+        state = this.add3D();
         break;
       default:
         state = RichUtils.toggleBlockType(this.props.editorState, type);

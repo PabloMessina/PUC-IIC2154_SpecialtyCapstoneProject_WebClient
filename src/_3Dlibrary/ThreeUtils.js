@@ -152,6 +152,7 @@ const ThreeUtils = {
     const borderColor = params.borderColor || 'rgb(0,0,0,0.5)';
     const borderThickness = params.borderThickness || (fontSize * 0.025);
     const worldFontSizeCoef = params.worldFontSizeCoef || 0.045;
+    const cornerRadiusCoef = params.cornerRadiusCoef || 0.35;
     const worldFontSize = worldReferenceSize * worldFontSizeCoef;
     // create canvas and get its 2D context
     const canvas = document.createElement('canvas');
@@ -177,7 +178,7 @@ const ThreeUtils = {
       borderThickness * 0.5, borderThickness * 0.5,
       canvas.width - borderThickness,
       canvas.height - borderThickness,
-      canvas.height * 0.35,
+      canvas.height * cornerRadiusCoef,
       backgroundColor,
       borderThickness,
       borderColor);
@@ -310,7 +311,6 @@ function roundRect(ctx, x, y, width, height, radius, backgroundColor,
   ctx.strokeStyle = borderColor;
   ctx.fillStyle = backgroundColor;
   ctx.fill();
-  console.log("borderThickness = ", borderThickness);
   if (borderThickness > 0.1) {
     ctx.lineWidth = borderThickness;
     ctx.stroke();
