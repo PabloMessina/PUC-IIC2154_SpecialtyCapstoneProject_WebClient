@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import renderIf from 'render-if';
 import Icon from 'react-fa';
-import { Colors } from '../../styles';
+import { Colors } from '../../../styles';
 
 export default class StyleButton extends Component {
   constructor(props) {

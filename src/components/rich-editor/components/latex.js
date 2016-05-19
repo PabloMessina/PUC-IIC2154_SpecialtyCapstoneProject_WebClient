@@ -39,13 +39,12 @@ class KatexOutput extends React.Component {
     }, 0);
   }
 
-
   render() {
     return <div ref="container" onClick={this.props.onClick} />;
   }
 }
 
-export default class TeXBlock extends React.Component {
+export default class Latex extends React.Component {
   constructor(props) {
     super(props);
     this.state = { editMode: false };
