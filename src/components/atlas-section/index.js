@@ -67,8 +67,7 @@ export default class AtlasSection extends Component {
         />
 
         <RichEditor
-          contentKey={section._id}
-          initialContent={section.content}
+          content={section.content}
           onChange={this.onChangeContent}
         />
       </div>

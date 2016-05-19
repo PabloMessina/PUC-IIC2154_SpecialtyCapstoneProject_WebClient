@@ -2,7 +2,6 @@ import React, { Component } from "react";
 import { RichUtils, Entity, getVisibleSelectionRect } from "draft-js";
 import InlineInput from './inline-input';
 import InlineControls from '../controls/inline-controls';
-import { Overlay, Popover } from 'react-bootstrap';
 
 //import LinkInput from "./components/LinkInput";
 

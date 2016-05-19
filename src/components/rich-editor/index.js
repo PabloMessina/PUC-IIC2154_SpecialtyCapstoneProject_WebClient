@@ -20,7 +20,9 @@ export default class RichEditor extends Component {
 
 
     this.state = {
-      editorState: EditorState.createEmpty(Decorator),
+      editorState: props.content
+        ? EditorState.push(EditorState.createEmpty(Decorator), convertFromRaw(props.content))
+        : EditorState.createEmpty(Decorator),
       showURLInput: false,
       urlValue: '',
     };
@@ -34,10 +36,7 @@ export default class RichEditor extends Component {
     );
 
     this.focus = () => this.refs.editor.focus();
-    this.onChange = (editorState) => {
-      this.props.onChange(convertToRaw(editorState.getCurrentContent()));
-      this.setState({ editorState });
-    };
+    this.onChange = this.onChange.bind(this);
 
     this.handleKeyCommand = this.handleKeyCommand.bind(this);
   }
@@ -58,6 +57,22 @@ export default class RichEditor extends Component {
     this.setState({ editorState });
   }
 
+  shouldComponentUpdate(props) {
+    if (this.props.content !== props.content && props.content !== this.rawContent) {
+      this.rawContent = props.content;
+      const content = props.content;
+      content.entityMap = content.entityMap || {};
+      content.blocks = content.blocks || [];
+      this.setState({
+        editorState: !props.content
+          ? EditorState.createEmpty()
+          : EditorState.push(this.state.editorState, convertFromRaw(props.content)),
+      });
+      return false;
+    }
+    return true;
+  }
+
   handleKeyCommand(command) {
     const { editorState } = this.state;
     const newState = RichUtils.handleKeyCommand(editorState, command);
@@ -66,6 +81,15 @@ export default class RichEditor extends Component {
       return true;
     }
     return false;
+  }
+
+
+  onChange(editorState) {
+    this.setState({ editorState });
+    if (this.props.onChange) {
+      this.rawContent = convertToRaw(editorState.getCurrentContent());
+      this.props.onChange(this.rawContent, editorState);
+    }
   }
 
   render() {
