@@ -4,11 +4,12 @@ import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
 import renderIf from 'render-if';
 
+import EvaluationCell from '../../evaluation-cell';
+
 import moment from 'moment';
 import app, { currentUser } from '../../../app';
 
 const evaluationService = app.service('/evaluations');
-const membershipService = app.service('/memberships');
 
 
 export default class InstanceEvaluations extends Component {
@@ -37,13 +38,11 @@ export default class InstanceEvaluations extends Component {
     super(props);
     this.state = {
       evaluations: props.evaluations,
-      permission: '',
     };
     this.renderRow = this.renderRow.bind(this);
     this.createEvaluation = this.createEvaluation.bind(this);
     this.fetchEvaluations = this.fetchEvaluations.bind(this);
     this.onEvaluationClick = this.onEvaluationClick.bind(this);
-    this.membership = this.membership.bind(this);
   }
 
   componentDidMount() {
@@ -51,7 +50,6 @@ export default class InstanceEvaluations extends Component {
     // const query = this.props.location.query;
     const instance = this.props.instance;
     this.fetchEvaluations(instance.id);
-    this.membership();
   }
 
   componentWillReceiveProps(nextProps) {
@@ -78,33 +76,16 @@ export default class InstanceEvaluations extends Component {
   fetchEvaluations(instanceId) {
     const query = {
       instanceId,
+      $populate: 'responsable',
     };
     return evaluationService.find({ query })
       .then(result => result.data)
       .then(evaluations => this.setState({ evaluations }));
   }
 
-  membership() {
-    const user = currentUser();
-    const userId = user.id;
-    membershipService.find({ query: { userId } })
-    .then(results => {
-      this.setState({ permission: results.data.permission });
-    });
-  }
-
   renderRow(evaluation, i) {
     return (
-      <div key={i} style={styles.cell}>
-        <h5 style={{ cursor: 'pointer' }} onClick={() => this.onEvaluationClick(evaluation)}>
-          {moment(evaluation.startAt).format('dddd, MMMM Do, h:mm a')}
-        </h5>
-        <p style={styles.text}>{evaluation.title}</p>
-        <p style={styles.text}>
-          Duration: {evaluation.duration / 60000} minutes
-        </p>
-        <hr />
-      </div>
+      <EvaluationCell key={i} style={styles.cell} evaluation={evaluation} onEvaluationClick={this.onEvaluationClick} />
     );
   }
 
