@@ -14,6 +14,7 @@
   "dependencies": {
     "bootstrap": "^3.3.6",
     "bootswatch": "^3.3.6",
+    "chart.js": "^2.1.3",
     "draft-js": "^0.7.0",
     "feathers": "^2.0.0",
     "feathers-authentication": "^0.7.5",
