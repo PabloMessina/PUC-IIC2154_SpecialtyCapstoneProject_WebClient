@@ -54,7 +54,7 @@ export default class AtlasSection extends Component {
   }
 
   render() {
-    const section = this.props.section;
+    const { section, readOnly } = this.props;
 
     return (
       <div style={styles.container}>
@@ -64,11 +64,13 @@ export default class AtlasSection extends Component {
           onChange={this.onChangeTitle}
           onBlur={this.onTitleLostFocus}
           value={section.title}
+          disabled={readOnly}
         />
 
         <RichEditor
           content={section.content}
           onChange={this.onChangeContent}
+          readOnly={readOnly}
         />
       </div>
     );

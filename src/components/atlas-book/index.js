@@ -12,13 +12,13 @@ export default class AtlasBook extends Component {
 
   static get propTypes() {
     return {
-      static: React.PropTypes.bool,
+      readOnly: React.PropTypes.bool,
     };
   }
 
   static get defaultProps() {
     return {
-      static: false,
+      readOnly: false,
     };
   }
 
@@ -236,6 +236,7 @@ export default class AtlasBook extends Component {
 
 
   render() {
+    const { readOnly } = this.props;
     const section = this.currentSection();
     return (
       <div style={styles.container}>
@@ -247,9 +248,11 @@ export default class AtlasBook extends Component {
           onSelectSection={this.onSelectSection}
           onAddSection={this.onAddSection}
           onRemoveSection={this.onRemoveSection}
+          readOnly={readOnly}
         />
         <AtlasSection
           section={section}
+          readOnly={readOnly}
           onChangeContent={this.onChangeContent}
           onChangeTitle={this.onChangeTitle}
         />

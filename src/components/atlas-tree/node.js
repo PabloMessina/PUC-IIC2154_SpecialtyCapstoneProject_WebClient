@@ -24,7 +24,7 @@ export default class Node extends Component {
       level: React.PropTypes.number,
       anidation: React.PropTypes.array,
       collapsed: React.PropTypes.bool,
-      static: React.PropTypes.bool,
+      readOnly: React.PropTypes.bool,
     };
   }
 
@@ -88,7 +88,7 @@ export default class Node extends Component {
             style={styles.title}
           >
             {title}
-            {renderIf(!this.props.static && hover)(() => (
+            {renderIf(!this.props.readOnly && hover)(() => (
               <Icon name="plus" style={styles.icon} onClick={addSection} />
             ))}
           </span>
@@ -106,7 +106,7 @@ export default class Node extends Component {
               <span style={styles.anidation}>{anidation.join('.')}.</span> {title}
             </span>
 
-            {renderIf(!this.props.static && hover)(() => (
+            {renderIf(!this.props.readOnly && hover)(() => (
               <span>
                 <Icon name="plus" style={styles.icon} onClick={addSection} />
                 <Icon name="trash" style={styles.icon} onClick={removeSection} />
@@ -120,7 +120,7 @@ export default class Node extends Component {
             {subsections.map((subsection, i) => (
               <Node
                 key={i}
-                static={this.props.static}
+                readOnly={this.props.readOnly}
                 selectedSectionId={selectedSectionId}
                 onSelectSection={this.props.onSelectSection}
                 onAddSection={this.props.onAddSection}
