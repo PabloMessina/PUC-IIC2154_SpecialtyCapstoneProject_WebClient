@@ -58,7 +58,7 @@ class CoursesPanel extends Component {
   }
 
   renderInstance({ course, ...instance }) {
-    const pathname = `/courses/show/${course.id}`;
+    const pathname = `/courses/show/${course.id}/instances/show/${instance.id}`;
     return (
       <LinkContainer key={instance.id} to={{ pathname }}>
         <a style={styles.cell}>
