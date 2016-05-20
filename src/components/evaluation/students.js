@@ -94,7 +94,7 @@ export default class Students extends Component {
 
   static get propTypes() {
     return {
-      users: PropTypes.array,
+      participants: PropTypes.array,
       attendances: PropTypes.array,
       instance: PropTypes.object,
       evaluation: PropTypes.object,
@@ -245,12 +245,13 @@ export default class Students extends Component {
   }
 
   randomGroupGenerator(groupSize) {
-    if (groupSize < 1 || groupSize > this.props.users.length || groupSize % 1 !== 0) {
+    const participants = this.props.participants;
+    if (groupSize < 1 || groupSize > participants.length || groupSize % 1 !== 0) {
       // TODO: error without 'alert'?
       // eslint-disable-next-line no-alert
       return alert('Invalid group size. Groups must be integer numbers between 1 and number of students');
     }
-    const unselectedStudents = shuffle(this.props.users);
+    const unselectedStudents = shuffle(this.props.participants.map(p => p.user));
     const teams = [];
     const evaluation = this.props.evaluation;
     while (unselectedStudents.length > 0) {

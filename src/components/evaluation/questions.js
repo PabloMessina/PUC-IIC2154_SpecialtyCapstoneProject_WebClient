@@ -19,6 +19,11 @@ import CreateQuestionModal from '../create-question/modal';
 import { Colors } from '../../styles';
 import renderIf from 'render-if';
 
+const MODES = {
+  instructor: 'instructor',
+  student: 'student',
+};
+
 function questionFactory(qtype, props) {
   switch (qtype) {
     case 'trueFalse': return <TrueFalse {...props} />;
@@ -41,6 +46,7 @@ export default class Questions extends Component {
       // From parent
       organization: React.PropTypes.object,
       course: React.PropTypes.object,
+      participant: React.PropTypes.object,
       evaluation: React.PropTypes.object,
       answers: React.PropTypes.object,
       questions: React.PropTypes.array,
@@ -279,7 +285,8 @@ export default class Questions extends Component {
   }
 
   render() {
-    const mode = 'student'; // instructor, student
+    const mode = ['admin', 'write'].includes(this.props.participant.permission) ? MODES.instructor : MODES.student;
+
     return (
       <div>
         {this.renderMode(mode)}

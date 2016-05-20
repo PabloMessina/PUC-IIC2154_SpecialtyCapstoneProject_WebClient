@@ -17,23 +17,19 @@ import { Colors } from '../../styles';
 import Select from 'react-select';
 import renderIf from 'render-if';
 
-const ATTENDANCES = [
-  {
-    value: 'none',
-    name: 'Not required',
-    description: 'Do not take assistance.',
-  },
-  {
-    value: 'optional',
-    name: 'Optional',
-    description: 'Can take attendance, but it has no effect.',
-  },
-  {
-    value: 'obligatory',
-    name: 'Obligatory',
-    description: 'Ausent students will fail this evaluation.',
-  },
-];
+const ATTENDANCES = [{
+  value: 'none',
+  name: 'Not required',
+  description: 'Do not take assistance.',
+}, {
+  value: 'optional',
+  name: 'Optional',
+  description: 'Can take attendance, but it has no effect.',
+}, {
+  value: 'obligatory',
+  name: 'Obligatory',
+  description: 'Ausent students will fail this evaluation.',
+}];
 
 const PRIVACY = {
   PRIVATE: 'This is a secret evaluation. Will only appear to the students once it starts.',

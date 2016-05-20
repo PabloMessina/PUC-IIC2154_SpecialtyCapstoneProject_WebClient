@@ -4,7 +4,7 @@ import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
 import renderIf from 'render-if';
 
-import app from '../../app';
+import app, { currentUser } from '../../app';
 const organizationService = app.service('/organizations');
 const courseService = app.service('/courses');
 const participantService = app.service('/participants');
@@ -41,11 +41,6 @@ const SECTIONS = [
   },
 ];
 
-const MODES = [
-  'instructor',
-  'student',
-];
-
 class EvaluationCreate extends Component {
 
   static get propTypes() {
@@ -80,7 +75,7 @@ class EvaluationCreate extends Component {
       // Current evaluation
       evaluation: props.params.evaluation,
       // Students rending the evaluation
-      users: [],
+      participants: [],
       questions: props.params.evaluation.questions || props.questions,
       // groups: props.groups,
       answers: props.answers,
@@ -99,7 +94,7 @@ class EvaluationCreate extends Component {
 
     this.fetchOrganization = this.fetchOrganization.bind(this);
     this.fetchCourse = this.fetchCourse.bind(this);
-    this.fetchUsers = this.fetchUsers.bind(this);
+    this.fetchParticipants = this.fetchParticipants.bind(this);
     this.fetchAttendances = this.fetchAttendances.bind(this);
     this.fetchAll = this.fetchAll.bind(this);
 
@@ -215,7 +210,7 @@ class EvaluationCreate extends Component {
   fetchAll(evaluation) {
     return this.fetchCourse(evaluation.instance.courseId)
       .then(course => this.fetchOrganization(course.organizationId))
-      .then(() => this.fetchUsers(evaluation.instanceId))
+      .then(() => this.fetchParticipants(evaluation.instanceId))
       .catch(error => this.setState({ error }));
   }
 
@@ -239,7 +234,7 @@ class EvaluationCreate extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  fetchUsers(instanceId) {
+  fetchParticipants(instanceId) {
     const query = {
       instanceId,
       $populate: ['user'],
@@ -247,9 +242,8 @@ class EvaluationCreate extends Component {
     return participantService.find({ query })
       .then(result => result.data)
       .then(participants => {
-        const users = participants.map(p => p.user);
-        this.setState({ users, error: null });
-        return users;
+        this.setState({ participants, error: null });
+        return participants;
       })
       .catch(error => this.setState({ error }));
   }
@@ -307,9 +301,12 @@ class EvaluationCreate extends Component {
       instance,
       organization,
       questions,
-      users,
+      participants,
     } = this.state;
 
+    const userId = currentUser().id;
+    const participant = participants.find(p => p.userId === userId);
+    console.log(participants);
     return (
       <Grid style={styles.container}>
 
@@ -375,7 +372,7 @@ class EvaluationCreate extends Component {
         <hr />
         <Row>
           <Col xs={12}>
-            {renderIf(course && instance && organization)(() =>
+            {renderIf(course && instance && organization && participant)(() =>
               <EasyTransition
                 path={this.selected}
                 initialStyle={{ opacity: 0 }}
@@ -385,12 +382,20 @@ class EvaluationCreate extends Component {
                 {React.cloneElement(this.props.children, {
                   organization,
                   course,
+                  // Related course instance owner of this evaluation
                   instance,
+                  // Current evaluation
                   evaluation,
-                  users,
+                  // Evaluation questions
                   questions,
+                  // Current user answers
                   answers,
+                  // Current user attendaces taking this evaluation
                   attendances,
+                  // current user participantship
+                  participant,
+                  // course instance participantships
+                  participants,
                   onQuestionAdd: this.onQuestionAdd,
                   onQuestionRemove: this.onQuestionRemove,
                   onEvaluationChange: this.onEvaluationChange,

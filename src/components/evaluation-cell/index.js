@@ -7,6 +7,11 @@ import { calculateDuration } from '../../utils/time';
 const EvaluationCell = ({ style, evaluation, onEvaluationClick, ...props }) => {
   const duration = calculateDuration(evaluation);
   const date = moment(evaluation.startAt).format('dddd, MMMM Do, HH:mm');
+
+  const description = evaluation.description && evaluation.description.length > 140
+    ? `${evaluation.description.substr(0, 140)}...`
+    : evaluation.description;
+
   return (
     <div style={{ ...styles.container, ...style }} {...props}>
       <h5 style={styles.title}>
@@ -14,7 +19,7 @@ const EvaluationCell = ({ style, evaluation, onEvaluationClick, ...props }) => {
         <small style={styles.small}>by {evaluation.responsable.name}</small>
       </h5>
       <p style={styles.description}>
-        {evaluation.description}
+        {description}
       </p>
       <ul style={styles.list} className="list-unstyled">
         <li style={styles.text}>
@@ -45,12 +50,14 @@ const styles = {
     marginLeft: 5,
   },
   description: {
-    paddingLeft: 10,
+    marginTop: 4,
+    color: 'gray',
   },
   list: {
     paddingLeft: 20,
   },
   title: {
     cursor: 'pointer',
+    marginBottom: 0,
   },
 };
