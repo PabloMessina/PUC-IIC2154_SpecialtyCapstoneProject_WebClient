@@ -218,7 +218,7 @@ export default class Questions extends Component {
     const { evaluation, questions, answers, onQuestionRemove } = this.props;
     const objects = questions.map(question => ({
       question,
-      answer: answers[question.id] || question.answer,
+      answer: answers[question.id] || (mode === 'instructor' ? question.answer : undefined),
       fields: question.fields,
       disabled: false,
     }));

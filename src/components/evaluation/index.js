@@ -41,6 +41,11 @@ const SECTIONS = [
   },
 ];
 
+const MODES = {
+  instructor: 'instructor',
+  student: 'student',
+};
+
 class EvaluationCreate extends Component {
 
   static get propTypes() {
@@ -64,7 +69,6 @@ class EvaluationCreate extends Component {
     return {
       questions: [],
       answers: {},
-      // groups: [[]],
       attendances: [],
     };
   }
@@ -77,7 +81,6 @@ class EvaluationCreate extends Component {
       // Students rending the evaluation
       participants: [],
       questions: props.params.evaluation.questions || props.questions,
-      // groups: props.groups,
       answers: props.answers,
       attendances: props.params.evaluation.attendances || props.attendances,
       // Other
@@ -92,11 +95,14 @@ class EvaluationCreate extends Component {
     this.renderSection = this.renderSection.bind(this);
     this.renderSections = this.renderSections.bind(this);
 
-    this.fetchOrganization = this.fetchOrganization.bind(this);
-    this.fetchCourse = this.fetchCourse.bind(this);
-    this.fetchParticipants = this.fetchParticipants.bind(this);
-    this.fetchAttendances = this.fetchAttendances.bind(this);
+    this.findOrCreateAnswer = this.findOrCreateAnswer.bind(this);
+
     this.fetchAll = this.fetchAll.bind(this);
+    this.fetchAnswers = this.fetchAnswers.bind(this);
+    this.fetchAttendances = this.fetchAttendances.bind(this);
+    this.fetchCourse = this.fetchCourse.bind(this);
+    this.fetchOrganization = this.fetchOrganization.bind(this);
+    this.fetchParticipants = this.fetchParticipants.bind(this);
 
     this.onNavigateTo = this.onNavigateTo.bind(this);
     this.onEvaluationChange = this.onEvaluationChange.bind(this);
@@ -127,6 +133,17 @@ class EvaluationCreate extends Component {
     }
   }
 
+  onAnswerChange(id, answer) {
+    // const questions = this.state;
+    if (id) {
+      return this.findOrCreateAnswer(id, answer);
+      // const indexQ = questions.findIndex((q) => q.id === id);
+      // questions[indexQ].answer = answer;
+      // this.setState({ answers: { ...this.state.answers, [id]: answer }, questions });
+    }
+    return null;
+  }
+
   onAttendanceAdd(attendance) {
     const attendances = [...this.state.attendances, attendance];
     this.setState({ attendances });
@@ -152,19 +169,6 @@ class EvaluationCreate extends Component {
     }
   }
 
-  onQuestionsChange(questions) {
-    if (questions) this.setState({ questions });
-  }
-
-  onAnswerChange(id, answer) {
-    const questions = this.state;
-    if (id) {
-      const indexQ = questions.findIndex((q) => q.id === id);
-      questions[indexQ].answer = answer;
-      this.setState({ answers: { ...this.state.answers, [id]: answer }, questions });
-    }
-  }
-
   onFieldsChange(id, fields) {
     if (id) {
       const questions = this.state.questions;
@@ -181,9 +185,13 @@ class EvaluationCreate extends Component {
     const questionId = question.id;
     const evaluationId = this.state.evaluation.id;
     return evaluationsQuestionService.create({ questionId, evaluationId })
-      .then(evaluationsQuestion => [...this.state.questions, { ...question, evaluationsQuestion }])
-      .then(questions => this.setState({ questions, syncing: false }))
-      .catch(error => this.setState({ error, syncing: false }));
+    .then(evaluationsQuestion => [...this.state.questions, { ...question, evaluationsQuestion }])
+    .then(questions => this.setState({ questions, syncing: false }))
+    .catch(error => this.setState({ error, syncing: false }));
+  }
+
+  onQuestionsChange(questions) {
+    if (questions) this.setState({ questions });
   }
 
   onQuestionRemove(question) {
@@ -207,10 +215,82 @@ class EvaluationCreate extends Component {
     this.props.router.push(url);
   }
 
+
+  findOrCreateAnswer(questionId, answer) {
+    const user = currentUser();
+    const participant = this.state.participants.find(p => p.userId === user.id);
+    const mode = ['admin', 'write'].includes(participant.permission) ? MODES.instructor : MODES.student;
+
+    const { evaluation, attendances } = this.state;
+
+    // If we are a student
+    if (mode === MODES.student) {
+      const attendance = attendances
+        .find(att => att.userId === user.id && att.evaluationId === evaluation.id);
+
+      const query = {
+        teamId: attendance.teamId,
+        questionId,
+        evaluationId: evaluation.id,
+        $limit: 1,
+      };
+      return answerService.find({ query })
+        .then(result => result.data[0])
+        .then(old => {
+          if (old) return answerService.patch(old.id, { ...old, answer });
+          return answerService.create({
+            teamId: attendance.teamId,
+            questionId,
+            evaluationId: evaluation.id,
+            answer,
+          });
+        })
+        .then(changed => {
+          this.setState({ answers: { ...this.state.answers, [changed.questionId]: changed.answer } });
+          return changed;
+        })
+        .catch(error => this.setState({ error }));
+    }
+    return null;
+  }
+
   fetchAll(evaluation) {
     return this.fetchCourse(evaluation.instance.courseId)
       .then(course => this.fetchOrganization(course.organizationId))
       .then(() => this.fetchParticipants(evaluation.instanceId))
+      .then(() => this.fetchAttendances(evaluation.id))
+      .then(attendances => {
+        const user = currentUser();
+        const our = attendances.find(a => a.userId === user.id);
+        const participant = this.state.participants.find(p => p.userId === user.id);
+        const mode = ['admin', 'write'].includes(participant.permission) ? MODES.instructor : MODES.student;
+
+        if (mode === MODES.student) {
+          // If we are in 'student' mode
+          return this.fetchAnswers(our);
+        } else {
+          return [];
+        }
+      })
+      .catch(error => this.setState({ error }));
+  }
+
+  fetchAnswers(attendance) {
+    const evaluation = this.state.evaluation;
+    const teamId = attendance.teamId || attendance.userId;
+    const questionArray = evaluation.questions.map(question => question.id);
+    const query = {
+      teamId,
+      questionId: { $in: questionArray },
+      evaluationId: evaluation.id,
+    };
+    return answerService.find({ query })
+      .then(result => result.data)
+      .then(objects => {
+        const answers = {};
+        objects.forEach(({ questionId, answer }) => (answers[questionId] = answer));
+        this.setState({ answers });
+      })
       .catch(error => this.setState({ error }));
   }
 
@@ -306,10 +386,12 @@ class EvaluationCreate extends Component {
 
     const userId = currentUser().id;
     const participant = participants.find(p => p.userId === userId);
-    console.log(participants);
     return (
       <Grid style={styles.container}>
 
+        {renderIf(this.state.error)(() =>
+          <p>{JSON.stringify(this.state.error)}</p>
+        )}
         <br />
 
         <Breadcrumb>
