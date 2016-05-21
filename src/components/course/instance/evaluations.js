@@ -1,7 +1,7 @@
-import React, { Component } from 'react';
+import React, { PropTypes, Component } from 'react';
 import { Panel, Col, Button } from 'react-bootstrap';
 import Icon from 'react-fa';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 import renderIf from 'render-if';
 
 import EvaluationCell from '../../evaluation-cell';
@@ -12,18 +12,19 @@ import app, { currentUser } from '../../../app';
 const evaluationService = app.service('/evaluations');
 
 
-export default class InstanceEvaluations extends Component {
+class InstanceEvaluations extends Component {
 
   static get propTypes() {
     return {
-      organization: React.PropTypes.object,
-      course: React.PropTypes.object,
-      instance: React.PropTypes.object,
-      participant: React.PropTypes.object,
-      membership: React.PropTypes.object,
+      organization: PropTypes.object,
+      course: PropTypes.object,
+      instance: PropTypes.object,
+      participant: PropTypes.object,
+      membership: PropTypes.object,
       // React Router
-      params: React.PropTypes.object,
-      evaluations: React.PropTypes.array,
+      router: PropTypes.object,
+      params: PropTypes.object,
+      evaluations: PropTypes.array,
     };
   }
 
@@ -60,7 +61,7 @@ export default class InstanceEvaluations extends Component {
 
   onEvaluationClick(evaluation) {
     const url = `/evaluations/show/${evaluation.id}`;
-    return browserHistory.push(url);
+    return this.props.router.push(url);
   }
 
   createEvaluation() {
@@ -69,7 +70,7 @@ export default class InstanceEvaluations extends Component {
     return evaluationService.create({ userId, instanceId })
       .then(evaluation => {
         const url = `/evaluations/show/${evaluation.id}`;
-        return browserHistory.push(url);
+        return this.props.router.push(url);
       });
   }
 
@@ -85,7 +86,14 @@ export default class InstanceEvaluations extends Component {
 
   renderRow(evaluation, i) {
     return (
-      <EvaluationCell key={i} style={styles.cell} evaluation={evaluation} onEvaluationClick={this.onEvaluationClick} />
+      <div key={i}>
+        <EvaluationCell
+          style={styles.cell}
+          evaluation={evaluation}
+          onEvaluationClick={this.onEvaluationClick}
+        />
+        <hr />
+      </div>
     );
   }
 
@@ -166,6 +174,8 @@ export default class InstanceEvaluations extends Component {
     );
   }
 }
+
+export default withRouter(InstanceEvaluations);
 
 const styles = {
   container: {

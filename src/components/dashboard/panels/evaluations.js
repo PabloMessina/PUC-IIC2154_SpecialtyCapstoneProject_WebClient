@@ -1,5 +1,6 @@
 import React, { Component, PropTypes } from 'react';
 import { Panel } from 'react-bootstrap';
+import { withRouter } from 'react-router';
 import renderIf from 'render-if';
 
 import app, { currentUser } from '../../../app';
@@ -7,12 +8,13 @@ const evaluationService = app.service('/evaluations');
 const attendanceService = app.service('/attendances');
 
 import Title from './common/title';
-
+import EvaluationCell from '../../evaluation-cell/';
 
 class EvaluationsPanel extends Component {
 
   static get propTypes() {
     return {
+      router: PropTypes.object,
       query: PropTypes.object,
       style: PropTypes.object,
     };
@@ -26,6 +28,7 @@ class EvaluationsPanel extends Component {
     };
     this.renderEvaluation = this.renderEvaluation.bind(this);
     this.fetchEvaluations = this.fetchEvaluations.bind(this);
+    this.onEvaluationClick = this.onEvaluationClick.bind(this);
   }
 
   componentDidMount() {
@@ -36,6 +39,11 @@ class EvaluationsPanel extends Component {
     if (nextProps.query !== this.props.query) {
       this.fetchEvaluations(nextProps.query);
     }
+  }
+
+  onEvaluationClick(evaluation) {
+    const url = `/evaluations/show/${evaluation.id}`;
+    return this.props.router.push(url);
   }
 
   fetchEvaluations(custom) {
@@ -57,13 +65,15 @@ class EvaluationsPanel extends Component {
       .then(({ data, total }) => this.setState({ evaluations: data, total }));
   }
 
-  renderEvaluation({ instance, responsable, ...evaluation }) {
+  renderEvaluation(evaluation) {
     return (
-      <div key={evaluation.id}>
+      <div style={styles.cell} key={evaluation.id}>
         <hr />
-        <p>{evaluation.title}</p>
-        <p>{instance && instance.period}</p>
-        <p>{responsable ? responsable.name : ''}</p>
+        <EvaluationCell
+          evaluation={evaluation}
+          onEvaluationClick={this.onEvaluationClick}
+          length={80}
+        />
       </div>
     );
   }
@@ -88,10 +98,14 @@ class EvaluationsPanel extends Component {
   }
 }
 
-export default EvaluationsPanel;
+export default withRouter(EvaluationsPanel);
 
 const styles = {
   container: {
 
+  },
+  cell: {
+    paddingLeft: 10,
+    paddingRight: 10,
   },
 };
