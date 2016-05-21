@@ -7,6 +7,10 @@ import renderIf from 'render-if';
 
 const ELEMENTS = [
   {
+    name: 'Announcements',
+    icon: 'bullhorn',
+    path: 'announcements',
+  }, {
     name: 'Evaluations',
     icon: 'file-text-o ',
     path: 'evaluations',
@@ -88,7 +92,7 @@ class Instance extends Component {
           </Col>
 
           <Col xs={12} sm={9} md={9}>
-            {renderIf(this.props.children && instance)(() =>
+            {renderIf(this.props.children && instance && participant)(() =>
               <EasyTransition
                 path={this.selected}
                 initialStyle={{ opacity: 0 }}

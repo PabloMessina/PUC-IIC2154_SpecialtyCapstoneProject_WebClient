@@ -114,7 +114,8 @@ export default class CourseBibliography extends Component {
         </Col>
         <Col xs={12} md={4}>
           <Panel>
-            <h4>Bibliography</h4>
+            <h5><Icon style={styles.icon} name="lightbulb-o" /> Bibliography</h5>
+            <hr />
             <p>Every course can have it's own resources and atlases.</p>
             {renderIf(['admin', 'write'].includes(participant.permission))(() =>
               <div>

@@ -1,6 +1,7 @@
 import React, { PropTypes, Component } from 'react';
 import { Row, Col, Panel, Button, Table, ControlLabel, DropdownButton, MenuItem } from 'react-bootstrap';
 import Select from 'react-select';
+import Icon from 'react-fa';
 import renderIf from 'render-if';
 
 import app from '../../../app';
@@ -235,7 +236,8 @@ export default class InstanceStudents extends Component {
         </Col>
         <Col xs={12} md={4}>
           <Panel>
-            <h4>Participants</h4>
+            <h5><Icon style={styles.icon} name="lightbulb-o" /> Students</h5>
+            <hr />
             <p>Each participant has a specific role inside the course.</p>
             <hr />
             <p>Search participants and add a role to them on the course.</p>
@@ -252,5 +254,8 @@ const styles = {
   },
   cell: {
     verticalAlign: 'middle',
+  },
+  icon: {
+    marginRight: 7,
   },
 };

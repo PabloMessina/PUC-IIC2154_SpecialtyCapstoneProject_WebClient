@@ -6,6 +6,7 @@ import app, { currentUser } from '../../../app';
 const announcementService = app.service('/announcements');
 const participantService = app.service('/participants');
 
+import Announcement from '../../announcement';
 import Title from './common/title';
 
 
@@ -73,8 +74,24 @@ class AnnouncementsPanel extends Component {
     return (
       <Panel style={{ ...styles.container, ...style }}>
         <Title title="Announcements" detail="Do not miss important news" icon="newspaper-o" count={total} />
+        <hr />
         {renderIf(announcements.length)(() =>
-          announcements.map(this.renderAnnouncement)
+          announcements.map((announcement, index) => {
+            const props = {
+              content: announcement.content,
+              subject: announcement.subject,
+              date: announcement.createdAt,
+              responsable: announcement.responsable ? announcement.responsable.name : '',
+            };
+            return (
+              <div key={index}>
+                {renderIf(index > 0)(
+                  <hr />
+                )}
+                <Announcement {...props} />
+              </div>
+            );
+          })
         )}
         {renderIf(announcements.length === 0)(() =>
           <div>

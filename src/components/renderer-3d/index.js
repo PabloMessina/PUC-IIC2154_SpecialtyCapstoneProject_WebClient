@@ -709,8 +709,6 @@ export default class Renderer3D extends Component {
     const screenX = vpcoords.x;
     const screenY = vpcoords.y;
 
-    // debugger;
-
     if (event.button === LEFT_BUTTON) {
       if (this.mystate.meshGroup !== null && !this.mystate.draggingTempLabel) {
         /**

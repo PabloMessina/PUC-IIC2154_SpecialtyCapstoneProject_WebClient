@@ -43,6 +43,7 @@ import CourseInstances from './components/course/instances';
 import CourseInstance from './components/course/instance';
 import CourseInstanceStudents from './components/course/instance/students';
 import CourseInstanceEvaluations from './components/course/instance/evaluations';
+import CourseInstanceAnnouncements from './components/course/instance/announcements';
 import CourseInstanceAnalytics from './components/course/instance/analytics';
 import CourseInstanceBibliography from './components/course/instance/bibliography';
 import CourseSettings from './components/course/setting';
@@ -184,6 +185,7 @@ const Routing = (
           <Route path="create" component={CourseInstanceCreate} />
           <Route path="show/:instanceId" component={CourseInstance}>
             <IndexRedirect to="evaluations" />
+            <Route path="announcements" component={CourseInstanceAnnouncements} />
             <Route path="students" component={CourseInstanceStudents} />
             <Route path="analytics" component={CourseInstanceAnalytics} />
             <Route path="evaluations" component={CourseInstanceEvaluations} />

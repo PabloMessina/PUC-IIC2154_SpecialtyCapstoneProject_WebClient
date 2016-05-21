@@ -104,9 +104,8 @@ export default class RichEditor extends Component {
   render() {
     const { style, readOnly } = this.props;
     const { editorState } = this.state;
-
     return (
-      <div style={{ ...styles.container, ...style }}>
+      <div style={styles.container}>
 
         {renderIf(!readOnly)(() => (
           <div style={styles.controls}>
@@ -119,7 +118,7 @@ export default class RichEditor extends Component {
         <div
           ref="editorContainer"
           onClick={this.focus}
-          style={styles.editor}
+          style={{ ...styles.editor, ...style }}
         >
           <Editor
             blockRendererFn={this.blockRenderer}

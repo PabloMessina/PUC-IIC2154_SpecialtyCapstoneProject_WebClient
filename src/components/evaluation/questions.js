@@ -232,7 +232,9 @@ export default class Questions extends Component {
     }));
     return (
       <Panel>
-        <h3>{evaluation.title || 'No title'}</h3>
+        <div style={styles.row}>
+          <h3>{evaluation.title || 'No title'}</h3>
+        </div>
         <p>{evaluation.description || ''}</p>
         <hr />
         {objects.map((question, i) => (
@@ -258,7 +260,6 @@ export default class Questions extends Component {
   }
 
   renderStudent() {
-    debugger;
     const { questions } = this.props;
     const time = {
       total: questions.length,
@@ -316,6 +317,9 @@ const styles = {
 
   },
   rigth: {
+
+  },
+  row: {
 
   },
   select: {

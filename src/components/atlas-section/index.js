@@ -1,22 +1,23 @@
-import React, { Component } from 'react';
+import React, { PropTypes, Component } from 'react';
+import _ from 'lodash';
+
 import RichEditor from '../rich-editor';
 
-import _ from 'lodash';
 
 export default class AtlasSection extends Component {
 
   static get propTypes() {
     return {
-      static: React.PropTypes.bool,
-      section: React.PropTypes.object,
-      onChangeTitle: React.PropTypes.func,
-      onChangeContent: React.PropTypes.func,
+      readOnly: PropTypes.bool,
+      section: PropTypes.object,
+      onChangeTitle: PropTypes.func,
+      onChangeContent: PropTypes.func,
     };
   }
 
   static get defaultProps() {
     return {
-      static: false,
+      readOnly: false,
     };
   }
 
@@ -55,7 +56,6 @@ export default class AtlasSection extends Component {
 
   render() {
     const { section, readOnly } = this.props;
-
     return (
       <div style={styles.container}>
 

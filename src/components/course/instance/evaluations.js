@@ -156,7 +156,7 @@ class InstanceEvaluations extends Component {
 
         <Col xs={12} md={4}>
           <Panel>
-            <h5><Icon style={styles.icon} size="lg" name="lightbulb-o" /> Evaluations</h5>
+            <h5><Icon style={styles.icon} name="lightbulb-o" /> Evaluations</h5>
             <hr />
             <p>Measure the learning progress of the classroom with real-time individual and groupal evaluations.</p>
             {renderIf(['admin', 'write'].includes(participant.permission))(() =>
@@ -167,7 +167,7 @@ class InstanceEvaluations extends Component {
                   <Icon style={styles.icon} name="plus" /> Create evaluation
                 </Button>
               </div>
-          )}
+            )}
           </Panel>
         </Col>
       </div>
