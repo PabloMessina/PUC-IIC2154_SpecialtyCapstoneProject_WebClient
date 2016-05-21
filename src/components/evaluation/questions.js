@@ -1,6 +1,6 @@
 /* eslint no-underscore-dangle:0 */
 
-import React, { Component } from 'react';
+import React, { Component, PropTypes } from 'react';
 import Select from 'react-select';
 import {
   Form,
@@ -9,12 +9,14 @@ import {
   Col,
   Row,
 } from 'react-bootstrap';
+import moment from 'moment';
 import Icon from 'react-fa';
 
 import app from '../../app';
 const questionService = app.service('/questions');
 
 import { TrueFalse, MultiChoice, TShort } from '../questions';
+import Progress from './progress';
 import CreateQuestionModal from '../create-question/modal';
 import { Colors } from '../../styles';
 import renderIf from 'render-if';
@@ -37,26 +39,27 @@ export default class Questions extends Component {
 
   static get propTypes() {
     return {
-      mode: React.PropTypes.string,
-      pool: React.PropTypes.array,
-      selected: React.PropTypes.array,
-      tags: React.PropTypes.array,
-      hidden: React.PropTypes.array,
+      mode: PropTypes.string,
+      pool: PropTypes.array,
+      selected: PropTypes.array,
+      tags: PropTypes.array,
+      hidden: PropTypes.array,
 
       // From parent
-      organization: React.PropTypes.object,
-      course: React.PropTypes.object,
-      participant: React.PropTypes.object,
-      evaluation: React.PropTypes.object,
-      answers: React.PropTypes.object,
-      questions: React.PropTypes.array,
+      organization: PropTypes.object,
+      course: PropTypes.object,
+      participant: PropTypes.object,
+      evaluation: PropTypes.object,
+      answers: PropTypes.object,
+      questions: PropTypes.array,
+      interval: PropTypes.number,
 
-      onEvaluationChange: React.PropTypes.func,
-      onQuestionsChange: React.PropTypes.func,
-      onAnswerChange: React.PropTypes.func,
-      onFieldsChange: React.PropTypes.func,
-      onQuestionRemove: React.PropTypes.func,
-      onQuestionAdd: React.PropTypes.func,
+      onEvaluationChange: PropTypes.func,
+      onQuestionsChange: PropTypes.func,
+      onAnswerChange: PropTypes.func,
+      onFieldsChange: PropTypes.func,
+      onQuestionRemove: PropTypes.func,
+      onQuestionAdd: PropTypes.func,
     };
   }
 
@@ -72,7 +75,12 @@ export default class Questions extends Component {
       ],
       pool: [],
       hidden: [],
+      interval: 1000,
     };
+  }
+
+  static diff(start, finish) {
+    return moment(finish).diff(start);
   }
 
   constructor(props) {
@@ -250,12 +258,19 @@ export default class Questions extends Component {
   }
 
   renderStudent() {
+    debugger;
+    const { questions } = this.props;
+    const time = {
+      total: questions.length,
+      current: Object.keys(this.props.answers).length,
+      // TODO: use real values
+      start: '2016-05-20T19:19:27.588Z',
+      finish: '2016-05-20T20:00:47.588Z',
+    };
     return (
       <Row>
         <Col style={styles.rigth} xs={12} sm={12} md={3}>
-          <Panel>
-            <p>Progress</p>
-          </Panel>
+          <Progress {...time} />
         </Col>
         <Col style={styles.left} xs={12} sm={12} md={9}>
           {this.renderEvaluation('student')}

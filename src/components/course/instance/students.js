@@ -5,6 +5,7 @@ import renderIf from 'render-if';
 
 import app from '../../../app';
 const participantService = app.service('/participants');
+const organizationService = app.service('/organizations');
 const userService = app.service('/users');
 
 
@@ -21,6 +22,7 @@ export default class InstanceStudents extends Component {
       instance: PropTypes.object,
       participant: PropTypes.object,
       membership: PropTypes.object,
+      organization: PropTypes.object,
     };
   }
 
@@ -81,11 +83,16 @@ export default class InstanceStudents extends Component {
   }
 
   fetchUsers() {
-    // TODO: fetch only from current organization
     this.setState({ loading: true });
-    return userService.find()
-      .then(result => result.data)
-      .then(users => this.setState({ users, loading: false }));
+    const query = {
+      id: this.props.organization.id,
+      $populate: ['user'],
+      $limit: 1,
+    };
+    return organizationService.find({ query })
+      .then(result => result.data[0])
+      .then(organization => this.setState({ users: organization.users, loading: false, error: false }))
+      .catch(error => this.setState({ loading: false, error }));
   }
 
   fetchParticipants(instanceId) {
