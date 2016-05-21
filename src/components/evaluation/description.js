@@ -17,23 +17,19 @@ import { Colors } from '../../styles';
 import Select from 'react-select';
 import renderIf from 'render-if';
 
-const ATTENDANCES = [
-  {
-    value: 'none',
-    name: 'Not required',
-    description: 'Do not take assistance.',
-  },
-  {
-    value: 'optional',
-    name: 'Optional',
-    description: 'Can take attendance, but it has no effect.',
-  },
-  {
-    value: 'obligatory',
-    name: 'Obligatory',
-    description: 'Ausent students will fail this evaluation.',
-  },
-];
+const ATTENDANCES = [{
+  value: 'none',
+  name: 'Not required',
+  description: 'Do not take assistance.',
+}, {
+  value: 'optional',
+  name: 'Optional',
+  description: 'Can take attendance, but it has no effect.',
+}, {
+  value: 'obligatory',
+  name: 'Obligatory',
+  description: 'Ausent students will fail this evaluation.',
+}];
 
 const PRIVACY = {
   PRIVATE: 'This is a secret evaluation. Will only appear to the students once it starts.',
@@ -41,11 +37,12 @@ const PRIVACY = {
 but they will not be able to see the questions inside it.`,
 };
 
-export default class MinTemplate extends Component {
+export default class EvaluationDescription extends Component {
 
   static get propTypes() {
     return {
       organization: React.PropTypes.object,
+      participant: React.PropTypes.object,
       course: React.PropTypes.object,
       evaluation: React.PropTypes.object,
       onEvaluationChange: React.PropTypes.func,
@@ -113,6 +110,9 @@ export default class MinTemplate extends Component {
     } = this.props.evaluation;
     const mode = ATTENDANCES.find(a => a.value === attendance) || ATTENDANCES[0];
 
+    const enabled = ['admin', 'write'].includes(this.props.participant.permission);
+    const disabled = !enabled;
+
     return (
       <div style={styles.container}>
         <Row>
@@ -126,6 +126,7 @@ export default class MinTemplate extends Component {
                   value={title}
                   placeholder="Mid-term evaluation"
                   label="Title"
+                  disabled={disabled}
                   onChange={e => this.onChange('title', e.target.value)}
                 />
                 <FormControl.Feedback />
@@ -137,6 +138,7 @@ export default class MinTemplate extends Component {
                   componentClass="textarea"
                   value={description}
                   placeholder="Evaluation description..."
+                  disabled={disabled}
                   onChange={e => this.onChange('description', e.target.value)}
                 />
               </FormGroup>
@@ -152,6 +154,7 @@ export default class MinTemplate extends Component {
                   options={this.state.options}
                   onChange={this.onTagChange}
                   placeholder={'Exam, Test, Quiz'}
+                  disabled={disabled}
                 />
                 <HelpBlock>
                   Here you can put the category of the evaluation.
@@ -167,6 +170,7 @@ export default class MinTemplate extends Component {
                     key={i}
                     checked={mode.value === sub.value}
                     onChange={() => this.onChange('attendance', sub.value)}
+                    disabled={disabled}
                   >
                     {sub.name}
                   </Radio>)
@@ -188,12 +192,13 @@ export default class MinTemplate extends Component {
                         this.onChange('discount', checked ? discount : 0);
                       }}
                       aria-label="check-discount"
+                      disabled={disabled}
                     />
                   </InputGroup.Addon>
 
                   <FormControl
                     type="number"
-                    disabled={!this.state.checked}
+                    disabled={!this.state.checked || disabled}
                     value={discount || undefined}
                     placeholder="0.25"
                     min="0"
@@ -213,6 +218,7 @@ export default class MinTemplate extends Component {
                     type="number"
                     value={threshold}
                     placeholder="0.5"
+                    disabled={disabled}
                     min="0"
                     max="1"
                     step="0.25"
@@ -229,7 +235,11 @@ export default class MinTemplate extends Component {
 
               <FormGroup>
                 <ControlLabel>Randomized evaluation</ControlLabel>
-                <Checkbox checked={randomized} onChange={() => this.onChange('randomized', !randomized)}>
+                <Checkbox
+                  checked={randomized}
+                  disabled={disabled}
+                  onChange={() => this.onChange('randomized', !randomized)}
+                >
                   Each student should have different question order.
                 </Checkbox>
                 <HelpBlock>This can reduce cheating if enabled.</HelpBlock>
@@ -237,7 +247,11 @@ export default class MinTemplate extends Component {
 
               <FormGroup>
                 <ControlLabel>Visibility</ControlLabel>
-                <Checkbox checked={secret} onChange={() => this.onChange('secret', !secret)}>
+                <Checkbox
+                  checked={secret}
+                  disabled={disabled}
+                  onChange={() => this.onChange('secret', !secret)}
+                >
                   Secret or surprise evaluation
                 </Checkbox>
                 <HelpBlock>{secret ? PRIVACY.PRIVATE : PRIVACY.PUBLIC}</HelpBlock>

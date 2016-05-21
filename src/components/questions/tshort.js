@@ -100,18 +100,14 @@ class TShort extends Component {
 
     return (
       <form style={styles.container}>
-        {options.map((option, i) =>
-          <FormGroup key={i}>
-            <FormControl
-              style={styles.input}
-              type="text"
-              disabled={disabled}
-              placeholder="Your answer"
-              value={option}
-              onChange={e => this.onTextChange(e.target.value, i)}
-            />
-          </FormGroup>
-        )}
+        <FormControl
+          style={styles.input}
+          type="text"
+          disabled={disabled}
+          placeholder="Your answer"
+          value={options[0]}
+          onChange={e => this.onTextChange(e.target.value, 0)}
+        />
       </form>
     );
   }

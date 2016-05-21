@@ -1,30 +1,134 @@
-import React, { Component } from 'react';
-import { Checkbox, Row, Col, Table, Button, Glyphicon, Form, FormControl, Panel } from 'react-bootstrap';
+/* eslint react/prefer-stateless-function:0 react/no-multi-comp:0 */
 
-// TODO: incluir alumnos en asistencia
+import React, { PropTypes, Component } from 'react';
+import { ListGroup, ListGroupItem, Row, Col, Button, Form, FormControl, Panel } from 'react-bootstrap';
+
+import app from '../../app';
+const attendanceService = app.service('/attendances');
+const instanceService = app.service('/instances');
+
+import { Colors } from '../../styles';
+
+
+class Student extends Component {
+
+  static get propTypes() {
+    return {
+      student: PropTypes.any,
+      setSelectedTeam: PropTypes.func,
+    };
+  }
+
+  render() {
+    const { setSelectedTeam, student } = this.props;
+    const user = student.user;
+    const teamId = student.teamId;
+
+    return (
+      <ListGroupItem
+        onClick={e => { e.stopPropagation(); setSelectedTeam(teamId); }}
+      >
+        {user ? user.name : 'Loading...'}
+      </ListGroupItem>
+    );
+  }
+}
+
+class Team extends Component {
+
+  static get propTypes() {
+    return {
+      team: PropTypes.object,
+      active: PropTypes.bool,
+      setSelectedTeam: PropTypes.func,
+    };
+  }
+
+  render() {
+    const { team, active, setSelectedTeam } = this.props;
+    const style = active ? styles.selectedTeam : {};
+
+    return (
+      <ListGroup style={style}>
+        {team.users.map((student, i) =>
+          <Student
+            key={i}
+            student={student}
+            setSelectedTeam={setSelectedTeam}
+          />
+        )}
+      </ListGroup>
+    );
+  }
+}
+
+
+/**
+ * Shuffles an array
+ * http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+ * @param  {array} array
+ * @return {array} shuffled array
+ */
+function shuffle(original) {
+  const array = [...original];
+  let currentIndex = array.length;
+  let temporaryValue;
+  let randomIndex;
+
+  // While there remain elements to shuffle...
+  while (currentIndex !== 0) {
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+  return array;
+}
+
 
 export default class Students extends Component {
 
   static get propTypes() {
     return {
-      users: React.PropTypes.array,
-      groups: React.PropTypes.array,
-      students: React.PropTypes.array,
-      attendants: React.PropTypes.array,
-      evaluation: React.PropTypes.object,
-      onGroupsChange: React.PropTypes.func,
-      onAttendantsChange: React.PropTypes.func,
+      participants: PropTypes.array,
+      attendances: PropTypes.array,
+      instance: PropTypes.object,
+      evaluation: PropTypes.object,
+      onAttendanceAdd: PropTypes.func,
+      onAttendanceUpdate: PropTypes.func,
+      onAttendanceRemove: PropTypes.func,
     };
+  }
+
+  static attendancesToGroup(attendances) {
+    return attendances.reduce((groups, attendant) => {
+      const index = groups.findIndex(group => group.id === attendant.teamId);
+      if (index > -1) {
+        groups[index].users.push(attendant);
+      } else {
+        groups.push({ id: attendant.teamId, users: [attendant] });
+      }
+      return groups;
+    }, []);
   }
 
   constructor(props) {
     super(props);
     this.state = {
       /**
-       * @type {Number}
+       * @type {String}
        * To which group unselectedStudents will be added.
        */
-      selectedGroup: 0,
+      selectedGroupId: null,
+      /**
+       * All students in the course
+       * @type {Array}
+       */
+      students: [],
       /**
        * @type {Number}
        * Value of groupSize input
@@ -32,206 +136,159 @@ export default class Students extends Component {
       groupSize: 3,
     };
 
-    // TODO: todavia existen?
-    this.renderGroup = this.renderGroup.bind(this);
-    this.addGroup = this.addGroup.bind(this);
-    this.isNewGroupButtonDisabled = this.isNewGroupButtonDisabled.bind(this);
+    // this.renderGroup = this.renderGroup.bind(this);
+    // this.isNewGroupButtonDisabled = this.isNewGroupButtonDisabled.bind(this);
     this.randomGroupGenerator = this.randomGroupGenerator.bind(this);
     this.unassignedStudents = this.unassignedStudents.bind(this);
+    this.fetchAllStudents = this.fetchAllStudents.bind(this);
+    this.setSelectedTeam = this.setSelectedTeam.bind(this);
   }
+
 
    /**
     * Sensible default: every evaluation will be answered by a single student
     */
-  componentWillMount() {
-    this.randomGroupGenerator(1);
+  componentDidMount() {
+    this.fetchAllStudents(this.props.instance.id);
+  }
+
+  setSelectedTeam(teamId) {
+    this.setState({ selectedGroupId: teamId });
+  }
+
+  fetchAllStudents(instanceId) {
+    const query = {
+      id: instanceId,
+      $populate: 'user',
+    };
+    return instanceService.find({ query })
+      .then(result => result.data[0])
+      .then(instance => {
+        // All students in the course instance
+        this.setState({ students: instance.users, error: null });
+      })
+      .catch(error => this.setState({ error }));
   }
 
   /**
    * Students not assigned to any group
-   * @return {array} Array with ids
+   * @return {array} Array with attendance objects
    */
-  unassignedStudents() {
-    const unassignedStudents = [];
-    this.props.users.forEach(user => {
-      unassignedStudents.push(user.id);
-    });
-    this.props.groups.forEach(group => {
-      group.forEach(studentId => {
-        unassignedStudents.splice(unassignedStudents.indexOf(studentId), 1);
-      });
-    });
-    unassignedStudents.sort();
-    return unassignedStudents;
-  }
-
-  addToGroup(studentId) {
-    const groups = [...this.props.groups];
-    groups[this.state.selectedGroup].push(studentId);
-    this.props.onGroupsChange(groups);
-  }
-
-  removeFromGroup(groupIndex, studentIndex) {
-    let groups = [...this.props.groups];
-    groups[groupIndex].splice(studentIndex, 1);
-
-    let selectedGroup = this.state.selectedGroup;
-    // delete empty group
-    if (groups[groupIndex].length === 0) {
-      groups.splice(groupIndex, 1);
-      if (selectedGroup >= groupIndex) {
-        selectedGroup--;
-      }
-      if (groups.length === 0) {
-        groups = [[]];
-        selectedGroup = 0;
-      }
-    }
-
-    this.setState({ selectedGroup });
-    this.props.onGroupsChange(groups);
-  }
-
-  addGroup() {
-    const groups = [...this.props.groups];
-    groups.push([]);
-    this.props.onGroupsChange(groups);
-    this.setState({ selectedGroup: groups.length - 1 });
+  unassignedStudents(attendances) {
+    return this.state.students
+      .filter(user => attendances.findIndex(attendance => attendance.userId === user.id) === -1)
+      .sort((a, b) => a.name > b.name);
   }
 
   /**
-   * Cannot create a new group if there is already an empty one
-   * @return {Boolean}
+   * Adds a student to a team
    */
-  isNewGroupButtonDisabled() {
-    const arr = this.props.groups;
-    return arr[arr.length - 1].length === 0;
+  addToGroup(user) {
+    const selectedGroupId = this.state.selectedGroupId || user.id; // auto-select group
+    this.setState({ selectedGroupId });
+    const query = {
+      teamId: selectedGroupId,
+      userId: user.id,
+      evaluationId: this.props.evaluation.id,
+    };
+    return attendanceService.create(query)
+      .then(attendance => this.props.onAttendanceAdd(attendance))
+      .catch(error => this.setState({ error }));
   }
 
-  includeInAttendance(studentId) {
-    const attendance = [...this.props.attendants];
-    attendance.push(studentId);
-    return attendance;
-  }
+  // removeFromGroup(teamId, studentId) {
+  //   let groups = [...this.props.groups];
+  //   groups[groupIndex].splice(studentIndex, 1);
+  //
+  //   let selectedGroup = this.state.selectedGroup;
+  //   // delete empty group
+  //   if (groups[groupIndex].length === 0) {
+  //     groups.splice(groupIndex, 1);
+  //     if (selectedGroup >= groupIndex) {
+  //       selectedGroup--;
+  //     }
+  //     if (groups.length === 0) {
+  //       groups = [[]];
+  //       selectedGroup = 0;
+  //     }
+  //   }
+  //
+  //   this.setState({ selectedGroup });
+  //   this.props.onGroupsChange(groups);
+  //   const attendanceId = this.props.attendances.find((attendance) => groupIndex === attendance.teamId);
+  //   if(attendanceId) {
+  //     const query = { attendanceId };
+  //     return attendanceService.remove(query);
+  //   }
+  // }
+  //
 
-  removeFromAttendance(studentId) {
-    const attendance = [...this.props.attendants];
-    attendance.splice(attendance.indexOf(studentId), 1);
-    return attendance;
-  }
 
-  handleCheckboxChange(checked, studentId) {
-    if (checked) {
-      const attendants = this.includeInAttendance(studentId);
-      this.props.onAttendantsChange(attendants);
-    } else {
-      const attendants = this.removeFromAttendance(studentId);
-      this.props.onAttendantsChange(attendants);
-    }
-  }
-
-  /**
-   * Shuffles an array
-   * http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
-   * @param  {array} array
-   * @return {array} shuffled array
-   */
-  shuffle(constArray) {
-    const array = [...constArray];
-    let currentIndex = array.length;
-    let temporaryValue;
-    let randomIndex;
-
-    // While there remain elements to shuffle...
-    while (currentIndex !== 0) {
-      // Pick a remaining element...
-      randomIndex = Math.floor(Math.random() * currentIndex);
-      currentIndex -= 1;
-
-      // And swap it with the current element.
-      temporaryValue = array[currentIndex];
-      array[currentIndex] = array[randomIndex];
-      array[randomIndex] = temporaryValue;
-    }
-    return array;
+  updateOrCreateAttendance(userId, evaluationId, teamId) {
+    const query = {
+      userId,
+      evaluationId,
+      $limit: 1,
+    };
+    return attendanceService.find({ query })
+      .then(result => result.data[0])
+      .then(attendance => {
+        if (attendance) {
+          return attendanceService.patch(attendance.id, { ...attendance, teamId })
+            .then(result => this.props.onAttendanceUpdate(result));
+        } else {
+          return attendanceService.create({ teamId, userId, evaluationId })
+            .then(result => this.props.onAttendanceAdd(result));
+        }
+      })
+      .catch(error => this.setState({ error }));
   }
 
   randomGroupGenerator(groupSize) {
-    if (groupSize < 1 || groupSize > this.props.users.length || groupSize % 1 !== 0) {
+    const participants = this.props.participants;
+    if (groupSize < 1 || groupSize > participants.length || groupSize % 1 !== 0) {
       // TODO: error without 'alert'?
       // eslint-disable-next-line no-alert
-      alert('Invalid group size. Groups must be integer numbers between 1 and number of students');
-    } else {
-      const unassignedIds = [];
-      this.props.users.forEach(user => {
-        unassignedIds.push(user.id);
-      });
-      const unselectedStudents = this.shuffle(unassignedIds);
-      const groups = [];
-      while (unselectedStudents.length > 0) {
-        const group = unselectedStudents.splice(0, groupSize);
-        if (group.length < groupSize) {
-          // remaining students get distributed in other groups
-          group.forEach((student, index) => {
-            groups[index % groups.length].push(student);
-          });
-        } else {
-          groups.push(group);
-        }
+      return alert('Invalid group size. Groups must be integer numbers between 1 and number of students');
+    }
+    const unselectedStudents = shuffle(this.props.participants.map(p => p.user));
+    const teams = [];
+    const evaluation = this.props.evaluation;
+    while (unselectedStudents.length > 0) {
+      const users = unselectedStudents.splice(0, groupSize);
+      if (users.length < groupSize) {
+        // remaining students get distributed in other groups
+        users.forEach((user, index) => {
+          const team = teams[index % teams.length];
+          team.users.push(user);
+          this.updateOrCreateAttendance(user.id, evaluation.id, team.id);
+        });
+      } else {
+        const teamId = users[0].id;
+        teams.push({
+          id: teamId,
+          users,
+        });
+        users.forEach((user) => this.updateOrCreateAttendance(user.id, evaluation.id, teamId));
       }
-      this.props.onGroupsChange(groups);
     }
+    return teams;
   }
 
-  renderGroupIndex(groupIndex, studentIndex, groupLength) {
-    if (studentIndex === 0) {
-      return (
-        <td
-          rowSpan={groupLength}
-          className="hoverGreen"
-          onClick={() => this.setState({ selectedGroup: groupIndex })}
-        >
-          {groupIndex + 1}
-        </td>
-      );
-    }
-    return null;
-  }
-
-  renderGroup(group, groupIndex) {
-    if (group.length > 0) {
-      return group.map((studentId, studentIndex) => (
-        <tr key={studentId} style={rowGroupStyle(groupIndex, this.state.selectedGroup === groupIndex)}>
-          {this.renderGroupIndex(groupIndex, studentIndex, group.length)}
-          <td
-            onClick={() => this.removeFromGroup(groupIndex, studentIndex)}
-            className="hoverRed"
-          >
-            {this.props.users.find(user => user.id === studentId).name}
-          </td>
-          <td>
-            <Checkbox
-              style={styles.checkbox}
-              onChange={(e) => this.handleCheckboxChange(e.target.checked, studentId)}
-            />
-          </td>
-        </tr>
-      ));
-    }
-    // empty group
-    return (
-      <tr key={groupIndex} style={rowGroupStyle(groupIndex, this.state.selectedGroup === groupIndex)}>
-        {this.renderGroupIndex(groupIndex, 0, 1)}
-        <td />
-        <td />
-      </tr>
-    );
-  }
 
   render() {
+    const all = this.state.students;
+    const attendances = this.props.attendances;
+    attendances.forEach(attendance => {
+      attendance.user = all.find(student => student.id === attendance.userId);  // eslint-disable-line
+    });
+
+    const teams = Students.attendancesToGroup(attendances);
+    const unselected = this.unassignedStudents(attendances);
+
+    // TODO: onClick global?
     return (
-      <div>
-        <style dangerouslySetInnerHTML={cssStyles} />
+      <div onClick={() => this.setSelectedTeam(null)}>
         <Row>
           <Col xs={12}>
             <Form
@@ -265,47 +322,37 @@ export default class Students extends Component {
         <Row>
           <Col sm={8}>
             <h4> Selected Students </h4>
-            <Table bordered condensed>
-              <thead>
-                <tr>
-                  <th>Group</th>
-                  <th>Name</th>
-                  <th>Attendance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {this.props.groups.map(this.renderGroup)}
-              </tbody>
-            </Table>
-            <Button onClick={this.addGroup} disabled={this.isNewGroupButtonDisabled()}>
-              <Glyphicon glyph="plus" />
-              <span> New Group</span>
-            </Button>
+            {teams.map((team, i) =>
+              <Team
+                key={i}
+                team={team}
+                active={this.state.selectedGroupId === team.id}
+                setSelectedTeam={this.setSelectedTeam}
+              />
+            )}
           </Col>
           <Col sm={4}>
             <Panel>
               <h4>Students to evaluate</h4>
-              <p>
-                You can also create random groups of your preferred size or arrange them manually.
-              </p>
+              <p>You can also create random groups of your preferred size or arrange them manually.</p>
             </Panel>
             <Panel>
               <h4> Unselected Students </h4>
-              <p>Pick unselected students from this list.</p>
-              <Table striped bordered condensed fill>
-                <tbody>
-                  {this.unassignedStudents().map((studentId, i) => (
-                    <tr key={i}>
-                      <td
-                        className="hoverBlue"
-                        onClick={() => this.addToGroup(studentId)}
-                      >
-                        {this.props.users.find(student => student.id === studentId).name}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
+              {unselected.length > 0 ?
+                <p>Pick unselected students from this list.</p>
+              :
+                <p style={styles.grayText}>All students are assigned to groups.</p>
+              }
+              <ListGroup>
+                {unselected.map(student => (
+                  <ListGroupItem
+                    key={student.id}
+                    onClick={() => this.addToGroup(student)}
+                  >
+                    {student.name}
+                  </ListGroupItem>
+                ))}
+              </ListGroup>
             </Panel>
           </Col>
         </Row>
@@ -313,6 +360,7 @@ export default class Students extends Component {
     );
   }
 }
+
 
 const styles = {
   checkbox: {
@@ -326,26 +374,11 @@ const styles = {
   generateGroupsButton: {
     marginLeft: '20px',
   },
-};
-
-function rowGroupStyle(groupIndex, isSelected) {
-  const style = {};
-  // stripe
-  if (groupIndex % 2 === 0) {
-    style.backgroundColor = '#f9f9f9';
-  }
-
-  if (isSelected) {
-    style.borderLeft = 'solid 7px #2CA083';
-  }
-  return style;
-}
-
-// tried with styles, tried with Radius... only this worked
-const cssStyles = {
-  __html: `
-    .hoverBlue:hover { background-color: rgba(66, 139, 202, 0.5); }
-    .hoverRed:hover { background-color: rgba(217, 83, 79, 0.5); }
-    .hoverGreen:hover { background-color: rgba(44, 160, 131, 0.5); }
-  `,
+  grayText: {
+    color: '#d3d3d3',
+  },
+  selectedTeam: {
+    border: `2px solid ${Colors.MAIN}`,
+    borderRadius: '4px',
+  },
 };

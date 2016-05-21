@@ -1,6 +1,6 @@
 /* eslint no-underscore-dangle:0 */
 
-import React, { Component } from 'react';
+import React, { Component, PropTypes } from 'react';
 import Select from 'react-select';
 import {
   Form,
@@ -9,14 +9,22 @@ import {
   Col,
   Row,
 } from 'react-bootstrap';
+import moment from 'moment';
 import Icon from 'react-fa';
 
 import app from '../../app';
 const questionService = app.service('/questions');
 
 import { TrueFalse, MultiChoice, TShort } from '../questions';
+import Progress from './progress';
 import CreateQuestionModal from '../create-question/modal';
 import { Colors } from '../../styles';
+import renderIf from 'render-if';
+
+const MODES = {
+  instructor: 'instructor',
+  student: 'student',
+};
 
 function questionFactory(qtype, props) {
   switch (qtype) {
@@ -31,25 +39,27 @@ export default class Questions extends Component {
 
   static get propTypes() {
     return {
-      mode: React.PropTypes.string,
-      pool: React.PropTypes.array,
-      selected: React.PropTypes.array,
-      tags: React.PropTypes.array,
-      hidden: React.PropTypes.array,
+      mode: PropTypes.string,
+      pool: PropTypes.array,
+      selected: PropTypes.array,
+      tags: PropTypes.array,
+      hidden: PropTypes.array,
 
       // From parent
-      organization: React.PropTypes.object,
-      course: React.PropTypes.object,
-      evaluation: React.PropTypes.object,
-      answers: React.PropTypes.object,
-      questions: React.PropTypes.array,
+      organization: PropTypes.object,
+      course: PropTypes.object,
+      participant: PropTypes.object,
+      evaluation: PropTypes.object,
+      answers: PropTypes.object,
+      questions: PropTypes.array,
+      interval: PropTypes.number,
 
-      onEvaluationChange: React.PropTypes.func,
-      onQuestionsChange: React.PropTypes.func,
-      onAnswerChange: React.PropTypes.func,
-      onFieldsChange: React.PropTypes.func,
-      onQuestionRemove: React.PropTypes.func,
-      onQuestionAdd: React.PropTypes.func,
+      onEvaluationChange: PropTypes.func,
+      onQuestionsChange: PropTypes.func,
+      onAnswerChange: PropTypes.func,
+      onFieldsChange: PropTypes.func,
+      onQuestionRemove: PropTypes.func,
+      onQuestionAdd: PropTypes.func,
     };
   }
 
@@ -65,7 +75,12 @@ export default class Questions extends Component {
       ],
       pool: [],
       hidden: [],
+      interval: 1000,
     };
+  }
+
+  static diff(start, finish) {
+    return moment(finish).diff(start);
   }
 
   constructor(props) {
@@ -151,12 +166,19 @@ export default class Questions extends Component {
     );
   }
 
-  renderQuestion(props, identifier) {
+  renderQuestion(props, identifier, mode) {
     const { onAnswerChange, onFieldsChange } = this.props;
     const question = props.question;
+    let questionMode = 'reader';
+    switch (mode) {
+      case 'instructor': questionMode = 'editor'; break;
+      case 'student': questionMode = 'responder'; break;
+      default: questionMode = 'responder'; break;
+    }
     const element = questionFactory(question.qtype, {
       ...props,
       identifier,
+      mode: questionMode,
       onAnswerChange: answer => onAnswerChange(question.id, answer),
       onFieldsChange: field => onFieldsChange(question.id, field),
     });
@@ -200,11 +222,11 @@ export default class Questions extends Component {
     );
   }
 
-  renderEvaluation() {
+  renderEvaluation(mode) {
     const { evaluation, questions, answers, onQuestionRemove } = this.props;
     const objects = questions.map(question => ({
       question,
-      answer: answers[question.id],
+      answer: answers[question.id] || (mode === 'instructor' ? question.answer : undefined),
       fields: question.fields,
       disabled: false,
     }));
@@ -216,18 +238,49 @@ export default class Questions extends Component {
         {objects.map((question, i) => (
           <div key={i} style={styles.wrapper}>
             {this.renderQuestion(question, i + 1)}
-            <div style={styles.icons} onClick={() => onQuestionRemove(question.question)}>
-              <Icon size="lg" name="minus" style={{ color: Colors.RED }} />
-            </div>
+            {renderIf(mode === 'instructor')(
+              <div style={styles.icons} onClick={() => onQuestionRemove(question.question)}>
+                <Icon size="lg" name="minus" style={{ color: Colors.RED }} />
+              </div>
+            )}
           </div>
         ))}
       </Panel>
     );
   }
 
-  render() {
+  renderMode(mode) {
+    switch (mode) {
+      case 'student': return this.renderStudent();
+      case 'instructor': return this.renderInstructor();
+      default: return null;
+    }
+  }
+
+  renderStudent() {
+    debugger;
+    const { questions } = this.props;
+    const time = {
+      total: questions.length,
+      current: Object.keys(this.props.answers).length,
+      // TODO: use real values
+      start: '2016-05-20T19:19:27.588Z',
+      finish: '2016-05-20T20:00:47.588Z',
+    };
     return (
-      <Row style={styles.container}>
+      <Row>
+        <Col style={styles.rigth} xs={12} sm={12} md={3}>
+          <Progress {...time} />
+        </Col>
+        <Col style={styles.left} xs={12} sm={12} md={9}>
+          {this.renderEvaluation('student')}
+        </Col>
+      </Row>
+    );
+  }
+  renderInstructor() {
+    return (
+      <Row>
         <CreateQuestionModal show={this.state.creating} onHide={this.onModalClose} onSave={this.onModalSave} />
         <Col style={styles.rigth} xs={12} sm={12} md={5}>
           <Col xs={12}>
@@ -240,9 +293,19 @@ export default class Questions extends Component {
           </Col>
         </Col>
         <Col style={styles.left} xs={12} sm={12} md={7}>
-          {this.renderEvaluation()}
+          {this.renderEvaluation('instructor')}
         </Col>
       </Row>
+    );
+  }
+
+  render() {
+    const mode = ['admin', 'write'].includes(this.props.participant.permission) ? MODES.instructor : MODES.student;
+
+    return (
+      <div>
+        {this.renderMode(mode)}
+      </div>
     );
   }
 }
