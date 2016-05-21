@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PropTypes, Component } from 'react';
 import {
   convertToRaw,
   convertFromRaw,
@@ -15,6 +15,16 @@ import renderIf from 'render-if';
 import { createBlockRenderer } from './block-renderer';
 
 export default class RichEditor extends Component {
+
+  static get propTypes() {
+    return {
+      style: PropTypes.object,
+      content: PropTypes.object,
+      contentKey: PropTypes.any,
+      readOnly: PropTypes.bool,
+      onChange: PropTypes.func,
+    };
+  }
 
   constructor(props) {
     super(props);
@@ -73,6 +83,14 @@ export default class RichEditor extends Component {
     return true;
   }
 
+  onChange(editorState) {
+    this.setState({ editorState });
+    if (this.props.onChange) {
+      this.rawContent = convertToRaw(editorState.getCurrentContent());
+      this.props.onChange(this.rawContent, editorState);
+    }
+  }
+
   handleKeyCommand(command) {
     const { editorState } = this.state;
     const newState = RichUtils.handleKeyCommand(editorState, command);
@@ -83,21 +101,12 @@ export default class RichEditor extends Component {
     return false;
   }
 
-
-  onChange(editorState) {
-    this.setState({ editorState });
-    if (this.props.onChange) {
-      this.rawContent = convertToRaw(editorState.getCurrentContent());
-      this.props.onChange(this.rawContent, editorState);
-    }
-  }
-
   render() {
-    const { readOnly } = this.props;
+    const { style, readOnly } = this.props;
     const { editorState } = this.state;
 
     return (
-      <div style={styles.container}>
+      <div style={{ ...styles.container, ...style }}>
 
         {renderIf(!readOnly)(() => (
           <div style={styles.controls}>
