@@ -4,6 +4,7 @@ import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
 import AtlasGrid from '../../document-list/atlas-grid';
 
+import renderIf from 'render-if';
 import app from '../../../app';
 const biblographyService = app.service('/biblographies');
 const atlasService = app.service('/atlases');
@@ -15,6 +16,7 @@ export default class CourseBibliography extends Component {
       organization: PropTypes.object,
       course: PropTypes.object,
       instance: PropTypes.object,
+      participant: PropTypes.object,
     };
   }
   constructor(props) {
@@ -87,6 +89,7 @@ export default class CourseBibliography extends Component {
 
   render() {
     const bibliographies = this.state.bibliographies;
+    const participant = this.props.participant;
     const atlases = this.state.atlases
       .filter(atlas => bibliographies.findIndex(b => b.atlasId === atlas.id) === -1);
 
@@ -113,16 +116,20 @@ export default class CourseBibliography extends Component {
           <Panel>
             <h4>Bibliography</h4>
             <p>Every course can have it's own resources and atlases.</p>
-            <hr />
-            <p>You can create a new atlas to add to the course:</p>
-            <Button bsStyle="primary" bsSize="small" onClick={this.onAtlasCreate}>
-              <Icon style={styles.icon} name="plus" /> Create atlas
-            </Button>
-            <hr />
-            <p>You can also add an existing atlas to the course:</p>
-            <Button bsStyle="primary" bsSize="small" onClick={this.open}>
-              <Icon style={styles.icon} name="plus" /> Add atlas
-            </Button>
+            {renderIf(['admin', 'write'].includes(participant.permission))(() =>
+              <div>
+                <hr />
+                <p>You can create a new atlas to add to the course:</p>
+                <Button bsStyle="primary" bsSize="small" onClick={this.onAtlasCreate}>
+                  <Icon style={styles.icon} name="plus" /> Create atlas
+                </Button>
+                <hr />
+                <p>You can also add an existing atlas to the course:</p>
+                <Button bsStyle="primary" bsSize="small" onClick={this.open}>
+                  <Icon style={styles.icon} name="plus" /> Add atlas
+                </Button>
+              </div>
+          )}
           </Panel>
         </Col>
       </div>
