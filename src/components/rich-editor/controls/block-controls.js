@@ -17,7 +17,7 @@ const BLOCK_TYPES = [
   { icon: 'image', blockType: 'image' },
   { icon: 'video-camera', blockType: 'video' },
   { icon: 'cube', blockType: 'model' },
-  { label: 'Formula', blockType: 'latex' },
+  { label: 'TeX', blockType: 'latex' },
 ];
 
 export default class BlockControls extends Component {
@@ -68,7 +68,6 @@ export default class BlockControls extends Component {
       entityKey,
       ' '
     );
-
   }
 
   onBlockToggle(type) {

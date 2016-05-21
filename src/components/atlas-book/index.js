@@ -12,13 +12,13 @@ export default class AtlasBook extends Component {
 
   static get propTypes() {
     return {
-      static: React.PropTypes.bool,
+      readOnly: React.PropTypes.bool,
     };
   }
 
   static get defaultProps() {
     return {
-      static: false,
+      readOnly: false,
     };
   }
 
@@ -115,7 +115,7 @@ export default class AtlasBook extends Component {
    */
   currentSection() {
     const { tree, sectionParentId, sectionIndex } = this.state;
-    if (!tree) return { title: '', content: [] };
+    if (!tree) return { title: '', content: null };
 
     return tree[sectionParentId][sectionIndex];
   }
@@ -163,6 +163,7 @@ export default class AtlasBook extends Component {
   onChangeContent(content) {
     // Create a new object from current section and change content
     const section = { ...this.currentSection(), content };
+    console.log(section)
     // Replace section in tree
     this.replaceCurrentSection(section);
     this.shouldPatchContent = true;
@@ -235,6 +236,7 @@ export default class AtlasBook extends Component {
 
 
   render() {
+    const { readOnly } = this.props;
     const section = this.currentSection();
     return (
       <div style={styles.container}>
@@ -246,9 +248,11 @@ export default class AtlasBook extends Component {
           onSelectSection={this.onSelectSection}
           onAddSection={this.onAddSection}
           onRemoveSection={this.onRemoveSection}
+          readOnly={readOnly}
         />
         <AtlasSection
           section={section}
+          readOnly={readOnly}
           onChangeContent={this.onChangeContent}
           onChangeTitle={this.onChangeTitle}
         />

@@ -1,22 +1,11 @@
-import React from 'react';
-import TeXBlock from './tex-block';
 import RendererWrapper from '../renderer-wrapper';
+import Latex from './components/latex';
+import { Image, Audio, Video } from './components/media';
 import { removeTeXBlock } from './modifiers/tex-modifiers';
 import {
   Entity,
 } from 'draft-js';
 
-const Audio = (props) => {
-  return <audio controls src={props.blockProps.src} style={styles.media} />;
-};
-
-const Image = (props) => {
-  return <img src={props.blockProps.src} style={styles.media} />;
-};
-
-const Video = (props) => {
-  return <video controls src={props.blockProps.src} style={styles.media} />;
-};
 
 export const createBlockRenderer = (modifyBlock) => {
   const getBlock = (type, props) => {
@@ -25,7 +14,7 @@ export const createBlockRenderer = (modifyBlock) => {
       image: { component: Image, editable: false },
       video: { component: Video, editable: false },
       latex: {
-        component: TeXBlock,
+        component: Latex,
         editable: false,
         props: {
           onRemove: (blockKey) => modifyBlock(removeTeXBlock, blockKey),
@@ -56,10 +45,4 @@ export const createBlockRenderer = (modifyBlock) => {
 
     return null;
   };
-};
-
-const styles = {
-  media: {
-    width: '60%',
-  },
 };

@@ -7,7 +7,7 @@ export default class AtlasTree extends Component {
 
   static get propTypes() {
     return {
-      static: React.PropTypes.bool,
+      readOnly: React.PropTypes.bool,
       title: React.PropTypes.string,
       tree: React.PropTypes.object,
       versionId: React.PropTypes.string.isRequired,
@@ -19,7 +19,7 @@ export default class AtlasTree extends Component {
   }
 
   render() {
-    const { title, tree, versionId, selectedSectionId } = this.props;
+    const { title, tree, versionId, selectedSectionId, readOnly } = this.props;
     return (
       <div style={styles.container}>
 
@@ -29,7 +29,7 @@ export default class AtlasTree extends Component {
             title={title}
             tree={tree}
             versionId={versionId}
-            static={this.props.static}
+            readOnly={readOnly}
             selectedSectionId={selectedSectionId}
             onSelectSection={this.props.onSelectSection}
             onAddSection={this.props.onAddSection}

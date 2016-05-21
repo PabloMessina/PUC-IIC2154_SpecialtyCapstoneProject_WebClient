@@ -8,16 +8,21 @@ import {
 } from 'draft-js';
 import isEmpty from 'lodash/isEmpty';
 import styleMap from './inline-styles';
-import InlineControls from './inline-controls.js';
-import BlockControls from './block-controls';
-import { createBlockRenderer } from './block-renderer.js';
+import BlockControls from './controls/block-controls';
+import Decorator from './decorator';
+import Toolbar from './components/toolbar';
+import renderIf from 'render-if';
+import { createBlockRenderer } from './block-renderer';
 
 export default class RichEditor extends Component {
+
   constructor(props) {
     super(props);
 
     this.state = {
-      editorState: EditorState.createEmpty(),
+      editorState: props.content
+        ? EditorState.push(EditorState.createEmpty(Decorator), convertFromRaw(props.content))
+        : EditorState.createEmpty(Decorator),
     };
 
     this.blockRenderer = createBlockRenderer(
@@ -29,28 +34,43 @@ export default class RichEditor extends Component {
     );
 
     this.focus = () => this.refs.editor.focus();
-    this.onChange = (editorState) => {
-      this.props.onChangeContent(convertToRaw(editorState.getCurrentContent()));
-      this.setState({ editorState });
-    };
+    this.onChange = this.onChange.bind(this);
 
     this.handleKeyCommand = this.handleKeyCommand.bind(this);
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.sectionId === this.props.sectionId) return;
+    if (nextProps.contentKey === this.props.contentKey) return;
 
-    const content = nextProps.content;
+    const content = nextProps.initialContent;
 
     let editorState = null;
     if (isEmpty(content)) {
-      editorState = EditorState.createEmpty();
+      editorState = EditorState.createEmpty(Decorator);
     } else {
       content.entityMap = content.entityMap || [];
       const contentState = convertFromRaw(content);
-      editorState = EditorState.createWithContent(contentState);
+      editorState = EditorState.createWithContent(contentState, Decorator);
     }
     this.setState({ editorState });
+  }
+
+  shouldComponentUpdate(props) {
+    if (this.props.content !== props.content && props.content !== this.rawContent) {
+      this.rawContent = props.content;
+      const content = props.content;
+      if (content) {
+        content.entityMap = content.entityMap || {};
+        content.blocks = content.blocks || [];
+      }
+      this.setState({
+        editorState: !props.content
+          ? EditorState.createEmpty()
+          : EditorState.push(this.state.editorState, convertFromRaw(props.content)),
+      });
+      return false;
+    }
+    return true;
   }
 
   handleKeyCommand(command) {
@@ -63,22 +83,32 @@ export default class RichEditor extends Component {
     return false;
   }
 
+
+  onChange(editorState) {
+    this.setState({ editorState });
+    if (this.props.onChange) {
+      this.rawContent = convertToRaw(editorState.getCurrentContent());
+      this.props.onChange(this.rawContent, editorState);
+    }
+  }
+
   render() {
+    const { readOnly } = this.props;
     const { editorState } = this.state;
 
     return (
       <div style={styles.container}>
-        <div style={styles.controls}>
-          <InlineControls
-            editorState={editorState}
-            onChange={this.onChange}
-          />
-          <BlockControls
-            editorState={editorState}
-            onChange={this.onChange}
-          />
-        </div>
+
+        {renderIf(!readOnly)(() => (
+          <div style={styles.controls}>
+            <BlockControls
+              editorState={editorState}
+              onChange={this.onChange}
+            />
+          </div>
+        ))}
         <div
+          ref="editorContainer"
           onClick={this.focus}
           style={styles.editor}
         >
@@ -90,6 +120,12 @@ export default class RichEditor extends Component {
             onChange={this.onChange}
             ref="editor"
             spellCheck
+            readOnly={readOnly}
+          />
+          <Toolbar
+            editorState={editorState}
+            editor={this.refs.editorContainer}
+            onChange={this.onChange}
           />
         </div>
       </div>
@@ -103,9 +139,9 @@ const styles = {
   },
   editor: {
     padding: 50,
-    fontSize: '20',
+    fontSize: 20,
     overflow: 'auto',
-    position: 'absolute',
+    position: 'relative',
     width: '100%',
     height: '100%',
   },
