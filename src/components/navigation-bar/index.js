@@ -41,7 +41,7 @@ export default class NavigationBar extends Component {
   }
 
   onLogout() {
-    return logout().then(() => browserHistory.push('/'));
+    return logout().then(() => browserHistory.push('/login'));
   }
 
   fetchMemberships() {

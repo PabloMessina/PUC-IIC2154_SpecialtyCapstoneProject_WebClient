@@ -120,6 +120,7 @@
                   Log in
                 </Button>
               </form>
+              <br />
 
               {/*
                 Render only if there is an error.

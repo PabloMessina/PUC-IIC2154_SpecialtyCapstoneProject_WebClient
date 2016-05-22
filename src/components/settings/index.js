@@ -24,7 +24,7 @@ export default class Settings extends Component {
   constructor(props) {
     super(props);
     this.state = {
-
+      selected: 1,
     };
   }
 
@@ -34,19 +34,54 @@ export default class Settings extends Component {
         <Col sm={6} md={3}>
           <h1></h1>
           <ListGroup>
-            <ListGroupItem style={styles.lista} onClick={() => browserHistory.push('/settings')}>
+            <ListGroupItem
+              style={styles.lista}
+              active={this.state.selected === 1}
+              onClick={() => {
+                browserHistory.push('/settings');
+                this.setState({ selected: 1 });
+              }}
+            >
               General
             </ListGroupItem>
-            <ListGroupItem style={styles.lista} onClick={() => browserHistory.push('/settings/security')}>
+            <ListGroupItem
+              style={styles.lista}
+              active={this.state.selected === 2}
+              onClick={() => {
+                browserHistory.push('/settings/security');
+                this.setState({ selected: 2 });
+              }}
+            >
               Security
             </ListGroupItem>
-            <ListGroupItem style={styles.lista} onClick={() => browserHistory.push('/settings/notifications')}>
+            <ListGroupItem
+              style={styles.lista}
+              active={this.state.selected === 3}
+              onClick={() => {
+                browserHistory.push('/settings/notifications');
+                this.setState({ selected: 3 });
+              }}
+            >
               Notifications
             </ListGroupItem>
-            <ListGroupItem style={styles.lista} onClick={() => browserHistory.push('/settings/payments')}>
+            <ListGroupItem
+              style={styles.lista}
+              active={this.state.selected === 4}
+              onClick={() => {
+                browserHistory.push('/settings/payments');
+                this.setState({ selected: 4 });
+              }}
+            >
               Payments
             </ListGroupItem>
-            <ListGroupItem style={styles.lista} onClick={() => browserHistory.push('/settings/myatlas')}>
+            <ListGroupItem
+              style={styles.lista}
+              active={this.state.selected === 5}
+              onClick={() => {
+                browserHistory.push('/settings/myatlas');
+                this.setState({ selected: 5 });
+              }}
+            >
               My Atlases
             </ListGroupItem>
           </ListGroup>

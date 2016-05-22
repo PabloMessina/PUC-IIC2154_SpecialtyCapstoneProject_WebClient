@@ -107,13 +107,15 @@ export default class SignUp extends Component {
     return (
       <Grid style={styles.container}>
         <Row>
-          <Col md={6}>
+          <Col xs={12}>
             <h1>
-              Crear Cuenta
+              Create Account
             </h1>
-            <p>Descripcion de la aplicación</p>
+            <p>Fill this form to create your account</p>
           </Col>
-          <Col md={6}>
+        </Row>
+        <Row>
+          <Col xs={12}>
             <Panel>
               <form onSubmit={this.onSubmit}>
                 <FormGroup validationState={this.state.nameValidation}>

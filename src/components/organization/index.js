@@ -18,10 +18,6 @@ const TABS = [{
   icon: 'book',
   path: 'atlases',
 }, {
-  name: 'Questions',
-  icon: 'list-alt ',
-  path: 'questions',
-}, {
   name: 'Members',
   icon: 'user',
   path: 'members',
