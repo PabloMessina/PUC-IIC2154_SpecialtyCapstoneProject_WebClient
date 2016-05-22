@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-import { Line as LineChart } from 'react-chartjs';
-import { Row, Col, Table, Button, ButtonGroup, ControlLabel } from 'react-bootstrap';
+import { Line as LineChart, Bar as BarChart } from 'react-chartjs';
+import { Row, Col, Table, Button, ButtonGroup, ControlLabel, Panel } from 'react-bootstrap';
 import Select from 'react-select';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
@@ -13,18 +13,40 @@ const GRAPH_OPTIONS = {
   responsive: true,
   scaleShowGridLines: true,
   scaleGridLineColor: 'rgba(0,0,0,1 )',
-  scaleGridLineWidth: 1,
-  scaleShowHorizontalLines: true,
-  scaleShowVerticalLines: true,
-  bezierCurve: true,
-  bezierCurveTension: 0.4,
-  pointDot: true,
-  pointDotRadius: 4,
-  pointDotStrokeWidth: 1,
-  pointHitDetectionRadius: 20,
-  datasetStroke: true,
-  datasetStrokeWidth: 2,
-  datasetFill: true,
+};
+
+const DEFAULT_LINE = {
+  fill: false,
+  pointRadius: 0,
+  pointHitRadius: 10,
+  pointHoverRadius: 5,
+  pointHoverBorderWidth: 1,
+  borderWidth: 2,
+};
+
+const LINES = {
+  MAX: {
+    ...DEFAULT_LINE,
+    borderColor: 'rgba(39, 174, 96,1.0)',
+
+  },
+  MIN: {
+    ...DEFAULT_LINE,
+    borderColor: '#c0392b',
+  },
+  AVG: {
+    ...DEFAULT_LINE,
+    borderColor: 'rgba(75,192,192,1)',
+  },
+  REPR: {
+    ...DEFAULT_LINE,
+    fill: true,
+    backgroundColor: 'rgba(192, 57, 43,0.1)',
+    borderColor: 'transparent',
+    borderWidth: 0,
+    pointHitRadius: 0,
+    pointHoverRadius: 0,
+  },
 };
 
 export default class Summary extends Component {
@@ -43,7 +65,7 @@ export default class Summary extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      isChart: true,
+      tab: 1,
       students: [],
       evaluations: [],
       selectedEvaluations: [],
@@ -51,6 +73,8 @@ export default class Summary extends Component {
       loading: false,
       error: null,
       redraw: false,
+      histogramEvaluation: 0,
+      titleHistogram: '',
     };
     this.handleSelect = this.handleSelect.bind(this);
     this.fetchStudents = this.fetchStudents.bind(this);
@@ -62,7 +86,7 @@ export default class Summary extends Component {
     this.fetchEvaluations(this.props.instance.id)
       .then(evaluations => {
         const selectedEvaluations = evaluations.map(evaluation => evaluation.id);
-        this.setState({ selectedEvaluations });
+        this.setState({ selectedEvaluations, titleHistogram: this.state.evaluations[0].title });
       });
   }
 
@@ -108,10 +132,9 @@ export default class Summary extends Component {
   }
 
   render() {
-    const selectedEvaluations = this.state.selectedEvaluations;
-    const selectedStudents = this.state.selectedStudents;
+    const { instance } = this.props;
+    const { students, selectedEvaluations, selectedStudents } = this.state;
     const evaluations = this.state.evaluations.sort((a, b) => new Date(b.startAt) - new Date(a.startAt));
-    const students = this.state.students;
 
     const dropdown = students.map(student => ({
       id: student.user.id,
@@ -119,99 +142,117 @@ export default class Summary extends Component {
       label: student.user.name,
     }));
 
-    const selectedEvaluationsLabel = evaluations.filter(evaluation => selectedEvaluations.indexOf(evaluation.id) > -1);
+    const filteredEvaluations = evaluations.filter(evaluation => selectedEvaluations.indexOf(evaluation.id) > -1);
 
+    const { approvalGrade, minGrade, maxGrade } = instance;
     const labels = [];
     const max = [];
     const min = [];
     const avg = [];
-    selectedEvaluationsLabel.forEach(evaluation => {
+    const reprove = [];
+    filteredEvaluations.forEach(evaluation => {
       labels.push(evaluation.title);
       min.push(Math.floor((Math.random() * 15) + 25));
       avg.push(Math.floor((Math.random() * 15) + 45));
       max.push(Math.floor((Math.random() * 10) + 60));
+      reprove.push(approvalGrade);
     });
 
     const dataGraph = selectedStudents.map(student => ({
+      ...DEFAULT_LINE,
       label: student.label,
       borderColor: 'rgba(52, 73, 94,1.0)',
-      borderCapStyle: 'butt',
-      borderJoinStyle: 'miter',
+      backgroundColor: 'rgba(75,192,192,0)',
       pointBorderColor: 'rgba(52, 73, 94,1.0)',
       pointBackgroundColor: '#fff',
-      pointBorderWidth: 3,
-      pointHoverRadius: 5,
-      pointHoverBackgroundColor: 'rgba(52, 73, 94,1.0)',
-      pointHoverBorderColor: 'rgba(220,220,220,1)',
-      pointHoverBorderWidth: 5,
-      pointRadius: 5,
-      pointHitRadius: 10,
-      data: selectedEvaluationsLabel.map(() => Math.floor((Math.random() * 20) + 40)),
+      pointHoverRadius: 6,
+      pointRadius: 3,
+      data: filteredEvaluations.map(() => Math.floor((Math.random() * 20) + 40)),
     }));
-    const dataAnalitycs = [
-      {
-        label: 'Max',
-        backgroundColor: 'rgba(75,192,192,0.1)',
-        borderColor: 'rgba(39, 174, 96,1.0)',
-        borderCapStyle: 'butt',
-        borderJoinStyle: 'miter',
-        pointBorderColor: 'rgba(39, 174, 96,1.0)',
-        pointBackgroundColor: '#fff',
-        pointBorderWidth: 3,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: 'rgba(39, 174, 96,1.0)',
-        pointHoverBorderColor: 'rgba(220,220,220,1)',
-        pointHoverBorderWidth: 5,
-        pointRadius: 5,
-        pointHitRadius: 10,
-        data: max,
-      },
-      {
-        label: 'Avg',
-        backgroundColor: 'rgba(75,192,192,0.25)',
-        borderColor: 'rgba(75,192,192,1)',
-        borderCapStyle: 'butt',
-        borderJoinStyle: 'miter',
-        pointBorderColor: 'rgba(75,192,192,1)',
-        pointBackgroundColor: '#fff',
-        pointBorderWidth: 3,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: 'rgba(75,192,192,1)',
-        pointHoverBorderColor: 'rgba(220,220,220,1)',
-        pointHoverBorderWidth: 5,
-        pointRadius: 5,
-        pointHitRadius: 10,
-        data: avg,
-      },
-      {
-        label: 'Min',
-        backgroundColor: 'rgba(192, 57, 43,0.5)',
-        borderColor: '#e74c3c',
-        borderCapStyle: 'butt',
-        borderJoinStyle: 'miter',
-        pointBorderColor: '#e74c3c',
-        pointBackgroundColor: '#fff',
-        pointBorderWidth: 3,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: '#e74c3c',
-        pointHoverBorderColor: 'rgba(220,220,220,1)',
-        pointHoverBorderWidth: 5,
-        pointRadius: 5,
-        pointHitRadius: 10,
-        data: min,
-      },
-    ];
+
+    const dataAnalitycs = [{
+      ...LINES.MAX,
+      label: 'Max',
+      data: max,
+    }, {
+      ...LINES.AVG,
+      label: 'Average',
+      data: avg,
+    }, {
+      ...LINES.MIN,
+      label: 'Min',
+      data: min,
+    }, {
+      ...LINES.REPR,
+      label: 'Reprobation',
+      data: reprove,
+    }];
+
     const datasets = [...dataAnalitycs, ...dataGraph];
+
+    const options = {
+      ...GRAPH_OPTIONS,
+      scales: {
+        yAxes: [{
+          display: true,
+          ticks: {
+            // beginAtZero: true,
+            suggestedMin: minGrade,
+            suggestedMax: maxGrade,
+          },
+        }],
+      },
+    };
 
     const data = {
       labels,
       datasets,
     };
+
+    // const grades = students.map(() => Math.floor((Math.random() * 20) + 40));
+    // for (let i = 0; i < 100; i++) {
+    //   grades.push(Math.floor((Math.random() * 100)));
+    // }
+    // const histData = Array.apply(null, Array(10)).map(Number.prototype.valueOf, 0);
+    // grades.forEach(grade => {
+    //   histData[Math.floor(grade * 10 / (maxGrade - minGrade))] += 1;
+    // });
+    const dataFailed = [1, 5, 8, 10, 13, 0, 0, 0, 0, 0];
+    const dataPassed = [0, 0, 0, 0, 0, 15, 13, 10, 6, 2];
+
+    const datasetsHistogram = [{
+      ...DEFAULT_LINE,
+      label: 'Failed',
+      borderColor: 'rgba(192, 57, 43,1.0)',
+      backgroundColor: 'rgba(192, 57, 43,0.5)',
+      data: dataFailed,
+    }, {
+      ...DEFAULT_LINE,
+      label: 'Passed',
+      borderColor: 'rgba(39, 174, 96,1.0)',
+      backgroundColor: 'rgba(39, 174, 96,0.5)',
+      data: dataPassed,
+    }];
+
+    const optionsHistogram = {
+      ...GRAPH_OPTIONS,
+      title: {
+        display: true,
+        text: this.state.titleHistogram,
+        fontSize: 18,
+      },
+    };
+
+    const dataHistogram = {
+      labels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      datasets: datasetsHistogram,
+    };
+
     return (
       <div style={styles.container}>
         <Row>
-          {renderIf(this.state.isChart)(() =>
-            <Col xs={8}>
+          {renderIf(this.state.tab === 1)(() =>
+            <Col xs={6}>
               <Select
                 multi
                 options={dropdown}
@@ -222,44 +263,68 @@ export default class Summary extends Component {
               />
             </Col>
           )}
-          <Col xsOffset={8}>
-            <Button bsStyle="link" onClick={() => this.setState({ isChart: true })}>
+          <Col xsOffset={6}>
+            <Button
+              onClick={(e) => { this.setState({ tab: 1 }); e.target.blur(); }}
+              bsStyle={this.state.tab === 1 ? 'primary' : 'link'}
+            >
               <Icon style={styles.icon} name="area-chart" />
               Chart
             </Button>
-            <Button bsStyle="link" onClick={() => this.setState({ isChart: false })}>
+            <Button
+              onClick={(e) => { this.setState({ tab: 2 }); e.target.blur(); }}
+              bsStyle={this.state.tab === 2 ? 'primary' : 'link'}
+            >
               <Icon style={styles.icon} name="table" />
               Table
             </Button>
+            <Button
+              onClick={(e) => { this.setState({ tab: 3 }); e.target.blur(); }}
+              bsStyle={this.state.tab === 3 ? 'primary' : 'link'}
+            >
+              <Icon style={styles.icon} name="bar-chart" />
+              Histogram
+            </Button>
           </Col>
           <br />
-          {renderIf(this.state.isChart)(() =>
+          {renderIf(this.state.tab === 1)(() =>
             <Row>
-              <Col xs={9}>
-                <LineChart
-                  data={data}
-                  redraw={this.state.redraw}
-                  options={GRAPH_OPTIONS}
-                  width="700" height="500"
-                />
-              </Col>
-              <Col xs={3}>
-                <ControlLabel style={{}}>Evaluations</ControlLabel>
-                <ButtonGroup vertical block>
-                  {evaluations.map(evaluation => (
-                    <Button
-                      key={evaluation.id}
-                      onClick={e => this.onEvaluationSelect(e, evaluation)}
-                      active={selectedEvaluations.indexOf(evaluation.id) > -1}
-                    >
-                      {evaluation.title}
-                    </Button>
-                  ))}
-                </ButtonGroup>
+              {renderIf(selectedEvaluations.length > 1)(() =>
+                <Col xs={8}>
+                  <LineChart
+                    data={data}
+                    redraw={this.state.redraw}
+                    options={options}
+                    width="700" height="500"
+                  />
+                </Col>
+              )}
+              {renderIf(selectedEvaluations.length <= 1)(() =>
+                <Col xs={8}>
+                  <Panel header="Chart tool">
+                    Please select at least two evaluations.
+                  </Panel>
+                </Col>
+              )}
+              <Col xsOffset={8}>
+                <ControlLabel>Evaluations</ControlLabel>
+                <Col xs={10}>
+                  <ButtonGroup vertical block>
+                    {evaluations.map(evaluation => (
+                      <Button
+                        bsStyle={selectedEvaluations.indexOf(evaluation.id) > -1 ? 'primary' : 'default'}
+                        key={evaluation.id}
+                        onClick={e => this.onEvaluationSelect(e, evaluation)}
+                      >
+                        {evaluation.title}
+                      </Button>
+                    ))}
+                  </ButtonGroup>
+                </Col>
               </Col>
             </Row>
           )}
-          {renderIf(!this.state.isChart)(() =>
+          {renderIf(this.state.tab === 2)(() =>
             <Row>
               <Col xs={12}>
                 <Table striped condensed hover>
@@ -287,6 +352,34 @@ export default class Summary extends Component {
               </Col>
             </Row>
           )}
+        {renderIf(this.state.tab === 3)(() =>
+          <Row>
+            <Col xs={8}>
+              <BarChart
+                data={dataHistogram}
+                redraw
+                options={optionsHistogram}
+                width="700" height="500"
+              />
+            </Col>
+            <Col xsOffset={8}>
+              <ControlLabel>Evaluations</ControlLabel>
+              <Col xs={10}>
+                <ButtonGroup vertical block>
+                  {evaluations.map((evaluation, i) => (
+                    <Button
+                      bsStyle={this.state.histogramEvaluation === i ? 'primary' : 'default'}
+                      key={i}
+                      onClick={() => this.setState({ histogramEvaluation: i, titleHistogram: evaluation.title })}
+                    >
+                      {evaluation.title}
+                    </Button>
+                  ))}
+                </ButtonGroup>
+              </Col>
+            </Col>
+          </Row>
+        )}
         </Row>
       </div>
     );
