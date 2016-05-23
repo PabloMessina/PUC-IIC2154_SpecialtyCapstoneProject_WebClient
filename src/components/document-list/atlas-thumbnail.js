@@ -1,21 +1,33 @@
-import React, { Component } from 'react';
-import Rater from 'react-rater';
+import React, { PropTypes, Component } from 'react';
 import { Panel, Image } from 'react-bootstrap';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 
-export default class AtlasThumbnail extends Component {
+class AtlasThumbnail extends Component {
+
+  static get propTypes() {
+    return {
+      document: PropTypes.object,
+      router: PropTypes.object,
+    };
+  }
+
+  static get defaultProps() {
+    return {
+      document: {
+        url: 'img/GILROYFICHA.jpg',
+        title: '',
+      },
+    };
+  }
 
   render() {
     const route = `/documents/${this.props.document.id}`;
     const doc = this.props.document;
-    let image = doc.cover.url;
-    let tags = doc.tags;
-    if (tags.length === 0) {
-      tags = ['No tags'];
-    }
-    image = image || 'http://sightlinemediaentertainment.com/wp-content/uploads/2015/09/placeholder-cover.jpg';
+    const image = doc.cover.url || 'http://sightlinemediaentertainment.com/wp-content/uploads/2015/09/placeholder-cover.jpg';
+    const tags = doc.tags || [];
+
     return (
-      <Panel style={styles.box} onClick={() => browserHistory.push(route)}>
+      <Panel style={styles.box} onClick={() => this.props.router.push(route)}>
         <Image style={styles.image} src={image} thumbnail responsive />
         <div style={styles.texts}>
           <p style={styles.name}>{doc.title}</p>
@@ -23,28 +35,17 @@ export default class AtlasThumbnail extends Component {
         <div style={styles.texts}>
           <p style={styles.author}>{tags}</p>
         </div>
-        <Rater total={5} rating={2} />
       </Panel>
     );
   }
 }
 
-AtlasThumbnail.propTypes = {
-  document: React.PropTypes.object,
-};
-
-AtlasThumbnail.defaultProps = {
-  document: {
-    url: 'img/GILROYFICHA.jpg',
-    title: '',
-  },
-};
-
+export default withRouter(AtlasThumbnail);
 
 const styles = {
   image: {
     width: '100%',
-    height: 200,
+    height: 210,
   },
   box: {
     float: 'left',

@@ -50,12 +50,12 @@ class InstanceEvaluations extends Component {
     // Fetch organization
     // const query = this.props.location.query;
     const instance = this.props.instance;
-    this.fetchEvaluations(instance.id);
+    this.fetchEvaluations(instance);
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.instance) {
-      this.fetchEvaluations(nextProps.instance.id);
+    if (nextProps.instance && nextProps.instance.id !== this.props.instance.id) {
+      this.fetchEvaluations(nextProps.instance);
     }
   }
 
@@ -74,9 +74,9 @@ class InstanceEvaluations extends Component {
       });
   }
 
-  fetchEvaluations(instanceId) {
+  fetchEvaluations(instance) {
     const query = {
-      instanceId,
+      instanceId: instance.id || instance,
       $populate: 'responsable',
     };
     return evaluationService.find({ query })

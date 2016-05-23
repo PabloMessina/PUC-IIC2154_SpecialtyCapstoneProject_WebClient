@@ -12,8 +12,8 @@ const userService = app.service('/users');
 
 const ROLES = [
   { value: 'read', label: 'Student' },
-  { value: 'write', label: 'Teacher' },
-  { value: 'admin', label: 'Admin' },
+  { value: 'write', label: 'Assistant' },
+  { value: 'admin', label: 'Teacher' },
 ];
 
 export default class InstanceStudents extends Component {
@@ -47,16 +47,18 @@ export default class InstanceStudents extends Component {
     this.fetchUsers = this.fetchUsers.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
     this.fetchParticipants = this.fetchParticipants.bind(this);
+    this.fetchUsers = this.fetchUsers.bind(this);
   }
 
   componentDidMount() {
-    this.fetchUsers();
-    this.fetchParticipants(this.props.instance.id);
+    const { organization, instance } = this.props;
+    this.fetchUsers(organization);
+    this.fetchParticipants(instance);
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.instance) {
-      this.fetchParticipants(nextProps.instance.id);
+    if (nextProps.instance && nextProps.instance.id !== this.props.instance.id) {
+      this.fetchParticipants(nextProps.instance);
     }
   }
 
@@ -83,20 +85,20 @@ export default class InstanceStudents extends Component {
     return participantService.remove(participant.id);
   }
 
-  fetchUsers() {
+  fetchUsers(organization) {
     this.setState({ loading: true });
     const query = {
-      id: this.props.organization.id,
+      id: organization.id || organization,
       $populate: ['user'],
       $limit: 1,
     };
     return organizationService.find({ query })
       .then(result => result.data[0])
-      .then(organization => this.setState({ users: organization.users, loading: false, error: false }))
-      .catch(error => this.setState({ loading: false, error }));
+      .then(org => this.setState({ users: org.users, loading: false, error: false }))
+      .catch(error => this.setState({ error, loading: false }));
   }
 
-  fetchParticipants(instanceId) {
+  fetchParticipants(instance) {
     this.setState({ loading: true });
 
     const renew = (participant) => {
@@ -126,12 +128,13 @@ export default class InstanceStudents extends Component {
     });
 
     const query = {
-      instanceId,
+      instanceId: instance.id || instance,
       $populate: 'user',
     };
     return participantService.find({ query })
       .then(result => result.data)
-      .then(participants => this.setState({ participants, loading: false }));
+      .then(participants => this.setState({ participants, error: null, loading: false }))
+      .catch(error => this.setState({ error, loading: false }));
   }
 
   render() {

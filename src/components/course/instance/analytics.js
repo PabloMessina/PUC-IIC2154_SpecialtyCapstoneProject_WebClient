@@ -76,14 +76,15 @@ export default class Summary extends Component {
       histogramEvaluation: 0,
       titleHistogram: '',
     };
-    this.handleSelect = this.handleSelect.bind(this);
-    this.fetchStudents = this.fetchStudents.bind(this);
+    this.onSelect = this.onSelect.bind(this);
     this.onEvaluationSelect = this.onEvaluationSelect.bind(this);
+    this.fetchStudents = this.fetchStudents.bind(this);
   }
 
   componentDidMount() {
-    this.fetchStudents(this.props.instance.id);
-    this.fetchEvaluations(this.props.instance.id)
+    const { instance } = this.props;
+    this.fetchStudents(instance);
+    this.fetchEvaluations(instance)
       .then(evaluations => {
         const selectedEvaluations = evaluations.map(evaluation => evaluation.id);
         this.setState({ selectedEvaluations, titleHistogram: this.state.evaluations[0].title });
@@ -102,9 +103,13 @@ export default class Summary extends Component {
     this.setState({ selectedEvaluations, redraw: false });
   }
 
-  fetchStudents(instanceId) {
+  onSelect(tab) {
+    this.setState({ tab });
+  }
+
+  fetchStudents(instance) {
     const query = {
-      instanceId,
+      instanceId: instance.id || instance,
       $populate: 'user',
     };
     return participantService.find({ query })
@@ -113,10 +118,10 @@ export default class Summary extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  fetchEvaluations(instanceId) {
+  fetchEvaluations(instance) {
     this.setState({ loading: true });
     const query = {
-      instanceId,
+      instanceId: instance.id || instance,
     };
     return evaluationService.find({ query })
       .then(result => result.data)
@@ -125,10 +130,6 @@ export default class Summary extends Component {
         return evaluations;
       })
       .catch(error => this.setState({ error }));
-  }
-
-  handleSelect(tab) {
-    this.setState({ tab });
   }
 
   render() {

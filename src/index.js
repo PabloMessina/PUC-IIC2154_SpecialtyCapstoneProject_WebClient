@@ -184,7 +184,7 @@ const Routing = (
           <Route path="settings" component={CourseSettings} />
           <Route path="create" component={CourseInstanceCreate} />
           <Route path="show/:instanceId" component={CourseInstance}>
-            <IndexRedirect to="evaluations" />
+            <IndexRedirect to="announcements" />
             <Route path="announcements" component={CourseInstanceAnnouncements} />
             <Route path="students" component={CourseInstanceStudents} />
             <Route path="analytics" component={CourseInstanceAnalytics} />

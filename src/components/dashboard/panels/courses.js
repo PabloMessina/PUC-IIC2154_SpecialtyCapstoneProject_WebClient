@@ -77,7 +77,7 @@ class CoursesPanel extends Component {
     const { style } = this.props;
     const { instances } = this.state;
     return renderIf(instances.length)(() =>
-      <Panel bsStyle="link" style={{ ...styles.container, ...style }}>
+      <Panel style={{ ...styles.container, ...style }}>
         <Title style={styles.title} title="Courses" />
         <hr />
         {instances.map(this.renderInstance)}

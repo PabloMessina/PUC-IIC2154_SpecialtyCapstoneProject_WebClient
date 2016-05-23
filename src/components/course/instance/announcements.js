@@ -29,32 +29,32 @@ export default class InstanceEvaluations extends Component {
     };
   }
 
-  static get defaultProps() {
-    return {
-      announcements: [],
-    };
-  }
-
   constructor(props) {
     super(props);
     this.state = {
-      announcements: props.announcements,
+      announcements: [],
       showModal: false,
       subject: '',
       content: null,
+      loading: false,
       error: null,
     };
     this.onModalClose = this.onModalClose.bind(this);
     this.onModalSave = this.onModalSave.bind(this);
+    this.onChangeContent = this.onChangeContent.bind(this);
     this.renderModal = this.renderModal.bind(this);
     this.fetchAnnouncements = this.fetchAnnouncements.bind(this);
-    this.onChangeContent = this.onChangeContent.bind(this);
   }
-
 
   componentDidMount() {
     const instance = this.props.instance;
-    this.fetchAnnouncements(instance.id);
+    this.fetchAnnouncements(instance);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.instance && nextProps.instance.id !== this.props.instance.id) {
+      this.fetchAnnouncements(nextProps.instance);
+    }
   }
 
   onModalClose(/* question */) {
@@ -66,6 +66,8 @@ export default class InstanceEvaluations extends Component {
   }
 
   onModalSave() {
+    this.setState({ loading: true });
+
     const announcement = {
       subject: this.state.subject,
       content: this.state.content,
@@ -73,25 +75,31 @@ export default class InstanceEvaluations extends Component {
       instanceId: this.props.instance.id,
     };
     return announcementService.create(announcement)
-      .then(() => this.fetchAnnouncements())
+      .then(() => this.fetchAnnouncements(this.props.instance))
       .then(() => this.setState({
+        // Restore state for future announcements
         showModal: false,
         subject: '',
         content: null,
+        // Restore other states
+        loading: false,
         error: null,
       }))
-      .catch(error => this.setState({ error }));
+      .catch(error => this.setState({ error, loading: false }));
   }
 
-  fetchAnnouncements() {
+  fetchAnnouncements(instance) {
+    this.setState({ loading: true });
+
     const query = {
-      instanceId: this.props.instance.id,
+      instanceId: instance.id || instance,
       $populate: 'responsable',
       $sort: { createdAt: -1 },
     };
     return announcementService.find({ query })
       .then(result => result.data)
-      .then(announcements => this.setState({ announcements }));
+      .then(announcements => this.setState({ announcements }))
+      .catch(error => this.setState({ error, loading: false }));
   }
 
   renderModal() {

@@ -24,6 +24,8 @@ export default class CourseBibliography extends Component {
     this.state = {
       atlases: [],
       bibliographies: [],
+      loading: false,
+      error: null,
     };
     this.onAtlasCreate = this.onAtlasCreate.bind(this);
     this.onAtlasSelect = this.onAtlasSelect.bind(this);
@@ -35,8 +37,9 @@ export default class CourseBibliography extends Component {
   }
 
   componentDidMount() {
-    this.fetchAtlases(this.props.organization.id);
-    this.fetchBibliographies(this.props.instance.id);
+    const { organization, instance } = this.props;
+    this.fetchAtlases(organization);
+    this.fetchBibliographies(instance);
   }
 
   onAtlasCreate() {
@@ -62,23 +65,27 @@ export default class CourseBibliography extends Component {
     this.setState({ showModal: true });
   }
 
-  fetchAtlases(organizationId) {
+  fetchAtlases(organization) {
+    this.setState({ loading: true });
     const query = {
-      organizationId,
+      organizationId: organization.id || organization,
     };
     return atlasService.find({ query })
-    .then(result => result.data)
-    .then(atlases => this.setState({ atlases }));
+      .then(result => result.data)
+      .then(atlases => this.setState({ atlases, error: null, loading: false }))
+      .catch(error => this.setState({ error, loading: false }));
   }
 
-  fetchBibliographies(instanceId) {
+  fetchBibliographies(instance) {
+    this.setState({ loading: true });
     const query = {
-      instanceId,
+      instanceId: instance.id || instance,
       $populate: 'atlas',
     };
     return biblographyService.find({ query })
       .then(result => result.data)
-      .then(bibliographies => this.setState({ bibliographies }));
+      .then(bibliographies => this.setState({ bibliographies, error: null, loading: false }))
+      .catch(error => this.setState({ error, loading: false }));
   }
 
   renderAtlasList(element, i) {
@@ -110,8 +117,12 @@ export default class CourseBibliography extends Component {
         </Modal>
 
         <Col xs={12} md={8}>
+          {renderIf(bibliographies.length === 0)(() =>
+            <h4>Empty bibliography</h4>
+          )}
           <AtlasGrid atlases={bibliographies.map(bibliography => bibliography.atlas)} />
         </Col>
+
         <Col xs={12} md={4}>
           <Panel>
             <h5><Icon style={styles.icon} name="lightbulb-o" /> Bibliography</h5>
