@@ -1,21 +1,26 @@
-import React, { Component } from 'react';
+import React, { PropTypes, Component } from 'react';
 import {
   Row,
   ControlLabel,
   Col,
   FormControl,
   Radio,
-  InputGroup,
   Panel,
   HelpBlock,
   Button,
   FormGroup,
   Checkbox,
+  Tabs,
+  Tab,
+  Alert,
 } from 'react-bootstrap';
-
-import { Colors } from '../../styles';
 import Select from 'react-select';
 import renderIf from 'render-if';
+
+import app from '../../app';
+const evaluationService = app.service('/evaluations');
+
+// import { Colors } from '../../styles';
 
 const ATTENDANCES = [{
   value: 'none',
@@ -33,54 +38,64 @@ const ATTENDANCES = [{
 
 const PRIVACY = {
   PRIVATE: 'This is a secret evaluation. Will only appear to the students once it starts.',
-  PUBLIC: `This evaluation will be scheduled as soon as posible to all the participan students,
-but they will not be able to see the questions inside it.`,
+  PUBLIC: `This evaluation will be scheduled as soon as posible to all the participant students,
+but they will not be able to see the questions inside it until it officially starts.`,
+};
+
+const STATUS = {
+  NONE: 'NONE',
+  SAVING: 'SAVING',
+  SAVED: 'SAVED',
 };
 
 export default class EvaluationDescription extends Component {
 
   static get propTypes() {
     return {
-      organization: React.PropTypes.object,
-      participant: React.PropTypes.object,
-      course: React.PropTypes.object,
-      evaluation: React.PropTypes.object,
-      onEvaluationChange: React.PropTypes.func,
-      onSubmitDescription: React.PropTypes.func,
+      organization: PropTypes.object,
+      participant: PropTypes.object,
+      course: PropTypes.object,
+      evaluation: PropTypes.object,
+      onEvaluationChange: PropTypes.func,
     };
   }
 
   constructor(props) {
     super(props);
     this.state = {
+      // Current evaluation
+      evaluation: props.evaluation,
+      // Other evaluations
+      evaluations: [],
       checked: this.props.evaluation.discount !== 0,
-      tag: '',
-      options: [
-        { label: 'Exam', value: 'Exam' },
-        { label: 'Test', value: 'Test' },
-        { label: 'Quiz', value: 'Quiz' },
-      ],
-      saved: '',
+      status: STATUS.NONE,
+      error: null,
     };
     this.onChange = this.onChange.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
-    this.onTagChange = this.onTagChange.bind(this);
+    // this.onTagChange = this.onTagChange.bind(this);
   }
 
-  onTagChange(value, tag) {
-    this.setState({ tag });
-    this.onChange('tag', value);
+  componentWillReceiveProps(nextProps) {
+    const evaluation = nextProps.evaluation;
+    if (evaluation) this.setState({ evaluation });
   }
 
   onChange(field, value) {
-    const evaluation = { [field]: value };
-    if (this.props.onEvaluationChange) this.props.onEvaluationChange(evaluation);
+    const evaluation = { ...this.state.evaluation, [field]: value };
+    this.setState({ evaluation });
   }
 
   onSubmit(e) {
     e.preventDefault();
-    if (this.props.onSubmitDescription) this.props.onSubmitDescription();
-    this.setState({ saved: 'Evaluation saved!' });
+    this.setState({ status: STATUS.SAVING });
+    return evaluationService
+      .patch(this.state.evaluation.id, { ...this.state.evaluation, id: undefined })
+      .then(evaluation => {
+        this.setState({ evaluation, error: null, status: STATUS.SAVED });
+        if (this.props.onEvaluationChange) this.props.onEvaluationChange(evaluation);
+      })
+      .catch(error => this.setState({ error, status: STATUS.NONE }));
   }
 
   discountMessage(discount) {
@@ -95,6 +110,16 @@ export default class EvaluationDescription extends Component {
     }
   }
 
+  fetchOtherEvaluations(instance) {
+    const query = {
+      instanceId: instance.id || instance,
+    };
+    return evaluationService.find({ query })
+      .then(result => result.data)
+      .then(evaluations => this.setState({ evaluations, error: null }))
+      .catch(error => this.setState({ error }));
+  }
+
   render() {
     const {
       title,
@@ -105,19 +130,25 @@ export default class EvaluationDescription extends Component {
       randomized,
       tag,
       threshold,
-      // startAt,
-      // finishAt,
-    } = this.props.evaluation;
-    const mode = ATTENDANCES.find(a => a.value === attendance) || ATTENDANCES[0];
+      startAt,
+      finishAt,
+      duration,
+    } = this.state.evaluation;
+    const status = this.state.status;
+    const level = ATTENDANCES.find(a => a.value === attendance) || ATTENDANCES[0];
+    const tags = this.state.evaluations.filter(e => e.tag && e.tag.length).map(e => ({
+      label: e.tag,
+      value: e.tag,
+    }));
 
-    const enabled = ['admin', 'write'].includes(this.props.participant.permission);
-    const disabled = !enabled;
+    const canEdit = ['admin', 'write'].includes(this.props.participant.permission);
+    const disabled = !canEdit;
 
     return (
       <div style={styles.container}>
         <Row>
-          <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
-            <form onSubmit={this.onSubmit} style={styles.form}>
+          <form onSubmit={this.onSubmit} style={styles.form}>
+            <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
 
               <FormGroup controlId="title">
                 <ControlLabel>Title</ControlLabel>
@@ -147,138 +178,141 @@ export default class EvaluationDescription extends Component {
                 <ControlLabel>Tag</ControlLabel>
                 <Select
                   simpleValue={false}
-                  disabled={false}
-                  allowCreate
-                  addLabelText={'Create the tag: {label}'}
                   value={tag}
-                  options={this.state.options}
-                  onChange={this.onTagChange}
-                  placeholder={'Exam, Test, Quiz'}
+                  options={tags}
+                  onChange={value => this.onChange('tag', value)}
+                  onBlur={e => this.onChange('tag', e.target.value)}
                   disabled={disabled}
+                  allowCreate
+                  addLabelText="Create the tag: {label}"
+                  placeholder="Evaluation tag..."
+                  noResultsText="Type a new tag to create it"
                 />
                 <HelpBlock>
                   Here you can put the category of the evaluation.
                 </HelpBlock>
               </FormGroup>
 
-              <hr />
+              <Tabs defaultActiveKey={1} id="evaluation-settings-tabs">
 
-              <FormGroup>
-                <ControlLabel>Attendance restriction</ControlLabel>
-                {ATTENDANCES.map((sub, i) => (
-                  <Radio
-                    key={i}
-                    checked={mode.value === sub.value}
-                    onChange={() => this.onChange('attendance', sub.value)}
-                    disabled={disabled}
-                  >
-                    {sub.name}
-                  </Radio>)
-                )}
-                <HelpBlock>{mode.description}</HelpBlock>
-              </FormGroup>
+                <Tab style={styles.tab} eventKey={1} title="Attendance">
+                  <FormGroup>
+                    <ControlLabel>Attendance restriction</ControlLabel>
+                    {ATTENDANCES.map((sub, i) =>
+                      <Radio
+                        key={i}
+                        checked={level.value === sub.value}
+                        onChange={() => this.onChange('attendance', sub.value)}
+                        disabled={disabled}
+                      >
+                        <strong>{sub.name}: </strong> <small>{sub.description}</small>
+                      </Radio>
+                    )}
+                    <HelpBlock>The attendance list is on the <em>Student</em> tab.</HelpBlock>
+                  </FormGroup>
+                </Tab>
 
-              <FormGroup>
-                <ControlLabel>Discount score on wrong answers</ControlLabel>
-                <InputGroup>
-
-                  <InputGroup.Addon>
-                    <input
-                      type="checkbox"
-                      checked={this.state.checked}
-                      onChange={() => {
-                        const checked = !this.state.checked;
-                        this.setState({ checked });
-                        this.onChange('discount', checked ? discount : 0);
-                      }}
-                      aria-label="check-discount"
+                <Tab style={styles.tab} eventKey={2} title="Score">
+                  <FormGroup>
+                    <ControlLabel>Discount score on wrong answers</ControlLabel>
+                    <FormControl
+                      type="number"
                       disabled={disabled}
+                      value={discount || undefined}
+                      placeholder="0"
+                      min="0"
+                      step="0.25"
+                      label="Discount"
+                      onChange={e => this.onChange('discount', e.target.value)}
                     />
-                  </InputGroup.Addon>
+                    <HelpBlock>Example: 0.25 will substract 0.25 off the total score for each bad answer</HelpBlock>
+                  </FormGroup>
 
-                  <FormControl
-                    type="number"
-                    disabled={!this.state.checked || disabled}
-                    value={discount || undefined}
-                    placeholder="0.25"
-                    min="0"
-                    step="0.25"
-                    label="Discount"
-                    onChange={e => this.onChange('discount', this.state.checked ? e.target.value : 0)}
-                  />
-                </InputGroup>
-                <HelpBlock>{this.discountMessage(this.state.checked ? discount : 0)}</HelpBlock>
-              </FormGroup>
+                  <FormGroup>
+                    <ControlLabel>Threshold</ControlLabel>
+                    <FormControl
+                      type="number"
+                      value={threshold}
+                      placeholder="0.5"
+                      disabled={disabled}
+                      min="0"
+                      max="1"
+                      step="0.10"
+                      label="Discount"
+                      onChange={e => this.onChange('threshold', e.target.value)}
+                    />
+                    <HelpBlock>
+                      Determinates the percentage of correct answers to score the half of the total points.
+                    </HelpBlock>
+                  </FormGroup>
+                </Tab>
 
-              <FormGroup>
-                <ControlLabel>Threshold</ControlLabel>
-                <InputGroup>
+                <Tab style={styles.tab} eventKey={3} title="Visibility">
+                  <FormGroup>
+                    <ControlLabel>Randomized evaluation</ControlLabel>
+                    <Checkbox
+                      checked={randomized}
+                      disabled={disabled}
+                      onChange={() => this.onChange('randomized', !randomized)}
+                    >
+                      Each student should have different question order.
+                    </Checkbox>
+                    <HelpBlock>This can reduce cheating if enabled.</HelpBlock>
+                  </FormGroup>
 
-                  <FormControl
-                    type="number"
-                    value={threshold}
-                    placeholder="0.5"
-                    disabled={disabled}
-                    min="0"
-                    max="1"
-                    step="0.25"
-                    label="Discount"
-                    onChange={e => this.onChange('threshold', e.target.value)}
-                  />
-                </InputGroup>
-                <HelpBlock>
-                  Determinates the percentage of correct answers to score the half of the total points.
-                </HelpBlock>
-              </FormGroup>
+                  <FormGroup>
+                    <ControlLabel>Before it starts, should appear as:</ControlLabel>
+                    <Radio
+                      checked={secret}
+                      onChange={() => this.onChange('secret', true)}
+                      disabled={disabled}
+                    >
+                      <strong>Secret or surprise</strong>
+                      <br />
+                      <small>{PRIVACY.PRIVATE}</small>
+                    </Radio>
+                    <Radio
+                      checked={!secret}
+                      onChange={() => this.onChange('secret', false)}
+                      disabled={disabled}
+                    >
+                      <strong>Visible</strong>
+                      <br />
+                      <small>{PRIVACY.PUBLIC}</small>
+                    </Radio>
+                  </FormGroup>
+                </Tab>
 
-              <hr />
+              </Tabs>
+            </Col>
 
-              <FormGroup>
-                <ControlLabel>Randomized evaluation</ControlLabel>
-                <Checkbox
-                  checked={randomized}
-                  disabled={disabled}
-                  onChange={() => this.onChange('randomized', !randomized)}
-                >
-                  Each student should have different question order.
-                </Checkbox>
-                <HelpBlock>This can reduce cheating if enabled.</HelpBlock>
-              </FormGroup>
+            <Col xsOffset={0} xs={12} sm={3}>
+              <Panel>
+                <h4>Evaluation settings</h4>
+                <p>Make sure to setup the evaluation with the correct parameters</p>
+                <hr />
+                {renderIf(canEdit)(() =>
+                  <div>
+                    <Button block disabled={status === STATUS.SAVING} bsStyle="primary" type="submit">
+                      {(() => {
+                        switch (status) {
+                          case STATUS.SAVING: return 'Saving...';
+                          case STATUS.SAVED: return 'Saved';
+                          default: return 'Save';
+                        }
+                      })()}
+                    </Button>
+                    {renderIf(this.state.error)(() =>
+                      <Alert style={styles.error} bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
+                        <p>{this.state.error.message}</p>
+                      </Alert>
+                    )}
+                  </div>
+                )}
+              </Panel>
+            </Col>
 
-              <FormGroup>
-                <ControlLabel>Visibility</ControlLabel>
-                <Checkbox
-                  checked={secret}
-                  disabled={disabled}
-                  onChange={() => this.onChange('secret', !secret)}
-                >
-                  Secret or surprise evaluation
-                </Checkbox>
-                <HelpBlock>{secret ? PRIVACY.PRIVATE : PRIVACY.PUBLIC}</HelpBlock>
-              </FormGroup>
-              <Button
-                bsStyle="primary"
-                type="submit"
-                style={styles.submit}
-              >
-                Save
-              </Button>
-              {renderIf(this.state.saved !== '')(() =>
-                <div>
-                  <br />
-                  <p bold style={styles.saved}>{this.state.saved}</p>
-                </div>
-              )}
-            </form>
-          </Col>
-          <Col xsOffset={0} xs={12} sm={3}>
-            <Panel>
-              <h4>Evaluation settings</h4>
-              <p>Make sure to setup the evaluation with the correct parameters</p>
-              <hr />
-              <p>Go to the next tab when you are ready</p>
-            </Panel>
-          </Col>
+          </form>
         </Row>
       </div>
     );
@@ -289,15 +323,13 @@ const styles = {
   container: {
 
   },
+  tab: {
+    padding: 15,
+  },
   form: {
-    display: 'flex',
-    flexDirection: 'column',
+
   },
-  submit: {
-    flex: 1,
-    alignSelf: 'flex-start',
-  },
-  saved: {
-    color: Colors.MAIN,
+  error: {
+    marginTop: 10,
   },
 };

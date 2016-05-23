@@ -8,7 +8,7 @@ import app, { currentUser } from '../../app';
 const organizationService = app.service('/organizations');
 const courseService = app.service('/courses');
 const participantService = app.service('/participants');
-const evaluationService = app.service('/evaluations');
+// const evaluationService = app.service('/evaluations');
 const evaluationsQuestionService = app.service('/evaluations-questions');
 const answerService = app.service('/answers');
 const attendanceService = app.service('/attendances');
@@ -116,7 +116,6 @@ class EvaluationCreate extends Component {
     this.onFieldsChange = this.onFieldsChange.bind(this);
     this.onQuestionAdd = this.onQuestionAdd.bind(this);
     this.onQuestionRemove = this.onQuestionRemove.bind(this);
-    this.onSubmitDescription = this.onSubmitDescription.bind(this);
   }
 
   componentDidMount() {
@@ -202,13 +201,6 @@ class EvaluationCreate extends Component {
       .then(() => this.state.questions.filter(q => q.id !== question.id))
       .then(questions => this.setState({ questions, syncing: false }))
       .catch(error => this.setState({ error, syncing: false }));
-  }
-
-  onSubmitDescription() {
-    const evaluation = this.state.evaluation;
-    return evaluationService
-      .patch(evaluation.id, { ...evaluation, id: undefined })
-      .catch(error => this.setState({ error }));
   }
 
   onNavigateTo(url) {
@@ -487,7 +479,6 @@ class EvaluationCreate extends Component {
                   onAttendanceRemove: this.onAttendanceRemove,
                   onAnswerChange: this.onAnswerChange,
                   onFieldsChange: this.onFieldsChange,
-                  onSubmitDescription: this.onSubmitDescription,
                 })}
               </EasyTransition>
             )}
