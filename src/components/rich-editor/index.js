@@ -7,6 +7,7 @@ import {
   RichUtils,
 } from 'draft-js';
 import isEmpty from 'lodash/isEmpty';
+import isEqual from 'lodash/isEqual';
 import styleMap from './inline-styles';
 import BlockControls from './controls/block-controls';
 import Decorator from './decorator';
@@ -50,37 +51,16 @@ export default class RichEditor extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.contentKey === this.props.contentKey) return;
-
-    const content = nextProps.initialContent;
-
-    let editorState = null;
-    if (isEmpty(content)) {
-      editorState = EditorState.createEmpty(Decorator);
-    } else {
-      content.entityMap = content.entityMap || [];
-      const contentState = convertFromRaw(content);
-      editorState = EditorState.createWithContent(contentState, Decorator);
-    }
-    this.setState({ editorState });
-  }
-
-  shouldComponentUpdate(props) {
-    if (this.props.content !== props.content && props.content !== this.rawContent) {
-      this.rawContent = props.content;
-      const content = props.content;
-      if (content) {
-        content.entityMap = content.entityMap || {};
-        content.blocks = content.blocks || [];
-      }
+    if (!isEqual(this.props.content, nextProps.content) && !isEqual(this.rawContent, nextProps.content)) {
+      const content = nextProps.content ? { ...nextProps.content } : {};
+      content.entityMap = content.entityMap || new Map();
+      this.rawContent = { ...content };
       this.setState({
-        editorState: !props.content
+        editorState: !content || !content.blocks
           ? EditorState.createEmpty()
-          : EditorState.push(this.state.editorState, convertFromRaw(props.content)),
+          : EditorState.push(this.state.editorState, convertFromRaw(content)),
       });
-      return false;
     }
-    return true;
   }
 
   onChange(editorState) {

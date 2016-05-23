@@ -47,7 +47,8 @@ const styles = {
   styleButton: {
     color: '#999',
     cursor: 'pointer',
-    marginRight: 16,
+    marginRight: 8,
+    marginLeft: 8,
     padding: '2px 0',
   },
   activeButton: {

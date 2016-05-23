@@ -79,7 +79,7 @@ export default class InlineControls extends Component {
 
         <StyleButton
           key="link"
-          active={this.hasLink}
+          active={this.hasLink()}
           icon="link"
           onToggle={this.toggleLink}
         />

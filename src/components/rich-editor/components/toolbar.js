@@ -1,7 +1,9 @@
-import React, { Component } from "react";
-import { RichUtils, Entity, getVisibleSelectionRect } from "draft-js";
+import React, { Component } from 'react';
+import { RichUtils, Entity, getVisibleSelectionRect } from 'draft-js';
+import { Popover } from 'react-bootstrap';
 import InlineInput from './inline-input';
 import InlineControls from '../controls/inline-controls';
+import getSelectedEntityType from '../utils/getSelectedEntityType';
 
 //import LinkInput from "./components/LinkInput";
 
@@ -24,12 +26,12 @@ export default class Toolbar extends Component {
       return null;
     }
 
-    const rangeWidth = rangeBounds.right - rangeBounds.left;
-
-    const toolbarHeight = toolbar.offsetHeight;
-    const offsetLeft = (rangeBounds.left - editorBounds.left)
-    + (rangeWidth / 2);
-    const offsetTop = rangeBounds.top - editorBounds.top - (toolbarHeight + 14);
+    const toolbarHeight = toolbar ? toolbar.offsetHeight : 0;
+    const offsetLeft = (rangeBounds.left - editorBounds.left) + (rangeBounds.width / 2);
+    // const offsetBottom =  - rangeBounds.top + editorBounds.top + rangeBounds.height;
+    // const offsetBottom = rangeBounds.top - editorBounds.top - (toolbarHeight + 14);
+    //const offsetBottom = - rangeBounds.top;
+    const offsetTop = rangeBounds.top - editorBounds.top - (toolbarHeight ? toolbarHeight + 10 : 60);
     return { offsetLeft, offsetTop };
   }
 
@@ -44,9 +46,8 @@ export default class Toolbar extends Component {
     }
 
     const { offsetTop, offsetLeft } = selectionCoords;
-    console.log(offsetTop);
 
-    if (selectionCoords && !position || position.top !== offsetTop || position.left !== offsetLeft) {
+    if (selectionCoords && !position || position.bottom !== offsetTop || position.left !== offsetLeft) {
       this.setState({
         show: true,
         position: {
@@ -58,31 +59,30 @@ export default class Toolbar extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (!nextProps.editorState.getSelection().isCollapsed()) {
+    const selection = nextProps.editorState.getSelection();
+    if (!selection.isCollapsed()) {
       this.setBarPosition();
-      return;
-    }
-    if (this.state.show) {
+    } else if (this.state.show) {
       this.setState({
         show: false,
         editingLink: false,
       });
     }
-
   }
 
   render() {
-    const displayInline = this.state.editingLink ? { display: 'none' } : null;
+    const { editingLink, show, position } = this.state;
+    const displayInline = editingLink ? { display: 'none' } : null;
     const listStyle = {
       ...displayInline,
       ...styles.list,
     };
 
-    const display = !this.state.show ? { display: 'none' } : null;
+    const display = show ? null : { display: 'none' };
     const wrapperStyle = {
       ...styles.wrapper,
       ...display,
-      ...this.state.position,
+      ...position,
     };
 
     const { editorState } = this.props;
@@ -95,8 +95,10 @@ export default class Toolbar extends Component {
       >
         <div
           ref={(toolbar) => this.toolbar = toolbar}
-          style={styles.base}
+        >
+        <Popover
           placement="top"
+          style={styles.base}
         >
           <ul style={listStyle} onMouseDown={(x) => { x.preventDefault(); }}>
             <InlineControls
@@ -104,6 +106,8 @@ export default class Toolbar extends Component {
               onChange={this.props.onChange}
               onEditingLink={() => this.setState({ editingLink: true })}
             />
+
+
           </ul>
           <InlineInput
             ref="textInput"
@@ -113,8 +117,8 @@ export default class Toolbar extends Component {
             editor={this.props.editor}
             cancelLink={() => this.setState({ editingLink: false })}
           />
-          <span style={styles.arrow}/>
-        </div>
+        </Popover>
+      </div>
       </div>
     );
   }
@@ -122,21 +126,22 @@ export default class Toolbar extends Component {
 
 const styles = {
   wrapper: {
-    background: 'yellow',
-    height: 0,
     position: 'absolute',
+    height: 0,
   },
   list: {
-    padding: '0 8px',
+    padding: 0,
     margin: 0,
     whiteSpace: 'nowrap',
   },
   base: {
     backgroundColor: 'white',
-    borderRadius: '4px',
-    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.4)',
     left: '-50%',
+    height: 50,
     position: 'relative',
+    display: 'table-cell',
+    verticalAlign: 'middle',
+
   },
   arrow: {
     display: 'inline-block',

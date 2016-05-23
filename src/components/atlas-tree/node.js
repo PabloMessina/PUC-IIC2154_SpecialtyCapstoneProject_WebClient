@@ -71,7 +71,11 @@ export default class Node extends Component {
     const onSelectSection = () => this.props.onSelectSection(sectionParentId, sectionIndex);
 
     // Change color on mouse hover
-    const hoverStyle = hover || selected ? { color: Colors.MAIN } : { color: '#4A4A4A' };
+    let style = {};
+    if (hover)
+      style = {...style, ...styles.hover};
+    if (selected)
+      style = {...style, ...styles.selected};
 
     // Only render children if they exist
     const hasSubtree = subsections && subsections.length > 0 && !collapsed;
@@ -96,11 +100,12 @@ export default class Node extends Component {
 
         {renderIf(!root)(() => (
           <span
-            style={Object.assign({}, styles.sectionNav, hoverStyle)}
+            style={Object.assign({}, styles.sectionNav, style)}
             onMouseEnter={() => this.setState({ hover: true })}
             onMouseLeave={() => this.setState({ hover: false })}
           >
             <span
+              style={{ cursor: 'pointer' }}
               onClick={onSelectSection}
             >
               <span style={styles.anidation}>{anidation.join('.')}.</span> {title}
@@ -142,10 +147,7 @@ const styles = {
   container: {
     flexDirection: 'column',
     justifyContent: 'center',
-    marginTop: 3,
-    marginBottom: 3,
-    marginLeft: 15,
-    marginRight: 15,
+    padding: '3px 15px',
     width: '100%',
   },
   title: {
@@ -157,15 +159,20 @@ const styles = {
   subtree: {
     // height: 30,
   },
-  addSection: {
-
-
+  hover: {
+    color: Colors.MAIN,
+  },
+  selected: {
+    color: Colors.MAIN,
+    //background: Colors.MAIN,
+    //color: Colors.WHITE,
   },
   icon: {
     marginLeft: 10,
     fontSize: 12,
     alignSelf: 'center',
     alignItems: 'center',
+    cursor: 'pointer',
   },
   sectionNav: {
     display: 'inline-block',

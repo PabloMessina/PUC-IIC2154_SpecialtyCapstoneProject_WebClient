@@ -71,6 +71,7 @@ export default class AtlasSection extends Component {
           content={section.content}
           onChange={this.onChangeContent}
           readOnly={readOnly}
+          style={styles.editor}
         />
       </div>
     );
@@ -94,7 +95,7 @@ const styles = {
     width: '100%',
   },
   editor: {
-    fontSize: '20',
+    fontSize: 20,
     overflow: 'auto',
     position: 'absolute',
     width: '100%',

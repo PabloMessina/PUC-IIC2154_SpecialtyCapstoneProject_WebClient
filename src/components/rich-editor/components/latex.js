@@ -40,7 +40,7 @@ class KatexOutput extends React.Component {
   }
 
   render() {
-    return <div ref="container" onClick={this.props.onClick} />;
+    return <div style={styles.output} ref="container" onClick={this.props.onClick} />;
   }
 }
 
@@ -157,5 +157,8 @@ const styles = {
   textarea: {
     border: 'none',
     outline: 'none',
+  },
+  output: {
+    cursor: 'pointer',
   },
 };

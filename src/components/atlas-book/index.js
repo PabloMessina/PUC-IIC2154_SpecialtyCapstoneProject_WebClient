@@ -3,6 +3,7 @@ import update from 'react-addons-update';
 import AtlasSection from '../atlas-section';
 import AtlasTree from '../atlas-tree';
 import app from '../../app';
+import isEmpty from 'lodash/isEmpty';
 
 const sectionService = app.service('/sections');
 const versionService = app.service('/versions');
@@ -89,7 +90,6 @@ export default class AtlasBook extends Component {
     // Remove from server and set state on success
     sectionService.remove(_id)
     .then(result => {
-      console.log(result);
       const newState = {};
 
       // Check if deleted section is selected and is last child
@@ -163,7 +163,6 @@ export default class AtlasBook extends Component {
   onChangeContent(content) {
     // Create a new object from current section and change content
     const section = { ...this.currentSection(), content };
-    console.log(section)
     // Replace section in tree
     this.replaceCurrentSection(section);
     this.shouldPatchContent = true;
@@ -227,7 +226,7 @@ export default class AtlasBook extends Component {
     }
 
     // Nothing to patch
-    if (patch.length === 0) return;
+    if (isEmpty(patch)) return;
 
     sectionService.patch(_id, patch);
     this.shouldPatchTitle = false;

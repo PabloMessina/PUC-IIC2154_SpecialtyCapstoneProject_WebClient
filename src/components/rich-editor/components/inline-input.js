@@ -1,12 +1,7 @@
-/*
- *  * Copyright (c) 2016, Globo.com (https://github.com/globocom)
- *  *
- *  * License: MIT
- *  */
-
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import { EditorState, RichUtils, Entity } from 'draft-js';
+import { FormControl } from 'react-bootstrap';
 
 export default class InlineInput extends Component {
   constructor(props) {
@@ -68,26 +63,23 @@ export default class InlineInput extends Component {
 
   componentDidUpdate(prevProps) {
     if (this.props.editingLink && !prevProps.editingLink) {
-      this.refs.textInput.focus();
+      const textInputNode = ReactDOM.findDOMNode(this.refs.textInput);
+      textInputNode.focus();
     }
   }
 
   render() {
     const display = !this.props.editingLink ? { display: 'none' } : null;
-    const style = {
-      ...styles.base,
-      ...display,
-    };
 
     return (
-      <input
+      <FormControl
         ref="textInput"
-        style={style}
+        style={display}
         type="text"
         onChange={this.onLinkChange}
         value={this.state.link}
         onKeyDown={this.onLinkKeyDown}
-        placeholder="Type the link and press enter"
+        placeholder="www.google.com"
       />
     );
   }
