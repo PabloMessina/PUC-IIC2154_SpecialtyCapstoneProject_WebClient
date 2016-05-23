@@ -3,13 +3,13 @@ import { Panel, Col, Button } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { withRouter } from 'react-router';
 import renderIf from 'render-if';
+import moment from 'moment';
 
 import EvaluationCell from '../../evaluation-cell';
 
-import moment from 'moment';
 import app, { currentUser } from '../../../app';
-
 const evaluationService = app.service('/evaluations');
+const attendanceService = app.service('/attendances');
 
 
 class InstanceEvaluations extends Component {
@@ -39,6 +39,7 @@ class InstanceEvaluations extends Component {
     super(props);
     this.state = {
       evaluations: props.evaluations,
+      attendances: [],
     };
     this.renderRow = this.renderRow.bind(this);
     this.createEvaluation = this.createEvaluation.bind(this);
@@ -75,13 +76,23 @@ class InstanceEvaluations extends Component {
   }
 
   fetchEvaluations(instance) {
-    const query = {
+    let query = {
       instanceId: instance.id || instance,
       $populate: 'responsable',
     };
     return evaluationService.find({ query })
       .then(result => result.data)
-      .then(evaluations => this.setState({ evaluations }));
+      .then(evaluations => {
+        this.setState({ evaluations });
+        query = {
+          userId: currentUser().id,
+          evaluationId: { $in: evaluations.map(e => e.id) },
+        };
+        return attendanceService.find({ query });
+      })
+      .then(result => result.data)
+      .then(attendances => this.setState({ attendances, error: null }))
+      .catch(error => this.setState({ error }));
   }
 
   renderRow(evaluation, i) {
@@ -99,7 +110,13 @@ class InstanceEvaluations extends Component {
 
   render() {
     const participant = this.props.participant;
-    const evaluations = this.state.evaluations;
+    const canEdit = ['admin', 'write'].includes(participant.permission);
+
+    const attendances = this.state.attendances;
+    const evaluations = this.state.evaluations
+      .filter(e => canEdit || attendances.findIndex(a => a.evaluationId === e.id) > -1)
+      .filter(e => canEdit || e.published);
+
     const sections = {
       soon: [],
       future: [],
@@ -159,7 +176,7 @@ class InstanceEvaluations extends Component {
             <h5><Icon style={styles.icon} name="lightbulb-o" /> Evaluations</h5>
             <hr />
             <p>Measure the learning progress of the classroom with real-time individual and groupal evaluations.</p>
-            {renderIf(['admin', 'write'].includes(participant.permission))(() =>
+            {renderIf(canEdit)(() =>
               <div>
                 <hr />
                 <p>Schedule an evaluation:</p>

@@ -3,13 +3,13 @@ import { Grid, Row, Col, Panel, Button, Table, ControlLabel, DropdownButton, Men
 import Select from 'react-select';
 import moment from 'moment';
 import renderIf from 'render-if';
-import app, { currentUser } from '../../app';
+import app from '../../app';
 const membershipService = app.service('/memberships');
 const userService = app.service('/users');
 
 const ROLES = [
-  { value: 'read', label: 'Student' },
-  { value: 'write', label: 'Teacher' },
+  { value: 'read', label: 'Member' },
+  { value: 'write', label: 'Moderator' },
   { value: 'admin', label: 'Administrator' },
 ];
 

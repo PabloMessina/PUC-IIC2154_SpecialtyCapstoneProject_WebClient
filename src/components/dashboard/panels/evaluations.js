@@ -56,6 +56,7 @@ class EvaluationsPanel extends Component {
       .then(attendances => {
         query = {
           id: { $in: attendances.map(attendance => attendance.evaluationId) },
+          published: true,
           $populate: ['instance'],
           $sort: { startAt: -1 },
           ...custom,

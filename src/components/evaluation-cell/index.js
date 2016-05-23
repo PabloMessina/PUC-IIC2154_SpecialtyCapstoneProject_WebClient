@@ -20,6 +20,9 @@ const EvaluationCell = ({ style, evaluation, length, onEvaluationClick, ...props
         {renderIf(evaluation.responsable)(() =>
           <small style={styles.small}>by {evaluation.responsable.name}</small>
         )}
+        {renderIf(!evaluation.published)(() =>
+          <small className="pull-right"><strong>Draft</strong></small>
+        )}
       </h5>
       <p style={styles.description}>
         {description}
