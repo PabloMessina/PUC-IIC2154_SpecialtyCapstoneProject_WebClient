@@ -2,8 +2,9 @@
 
 import React, { PropTypes, Component } from 'react';
 import { Panel, Row, Col } from 'react-bootstrap';
-import { Pie as PieChart } from 'react-chartjs';
+import { Pie as PieChart, Bar as BarChart } from 'react-chartjs';
 
+import correction, { transform } from '../../utils/correction';
 import app from '../../app';
 const answerService = app.service('/answers');
 
@@ -26,16 +27,38 @@ function questionFactory(qtype, props) {
   }
 }
 
-function dataFactory({ qtype, ...question }, answers) {
-  switch (qtype) {
+function dataFactory(question, answers) {
+  switch (question.qtype) {
     case 'trueFalse': return dataFromTrueFalse(question, answers);
+    case 'multiChoice': return dataFromMultiChoice(question, answers);
+    case 'tshort': return dataFromTshort(question, answers);
     default: return null;
   }
 }
 
+function dataFromMultiChoice(question, answers) {
+  const correct = question.answer;
+
+  const size = question.answer.choices.length;
+  const labels = Array(size + 1).fill(0).map((_, i) => (1 / size * i).toFixed(2));
+
+  const dataAnswers = answers
+  .map(answer => correction(question.qtype, correct, answer.answer).correctness.toFixed(2));
+  const data = Array(size + 1).fill(0);
+  dataAnswers.forEach(elem => (data[labels.findIndex(e => e === elem)] += 1));
+
+  const graph = {
+    labels,
+    datasets: [{
+      label: '',
+      data,
+    }],
+  };
+  return <BarChart data={graph} />;
+}
+
 function dataFromTrueFalse(question, answers) {
   const data = answers
-    .filter(a => a.questionId === question.id)
     .map(a => a.answer)
     .reduce((array, current) => {
       if (current.value === 1) array[0] += 1;
@@ -60,6 +83,31 @@ function dataFromTrueFalse(question, answers) {
   };
 
   return <PieChart data={graph} />;
+}
+
+function dataFromTshort(question, answers) {
+  // const correct = question.answer.options.map(ans => transform(ans.toLowerCase()));
+
+  let data = answers.map(ans => transform(ans.answer.options[0].toLowerCase()))
+    .reduce((last, current) => {
+      if (last[current]) {
+        last[current] += 1;
+      } else {
+        last[current] = 1;
+      }
+      return last;
+    }, {});
+  const labels = Object.keys(data);
+  data = labels.map(label => data[label]);
+
+  const graph = {
+    labels,
+    datasets: [{
+      data,
+    }],
+  };
+
+  return <BarChart data={graph} />;
 }
 
 export default class MinTemplate extends Component {
@@ -95,12 +143,25 @@ export default class MinTemplate extends Component {
     this.state = {
       answers: [],
     };
+    this.observeAnswers = this.observeAnswers.bind(this);
     this.fetchAnswer = this.fetchAnswer.bind(this);
     this.renderRow = this.renderRow.bind(this);
   }
 
   componentDidMount() {
-    this.fetchAnswer(this.props.evaluation);
+    // this.fetchAnswer(this.props.evaluation);
+    this.answerObserver = this.observeAnswers(this.props.evaluation).subscribe(answers => this.setState({ answers }));
+  }
+
+  componentWillUnmount() {
+    if (this.answerObserver) this.answerObserver.unsubscribe();
+  }
+
+  observeAnswers(evaluation) {
+    const query = {
+      evaluationId: evaluation.id || evaluation,
+    };
+    return answerService.find({ query }).map(result => result.data);
   }
 
   fetchAnswer(evaluation) {
@@ -125,7 +186,7 @@ export default class MinTemplate extends Component {
       mode: 'reader',
     });
 
-    const graph = dataFactory(question, this.state.answers);
+    const graph = dataFactory(question, this.state.answers.filter(a => a.questionId === question.id));
 
     return (
       <Row key={index} style={styles.row}>
@@ -148,7 +209,7 @@ export default class MinTemplate extends Component {
       <div style={styles.container}>
         <Row>
           <Col xs={12}>
-            {questions.filter(q => q.qtype === 'trueFalse').map(this.renderRow)}
+            {questions.map(this.renderRow)}
           </Col>
         </Row>
       </div>

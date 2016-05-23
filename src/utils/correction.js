@@ -53,7 +53,7 @@ export function multiChoice(correct, answer) {
   };
 }
 
-function transform(s) {
+export function transform(s) {
   let r = s.replace(new RegExp('\\s', 'g'), '');
   r = r.replace(/[`´~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/gi, '');
   r = r.replace(new RegExp('[àáâãäå]', 'g'), 'a');

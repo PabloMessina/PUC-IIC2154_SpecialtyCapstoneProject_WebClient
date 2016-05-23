@@ -5,6 +5,8 @@ import hooks from 'feathers-hooks';
 import io from 'socket.io-client';
 import socketio from 'feathers-socketio/client';
 import authentication from 'feathers-authentication/client';
+import rx from 'feathers-reactive';
+import RxJS from 'rxjs';
 
 /**
  * App singleton instance
@@ -22,6 +24,8 @@ const app = feathers();
 app.configure(hooks());
 // Register socket.io
 app.configure(socketio(socket));
+// Configure reactive extensions
+app.configure(rx(RxJS));
 // Set up authentication with a store to cache your auth token
 app.configure(authentication({ storage: window.localStorage }));
 

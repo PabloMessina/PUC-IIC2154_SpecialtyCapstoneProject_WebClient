@@ -39,12 +39,12 @@ export default class Login extends Component {
     return (
       <div>
         <div style={styles.header}>
-          <p style={styles.subject}>
+          <h5 style={styles.subject}>
             {subject}
             {renderIf(responsable)(() =>
-              <span>by {responsable.name}</span>
+              <small> by {responsable}</small>
             )}
-          </p>
+          </h5>
           <p>{formatDate(date)}</p>
         </div>
         <RichEditor
