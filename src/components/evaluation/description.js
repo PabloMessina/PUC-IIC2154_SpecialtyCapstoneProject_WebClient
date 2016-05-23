@@ -16,11 +16,17 @@ import {
 } from 'react-bootstrap';
 import Select from 'react-select';
 import renderIf from 'render-if';
+import moment from 'moment';
 
 import app from '../../app';
 const evaluationService = app.service('/evaluations');
 
 // import { Colors } from '../../styles';
+
+const FORMATS = {
+  DATE: 'YYYY-MM-DD',
+  TIME: 'HH:mm',
+};
 
 const ATTENDANCES = [{
   value: 'none',
@@ -48,6 +54,19 @@ const STATUS = {
   SAVED: 'SAVED',
 };
 
+function parseEvaluation({ startAt, finishAt, duration }) {
+  const start = moment(startAt);
+  const finish = finishAt ? moment(finishAt) : null;
+  const durationTime = Math.floor(moment.duration(duration || 0).asHours()) + moment.utc(duration || 0).format(':mm');
+  return {
+    startDate: start.format(FORMATS.DATE),
+    startTime: start.format(FORMATS.TIME),
+    finishDate: finish ? finish.format(FORMATS.DATE) : '',
+    finishTime: finish ? finish.format(FORMATS.TIME) : '',
+    durationTime: durationTime.length >= '00:00'.length ? durationTime : `0${durationTime}`,
+  };
+}
+
 export default class EvaluationDescription extends Component {
 
   static get propTypes() {
@@ -65,6 +84,7 @@ export default class EvaluationDescription extends Component {
     this.state = {
       // Current evaluation
       evaluation: props.evaluation,
+      ...parseEvaluation(props.evaluation),
       // Other evaluations
       evaluations: [],
       checked: this.props.evaluation.discount !== 0,
@@ -72,13 +92,14 @@ export default class EvaluationDescription extends Component {
       error: null,
     };
     this.onChange = this.onChange.bind(this);
+    // this.onDateChange = this.onDateChange.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
     // this.onTagChange = this.onTagChange.bind(this);
   }
 
   componentWillReceiveProps(nextProps) {
     const evaluation = nextProps.evaluation;
-    if (evaluation) this.setState({ evaluation });
+    if (evaluation) this.setState({ evaluation, ...parseEvaluation(evaluation) });
   }
 
   onChange(field, value) {
@@ -86,11 +107,45 @@ export default class EvaluationDescription extends Component {
     this.setState({ evaluation });
   }
 
+  // onDateChange(field, original, value, fields, format) {
+  //   const input = moment(value, format);
+  //   const date = input.isValid() ? input : moment(new Date());
+  //
+  //   const keys = {};
+  //   fields.forEach(key => (keys[key] = date.get(key)));
+  //
+  //   const final = (original || moment()).set(keys);
+  //   this.onChange(field, final.format());
+  // }
+
   onSubmit(e) {
     e.preventDefault();
     this.setState({ status: STATUS.SAVING });
+
+    const startDate = moment(this.state.startDate, FORMATS.DATE);
+    const startTime = moment(this.state.startTime, FORMATS.TIME);
+    const startAt = moment(this.state.evaluation.startAt || new Date()).set({
+      year: startDate.get('year'),
+      month: startDate.get('month'),
+      day: startDate.get('day'),
+      hour: startTime.get('hour'),
+      minute: startTime.get('minute'),
+    });
+    const finishDate = moment(this.state.finishDate, FORMATS.DATE);
+    const finishTime = moment(this.state.finishTime, FORMATS.TIME);
+    const finishAt = moment(this.state.evaluation.finishAt || new Date()).set({
+      year: finishDate.get('year'),
+      month: finishDate.get('month'),
+      day: finishDate.get('day'),
+      hour: finishTime.get('hour'),
+      minute: finishTime.get('minute'),
+    });
+
+    const durationTime = moment(this.state.durationTime, FORMATS.TIME);
+    const duration = (durationTime.get('hour') * 3600 + durationTime.get('minute') * 60) * 1000;
+
     return evaluationService
-      .patch(this.state.evaluation.id, { ...this.state.evaluation, id: undefined })
+      .patch(this.state.evaluation.id, { ...this.state.evaluation, startAt, finishAt, duration, id: undefined })
       .then(evaluation => {
         this.setState({ evaluation, error: null, status: STATUS.SAVED });
         if (this.props.onEvaluationChange) this.props.onEvaluationChange(evaluation);
@@ -125,14 +180,13 @@ export default class EvaluationDescription extends Component {
       title,
       description,
       attendance,
-      secret,
+      surprise,
+      // published,
+      // groups,
       discount,
       randomized,
       tag,
       threshold,
-      startAt,
-      finishAt,
-      duration,
     } = this.state.evaluation;
     const status = this.state.status;
     const level = ATTENDANCES.find(a => a.value === attendance) || ATTENDANCES[0];
@@ -140,6 +194,14 @@ export default class EvaluationDescription extends Component {
       label: e.tag,
       value: e.tag,
     }));
+
+    const {
+      startDate,
+      startTime,
+      finishDate,
+      finishTime,
+      durationTime,
+    } = this.state;
 
     const canEdit = ['admin', 'write'].includes(this.props.participant.permission);
     const disabled = !canEdit;
@@ -193,7 +255,66 @@ export default class EvaluationDescription extends Component {
                 </HelpBlock>
               </FormGroup>
 
-              <Tabs defaultActiveKey={1} id="evaluation-settings-tabs">
+              <Tabs defaultActiveKey={0} id="evaluation-settings-tabs">
+
+                <Tab style={styles.tab} eventKey={0} title="Timeline">
+                  <FormGroup controlId="start">
+                    <ControlLabel>Start at</ControlLabel>
+                    <div style={styles.inline}>
+                      <FormControl
+                        style={{ marginRight: 15 }}
+                        type="date"
+                        value={startDate}
+                        onChange={e => this.setState({ startDate: e.target.value })}
+                        disabled={disabled}
+                      />
+                      <FormControl
+                        style={{ marginLeft: 15 }}
+                        type="time"
+                        value={startTime}
+                        onChange={e => this.setState({ startTime: e.target.value })}
+                        disabled={disabled}
+                      />
+                    </div>
+                    <HelpBlock>The students will be able to open this evaluation at this date and time.</HelpBlock>
+                  </FormGroup>
+
+                  <FormGroup>
+                    <ControlLabel>Evaluation duration</ControlLabel>
+                    <FormControl
+                      type="time"
+                      placeholder="1:30"
+                      value={durationTime}
+                      onChange={e => this.setState({ durationTime: e.target.value })}
+                      disabled={disabled}
+                    />
+                    <HelpBlock>
+                      Once a student starts his evaluation, he has this time to finish it.
+                      After that, he can't update his answers anymore.
+                    </HelpBlock>
+                  </FormGroup>
+
+                  <FormGroup controlId="end">
+                    <ControlLabel>Finish at</ControlLabel>
+                    <div style={styles.inline}>
+                      <FormControl
+                        style={{ marginRight: 15 }}
+                        type="date"
+                        value={finishDate}
+                        onChange={e => this.setState({ finishDate: e.target.value })}
+                        disabled={disabled}
+                      />
+                      <FormControl
+                        style={{ marginLeft: 15 }}
+                        type="time"
+                        value={finishTime}
+                        onChange={e => this.setState({ finishTime: e.target.value })}
+                        disabled={disabled}
+                      />
+                    </div>
+                    <HelpBlock>After this deadline, students will not be able to update their answers.</HelpBlock>
+                  </FormGroup>
+                </Tab>
 
                 <Tab style={styles.tab} eventKey={1} title="Attendance">
                   <FormGroup>
@@ -263,7 +384,7 @@ export default class EvaluationDescription extends Component {
                   <FormGroup>
                     <ControlLabel>Before it starts, should appear as:</ControlLabel>
                     <Radio
-                      checked={secret}
+                      checked={surprise}
                       onChange={() => this.onChange('secret', true)}
                       disabled={disabled}
                     >
@@ -272,7 +393,7 @@ export default class EvaluationDescription extends Component {
                       <small>{PRIVACY.PRIVATE}</small>
                     </Radio>
                     <Radio
-                      checked={!secret}
+                      checked={!surprise}
                       onChange={() => this.onChange('secret', false)}
                       disabled={disabled}
                     >
@@ -328,6 +449,11 @@ const styles = {
   },
   form: {
 
+  },
+  inline: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
   },
   error: {
     marginTop: 10,
