@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Grid, Row, Col, ButtonGroup, Button, Breadcrumb } from 'react-bootstrap';
+import { Grid, Row, Col, ButtonToolbar, ButtonGroup, Button, Breadcrumb } from 'react-bootstrap';
 import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
 import renderIf from 'render-if';
@@ -8,7 +8,7 @@ import app, { currentUser } from '../../app';
 const organizationService = app.service('/organizations');
 const courseService = app.service('/courses');
 const participantService = app.service('/participants');
-// const evaluationService = app.service('/evaluations');
+const evaluationService = app.service('/evaluations');
 const evaluationsQuestionService = app.service('/evaluations-questions');
 const answerService = app.service('/answers');
 const attendanceService = app.service('/attendances');
@@ -104,6 +104,9 @@ class EvaluationCreate extends Component {
     this.fetchOrganization = this.fetchOrganization.bind(this);
     this.fetchParticipants = this.fetchParticipants.bind(this);
 
+    this.onPublish = this.onPublish.bind(this);
+    this.onDelete = this.onDelete.bind(this);
+
     this.onNavigateTo = this.onNavigateTo.bind(this);
     this.onEvaluationChange = this.onEvaluationChange.bind(this);
     this.onQuestionsChange = this.onQuestionsChange.bind(this);
@@ -130,6 +133,22 @@ class EvaluationCreate extends Component {
       this.setState({ evaluation, questions, instance: evaluation.instance });
       this.fetchAll(evaluation);
     }
+  }
+
+  onPublish(published = true) {
+    return evaluationService.patch(this.state.evaluation.id, { published })
+      .then(evaluation => {
+        this.setState({ evaluation, error: null });
+      })
+      .catch(error => this.setState({ error }));
+  }
+
+  onDelete() {
+    const { course, instance, evaluation } = this.state;
+    const url = `/courses/show/${course.id}/instances/show/${instance.id}/evaluations`;
+    return evaluationService.remove(evaluation.id)
+      .then(() => this.props.router.push(url))
+      .catch(error => this.setState({ error }));
   }
 
   onAnswerChange(id, answer) {
@@ -184,9 +203,9 @@ class EvaluationCreate extends Component {
     const questionId = question.id;
     const evaluationId = this.state.evaluation.id;
     return evaluationsQuestionService.create({ questionId, evaluationId })
-    .then(evaluationsQuestion => [...this.state.questions, { ...question, evaluationsQuestion }])
-    .then(questions => this.setState({ questions, syncing: false }))
-    .catch(error => this.setState({ error, syncing: false }));
+      .then(evaluationsQuestion => [...this.state.questions, { ...question, evaluationsQuestion }])
+      .then(questions => this.setState({ questions, syncing: false }))
+      .catch(error => this.setState({ error, syncing: false }));
   }
 
   onQuestionsChange(questions) {
@@ -378,14 +397,10 @@ class EvaluationCreate extends Component {
 
     const userId = currentUser().id;
     const participant = participants.find(p => p.userId === userId);
+    const canEdit = participant && ['admin', 'write'].includes(participant.permission);
+
     return (
       <Grid style={styles.container}>
-
-        {renderIf(this.state.error)(() =>
-          <p>{JSON.stringify(this.state.error)}</p>
-        )}
-        <br />
-
         <Breadcrumb>
           <Breadcrumb.Item>
             Organizations
@@ -415,7 +430,7 @@ class EvaluationCreate extends Component {
         </Breadcrumb>
 
         <Row>
-          <Col xs={12} style={styles.header}>
+          <Col xs={12} md={9}>
             <h2>
               Evaluation
               {renderIf(evaluation && evaluation.title)(() => (
@@ -429,11 +444,25 @@ class EvaluationCreate extends Component {
                 </span>
               )}
             </div>
+
             {/*
             {renderIf(this.state.evaluation && this.state.evaluation.description)(() => (
               <p style={{ marginLeft: 4 }}> {this.state.evaluation.description}</p>
             ))}
             */}
+          </Col>
+          <Col xs={12} md={3}>
+            {renderIf(canEdit)(() =>
+              <ButtonToolbar style={{ marginTop: 30 }}>
+                {renderIf(!evaluation.published)(() =>
+                  <Button bsStyle="primary" onClick={() => this.onPublish(true)}>Publish</Button>
+                )}
+                {renderIf(evaluation.published)(() =>
+                  <Button bsStyle="warning" onClick={() => this.onPublish(false)}>Un-Publish</Button>
+                )}
+                <Button bsStyle="danger" onClick={this.onDelete}>Delete</Button>
+              </ButtonToolbar>
+            )}
           </Col>
         </Row>
 
@@ -493,7 +522,7 @@ export default withRouter(EvaluationCreate);
 
 const styles = {
   container: {
-
+    marginTop: 25,
   },
   header: {
     display: 'flex',

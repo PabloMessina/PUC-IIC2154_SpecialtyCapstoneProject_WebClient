@@ -14,6 +14,7 @@ import {
   Tab,
   Alert,
 } from 'react-bootstrap';
+import Icon from 'react-fa';
 import Select from 'react-select';
 import renderIf from 'render-if';
 import moment from 'moment';
@@ -92,9 +93,13 @@ export default class EvaluationDescription extends Component {
       error: null,
     };
     this.onChange = this.onChange.bind(this);
-    // this.onDateChange = this.onDateChange.bind(this);
+    this.fetchOtherEvaluations = this.fetchOtherEvaluations.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
-    // this.onTagChange = this.onTagChange.bind(this);
+  }
+
+  componentDidMount() {
+    const { instanceId } = this.props.evaluation;
+    this.fetchOtherEvaluations(instanceId);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -255,9 +260,15 @@ export default class EvaluationDescription extends Component {
                 </HelpBlock>
               </FormGroup>
 
-              <Tabs defaultActiveKey={0} id="evaluation-settings-tabs">
+              <hr />
 
-                <Tab style={styles.tab} eventKey={0} title="Timeline">
+              <Tabs justified defaultActiveKey={0} id="evaluation-settings-tabs">
+
+                <Tab
+                  style={styles.tab}
+                  eventKey={0}
+                  title={<span><Icon style={styles.icon} name="clock-o" /> Timeline</span>}
+                >
                   <FormGroup controlId="start">
                     <ControlLabel>Start at</ControlLabel>
                     <div style={styles.inline}>
@@ -316,7 +327,11 @@ export default class EvaluationDescription extends Component {
                   </FormGroup>
                 </Tab>
 
-                <Tab style={styles.tab} eventKey={1} title="Attendance">
+                <Tab
+                  style={styles.tab}
+                  eventKey={1}
+                  title={<span><Icon style={styles.icon} name="check-square-o" /> Attendance</span>}
+                >
                   <FormGroup>
                     <ControlLabel>Attendance restriction</ControlLabel>
                     {ATTENDANCES.map((sub, i) =>
@@ -333,7 +348,11 @@ export default class EvaluationDescription extends Component {
                   </FormGroup>
                 </Tab>
 
-                <Tab style={styles.tab} eventKey={2} title="Score">
+                <Tab
+                  style={styles.tab}
+                  eventKey={2}
+                  title={<span><Icon style={styles.icon} name="trophy" /> Score</span>}
+                >
                   <FormGroup>
                     <ControlLabel>Discount score on wrong answers</ControlLabel>
                     <FormControl
@@ -368,7 +387,11 @@ export default class EvaluationDescription extends Component {
                   </FormGroup>
                 </Tab>
 
-                <Tab style={styles.tab} eventKey={3} title="Visibility">
+                <Tab
+                  style={styles.tab}
+                  eventKey={3}
+                  title={<span><Icon style={styles.icon} name="eye" /> Visibility</span>}
+                >
                   <FormGroup>
                     <ControlLabel>Randomized evaluation</ControlLabel>
                     <Checkbox
@@ -454,6 +477,9 @@ const styles = {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'flex-start',
+  },
+  icon: {
+    marginRight: 4,
   },
   error: {
     marginTop: 10,
