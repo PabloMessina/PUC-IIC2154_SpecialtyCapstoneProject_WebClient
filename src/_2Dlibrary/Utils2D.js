@@ -141,13 +141,14 @@ const Utils2D = {
       ctx.lineTo(points[i].x * scaleX, points[i].y * scaleY);
     }
     ctx.closePath();
-    ctx.fill();
+    ctx.fill('evenodd');
     ctx.stroke();
   },
 
   /** get the convex hull of the given points */
-  getConvexHull: (points) => {
+  getConvexHull: (pts) => {
     // sort by x and y
+    const points = pts.slice(0);
     points.sort((a, b) => (a.x === b.x ? a.y - b.y : a.x - b.x));
     // compute lower hull
     const lower = [];
@@ -218,6 +219,73 @@ const Utils2D = {
       y /= area;
       return { x, y };
     }
+  },
+
+  getPointWithinComplexPolygon(points, refX, refY) {
+    if (Utils2D.isPointInPolygon(refX, refY, points)) {
+      return { x: refX, y: refY };
+    }
+    const coefs = [0.5, 1.5, 0.75, 1.25, 0.25];
+    for (const p of points) {
+      const dx = refX - p.x;
+      const dy = refY - p.y;
+      for (const c of coefs) {
+        const x = p.x + dx * c;
+        const y = p.y + dy * c;
+        if (Utils2D.isPointInPolygon(x, y, points)) {
+          return { x, y };
+        }
+      }
+    }
+    return { x: refX, y: refY };
+  },
+
+  isPointInPolygon(x, y, points) {
+    if (points.length < 3) return false;
+    let j = points.length - 1;
+    let count = 0;
+    for (let i = 0; i < points.length; ++i) {
+      let p1;
+      let p2;
+      if (points[i].y < points[j].y) {
+        p1 = points[i];
+        p2 = points[j];
+      } else {
+        p1 = points[j];
+        p2 = points[i];
+      }
+      if (p1.y < y && y <= p2.y) {
+        if (p1.x === p2.x) {
+          if (p1.x >= x) count++;
+        } else {
+          const m = (p2.y - p1.y) / (p2.x - p1.x);
+          const xx = p1.x + (y - p1.y) / m;
+          if (xx >= x) count++;
+        }
+      }
+      j = i;
+    }
+    return count % 2 === 1;
+  },
+
+  isPointInPolygonBoundingBox(x, y, points) {
+    if (points.length === 0) return false;
+    const bb = Utils2D.getBoundingBox(points);
+    return x >= bb.minX && x <= bb.maxX && y >= bb.minY && y <= bb.maxY;
+  },
+
+  getBoundingBox(points) {
+    let minX = points[0].x;
+    let maxX = points[0].x;
+    let minY = points[0].y;
+    let maxY = points[0].y;
+    for (let i = 1; i < points.length; ++i) {
+      if (minX > points[i].x) minX = points[i].x;
+      if (maxX < points[i].x) maxX = points[i].x;
+      if (minY > points[i].y) minY = points[i].y;
+      if (maxY < points[i].y) maxY = points[i].y;
+    }
+    return { minX, minY, maxX, maxY };
   },
 };
 

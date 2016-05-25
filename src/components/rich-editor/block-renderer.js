@@ -1,4 +1,4 @@
-import RendererWrapper from '../renderer-wrapper';
+import RendererWrapper from '../renderer-3d-wrapper';
 import Latex from './components/latex';
 import { Image, Audio, Video } from './components/media';
 import { removeTeXBlock } from './modifiers/tex-modifiers';
