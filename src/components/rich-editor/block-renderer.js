@@ -1,4 +1,5 @@
 import RendererWrapper from '../renderer-3d-wrapper';
+import TemplateComponent from '../image-with-labels-wrapper';
 import Latex from './components/latex';
 import { Image, Audio, Video } from './components/media';
 import { removeTeXBlock } from './modifiers/tex-modifiers';
@@ -26,6 +27,10 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
       },
       model: {
         component: RendererWrapper,
+        editable: false,
+      },
+      imageWithLabels: {
+        component: TemplateComponent,
         editable: false,
       },
       // 3d-video: { component: 3DVideo, editable: false },
