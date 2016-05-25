@@ -366,10 +366,13 @@ class EvaluationCreate extends Component {
     return selected;
   }
 
-  renderSections() {
+  renderSections(participant) {
+    const sections = participant && ['admin', 'write'].includes(participant.permission)
+      ? SECTIONS
+      : SECTIONS.filter(item => item.name !== 'Results');
     return (
       <ButtonGroup justified>
-        {SECTIONS.map(this.renderSection)}
+        {sections.map(this.renderSection)}
       </ButtonGroup>
     );
   }
@@ -482,7 +485,7 @@ class EvaluationCreate extends Component {
 
         <Row>
           <Col style={styles.bar} xsOffset={0} xs={12}>
-            {this.renderSections()}
+            {this.renderSections(participant)}
           </Col>
         </Row>
         <hr />
