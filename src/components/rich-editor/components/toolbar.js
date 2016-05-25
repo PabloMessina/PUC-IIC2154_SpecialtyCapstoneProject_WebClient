@@ -97,6 +97,7 @@ export default class Toolbar extends Component {
           ref={(toolbar) => this.toolbar = toolbar}
         >
         <Popover
+          id="toolbar-popover"
           placement="top"
           style={styles.base}
         >
