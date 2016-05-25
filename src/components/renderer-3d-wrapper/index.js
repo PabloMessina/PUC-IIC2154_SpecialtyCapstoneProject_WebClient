@@ -22,9 +22,12 @@ export default class RendererWrapper extends Component {
         // mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
         // obj: 'https://lopezjuri.com/videos/nRBC.obj',
         // images: ['https://lopezjuri.com/videos/M_10___Default1.jpg'],
-        mtl: 'http://192.168.1.163:5000/nRBC.mtl',
-        obj: 'http://192.168.1.163:5000/nRBC.obj',
-        images: ['http://192.168.1.163:5000/nRBC.jpg'],
+        mtl: 'https://lopezjuri.com/videos/Heart.mtl',
+        obj: 'https://lopezjuri.com/videos/Heart.obj',
+        images: [],
+        // mtl: 'http://192.168.1.163:5000/nRBC.mtl',
+        // obj: 'http://192.168.1.163:5000/nRBC.obj',
+        // images: ['http://192.168.1.163:5000/nRBC.jpg'],
       },
       labels: [
         {
@@ -40,7 +43,7 @@ export default class RendererWrapper extends Component {
             y: 5.6762350999919,
             z: 52.898860960917204,
           },
-          text: 'fghj4444',
+          text: '',
         },
         {
           points: [
@@ -194,6 +197,7 @@ export default class RendererWrapper extends Component {
       labelDropdownX: null,
       labelDropdownY: null,
       lastClickedElem: null,
+      componentUnmounted: false,
     };
 
     this.onFilesChanged = this.onFilesChanged.bind(this);
@@ -226,6 +230,7 @@ export default class RendererWrapper extends Component {
 
   componentWillUnmount() {
     window.removeEventListener('mousedown', this.onMouseDown);
+    this.mystate.componentUnmounted = true;
   }
 
   onMouseDown(e) {
@@ -240,11 +245,13 @@ export default class RendererWrapper extends Component {
 
   onLabelsChanged(labels) {
     // console.log("===> onLabelsChanged(): labels = ", JSON.stringify(labels, null, '\t'));
-    this.props.labelsChangedCallback(labels);
-    this.setState({
-      labelCount: labels ? labels.length : 0,
-      labels,
-    });
+    if (!this.mystate.componentUnmounted) {
+      this.props.labelsChangedCallback(labels);
+      this.setState({
+        labelCount: labels ? labels.length : 0,
+        labels,
+      });
+    }
   }
 
   onLabelStyleChanged(newLabelStyle) {
@@ -284,8 +291,10 @@ export default class RendererWrapper extends Component {
   }
 
   onSelectedLabelChanged(label) {
-    if (this.state.hasSelectedLabel !== !!label) {
-      this.setState({ hasSelectedLabel: !!label });
+    if (!this.mystate.componentUnmounted) {
+      if (this.state.hasSelectedLabel !== !!label) {
+        this.setState({ hasSelectedLabel: !!label });
+      }
     }
   }
 
@@ -296,35 +305,43 @@ export default class RendererWrapper extends Component {
   }
 
   onLoadingStarting() {
-    this.setState({
-      loadingModel: true,
-      progressPercentage: 0,
-      progressMessage: 'Beginning to load model ...',
-    });
+    if (!this.mystate.componentUnmounted) {
+      this.setState({
+        loadingModel: true,
+        progressPercentage: 0,
+        progressMessage: 'Beginning to load model ...',
+      });
+    }
   }
 
   onLoadingProgress(message, lengthSoFar, totalLength) {
-    const percentage = (lengthSoFar / totalLength * 100).toFixed(2);
-    this.setState({
-      progressPercentage: percentage,
-      progressMessage: `${message} ${percentage}%`,
-    });
+    if (!this.mystate.componentUnmounted) {
+      const percentage = (lengthSoFar / totalLength * 100).toFixed(2);
+      this.setState({
+        progressPercentage: percentage,
+        progressMessage: `${message} ${percentage}%`,
+      });
+    }
   }
 
   onLoadingCompleted() {
-    this.setState({
-      hasLoadedModel: true,
-      loadingModel: false,
-      showingLabels: true,
-    });
+    if (!this.mystate.componentUnmounted) {
+      this.setState({
+        hasLoadedModel: true,
+        loadingModel: false,
+        showingLabels: true,
+      });
+    }
   }
 
   onLoadingError(error) {
     console.log(error);
     alert(error);
-    this.setState({
-      loadingModel: false,
-    });
+    if (!this.mystate.componentUnmounted) {
+      this.setState({
+        loadingModel: false,
+      });
+    }
   }
 
   showLabels() {
@@ -420,7 +437,6 @@ export default class RendererWrapper extends Component {
           labels={this.state.labels}
           normalLabelStyle={this.state.normalLabelStyle}
           highlightedLabelStyle={this.state.highlightedLabelStyle}
-
           labelsChangedCallback={this.onLabelsChanged}
           selectedLabelChangedCallback={this.onSelectedLabelChanged}
           loadingStartingCallback={this.onLoadingStarting}

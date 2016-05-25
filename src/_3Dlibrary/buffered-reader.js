@@ -10,13 +10,19 @@ const BufferedReader = {
    * @param  {[function]} lineDetectedcallback [(line, error, eof)]
    * @param  {[function]} progressCallback     [(lengthSoFar, totalLength)]
    */
-  readLineByLine: (file, chunkSize, lineDetectedCallback, progressCallback) => {
+  readLineByLine: (file, chunkSize, lineDetectedCallback, progressCallback, interrupter) => {
     const fr = new FileReader();
     let offset = 0;
     let line = '';
 
     // function called in every successful read
     fr.onload = () => {
+      // first check for interruptions
+      if (interrupter.stop) {
+        lineDetectedCallback(null, interrupter.reason, false);
+        return;
+      }
+
       const result = fr.result;
       let start = 0;
       let end;

@@ -27,10 +27,14 @@ const OBJLoader = {
    * with a collection of meshes]
    * @param  {[File]}       objFile   [text file with OBJ format]
    * @param  {[Material]}   materials [list of THREE.js materials]
-   * @param  {[function]}   progressCallback
+   * @param  {[function]}   onProgress
+   * @param  {[object]}   interrupter [an object to interrupt the process]
    * @return {[Promise]}            [promise that is resolved with a mesh collection]
    */
-  loadObjectsFromFile: (objFile, materials, progressCallback) => {
+  loadObjectsFromFile: (objFile, materials, onProgress, interrupter) => {
+    // first check for interruptions
+    if (interrupter.stop) return Promise.reject(interrupter.reason);
+
     // vars and data structures
     const vertices = [];
     const normals = [];
@@ -131,11 +135,14 @@ const OBJLoader = {
         } else {
           reject({ reason: `unexpected line = {_line}` });
         }
-      }, progressCallback);
+      }, onProgress, interrupter);
     })
     // once we are done parsing the file, we put the data together into
     // buffergeometries and return them as a single group
     .then(() => {
+      // check for interruptions
+      if (interrupter.stop) throw new Error(interrupter.reason);
+
       const container = new THREE.Group();
 
       for (let i = 0, l = objects.length; i < l; i ++) {
@@ -282,10 +289,15 @@ const OBJLoader = {
    * and returns a promise that gets resolved with a collection of meshes]
    * @param  {[string]}     objUrl   [remote obj file url]
    * @param  {[object]}     materials [map from strings to THREE.Materials]
-   * @param  {[function]}   progressCallback
+   * @param  {[function]}   onProgress
+   * @param  {[function]}   onXHRCreated
+   * @param  {[function]}   onXHRDone
    * @return {[Promise]}            [promise that is resolved with a mesh collection]
    */
-  loadObjectsFromUrl: (objUrl, materials, progressCallback) => {
+  loadObjectsFromUrl: (objUrl, materials, onProgress, onXHRCreated, onXHRDone, interrupter) => {
+    // first, check for interruptions
+    if (interrupter.stop) return Promise.reject(interrupter.reason);
+
     // vars and data structures
     const vertices = [];
     const normals = [];
@@ -296,10 +308,15 @@ const OBJLoader = {
 
     addObject('');
 
-    return fetch(objUrl, { method: 'GET', mode: 'cors' })
-    .then(response => response.text())
-    .then(text => parseText(text))
-    .then(() => generateMeshGroup());
+    return fetchTextFile(objUrl, onXHRCreated, onXHRDone)
+    .then(text => {
+      if (interrupter.stop) throw new Error(interrupter.reason);
+      return parseText(text);
+    })
+    .then(() => {
+      if (interrupter.stop) throw new Error(interrupter.reason);
+      return generateMeshGroup();
+    });
 
     // ---------------------------
     // Helper functions
@@ -312,6 +329,10 @@ const OBJLoader = {
         parseByChunks();
 
         function parseByChunks() {
+          if (interrupter.stop) { // check for interruption first
+            reject(interrupter.reason);
+            return;
+          }
           setTimeout(() => {
             try {
               count = 0;
@@ -327,7 +348,7 @@ const OBJLoader = {
                 if (end === -1 || start >= text.length) {
                   line = text.substring(start);
                   parseLine(line);
-                  progressCallback(text.length, text.length);
+                  onProgress(text.length, text.length);
                   resolve();
                   break;
                 } else {
@@ -335,7 +356,7 @@ const OBJLoader = {
                   parseLine(line);
                   start = end + 1;
                   if (count >= 750000) {
-                    progressCallback(start, text.length);
+                    onProgress(start, text.length);
                     parseByChunks();
                     break;
                   }
@@ -348,7 +369,6 @@ const OBJLoader = {
     }
 
     function parseLine(_line) {
-      // debugger;
       const line = _line.trim();
       let result;
       if (line.length === 0 || line[0] === '#') {
@@ -565,7 +585,30 @@ const OBJLoader = {
       }
     }
   },
-
 };
 
 export default OBJLoader;
+
+/** helper function for fetching remote files */
+function fetchTextFile(url, onXHRCreated, onXHRDone) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'text';
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState === 4) {
+        if (xhr.status === 200) resolve(xhr.response);
+        else if (xhr.requestAborted) reject(xhr.abortMessage);
+        else reject(`Error while fetching ${url}`);
+        onXHRDone(xhr);
+      }
+    };
+    xhr.abortAndRejectPromise = (reason) => {
+      xhr.requestAborted = true;
+      xhr.abortMessage = `Error while fetching ${url}: ${reason}`;
+      xhr.abort();
+    };
+    xhr.send(null);
+    onXHRCreated(xhr); // give access to xhr
+  });
+}

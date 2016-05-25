@@ -9,7 +9,7 @@ import _ from 'lodash';
 const LEFT_BUTTON = 0;
 const RIGHT_BUTTON = 2;
 // default message
-const DEFAULT_LABEL_MESSAGE = 'Add name...';
+const DEFAULT_LABEL_MESSAGE = 'empty ...';
 // file extensions
 const OBJ_EXT = '.obj';
 const MTL_EXT = '.mtl';
@@ -35,11 +35,11 @@ export default class Renderer3D extends Component {
     this.handleMouseUp = this.handleMouseUp.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
+    this.handleWindowMouseDown = this.handleWindowMouseDown.bind(this);
     this.animateForAWhile = this.animateForAWhile.bind(this);
     this.highlightLabel = this.highlightLabel.bind(this);
     this.unhighlightLabel = this.unhighlightLabel.bind(this);
 
-    this.refocusOnModel = this.refocusOnModel.bind(this);
     this.handleResize = this.handleResize.bind(this);
     this.handleKeypress = this.handleKeypress.bind(this);
     this.handleKeydown = this.handleKeydown.bind(this);
@@ -50,6 +50,8 @@ export default class Renderer3D extends Component {
     this.labelsToJSON = this.labelsToJSON.bind(this);
     this.loadLabels = this.loadLabels.bind(this);
     this.clearAllLabelData = this.clearAllLabelData.bind(this);
+    this.onXHRCreated = this.onXHRCreated.bind(this);
+    this.onXHRDone = this.onXHRDone.bind(this);
 
     // API functions
     this.loadModel = this.loadModel.bind(this);
@@ -58,6 +60,7 @@ export default class Renderer3D extends Component {
     this.setNormalLabelStyle = this.setNormalLabelStyle.bind(this);
     this.setHighlightedLabelStyle = this.setHighlightedLabelStyle.bind(this);
     this.removeSelectedLabel = this.removeSelectedLabel.bind(this);
+    this.refocusOnModel = this.refocusOnModel.bind(this);
   }
 
   componentDidMount() {
@@ -67,6 +70,7 @@ export default class Renderer3D extends Component {
     window.addEventListener('keydown', this.handleKeydown);
     window.addEventListener('mouseup', this.handleMouseUp);
     window.addEventListener('mousemove', this.handleMouseMove);
+    window.addEventListener('mousedown', this.handleWindowMouseDown);
 
     // reference to the viewport div
     const viewport = this.refs.viewport;
@@ -139,6 +143,11 @@ export default class Renderer3D extends Component {
       labelSet: new Set(),
       normalLabelStyle: this.props.normalLabelStyle,
       highlightedLabelStyle: this.props.highlightedLabelStyle,
+      // draggable label vars
+      draggingTempLabel: false,
+      tempDraggableLabel: null,
+      dragLastPosition: new THREE.Vector3(),
+      dragPlane: { normal: null, position: null },
       // other state data
       zoom: 1,
       updateCameraZoom: false,
@@ -151,11 +160,12 @@ export default class Renderer3D extends Component {
       mouseClipping: new THREE.Vector2(),
       selectedLabel: null,
       draggingSelectedLabel: false,
-      // draggable label vars
-      draggingTempLabel: false,
-      tempDraggableLabel: null,
-      dragLastPosition: new THREE.Vector3(),
-      dragPlane: { normal: null, position: null },
+      canvasHasFocus: false,
+      loadingInterrupter: {
+        stop: false,
+        reason: '',
+      },
+      pendingXHRs: new Set(),
     };
 
     /** if we are receiving remoteFiles, we load the 3D model
@@ -174,11 +184,6 @@ export default class Renderer3D extends Component {
     }
     // run animation
     this.animateForAWhile();
-  }
-
-  /** Avoid updates altogether (they are not necessary) */
-  shouldComponentUpdate() {
-    return false;
   }
 
   componentWillReceiveProps(nextProps) {
@@ -208,13 +213,27 @@ export default class Renderer3D extends Component {
     }
   }
 
+  /** Avoid updates altogether (they are not necessary) */
+  shouldComponentUpdate() {
+    return false;
+  }
+
   componentWillUnmount() {
+    console.log("==> Renderer3D::componentWillUnmount()");
     // remove event listeners
     window.removeEventListener('resize', this.handleResize);
     window.removeEventListener('keypress', this.handleKeypress);
     window.removeEventListener('keydown', this.handleKeydown);
     window.removeEventListener('mouseup', this.handleMouseUp);
     window.removeEventListener('mousemove', this.handleMouseMove);
+    window.removeEventListener('mousedown', this.handleWindowMouseDown);
+    // abort any pending xhr requests
+    for (const xhr of this.mystate.pendingXHRs) {
+      xhr.abortAndRejectPromise('Fetch interrupted because the 3d renderer has been unmounted');
+    }
+    // set flag to interrupt any loadings
+    this.mystate.loadingInterrupter = {
+      stop: true, reason: 'Loading interrupted because the 3d renderer has been unmounted' };
   }
 
   /** function to update the 3D scene */
@@ -367,18 +386,37 @@ export default class Renderer3D extends Component {
     const progressCallback = this.props.loadingProgressCallback;
     progressCallback(`Loading MTL file from ${mtlUrl} ...`, 0, 1);
 
-    return MTLLoader.loadMaterialsFromUrl(mtlUrl, textureUrls)
+    return MTLLoader.loadMaterialsFromUrl(mtlUrl, textureUrls, this.mystate.loadingInterrupter)
     .then((materials) => {
+      if (this.mystate.loadingInterrupter.stop) {
+        throw new Error(this.mystate.loadingInterrupter.reason);
+      }
       progressCallback(`Loading OBJ file from ${objUrl} ...`, 0, 1);
-      return OBJLoader.loadObjectsFromUrl(objUrl, materials, (lengthSoFar, totalLength) => {
-        progressCallback(`Loading OBJ file from ${objUrl} ...`, lengthSoFar, totalLength);
-      })
+      return OBJLoader.loadObjectsFromUrl(
+        objUrl,
+        materials,
+        (lengthSoFar, totalLength) =>
+          progressCallback(`Loading OBJ file from ${objUrl} ...`, lengthSoFar, totalLength),
+        this.onXHRCreated,
+        this.onXHRDone,
+        this.mystate.loadingInterrupter
+      );
     })
     .then((meshGroup) => {
+      if (this.mystate.loadingInterrupter.stop) {
+        throw new Error(this.mystate.loadingInterrupter.reason);
+      }
       // on success, proceed to incorporte the meshes into the scene
       // and render them
       this.loadMeshGroup(meshGroup);
     });
+  }
+
+  onXHRCreated(xhr) {
+    this.mystate.pendingXHRs.add(xhr);
+  }
+  onXHRDone(xhr) {
+    this.mystate.pendingXHRs.delete(xhr);
   }
 
   /**
@@ -390,7 +428,7 @@ export default class Renderer3D extends Component {
    * @return {[Promise]}       [a promise wrapping all the asynchronous actions performed]
    */
   load3DModelFromFiles(files) {
-    // files we expect to read
+    // files we   to read
     let objFile = null;
     let mtlFile = null;
     const texturePaths = {};
@@ -429,16 +467,22 @@ export default class Renderer3D extends Component {
     const progressCallback = this.props.loadingProgressCallback;
     progressCallback(`Loading MTL file ${mtlFile.name} ...`, 0, mtlFile.size);
     // use MTLLoader to load materials from MTL file
-    return MTLLoader.loadMaterialsFromFile(mtlFile, texturePaths)
+    return MTLLoader.loadMaterialsFromFile(mtlFile, texturePaths, this.mystate.loadingInterrupter)
     .then((materials) => {
+      if (this.mystate.loadingInterrupter.stop) {
+        throw new Error(this.mystate.loadingInterrupter.reason);
+      }
       progressCallback(`Loading MTL file ${mtlFile.name} ...`, mtlFile.size, mtlFile.size);
       // on success, proceed to use the OBJLoader to load the 3D objects
       // from OBJ file
       return OBJLoader.loadObjectsFromFile(objFile, materials, (lengthSoFar, totalLength) => {
         progressCallback(`Loading OBJ file ${objFile.name} ...`, lengthSoFar, totalLength);
-      });
+      }, this.mystate.loadingInterrupter);
     })
     .then((meshGroup) => {
+      if (this.mystate.loadingInterrupter.stop) {
+        throw new Error(this.mystate.loadingInterrupter.reason);
+      }
       // on success, proceed to incorporte the meshes into the scene
       // and render them
       this.loadMeshGroup(meshGroup);
@@ -456,16 +500,6 @@ export default class Renderer3D extends Component {
     // compute the mesh diameter
     this.mystate.meshDiameter =
       this.mystate.boundingBox.min.distanceTo(this.mystate.boundingBox.max);
-    // center the camera on boundingBox
-    ThreeUtils.centerCameraOnBoundingBox(
-      this.mystate.camera,
-      this.mystate.cameraLight,
-      this.mystate.boundingBox,
-      this.refs.viewport.offsetWidth,
-      this.refs.viewport.offsetHeight
-    );
-    this.mystate.zoom = this.mystate.camera.zoom; // keep the zoom up to date
-
     /** remove from scene both meshes and labels */
     if (this.mystate.meshGroup !== null) {
       // remove meshes
@@ -495,6 +529,8 @@ export default class Renderer3D extends Component {
     this.mystate.labelsEnabled = true;
     // run animation cycle to reflect changes on the screen
     this.animateForAWhile();
+    // refocus the camera on the model
+    setTimeout(() => this.refocusOnModel(), 100);
   }
 
   /**
@@ -572,7 +608,8 @@ export default class Renderer3D extends Component {
         });
         /** sprite */
         const sprite = ThreeUtils.makeTextSprite(
-          label.text, 1, this.mystate.meshDiameter, this.mystate.normalLabelStyle
+          label.text || DEFAULT_LABEL_MESSAGE,
+          1, this.mystate.meshDiameter, this.mystate.normalLabelStyle
         );
         sprite.position.set(label.position.x, label.position.y, label.position.z);
         this.mystate.spriteGroup.add(sprite);
@@ -645,8 +682,9 @@ export default class Renderer3D extends Component {
    * The purpose is to ensure that updates and rendering are performed
    * only when it's necessary, and not all the time
    */
-  animateForAWhile(milliseconds = 500) {
+  animateForAWhile(milliseconds = 100) {
     if (this.mystate.updateTimerRunning) return; // already running? ignore
+    if (this.mystate.componentUnmounted) return; // unmounted ? ignore
     this.mystate.updateTimerRunning = true;
     // start the animation cycle
     this.threeAnimate();
@@ -660,15 +698,17 @@ export default class Renderer3D extends Component {
    * Handle wheel events
    */
   handleWheel(event) {
-    event.preventDefault();
-    if (event.deltaY < 0) { // zoom in
-      this.mystate.zoom *= 1.05;
-    } else { // zoom out
-      this.mystate.zoom *= 0.95;
-      if (this.mystate.zoom < 0.01) this.mystate.zoom = 0.01;
+    if (this.mystate.canvasHasFocus) {
+      event.preventDefault();
+      if (event.deltaY < 0) { // zoom in
+        this.mystate.zoom *= 1.05;
+      } else { // zoom out
+        this.mystate.zoom *= 0.95;
+        if (this.mystate.zoom < 0.01) this.mystate.zoom = 0.01;
+      }
+      this.mystate.updateCameraZoom = true;
+      this.animateForAWhile();
     }
-    this.mystate.updateCameraZoom = true;
-    this.animateForAWhile();
   }
 
   /**
@@ -698,12 +738,16 @@ export default class Renderer3D extends Component {
     }
   }
 
+  handleWindowMouseDown() {
+    // update canvasHasFocus
+    this.mystate.canvasHasFocus = this.isMouseOverViewport();
+  }
+
   /**
    * Handle mouse down events
    */
   handleMouseDown(event) {
     console.log("====> handleMouseDown()");
-
     const viewport = this.refs.viewport;
     const vpcoords = this.getViewportCoords(event);
     const screenX = vpcoords.x;
@@ -1270,7 +1314,6 @@ export default class Renderer3D extends Component {
       this.mystate.cameraOrbitUpdatePending = true;
       this.animateForAWhile();
     }
-
   }
 
   getViewportCoords(event) {
@@ -1332,7 +1375,7 @@ export default class Renderer3D extends Component {
   }
 
   handleKeypress(e) {
-    if (this.mystate.selectedLabel && this.isMouseOverViewport()) {
+    if (this.props.canEdit && this.mystate.selectedLabel && this.isMouseOverViewport()) {
       const e2 = new KeyboardEvent('e', e);
       this.refs.hiddenTxtInp.focus();
       this.refs.hiddenTxtInp.dispatchEvent(e2);
@@ -1340,7 +1383,7 @@ export default class Renderer3D extends Component {
   }
 
   handleKeydown(e) {
-    if (this.mystate.selectedLabel && this.isMouseOverViewport()) {
+    if (this.props.canEdit && this.mystate.selectedLabel && this.isMouseOverViewport()) {
       const e2 = new KeyboardEvent('e', e);
       this.refs.hiddenTxtInp.focus();
       this.refs.hiddenTxtInp.dispatchEvent(e2);

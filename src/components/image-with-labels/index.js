@@ -28,7 +28,7 @@ const TEMPORARY_LABEL_REF = 'temporaryLabelRef';
 
 const REG_STRING_HEIGHT = 26;
 
-export default class TemplateComponent extends Component {
+export default class ImageWithLabelsWrapper extends Component {
 
   static get defaultProps() {
     return {
@@ -1086,7 +1086,7 @@ export default class TemplateComponent extends Component {
   }
 }
 
-TemplateComponent.propTypes = {
+ImageWithLabelsWrapper.propTypes = {
   style: React.PropTypes.object,
   source: React.PropTypes.object,
   maxWidth: React.PropTypes.number,
