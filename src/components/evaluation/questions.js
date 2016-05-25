@@ -55,7 +55,6 @@ export default class Questions extends Component {
       interval: PropTypes.number,
 
       onEvaluationChange: PropTypes.func,
-      onQuestionsChange: PropTypes.func,
       onAnswerChange: PropTypes.func,
       onFieldsChange: PropTypes.func,
       onQuestionRemove: PropTypes.func,
@@ -138,8 +137,8 @@ export default class Questions extends Component {
   fetchQuestions(organizationId) {
     const query = { organizationId };
     return questionService.find({ query })
-    .then(result => result.data)
-    .then(questions => this.setState({ pool: questions }));
+      .then(result => result.data)
+      .then(questions => this.setState({ pool: questions }));
   }
 
   renderQuestionList(questions) {
@@ -187,13 +186,13 @@ export default class Questions extends Component {
       ...props,
       identifier,
       mode: questionMode,
-      onAnswerChange: answer => onAnswerChange(question.id, answer),
-      onFieldsChange: field => onFieldsChange(question.id, field),
+      onAnswerChange: answer => onAnswerChange(question, answer),
+      onFieldsChange: field => onFieldsChange(question, field),
     });
     return (
       <div key={question.id} style={styles.question}>
-        {element}
         <hr />
+        {element}
       </div>
     );
   }
@@ -244,7 +243,7 @@ export default class Questions extends Component {
           <h3>{evaluation.title || 'No title'}</h3>
         </div>
         <p>{evaluation.description || ''}</p>
-        <hr />
+
         {objects.map((question, i) => (
           <div key={i} style={styles.wrapper}>
             {this.renderQuestion(question, i + 1)}
@@ -287,6 +286,7 @@ export default class Questions extends Component {
       </Row>
     );
   }
+
   renderInstructor() {
     return (
       <Row>
@@ -310,7 +310,6 @@ export default class Questions extends Component {
 
   render() {
     const mode = ['admin', 'write'].includes(this.props.participant.permission) ? MODES.instructor : MODES.student;
-
     return (
       <div>
         {this.renderMode(mode)}

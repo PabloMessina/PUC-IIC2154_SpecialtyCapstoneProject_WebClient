@@ -9,6 +9,7 @@ const organizationService = app.service('/organizations');
 const courseService = app.service('/courses');
 const participantService = app.service('/participants');
 const evaluationService = app.service('/evaluations');
+const questionService = app.service('/questions');
 const evaluationsQuestionService = app.service('/evaluations-questions');
 const answerService = app.service('/answers');
 const attendanceService = app.service('/attendances');
@@ -53,9 +54,11 @@ class EvaluationCreate extends Component {
       // Main object
       evaluation: React.PropTypes.object,
       // Defaults
+      evaluationQuestions: React.PropTypes.array,
       questions: React.PropTypes.array,
       // groups: React.PropTypes.array,
       attendances: React.PropTypes.array,
+      // attendance: React.PropTypes.object,
       answers: React.PropTypes.object,
       // React Router
       router: React.PropTypes.object,
@@ -68,8 +71,10 @@ class EvaluationCreate extends Component {
   static get defaultProps() {
     return {
       questions: [],
+      evaluationQuestions: [],
       answers: {},
       attendances: [],
+      // attendance: {},
     };
   }
 
@@ -80,9 +85,11 @@ class EvaluationCreate extends Component {
       evaluation: props.params.evaluation,
       // Students rending the evaluation
       participants: [],
+      evaluationQuestions: props.params.evaluation.evaluationQuestions || props.evaluationQuestions,
       questions: props.params.evaluation.questions || props.questions,
       answers: props.answers,
       attendances: props.params.evaluation.attendances || props.attendances,
+      // attendance: props.attendance,
       // Other
       organization: null,
       course: null,
@@ -97,24 +104,18 @@ class EvaluationCreate extends Component {
 
     this.findOrCreateAnswer = this.findOrCreateAnswer.bind(this);
 
-    this.fetchAll = this.fetchAll.bind(this);
-    this.fetchAnswers = this.fetchAnswers.bind(this);
-    this.fetchAttendances = this.fetchAttendances.bind(this);
-    this.fetchCourse = this.fetchCourse.bind(this);
-    this.fetchOrganization = this.fetchOrganization.bind(this);
-    this.fetchParticipants = this.fetchParticipants.bind(this);
+    this.observe = this.observe.bind(this);
+    this.observeEvaluation = this.observeEvaluation.bind(this);
+    this.observeEvaluationQuestions = this.observeEvaluationQuestions.bind(this);
+    this.observeQuestions = this.observeQuestions.bind(this);
+    this.observeAnswers = this.observeAnswers.bind(this);
 
     this.onPublish = this.onPublish.bind(this);
     this.onDelete = this.onDelete.bind(this);
 
     this.onNavigateTo = this.onNavigateTo.bind(this);
-    this.onEvaluationChange = this.onEvaluationChange.bind(this);
-    this.onQuestionsChange = this.onQuestionsChange.bind(this);
     // this.onGroupsChange = this.onGroupsChange.bind(this);
     // this.onAttendantsChange = this.onAttendantsChange.bind(this);
-    this.onAttendanceAdd = this.onAttendanceAdd.bind(this);
-    this.onAttendanceRemove = this.onAttendanceRemove.bind(this);
-    this.onAttendanceUpdate = this.onAttendanceUpdate.bind(this);
     this.onAnswerChange = this.onAnswerChange.bind(this);
     this.onFieldsChange = this.onFieldsChange.bind(this);
     this.onQuestionAdd = this.onQuestionAdd.bind(this);
@@ -122,7 +123,14 @@ class EvaluationCreate extends Component {
   }
 
   componentDidMount() {
-    this.fetchAll(this.state.evaluation);
+    const { evaluation } = this.state;
+
+    this.fetchCourse(evaluation.instance.courseId)
+      .then(course => this.fetchOrganization(course.organizationId));
+
+    this.fetchParticipants(evaluation.instanceId);
+
+    this.observe(evaluation);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -131,14 +139,23 @@ class EvaluationCreate extends Component {
     if (evaluation && evaluation.id !== this.state.evaluation.id) {
       const questions = evaluation.questions || [];
       this.setState({ evaluation, questions, instance: evaluation.instance });
-      this.fetchAll(evaluation);
+      this.observe(evaluation);
     }
   }
 
-  onPublish(published = true) {
+  componentWillUnmount() {
+    if (this.evaluationObserver) this.evaluationObserver.unsubscribe();
+    if (this.evalQuestionObserver) this.evalQuestionObserver.unsubscribe();
+    if (this.questionObserver) this.questionObserver.unsubscribe();
+    if (this.answerObserver) this.answerObserver.unsubscribe();
+    if (this.attendanceObserver) this.attendanceObserver.unsubscribe();
+  }
+
+  onPublish(published = false) {
     return evaluationService.patch(this.state.evaluation.id, { published })
       .then(evaluation => {
         this.setState({ evaluation, error: null });
+        return evaluation;
       })
       .catch(error => this.setState({ error }));
   }
@@ -151,48 +168,23 @@ class EvaluationCreate extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  onAnswerChange(id, answer) {
-    // const questions = this.state;
-    if (id) {
-      return this.findOrCreateAnswer(id, answer);
-      // const indexQ = questions.findIndex((q) => q.id === id);
-      // questions[indexQ].answer = answer;
-      // this.setState({ answers: { ...this.state.answers, [id]: answer }, questions });
+  onAnswerChange(question, answer) {
+    if (question && question.id) {
+      return this.findOrCreateAnswer(question, answer);
     }
     return null;
-  }
-
-  onAttendanceAdd(attendance) {
-    const attendances = [...this.state.attendances, attendance];
-    this.setState({ attendances });
-  }
-
-  onAttendanceRemove(attendance) {
-    const attendances = this.state.attendances.filter(a => a.id !== attendance.id);
-    this.setState({ attendances });
-  }
-
-  onAttendanceUpdate(attendance) {
-    const attendances = [...this.state.attendances];
-    const index = attendances.findIndex(a => a.id === attendance.id);
-    if (index > -1) {
-      attendances[index] = attendance;
-      this.setState({ attendances });
-    }
-  }
-
-  onEvaluationChange(evaluation) {
-    if (evaluation) {
-      this.setState({ evaluation: { ...this.state.evaluation, ...evaluation } });
-    }
+    // const indexQ = questions.findIndex((q) => q.id === id);
+    // questions[indexQ].answer = answer;
+    // this.setState({ answers: { ...this.state.answers, [id]: answer }, questions });
   }
 
   onFieldsChange(id, fields) {
     if (id) {
-      const questions = this.state.questions;
-      const index = this.state.question.findIndex(q => q.id === id);
-      if (index > -1) questions[index].fields = fields;
-      this.setState({ questions });
+      // console.log('onFieldsChange', id, fields);
+      // const questions = this.state.questions;
+      // const index = this.state.question.findIndex(q => q.id === id);
+      // if (index > -1) questions[index].fields = fields;
+      // this.setState({ questions });
     }
   }
 
@@ -203,31 +195,100 @@ class EvaluationCreate extends Component {
     const questionId = question.id;
     const evaluationId = this.state.evaluation.id;
     return evaluationsQuestionService.create({ questionId, evaluationId })
-      .then(evaluationsQuestion => [...this.state.questions, { ...question, evaluationsQuestion }])
-      .then(questions => this.setState({ questions, syncing: false }))
       .catch(error => this.setState({ error, syncing: false }));
-  }
-
-  onQuestionsChange(questions) {
-    if (questions) this.setState({ questions });
   }
 
   onQuestionRemove(question) {
     if (!question) return null;
     this.setState({ syncing: true });
 
-    return evaluationsQuestionService.remove(question.evaluationsQuestion.id)
-      .then(() => this.state.questions.filter(q => q.id !== question.id))
-      .then(questions => this.setState({ questions, syncing: false }))
-      .catch(error => this.setState({ error, syncing: false }));
+    const evalq = this.state.evaluationQuestions.find(eq => eq.questionId === question.id || question);
+    if (evalq && evalq.id) {
+      return evaluationsQuestionService.remove(evalq.id).catch(error => this.setState({ error, syncing: false }));
+    } else {
+      return null;
+    }
   }
 
   onNavigateTo(url) {
     this.props.router.push(url);
   }
 
+  observe(evl) {
+    this.evaluationObserver = this.observeEvaluation(evl).subscribe(evaluation => {
+      // console.debug('evaluation', evaluation);
+      if (evaluation) this.setState({ evaluation });
+    });
 
-  findOrCreateAnswer(questionId, answer) {
+    this.attendanceObserver = this.observeAttendances(evl).subscribe(attendances => {
+      // console.debug('attendances', attendances);
+      // const userId = currentUser().id;
+      // const attendance = attendances.find(a => a.userId === userId);
+      // this.setState({ attendances, attendance });
+      this.setState({ attendances });
+
+      this.evalQuestionObserver = this.observeEvaluationQuestions(evl).subscribe(evaluationQuestions => {
+        // console.debug('evaluationQuestions$', evaluationQuestions);
+        this.setState({ evaluationQuestions });
+        const ids = evaluationQuestions.map(eq => eq.questionId);
+
+        const userId = currentUser().id;
+        const attendance = attendances
+          .find(att => att.userId === userId && att.evaluationId === evl.id);
+
+        if (attendance) {
+          this.answerObserver = this.observeAnswers(evl, attendance, ids).subscribe(objects => {
+            // console.debug('answers$', objects);
+            const answers = {};
+            objects.forEach(({ questionId, answer }) => (answers[questionId] = answer));
+            this.setState({ answers });
+          });
+        }
+
+        this.questionObserver = this.observeQuestions(ids).subscribe(questions => {
+          // console.debug('questions$', questions);
+          this.setState({ questions });
+        });
+      });
+    });
+  }
+
+  observeAnswers(evaluation, attendance, questions) {
+    const query = {
+      teamId: attendance.teamId || attendance.userId,
+      evaluationId: evaluation.id || evaluation,
+      questionId: { $in: questions.map(question => question.id || question) },
+    };
+    return answerService.find({ query }).map(result => result.data);
+  }
+
+  observeEvaluationQuestions(evl) {
+    const query = {
+      evaluationId: evl.id || evl,
+      $sort: { id: -1 },
+    };
+    return evaluationsQuestionService.find({ query }).map(result => result.data);
+  }
+
+  observeQuestions(questions) {
+    const query = {
+      id: { $in: questions.map(q => q.id || q) },
+    };
+    return questionService.find({ query }).map(result => result.data);
+  }
+
+  observeEvaluation(evl) {
+    return evaluationService.get(evl.id || evl);
+  }
+
+  observeAttendances(evaluation) {
+    const query = {
+      evaluationId: evaluation.id || evaluation,
+    };
+    return attendanceService.find(query).map(result => result.data);
+  }
+
+  findOrCreateAnswer(question, answer) {
     const user = currentUser();
     const participant = this.state.participants.find(p => p.userId === user.id);
     const mode = ['admin', 'write'].includes(participant.permission) ? MODES.instructor : MODES.student;
@@ -241,79 +302,30 @@ class EvaluationCreate extends Component {
 
       const query = {
         teamId: attendance.teamId,
-        questionId,
+        questionId: question.id || question,
         evaluationId: evaluation.id,
         $limit: 1,
       };
+      console.log('query', query);
+
       return answerService.find({ query })
         .then(result => result.data[0])
         .then(old => {
           if (old) return answerService.patch(old.id, { ...old, answer });
           return answerService.create({
             teamId: attendance.teamId,
-            questionId,
+            questionId: question.id || question,
             evaluationId: evaluation.id,
             answer,
           });
         })
-        .then(changed => {
-          this.setState({ answers: { ...this.state.answers, [changed.questionId]: changed.answer } });
-          return changed;
-        })
+        // .then(changed => {
+        //   this.setState({ answers: { ...this.state.answers, [changed.questionId]: changed.answer } });
+        //   return changed;
+        // })
         .catch(error => this.setState({ error }));
     }
     return null;
-  }
-
-  fetchAll(evaluation) {
-    return this.fetchCourse(evaluation.instance.courseId)
-      .then(course => this.fetchOrganization(course.organizationId))
-      .then(() => this.fetchParticipants(evaluation.instanceId))
-      .then(() => this.fetchAttendances(evaluation.id))
-      .then(attendances => {
-        const user = currentUser();
-        const our = attendances.find(a => a.userId === user.id);
-        const participant = this.state.participants.find(p => p.userId === user.id);
-        const mode = ['admin', 'write'].includes(participant.permission) ? MODES.instructor : MODES.student;
-
-        if (mode === MODES.student) {
-          // If we are in 'student' mode
-          return this.fetchAnswers(our);
-        } else {
-          return [];
-        }
-      })
-      .catch(error => this.setState({ error }));
-  }
-
-  fetchAnswers(attendance) {
-    const evaluation = this.state.evaluation;
-    const teamId = attendance.teamId || attendance.userId;
-    const questionArray = evaluation.questions.map(question => question.id);
-    const query = {
-      teamId,
-      questionId: { $in: questionArray },
-      evaluationId: evaluation.id,
-    };
-    return answerService.find({ query })
-      .then(result => result.data)
-      .then(objects => {
-        const answers = {};
-        objects.forEach(({ questionId, answer }) => (answers[questionId] = answer));
-        this.setState({ answers });
-      })
-      .catch(error => this.setState({ error }));
-  }
-
-  fetchAttendances(evaluationId) {
-    const query = { evaluationId };
-    return attendanceService.find(query)
-      .then(result => result.data)
-      .then(attendances => {
-        this.setState({ attendances, error: null });
-        return attendances;
-      })
-      .catch(error => this.setState({ error }));
   }
 
   fetchCourse(courseId) {
@@ -394,6 +406,7 @@ class EvaluationCreate extends Component {
       questions,
       participants,
     } = this.state;
+
 
     const userId = currentUser().id;
     const participant = participants.find(p => p.userId === userId);
@@ -501,11 +514,6 @@ class EvaluationCreate extends Component {
                   participants,
                   onQuestionAdd: this.onQuestionAdd,
                   onQuestionRemove: this.onQuestionRemove,
-                  onEvaluationChange: this.onEvaluationChange,
-                  onQuestionsChange: this.onQuestionsChange,
-                  onAttendanceAdd: this.onAttendanceAdd,
-                  onAttendanceUpdate: this.onAttendanceUpdate,
-                  onAttendanceRemove: this.onAttendanceRemove,
                   onAnswerChange: this.onAnswerChange,
                   onFieldsChange: this.onFieldsChange,
                 })}

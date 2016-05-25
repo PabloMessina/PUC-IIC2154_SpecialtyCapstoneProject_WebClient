@@ -3,6 +3,7 @@
 import React, { PropTypes, Component } from 'react';
 import { Panel, Row, Col } from 'react-bootstrap';
 import { Pie as PieChart, Bar as BarChart } from 'react-chartjs';
+import renderIf from 'render-if';
 
 import correction, { transform } from '../../utils/correction';
 import app from '../../app';
@@ -130,7 +131,6 @@ export default class MinTemplate extends Component {
       interval: PropTypes.number,
 
       onEvaluationChange: PropTypes.func,
-      onQuestionsChange: PropTypes.func,
       onAnswerChange: PropTypes.func,
       onFieldsChange: PropTypes.func,
       onQuestionRemove: PropTypes.func,
@@ -203,13 +203,18 @@ export default class MinTemplate extends Component {
   }
 
   render() {
-    const { questions } = this.props;
+    const questions = this.props.questions.filter(q => q.answer);
 
     return (
       <div style={styles.container}>
         <Row>
           <Col xs={12}>
-            {questions.filter(q => q.answer).map(this.renderRow)}
+            {questions.map(this.renderRow)}
+            {renderIf(questions.length === 0)(() =>
+              <Panel>
+                <h4>This evaluation has not questions</h4>
+              </Panel>
+            )}
           </Col>
         </Row>
       </div>

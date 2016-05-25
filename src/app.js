@@ -22,6 +22,8 @@ const socket = io(host);
 const app = feathers();
 // Register hooks module
 app.configure(hooks());
+// Configure reactive extensions
+app.configure(rx(RxJS));
 // Register socket.io
 app.configure(socketio(socket));
 // Configure reactive extensions

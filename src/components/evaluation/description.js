@@ -76,7 +76,6 @@ export default class EvaluationDescription extends Component {
       participant: PropTypes.object,
       course: PropTypes.object,
       evaluation: PropTypes.object,
-      onEvaluationChange: PropTypes.func,
     };
   }
 
@@ -153,7 +152,6 @@ export default class EvaluationDescription extends Component {
       .patch(this.state.evaluation.id, { ...this.state.evaluation, startAt, finishAt, duration, id: undefined })
       .then(evaluation => {
         this.setState({ evaluation, error: null, status: STATUS.SAVED });
-        if (this.props.onEvaluationChange) this.props.onEvaluationChange(evaluation);
       })
       .catch(error => this.setState({ error, status: STATUS.NONE }));
   }
