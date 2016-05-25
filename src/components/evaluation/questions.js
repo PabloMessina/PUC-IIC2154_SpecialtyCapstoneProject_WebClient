@@ -66,13 +66,7 @@ export default class Questions extends Component {
   static get defaultProps() {
     return {
       selected: [],
-      tags: [
-        { label: 'Tag 1', value: 'Tag 1' },
-        { label: 'Tag 2', value: 'Tag 2' },
-        { label: 'Tag 3', value: 'Tag 3' },
-        { label: 'Tag 4', value: 'Tag 4' },
-        { label: 'Tag 5', value: 'Tag 5' },
-      ],
+      tags: [],
       pool: [],
       hidden: [],
       interval: 1000,
@@ -110,6 +104,7 @@ export default class Questions extends Component {
 
   componentDidMount() {
     if (this.props.organization) this.fetchQuestions(this.props.organization.id);
+    this.fetchTags();
   }
 
   onModalClose(/* question */) {
@@ -125,6 +120,19 @@ export default class Questions extends Component {
         this.props.onQuestionAdd(created);
       })
       .catch(error => this.setState({ error }));
+  }
+
+  fetchTags() {
+    const query = {
+      // organizationId: TODO: set organization
+    };
+    return questionService.find({ query })
+      .then(result => result.data)
+      .then(questions => [].concat.apply([], questions.map(q => q.tags)))
+      .then(tags => tags.filter(t => t && t.length))
+      .then(tags => [...new Set(tags)])
+      .then(tags => tags.map(t => ({ label: t, value: t })))
+      .then(tags => this.setState({ tags }));
   }
 
   fetchQuestions(organizationId) {
