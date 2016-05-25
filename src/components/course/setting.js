@@ -1,28 +1,55 @@
 import React, { Component } from 'react';
 import { Row, Col, Grid, Button, Table, Panel } from 'react-bootstrap';
 import Icon from 'react-fa';
+import { browserHistory } from 'react-router';
 
 import app from '../../app';
 const instanceService = app.service('/instances');
+const courseService = app.service('/courses');
 
 export default class MinTemplate extends Component {
 
   static get propTypes() {
     return {
       instances: React.PropTypes.array,
+      course: React.PropTypes.object,
     };
   }
 
   constructor(props) {
     super(props);
     this.state = {
-
+      instances: [],
+      error: '',
     };
     this.onDeleteInstance = this.onDeleteInstance.bind(this);
+    this.onDeleteCourse = this.onDeleteCourse.bind(this);
+    this.fetchInstances = this.fetchInstances.bind(this);
+  }
+
+  componentDidMount() {
+    this.fetchInstances();
   }
 
   onDeleteInstance(instance) {
-    return instanceService.remove(instance.id).then(a => console.log(a));
+    return instanceService.remove(instance.id)
+      .then(() => this.fetchInstances());
+  }
+
+  onDeleteCourse() {
+    return courseService.remove(this.props.course.id)
+      .then(() => browserHistory.push(`/organizations/show/${this.props.course.organizationId}/courses`));
+  }
+
+  fetchInstances() {
+    const query = {
+      id: this.props.course.id,
+      $populate: 'instance',
+    };
+    return courseService.find({ query })
+      .then(result => result.data[0])
+      .then(course => this.setState({ instances: course.instances }))
+      .catch(error => this.setState({ error }));
   }
 
   render() {
@@ -41,7 +68,7 @@ export default class MinTemplate extends Component {
                 </tr>
               </thead>
               <tbody>
-              {this.props.instances.map((instance, i) => (
+              {this.state.instances.map((instance, i) => (
                 <tr key={i}>
                   <td>{instance.period}</td>
                   <td>quantity</td>
@@ -56,7 +83,7 @@ export default class MinTemplate extends Component {
             </Table>
             <hr />
             <p>Delete all course</p>
-            <Button bsStyle="danger" onClick={this.onDeleteCourse}>
+            <Button bsStyle="danger" onClick={() => this.onDeleteCourse()}>
               Remove course
             </Button>
           </Col>
