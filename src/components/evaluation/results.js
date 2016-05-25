@@ -43,7 +43,7 @@ function dataFromMultiChoice(question, answers) {
   const labels = Array(size + 1).fill(0).map((_, i) => (1 / size * i).toFixed(2));
 
   const dataAnswers = answers
-  .map(answer => correction(question.qtype, correct, answer.answer).correctness.toFixed(2));
+    .map(answer => correction(question.qtype, correct, answer.answer).correctness.toFixed(2));
   const data = Array(size + 1).fill(0);
   dataAnswers.forEach(elem => (data[labels.findIndex(e => e === elem)] += 1));
 
@@ -209,7 +209,7 @@ export default class MinTemplate extends Component {
       <div style={styles.container}>
         <Row>
           <Col xs={12}>
-            {questions.map(this.renderRow)}
+            {questions.filter(q => q.answer).map(this.renderRow)}
           </Col>
         </Row>
       </div>

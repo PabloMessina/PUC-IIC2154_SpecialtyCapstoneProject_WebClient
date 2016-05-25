@@ -28,7 +28,7 @@ class MultiChoice extends Component {
   }
 
   onCheck(i, selectable = Infinity) {
-    const { answer } = this.props;
+    const answer = this.props.answer || { choices: [] };
     const index = answer.choices.indexOf(i);
 
     // Remove if present
@@ -58,7 +58,8 @@ class MultiChoice extends Component {
   }
 
   onRemoveChoice(index) {
-    const { fields, answer } = this.props;
+    const { fields } = this.props;
+    const answer = this.props.answer || { choices: [] };
 
     // Remove field
     const fchoices = fields.choices && fields.choices.length ? fields.choices : [''];
@@ -79,7 +80,8 @@ class MultiChoice extends Component {
   }
 
   renderResponder() {
-    const { fields, answer, disabled } = this.props;
+    const { fields, disabled } = this.props;
+    const answer = this.props.answer || { choices: [] };
     const { selectable, choices } = fields;
 
     return (
@@ -104,7 +106,8 @@ class MultiChoice extends Component {
   }
 
   renderEditor() {
-    const { fields, answer, disabled } = this.props;
+    const { fields, disabled } = this.props;
+    const answer = this.props.answer || { choices: [] };
     const selectable = answer.choices.length || 0;
     const choices = fields.choices && fields.choices.length ? fields.choices : [''];
 
