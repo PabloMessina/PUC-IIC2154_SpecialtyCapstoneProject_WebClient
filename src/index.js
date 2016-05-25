@@ -123,7 +123,7 @@ const Routing = (
     <Route path="/" component={Main} title="App">
       <IndexRedirect to="dashboard" />
 
-      <Route path="dashboard" component={Dashboard}>
+      <Route path="dashboard" component={Dashboard} onEnter={requireAuth}>
         <IndexRedirect to="academic" />
         <Route path="academic" component={DashboardAcademic} />
       </Route>

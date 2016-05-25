@@ -67,7 +67,12 @@ export default class CreateQuestion extends Component {
   }
 
   getQuestion() {
-    return this.state.question;
+    const { question } = this.state;
+    if (question.qtype === 'multiChoice') {
+      const selectable = question.answer.choices.length;
+      return { ...question, fields: { ...question.fields, selectable, selected: selectable } };
+    }
+    return question;
   }
 
   fetchTags() {
