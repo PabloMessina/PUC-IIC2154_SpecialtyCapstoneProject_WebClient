@@ -7,6 +7,9 @@ import {
 } from 'react-bootstrap';
 import Select from 'react-select';
 
+import app from '../../app';
+const questionService = app.service('/questions');
+
 import { TrueFalse, MultiChoice, TShort } from '../questions';
 
 const QUESTION_TYPES = {
@@ -48,15 +51,14 @@ export default class CreateQuestion extends Component {
     this.state = {
       question: props.question,
       selected: [],
-      tags: [
-        { label: 'Tag 1', value: 'Tag 1' },
-        { label: 'Tag 2', value: 'Tag 2' },
-        { label: 'Tag 3', value: 'Tag 3' },
-        { label: 'Tag 4', value: 'Tag 4' },
-        { label: 'Tag 5', value: 'Tag 5' },
-      ],
+      tags: [],
     };
     this.onTagChange = this.onTagChange.bind(this);
+    this.fetchTags = this.fetchTags.bind(this);
+  }
+
+  componentDidMount() {
+    this.fetchTags();
   }
 
   onTagChange(value, labels) {
@@ -66,6 +68,19 @@ export default class CreateQuestion extends Component {
 
   getQuestion() {
     return this.state.question;
+  }
+
+  fetchTags() {
+    const query = {
+      // organizationId: TODO: set organization
+    };
+    return questionService.find({ query })
+      .then(result => result.data)
+      .then(questions => [].concat.apply([], questions.map(q => q.tags)))
+      .then(tags => tags.filter(t => t && t.length))
+      .then(tags => [...new Set(tags)])
+      .then(tags => tags.map(t => ({ label: t, value: t })))
+      .then(tags => this.setState({ tags }));
   }
 
   render() {
