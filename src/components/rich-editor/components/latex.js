@@ -127,7 +127,7 @@ export default class Latex extends React.Component {
     }
 
     const editPanel = (
-      <Popover>
+      <Popover id="latex-popover">
         <textarea
           style={styles.textarea}
           onChange={this.onValueChange}
