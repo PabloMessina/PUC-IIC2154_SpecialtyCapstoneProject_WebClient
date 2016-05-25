@@ -10,6 +10,10 @@ class KatexOutput extends React.Component {
     this.timer = null;
   }
 
+  shouldComponentUpdate(nextProps) {
+    return !nextProps.readOnly;
+  }
+
   componentDidMount() {
     this.update();
   }
@@ -40,7 +44,8 @@ class KatexOutput extends React.Component {
   }
 
   render() {
-    return <div style={styles.output} ref="container" onClick={this.props.onClick} />;
+    const { readOnly, onClick } = this.props;
+    return <div style={styles.output} ref="container" onClick={readOnly ? null : onClick} />;
   }
 }
 
@@ -57,6 +62,8 @@ export default class Latex extends React.Component {
       this.setState({
         editMode: true,
         texValue: this.getValue(),
+      }, () => {
+        this.startEdit();
       });
     };
 
@@ -71,23 +78,32 @@ export default class Latex extends React.Component {
         this.setState({
           invalidTeX: invalid,
           texValue: value,
-        });
+        }, this.save);
       }
     };
 
     this.save = () => {
       const entityKey = this.props.block.getEntityAt(0);
       Entity.mergeData(entityKey, { content: this.state.texValue });
-      this.editPanel.hide();
+      this.props.blockProps.onChange();
+    };
+
+    this.remove = () => {
+      this.finishEdit();
+      this.props.blockProps.onRemove(this.props.block.getKey());
+    };
+
+    this.startEdit = () => {
+      this.props.blockProps.onStartEdit();
+    };
+
+    this.finishEdit = () => {
       this.setState({
         invalidTeX: false,
         editMode: false,
         texValue: '',
       });
-    };
-
-    this.remove = () => {
-      this.props.blockProps.onRemove(this.props.block.getKey());
+      this.props.blockProps.onFinishEdit();
     };
   }
 
@@ -98,6 +114,7 @@ export default class Latex extends React.Component {
   }
 
   render() {
+    const { readOnly } = this.props.blockProps;
     let texContent = null;
     if (this.state.editMode) {
       if (this.state.invalidTeX) {
@@ -117,14 +134,7 @@ export default class Latex extends React.Component {
           ref="textarea"
           value={this.state.texValue}
         />
-        <div className="TeXEditor-buttons">
-          <Button
-            disabled={this.state.invalidTeX}
-            bsSize="small"
-            onClick={this.save}
-          >
-            {this.state.invalidTeX ? 'Invalid TeX' : 'Done'}
-          </Button>
+        <div>
           <Button
             bsSize="small"
             onClick={this.remove}
@@ -139,14 +149,16 @@ export default class Latex extends React.Component {
       <div>
         <OverlayTrigger
           ref={overlay => (this.editPanel = overlay)}
+          container={document.body}
           trigger="click"
           placement="bottom"
           rootClose
           overlay={editPanel}
           onEntered={this.onClick}
+          onExited={this.finishEdit}
         >
 
-          <KatexOutput ref="target" content={texContent} />
+          <KatexOutput ref="target" readOnly={readOnly} content={texContent} />
         </OverlayTrigger>
       </div>
     );
