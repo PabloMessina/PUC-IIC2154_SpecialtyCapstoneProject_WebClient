@@ -364,6 +364,7 @@ export default class RendererWrapper extends Component {
 
   render() {
     // check label style to use
+    const { readOnly } = this.props.blockProps;
     let labelStyle;
     switch (this.state.labelStyleMode) {
       case 'normal':
@@ -376,11 +377,11 @@ export default class RendererWrapper extends Component {
 
     return (
       <div style={styles.globalDivStyle}>
-        {renderIf(this.props.canEdit)(() => (
+        {renderIf(!readOnly)(() => (
           <input ref="filesInput" type="file" onChange={this.onFilesChanged} multiple></input>
         ))}
-        <ButtonToolbar>
-          {renderIf(this.props.canEdit)(() => (
+        <ButtonToolbar style={styles.toolbar}>
+          {renderIf(!readOnly)(() => (
             <Dropdown id="label-dropdown-custom" open={this.state.labelDropdownOpen}
               onToggle={this.onLabelDropDownToggle}
               ref="labelDropdown"
@@ -424,15 +425,16 @@ export default class RendererWrapper extends Component {
             turnedOnCallback={this.showLabels}
             turnedOffCallback={this.hideLabes}
           />
-          {renderIf(this.props.canEdit)(() => (
+          {renderIf(readOnly)(() => (
             <Button
               disabled={!(this.state.hasSelectedLabel && this.state.showingLabels)}
               onClick={this.removeSelectedLabel} bsSize="small"
             >Remove Label</Button>
           ))}
         </ButtonToolbar>
-        <Renderer3D ref="r3d"
-          canEdit={this.props.canEdit}
+        <Renderer3D
+          ref="r3d"
+          canEdit={!readOnly}
           remoteFiles={this.props.remoteFiles}
           labels={this.state.labels}
           normalLabelStyle={this.state.normalLabelStyle}
@@ -475,6 +477,11 @@ const styles = {
   },
   globalDivStyle: {
     position: 'relative',
+  },
+  toolbar: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
   },
   progressDiv: {
     width: '50%',

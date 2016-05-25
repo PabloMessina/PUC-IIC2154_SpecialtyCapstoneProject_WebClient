@@ -26,7 +26,12 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
       },
       model: {
         component: Renderer3DWrapper,
-        editable: true,
+        editable: false,
+        props: {
+          readOnly,
+          onStartEdit: () => setState({ editorLocked: true }),
+          onFinishEdit: () => setState({ editorLocked: false }),
+        },
       },
       // 3d-video: { component: 3DVideo, editable: false },
       // You can see where this is going :)
