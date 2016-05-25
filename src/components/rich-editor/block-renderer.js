@@ -7,7 +7,7 @@ import {
 } from 'draft-js';
 
 
-export const createBlockRenderer = (modifyBlock) => {
+export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnly) => {
   const getBlock = (type, props) => {
     const blocks = {
       audio: { component: Audio, editable: false },
@@ -17,6 +17,10 @@ export const createBlockRenderer = (modifyBlock) => {
         component: Latex,
         editable: false,
         props: {
+          readOnly,
+          onChange: updateEditor,
+          onStartEdit: () => setState({ editorLocked: true }),
+          onFinishEdit: () => setState({ editorLocked: false }),
           onRemove: (blockKey) => modifyBlock(removeTeXBlock, blockKey),
         },
       },

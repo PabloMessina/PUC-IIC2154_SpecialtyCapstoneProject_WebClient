@@ -34,6 +34,7 @@ export default class RichEditor extends Component {
       editorState: props.content
         ? EditorState.push(EditorState.createEmpty(Decorator), convertFromRaw(props.content))
         : EditorState.createEmpty(Decorator),
+      editorLocked: false,
     };
 
     this.blockRenderer = createBlockRenderer(
@@ -41,7 +42,12 @@ export default class RichEditor extends Component {
         this.onChange(
           modifier(this.state.editorState, blockKey)
         );
-      }
+      },
+      (state) => {
+        this.setState(state);
+      },
+      () => this.onChange(this.state.editorState),
+      props.readOnly
     );
 
     this.focus = () => this.refs.editor.focus();
@@ -83,7 +89,7 @@ export default class RichEditor extends Component {
 
   render() {
     const { style, readOnly } = this.props;
-    const { editorState } = this.state;
+    const { editorState, editorLocked } = this.state;
     return (
       <div style={styles.container}>
 
@@ -91,7 +97,7 @@ export default class RichEditor extends Component {
           <div style={styles.controls}>
             <BlockControls
               editorState={editorState}
-              onChange={this.onChange}
+              onChange={editorLocked ? () => {} : this.onChange}
             />
           </div>
         ))}
@@ -108,7 +114,7 @@ export default class RichEditor extends Component {
             onChange={this.onChange}
             ref="editor"
             spellCheck
-            readOnly={readOnly}
+            readOnly={readOnly || editorLocked}
           />
           <Toolbar
             editorState={editorState}
