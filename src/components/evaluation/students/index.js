@@ -56,6 +56,7 @@ class Students extends Component {
       attendances: PropTypes.array,
       instance: PropTypes.object,
       evaluation: PropTypes.object,
+      participant: PropTypes.object,
       onAttendanceAdd: PropTypes.func,
       onAttendanceUpdate: PropTypes.func,
       onAttendanceRemove: PropTypes.func,
@@ -210,13 +211,15 @@ class Students extends Component {
     const attendances = this.props.attendances;
     const attendance = attendances.find(att => att.userId === user.id);
     const teamIds = attendances.filter(att => att.teamId === attendance.teamId).map(item => item.userId);
-    const team = this.state.students.filter(student => teamIds.includes(student.id));
+    const team = this.state.students.filter(student => teamIds.indexOf(student.id) > -1);
     return (
-      <Panel>
-        {team.map(student =>
-          <p>{student.name}</p>
-        )}
-      </Panel>
+      <Row>
+        <Panel>
+          {team.map(student =>
+            <p>{student.name}</p>
+          )}
+        </Panel>
+      </Row>
     );
   }
 
