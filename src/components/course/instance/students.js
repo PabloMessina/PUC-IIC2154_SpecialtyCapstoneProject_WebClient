@@ -79,10 +79,12 @@ export default class InstanceStudents extends Component {
     if (ROLES[key]) {
       // Role changed
       const permission = ROLES[key].value;
-      return participantService.patch(participant.id, { permission });
+      return participantService.patch(participant.id, { permission })
+        .catch(error => this.setState({ error }));
     }
     // Removed
-    return participantService.remove(participant.id);
+    return participantService.remove(participant.id)
+      .catch(error => this.setState({ error }));
   }
 
   fetchUsers(organization) {
@@ -152,6 +154,10 @@ export default class InstanceStudents extends Component {
     });
     const permissions = {};
     ROLES.forEach(({ value, label }) => (permissions[value] = label));
+
+    if (this.state.error) {
+      console.log(this.state.error);
+    }
 
     const canEdit = ['admin', 'write'].includes(membership.permission) || ['admin'].includes(participant.permission);
 
