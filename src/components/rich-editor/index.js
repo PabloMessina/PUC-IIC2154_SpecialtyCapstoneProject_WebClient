@@ -18,6 +18,11 @@ import Toolbar from './components/toolbar';
 import renderIf from 'render-if';
 import { createBlockRenderer } from './block-renderer';
 
+const decorator = new MultiDecorator([
+  PrismDecorator,
+  Decorator,
+]);
+
 export default class RichEditor extends Component {
 
   static get propTypes() {
@@ -33,10 +38,6 @@ export default class RichEditor extends Component {
   constructor(props) {
     super(props);
 
-    const decorator = new MultiDecorator([
-      PrismDecorator,
-      Decorator,
-    ]);
 
     this.state = {
       editorState: props.content
@@ -71,7 +72,7 @@ export default class RichEditor extends Component {
       this.rawContent = { ...content };
       this.setState({
         editorState: !content || !content.blocks
-          ? EditorState.createEmpty()
+          ? EditorState.createEmpty(decorator)
           : EditorState.push(this.state.editorState, convertFromRaw(content)),
       });
     }
