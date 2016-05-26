@@ -5,13 +5,17 @@ import crypto from 'crypto';
 import { DragDropContext } from 'react-dnd';
 import HTML5Backend from 'react-dnd-html5-backend';
 
-import app from '../../../app';
+import app, { currentUser } from '../../../app';
 const attendanceService = app.service('/attendances');
 const instanceService = app.service('/instances');
 
 import TeamList from './team-list';
 import UnselectedList from './unselected-list.js';
 
+const MODES = {
+  instructor: 'instructor',
+  student: 'student',
+};
 
 /**
  * Shuffles an array
@@ -52,6 +56,7 @@ class Students extends Component {
       attendances: PropTypes.array,
       instance: PropTypes.object,
       evaluation: PropTypes.object,
+      participant: PropTypes.object,
       onAttendanceAdd: PropTypes.func,
       onAttendanceUpdate: PropTypes.func,
       onAttendanceRemove: PropTypes.func,
@@ -193,7 +198,32 @@ class Students extends Component {
     return teams;
   }
 
-  render() {
+  renderMode(mode) {
+    switch (mode) {
+      case 'student': return this.renderStudent();
+      case 'instructor': return this.renderInstructor();
+      default: return null;
+    }
+  }
+
+  renderStudent() {
+    const user = currentUser();
+    const attendances = this.props.attendances;
+    const attendance = attendances.find(att => att.userId === user.id);
+    const teamIds = attendances.filter(att => att.teamId === attendance.teamId).map(item => item.userId);
+    const team = this.state.students.filter(student => teamIds.indexOf(student.id) > -1);
+    return (
+      <Row>
+        <Panel>
+          {team.map(student =>
+            <p>{student.name}</p>
+          )}
+        </Panel>
+      </Row>
+    );
+  }
+
+  renderInstructor() {
     const all = this.state.students;
     const attendances = this.props.attendances;
     attendances.forEach(attendance => {
@@ -258,6 +288,15 @@ class Students extends Component {
             />
           </Col>
         </Row>
+      </div>
+    );
+  }
+
+  render() {
+    const mode = ['admin', 'write'].includes(this.props.participant.permission) ? MODES.instructor : MODES.student;
+    return (
+      <div>
+        {this.renderMode(mode)}
       </div>
     );
   }
