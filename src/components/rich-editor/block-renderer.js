@@ -37,6 +37,11 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
       imageWithLabels: {
         component: ImageWithLabelsWrapper,
         editable: false,
+        props: {
+          readOnly,
+          gotFocusCallback: () => setState({ editorLocked: true }),
+          lostFocusCallback: () => setState({ editorLocked: false }),
+        },
       },
       // 3d-video: { component: 3DVideo, editable: false },
       // You can see where this is going :)

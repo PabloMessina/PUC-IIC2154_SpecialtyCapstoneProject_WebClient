@@ -62,14 +62,15 @@ export default class ImageWithLabelsWrapper extends Component {
   }
 
   onGotFocus() {
-    this.props.gotFocusCallback();
+    this.props.blockProps.gotFocusCallback();
   }
   onLostFocus() {
-    this.props.lostFocusCallback();
+    this.props.blockProps.lostFocusCallback();
   }
 
   /** React's render function */
   render() {
+    const { readOnly } = this.props.blockProps;
     return (
       <div>
         <input ref="fileInput" type="file" onChange={this.onFileChanged}></input>
@@ -80,7 +81,7 @@ export default class ImageWithLabelsWrapper extends Component {
               style={styles.imgWithLabels}
               source={this.state.source}
               renderLabel={this.renderLabel}
-              mode="EDIT"
+              mode={readOnly ? '' : 'EDIT'}
               gotFocusCallback={this.onGotFocus}
               lostFocusCallback={this.onLostFocus}
             />
