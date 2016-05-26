@@ -129,7 +129,11 @@ class CourseInstances extends Component {
 
   render() {
     const { membership, participants } = this.state;
-    const { organization, course, instances } = this.props;
+    const { organization, course } = this.props;
+    const canEdit = ['admin', 'write'].includes(membership.permission);
+
+    const instances = this.props.instances
+      .filter(ins => canEdit || participants.findIndex(p => p.instanceId === ins.id) > -1);
 
     // Selected could be a instance or 'settings' or 'create'
     const selected = this.selected || this.subpath;
@@ -152,7 +156,7 @@ class CourseInstances extends Component {
             {instances.map(ins => (
               <Tab key={ins.id} eventKey={ins.id} title={ins.period} />
             ))}
-            {renderIf(['admin', 'write'].includes(membership.permission))(() => [
+            {renderIf(canEdit)(() => [
               <Tab key="CREATE" eventKey="CREATE" title={<Icon name="plus" />} />,
               <Tab key="SETTINGS" eventKey="SETTINGS" title={this.renderSettingsIcon()} tabClassName="pull-right" />,
             ])}
@@ -162,7 +166,7 @@ class CourseInstances extends Component {
         <br />
 
         {/* Render 'instance' child */}
-        {renderIf(this.props.children)(() =>
+        {renderIf(instance && this.props.children)(() =>
           <EasyTransition
             path={this.subpath}
             initialStyle={{ opacity: 0 }}
