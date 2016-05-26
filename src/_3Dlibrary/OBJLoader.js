@@ -338,6 +338,7 @@ const OBJLoader = {
               count = 0;
               end = -1;
               while (true) {
+                if (interrupter.stop) break;
                 for (let i = start; i < text.length; ++i, ++count) {
                   const char = text[i];
                   if (char === '\n' || char === '\r') {
@@ -355,7 +356,7 @@ const OBJLoader = {
                   line = text.substring(start, end);
                   parseLine(line);
                   start = end + 1;
-                  if (count >= 750000) {
+                  if (count >= 300000) {
                     onProgress(start, text.length);
                     parseByChunks();
                     break;

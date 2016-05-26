@@ -1,9 +1,8 @@
 import React, { Component } from 'react';
 import ImageWithLabels from '../image-with-labels/';
 import renderIf from 'render-if';
-import { Button } from 'react-bootstrap';
 
-export default class TemplateComponent extends Component {
+export default class ImageWithLabelsWrapper extends Component {
 
   static get defaultProps() {
     return {
@@ -78,7 +77,7 @@ export default class TemplateComponent extends Component {
   }
 }
 
-TemplateComponent.propTypes = {
+ImageWithLabelsWrapper.propTypes = {
   url: React.PropTypes.string,
 };
 

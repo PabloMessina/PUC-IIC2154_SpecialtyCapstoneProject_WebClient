@@ -17,6 +17,7 @@ const BLOCK_TYPES = [
   { icon: 'image', blockType: 'image' },
   { icon: 'video-camera', blockType: 'video' },
   { icon: 'cube', blockType: 'model' },
+  { icon: 'tags', blockType: 'imageWithLabels' },
   { label: 'TeX', blockType: 'latex' },
 ];
 
@@ -70,6 +71,20 @@ export default class BlockControls extends Component {
     );
   }
 
+  add2D() {
+    const entityKey = Entity.create(
+      'imageWithLabels',
+      'IMMUTABLE',
+      { src: ' ' }
+    );
+
+    return AtomicBlockUtils.insertAtomicBlock(
+      this.props.editorState,
+      entityKey,
+      ' '
+    );
+  }
+
   onBlockToggle(type) {
     let state;
     switch (type) {
@@ -83,6 +98,9 @@ export default class BlockControls extends Component {
         break;
       case 'model':
         state = this.add3D();
+        break;
+      case 'imageWithLabels':
+        state = this.add2D();
         break;
       default:
         state = RichUtils.toggleBlockType(this.props.editorState, type);

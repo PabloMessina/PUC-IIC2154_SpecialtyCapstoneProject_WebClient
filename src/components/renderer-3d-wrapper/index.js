@@ -17,7 +17,7 @@ export default class RendererWrapper extends Component {
 
   static get defaultProps() {
     return {
-      canEdit: false,
+      canEdit: true,
       remoteFiles: {
         // mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
         // obj: 'https://lopezjuri.com/videos/nRBC.obj',
@@ -170,9 +170,11 @@ export default class RendererWrapper extends Component {
         cornerRadiusCoef: 0.4,
         worldFontSizeCoef: 1 / 18,
       },
-      labelsChangedCallback: () => { console.log("default wrapper::labelsChangedCallback()"); },
-      highlightedLabelStyleChangedCallback: (style) => { console.log("highstyle = ", style); },
-      normalLabelStyleChangedCallback: (style) => { console.log("normalstyle = ", style); },
+      labelsChangedCallback: () => console.log("default wrapper::labelsChangedCallback()"),
+      highlightedLabelStyleChangedCallback: (style) => console.log("highstyle = ", style),
+      normalLabelStyleChangedCallback: (style) => console.log("normalstyle = ", style),
+      gotFocusCallback: () => console.log("gotFocusCallback()"),
+      lostFocusCallback: () => console.log("lostFocusCallback()"),
     };
   }
 
@@ -198,6 +200,7 @@ export default class RendererWrapper extends Component {
       labelDropdownY: null,
       lastClickedElem: null,
       componentUnmounted: false,
+      labelWithFocus: false,
     };
 
     this.onFilesChanged = this.onFilesChanged.bind(this);
@@ -234,7 +237,20 @@ export default class RendererWrapper extends Component {
   }
 
   onMouseDown(e) {
-    this.mystate.lastClickedElem = e.target;
+    let elem = e.target;
+    this.mystate.lastClickedElem = elem;
+    // if click is outside wrapper, unselect selected label
+    let inComponent = false;
+    while (elem) {
+      if (elem === this.refs.root) {
+        inComponent = true;
+        break;
+      }
+      elem = elem.parentElement;
+    }
+    if (!inComponent) {
+      this.refs.r3d.unselectSelectedLabel();
+    }
   }
 
   onLabelCountChanged(newCount) {
@@ -245,6 +261,12 @@ export default class RendererWrapper extends Component {
 
   onLabelsChanged(labels) {
     // console.log("===> onLabelsChanged(): labels = ", JSON.stringify(labels, null, '\t'));
+    if (labels.length === 0 && this.mystate.labelWithFocus) {
+      this.mystate.labelWithFocus = false;
+      console.log("----------------------");
+      console.log("onLabelsChanged()");
+      this.props.lostFocusCallback();
+    }
     if (!this.mystate.componentUnmounted) {
       this.props.labelsChangedCallback(labels);
       this.setState({
@@ -294,6 +316,18 @@ export default class RendererWrapper extends Component {
     if (!this.mystate.componentUnmounted) {
       if (this.state.hasSelectedLabel !== !!label) {
         this.setState({ hasSelectedLabel: !!label });
+      }
+      // check focus state
+      if (label && !this.mystate.labelWithFocus) {
+        this.mystate.labelWithFocus = true;
+        console.log("----------------------");
+        console.log("onSelectedLabelChanged()");
+        this.props.gotFocusCallback();
+      } else if (!label && this.mystate.labelWithFocus) {
+        this.mystate.labelWithFocus = false;
+        console.log("----------------------");
+        console.log("onSelectedLabelChanged()");
+        this.props.lostFocusCallback();
       }
     }
   }
@@ -375,7 +409,7 @@ export default class RendererWrapper extends Component {
     }
 
     return (
-      <div style={styles.globalDivStyle}>
+      <div ref="root" style={styles.globalDivStyle}>
         {renderIf(this.props.canEdit)(() => (
           <input ref="filesInput" type="file" onChange={this.onFilesChanged} multiple></input>
         ))}
@@ -462,6 +496,8 @@ RendererWrapper.propTypes = {
   labels: React.PropTypes.array,
   highlightedLabelStyle: React.PropTypes.object,
   normalLabelStyle: React.PropTypes.object,
+  gotFocusCallback: React.PropTypes.func,
+  lostFocusCallback: React.PropTypes.func,
   // required props
   labelsChangedCallback: React.PropTypes.func.isRequired,
   highlightedLabelStyleChangedCallback: React.PropTypes.func.isRequired,
