@@ -3,13 +3,13 @@ import { RichUtils, Entity, AtomicBlockUtils } from 'draft-js';
 import StyleButton from './style-button';
 
 const BLOCK_TYPES = [
-  { label: 'H1', blockType: 'header-one' },
-  { label: 'H2', blockType: 'header-two' },
-  { label: 'H3', blockType: 'header-three' },
-  { label: 'H4', blockType: 'header-four' },
-  { label: 'H5', blockType: 'header-five' },
-  { label: 'H6', blockType: 'header-six' },
-  { label: 'Blockquote', blockType: 'blockquote' },
+  { label: 'Big', blockType: 'header-two' },
+  { label: 'Bigger', blockType: 'header-one' },
+  //  { label: 'H3', blockType: 'header-three' },
+  //  { label: 'H4', blockType: 'header-four' },
+  //  { label: 'H5', blockType: 'header-five' },
+  //  { label: 'H6', blockType: 'header-six' },
+  { icon: 'quote-right', blockType: 'blockquote' },
   { icon: 'list-ul', blockType: 'unordered-list-item' },
   { icon: 'list-ol', blockType: 'ordered-list-item' },
   { icon: 'code', blockType: 'code-block' },

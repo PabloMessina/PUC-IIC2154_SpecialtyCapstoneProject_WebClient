@@ -9,11 +9,19 @@ import {
 import isEmpty from 'lodash/isEmpty';
 import isEqual from 'lodash/isEqual';
 import styleMap from './inline-styles';
+import blockStyleFn from './block-styles';
 import BlockControls from './controls/block-controls';
 import Decorator from './decorator';
+import MultiDecorator from 'draftjs-multidecorators';
+import PrismDecorator from './prismDecorator';
 import Toolbar from './components/toolbar';
 import renderIf from 'render-if';
 import { createBlockRenderer } from './block-renderer';
+
+const decorator = new MultiDecorator([
+  PrismDecorator,
+  Decorator,
+]);
 
 export default class RichEditor extends Component {
 
@@ -30,10 +38,11 @@ export default class RichEditor extends Component {
   constructor(props) {
     super(props);
 
+
     this.state = {
       editorState: props.content
-        ? EditorState.push(EditorState.createEmpty(Decorator), convertFromRaw(props.content))
-        : EditorState.createEmpty(Decorator),
+        ? EditorState.push(EditorState.createEmpty(decorator), convertFromRaw(props.content))
+        : EditorState.createEmpty(decorator),
       editorLocked: false,
     };
 
@@ -63,7 +72,7 @@ export default class RichEditor extends Component {
       this.rawContent = { ...content };
       this.setState({
         editorState: !content || !content.blocks
-          ? EditorState.createEmpty()
+          ? EditorState.createEmpty(decorator)
           : EditorState.push(this.state.editorState, convertFromRaw(content)),
       });
     }
@@ -109,6 +118,7 @@ export default class RichEditor extends Component {
         >
           <Editor
             blockRendererFn={this.blockRenderer}
+            blockStyleFn={blockStyleFn}
             customStyleMap={styleMap}
             editorState={editorState}
             handleKeyCommand={this.handleKeyCommand}
