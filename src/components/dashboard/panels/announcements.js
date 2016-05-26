@@ -73,7 +73,7 @@ class AnnouncementsPanel extends Component {
     const { announcements, total } = this.state;
     return (
       <Panel style={{ ...styles.container, ...style }}>
-        <Title title="Announcements" detail="Do not miss important news" icon="newspaper-o" count={total} />
+        <Title title="Announcements" detail="news" icon="newspaper-o" count={total} />
         <hr />
         {renderIf(announcements.length)(() =>
           announcements.map((announcement, index) => {
