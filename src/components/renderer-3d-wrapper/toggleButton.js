@@ -1,13 +1,8 @@
 import React, { Component } from 'react';
 import { Button } from 'react-bootstrap';
+import Icon, { IconStack } from 'react-fa';
 
 export default class ToggleButton extends Component {
-
-  static get defaultProps() {
-    return {
-      enabled: true,
-    };
-  }
 
   constructor(props) {
     super(props);
@@ -15,58 +10,45 @@ export default class ToggleButton extends Component {
       turnedOn: true,
     };
     this.handleClick = this.handleClick.bind(this);
-    this.getCurrentMessage = this.getCurrentMessage.bind(this);
-  }
-
-  componentWillReceiveProps(nextProps) {
-    if (!this.props.enabled && nextProps.enabled) {
-      this.setState({
-        turnedOn: true,
-      });
-    }
   }
 
   handleClick() {
-    if (this.props.enabled) {
-      if (this.state.turnedOn) {
-        this.setState({
-          turnedOn: false,
-        });
-        this.props.turnedOffCallback();
-      } else {
-        this.setState({
-          turnedOn: true,
-        });
-        this.props.turnedOnCallback();
-      }
+    if (this.state.turnedOn) {
+      this.setState({
+        turnedOn: false,
+      });
+      this.props.turnedOffCallback();
+    } else {
+      this.setState({
+        turnedOn: true,
+      });
+      this.props.turnedOnCallback();
     }
-  }
-
-  getCurrentMessage() {
-    if (this.props.enabled) {
-      return this.state.turnedOn ? this.props.turnedOnMessage :
-        this.props.turnedOffMessage;
-    }
-    return this.props.disabledMessage;
   }
 
   render() {
+    const { turnedOn } = this.state;
+    const { turnedOnIcon, turnedOffIcon, buttonStyle, iconStyle } = this.props;
     return (
-      <Button ref="button"
+      <Button
         onClick={this.handleClick}
-        disabled={!this.props.enabled}
         bsSize="small"
-      > {this.getCurrentMessage()}
+        style={buttonStyle}
+      >
+        <IconStack size="2x">
+          <Icon name="circle" stack="2x"/>
+          <Icon name={turnedOn ? turnedOnIcon : turnedOffIcon} stack="1x" style={iconStyle} />
+        </IconStack>
       </Button>
     );
   }
 }
 
 ToggleButton.propTypes = {
-  enabled: React.PropTypes.bool,
-  disabledMessage: React.PropTypes.string.isRequired,
-  turnedOnMessage: React.PropTypes.string.isRequired,
-  turnedOffMessage: React.PropTypes.string.isRequired,
+  turnedOnIcon: React.PropTypes.string.isRequired,
+  turnedOffIcon: React.PropTypes.string.isRequired,
   turnedOnCallback: React.PropTypes.func.isRequired,
   turnedOffCallback: React.PropTypes.func.isRequired,
+  buttonStyle: React.PropTypes.object.isRequired,
+  iconStyle: React.PropTypes.object.isRequired,
 };

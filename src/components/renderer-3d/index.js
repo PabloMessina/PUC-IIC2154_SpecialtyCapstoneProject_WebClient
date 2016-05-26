@@ -676,6 +676,7 @@ export default class Renderer3D extends Component {
         this.refs.viewport.offsetHeight
       );
       this.mystate.zoom = this.mystate.camera.zoom; // keep the zoom up to date
+      this.updateSpritePlaneOrientations();
       this.animateForAWhile();
     }
   }

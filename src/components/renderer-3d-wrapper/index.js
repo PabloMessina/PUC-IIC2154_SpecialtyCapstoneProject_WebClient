@@ -2,9 +2,10 @@ import React, { Component } from 'react';
 import Renderer3D from '../renderer-3d/';
 import ToggleButton from './toggleButton';
 import LabelStyleControl from './labelStyleControl';
-import { ButtonToolbar, Button, Dropdown } from 'react-bootstrap';
+import { Button, Dropdown } from 'react-bootstrap';
 import renderIf from 'render-if';
-import _ from 'lodash';
+import Icon, { IconStack } from 'react-fa';
+import isEqual from 'lodash/isEqual';
 
 const LIGHT_BLUE = '#9fdef7';
 const BLACK = '#000000';
@@ -13,11 +14,12 @@ const BLUE = '#0000ff';
 const YELLOW = '#00ffff';
 const GREEN = '#00ff00';
 
-export default class RendererWrapper extends Component {
+export default class Renderer3DWrapper extends Component {
 
   static get defaultProps() {
     return {
       canEdit: true,
+      blockProps: { readOnly: false },
       remoteFiles: {
         // mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
         // obj: 'https://lopezjuri.com/videos/nRBC.obj',
@@ -225,8 +227,8 @@ export default class RendererWrapper extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (!_.isEqual(this.props.labels, nextProps.labels) &&
-      !_.isEqual(nextProps.labels, this.state.labels)) {
+    if (!isEqual(this.props.labels, nextProps.labels) &&
+      !isEqual(nextProps.labels, this.state.labels)) {
       this.setState({ labels: nextProps.labels });
     }
   }
@@ -398,6 +400,7 @@ export default class RendererWrapper extends Component {
 
   render() {
     // check label style to use
+    const { readOnly } = this.props.blockProps;
     let labelStyle;
     switch (this.state.labelStyleMode) {
       case 'normal':
@@ -410,19 +413,56 @@ export default class RendererWrapper extends Component {
 
     return (
       <div ref="root" style={styles.globalDivStyle}>
-        {renderIf(this.props.canEdit)(() => (
+        {renderIf(false && !readOnly)(() => (
           <input ref="filesInput" type="file" onChange={this.onFilesChanged} multiple></input>
         ))}
-        <ButtonToolbar>
-          {renderIf(this.props.canEdit)(() => (
-            <Dropdown id="label-dropdown-custom" open={this.state.labelDropdownOpen}
+        <div style={styles.toolbar}>
+          <Button
+            style={styles.toolbarButton}
+            disabled={!this.state.hasLoadedModel}
+            onClick={this.refocusOnModel} bsSize="small"
+          >
+            <IconStack size="2x">
+              <Icon name="circle" stack="2x" />
+              <Icon name="compass" stack="1x" style={styles.icon} />
+            </IconStack>
+          </Button>
+          {renderIf(this.state.labelCount > 0)(() => (
+            <ToggleButton
+              turnedOnIcon="eye"
+              turnedOffIcon="eye-slash"
+              turnedOnCallback={this.showLabels}
+              turnedOffCallback={this.hideLabes}
+              iconStyle={styles.icon}
+              buttonStyle={styles.toolbarButton}
+            />
+          ))}
+          {renderIf(false && readOnly)(() => (
+            <Button
+              disabled={!(this.state.hasSelectedLabel && this.state.showingLabels)}
+              onClick={this.removeSelectedLabel} bsSize="small"
+            >Remove Label</Button>
+          ))}
+          {renderIf(!readOnly)(() => (
+            <Dropdown
+              id="label-dropdown-custom"
+              open={this.state.labelDropdownOpen}
               onToggle={this.onLabelDropDownToggle}
               ref="labelDropdown"
+              dropup
+              pullRight
             >
-              <Dropdown.Toggle bsRole="toggle" bsStyle="default" bsSize="small"
+              <Dropdown.Toggle
+                style={styles.toolbarButton}
+                bsRole="toggle"
+                bsStyle="default"
+                bsSize="small"
                 className="dropdown-with-input dropdown-toggle"
               >
-                Edit Label Styles
+                <IconStack size="2x">
+                  <Icon name="circle" stack="2x"/>
+                  <Icon name="cog" stack="1x" style={styles.icon} />
+                </IconStack>
               </Dropdown.Toggle>
               <Dropdown.Menu className="super-colors">
                 <div ref="labelSettingsDiv" style={styles.labelSettingsDivStyle}>
@@ -446,27 +486,10 @@ export default class RendererWrapper extends Component {
               </Dropdown.Menu>
             </Dropdown>
           ))}
-          <Button
-            disabled={!this.state.hasLoadedModel}
-            onClick={this.refocusOnModel} bsSize="small"
-          >REFOCUS</Button>
-          <ToggleButton
-            enabled={this.state.labelCount > 0}
-            disabledMessage="No labels in scene"
-            turnedOnMessage="Hide Labels"
-            turnedOffMessage="Show Labels"
-            turnedOnCallback={this.showLabels}
-            turnedOffCallback={this.hideLabes}
-          />
-          {renderIf(this.props.canEdit)(() => (
-            <Button
-              disabled={!(this.state.hasSelectedLabel && this.state.showingLabels)}
-              onClick={this.removeSelectedLabel} bsSize="small"
-            >Remove Label</Button>
-          ))}
-        </ButtonToolbar>
-        <Renderer3D ref="r3d"
-          canEdit={this.props.canEdit}
+        </div>
+        <Renderer3D
+          ref="r3d"
+          canEdit={!readOnly}
           remoteFiles={this.props.remoteFiles}
           labels={this.state.labels}
           normalLabelStyle={this.state.normalLabelStyle}
@@ -489,7 +512,7 @@ export default class RendererWrapper extends Component {
   }
 }
 
-RendererWrapper.propTypes = {
+Renderer3DWrapper.propTypes = {
   // optional props
   canEdit: React.PropTypes.bool,
   remoteFiles: React.PropTypes.object,
@@ -502,6 +525,8 @@ RendererWrapper.propTypes = {
   labelsChangedCallback: React.PropTypes.func.isRequired,
   highlightedLabelStyleChangedCallback: React.PropTypes.func.isRequired,
   normalLabelStyleChangedCallback: React.PropTypes.func.isRequired,
+  // vicho's props
+  blockProps: React.PropTypes.object,
 };
 
 const styles = {
@@ -511,6 +536,21 @@ const styles = {
   },
   globalDivStyle: {
     position: 'relative',
+    width: '70%',
+  },
+  toolbar: {
+    position: 'absolute',
+    right: 0,
+    bottom: 60,
+    height: 44,
+  },
+  toolbarButton: {
+    backgroundColor: 'transparent',
+    boxShadow: 'none',
+    padding: 3,
+  },
+  icon: {
+    color: 'white',
   },
   progressDiv: {
     width: '50%',

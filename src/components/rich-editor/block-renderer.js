@@ -27,7 +27,12 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
       },
       model: {
         component: Renderer3DWrapper,
-        editable: true,
+        editable: false,
+        props: {
+          readOnly,
+          onStartEdit: () => setState({ editorLocked: true }),
+          onFinishEdit: () => setState({ editorLocked: false }),
+        },
       },
       imageWithLabels: {
         component: ImageWithLabelsWrapper,
