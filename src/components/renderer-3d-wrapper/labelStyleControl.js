@@ -22,15 +22,15 @@ export default class LabelStyleControl extends Component {
       fontSize: Number(this.refs.fontSizeInput.value),
       foregroundColor: this.refs.foregroundColorInput.value,
       backgroundColor: this.refs.backgroundColorInput.value,
-      borderColor: this.refs.borderColorInput.value,
-      lineColor: this.refs.lineColorInput.value,
-      sphereColor: this.refs.sphereColorInput.value,
+      //borderColor: this.refs.borderColorInput.value,
+      //lineColor: this.refs.lineColorInput.value,
+      //sphereColor: this.refs.sphereColorInput.value,
       borderThickness: Number(this.refs.borderThicknessSlider.value),
-      cornerRadiusCoef: Number(this.refs.cornerRadiusCoefSlider.value),
+      //cornerRadiusCoef: Number(this.refs.cornerRadiusCoefSlider.value),
       worldFontSizeCoef: Number(this.refs.worldFontSizeCoefSlider.value),
     };
     this.props.labelStyleChangedCallback(labelStyle);
-    this.setState({ labelStyle });
+    this.setState({ labelStyle: { ...this.state.labelStyle, ...labelStyle } });
   }
 
   render() {
@@ -68,16 +68,16 @@ export default class LabelStyleControl extends Component {
         />
         </label>
         <br />
-        <label>LineColor: <input ref="lineColorInput" type="color"
+        {/*<label>LineColor: <input ref="lineColorInput" type="color"
           value={lineColor} onChange={this.onLabelStyleChanged}
         />
         </label>
-        <br />
-        <label>SphereColor: <input ref="sphereColorInput" type="color"
+        <br />*/}
+        {/*<label>SphereColor: <input ref="sphereColorInput" type="color"
           value={sphereColor} onChange={this.onLabelStyleChanged}
         />
         </label>
-        <br />
+        <br />*/}
         <label>FontSize: </label>
         <input ref="fontSizeInput"
           type="range" min={25} max={100} step={2}
@@ -92,13 +92,13 @@ export default class LabelStyleControl extends Component {
         />
         <span>{borderThickness}</span>
         <br />
-        <label>CornerRadiusCoeficient: </label>
+        {/*<label>CornerRadiusCoeficient: </label>
         <input ref="cornerRadiusCoefSlider"
           type="range" min={0.05} max={0.5} step={0.025}
           value={cornerRadiusCoef} onChange={this.onLabelStyleChanged}
         />
         <span>{cornerRadiusCoef}</span>
-        <br />
+        <br />*/}
         <label>WorldFontSizeCoeficient: </label>
         <input ref="worldFontSizeCoefSlider"
           type="range" min={0.005} max={0.16} step={0.0005}

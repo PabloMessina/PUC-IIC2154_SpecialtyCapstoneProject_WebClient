@@ -142,7 +142,7 @@ const ThreeUtils = {
    * foregroundColor, borderColor, borderThickness, worldFontHeight, etc.]
    * @return {[THREE::Sprite]}
    */
-  makeTextSprite(text, opacity, worldReferenceSize, params, getMinDelCoords) {
+  makeTextSprite(text, opacity, worldReferenceSize, params /* , getMinDelCoords */) {
     // read params
     const font = params.font || 'Georgia';
     const fontSize = params.fontSize || 50;
@@ -185,6 +185,7 @@ const ThreeUtils = {
     // draw text
     ctx.fillStyle = foregroundColor;
     ctx.fillText(text, (canvas.width - textWidth) * 0.5, (canvas.height - textHeight) * 0.5);
+    /*
     // draw minimize symbol
     const miniX = canvas.width - borderThickness * 0.5 - charWidth * 3.6;
     const miniY = borderThickness * 0.17;
@@ -202,6 +203,7 @@ const ThreeUtils = {
           w: textWidth / canvas.width, h: textHeight / canvas.height },
       });
     }
+    */
     // generate texture from canvas
     const texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;
