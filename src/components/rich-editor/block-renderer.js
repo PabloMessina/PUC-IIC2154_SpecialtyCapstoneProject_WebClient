@@ -30,8 +30,8 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
         editable: false,
         props: {
           readOnly,
-          onStartEdit: () => setState({ editorLocked: true }),
-          onFinishEdit: () => setState({ editorLocked: false }),
+          gotFocusCallback: () => setState({ editorLocked: true }),
+          lostFocusCallback: () => setState({ editorLocked: false }),
         },
       },
       imageWithLabels: {
