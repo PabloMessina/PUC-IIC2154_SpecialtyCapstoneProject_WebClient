@@ -285,7 +285,7 @@ class EvaluationCreate extends Component {
     const query = {
       evaluationId: evaluation.id || evaluation,
     };
-    return attendanceService.find(query).map(result => result.data);
+    return attendanceService.find({ query }).map(result => result.data);
   }
 
   findOrCreateAnswer(question, answer) {
