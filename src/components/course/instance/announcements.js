@@ -149,11 +149,15 @@ export default class InstanceEvaluations extends Component {
 
   render() {
     const participant = this.props.participant;
+    const { announcements } = this.state;
 
     return (
       <div style={styles.container}>
         <Col xs={12} md={8}>
-          {this.state.announcements.map((announcement, index) => {
+          {renderIf(announcements.length === 0)(() =>
+            <h4>There is not published announcements</h4>
+          )}
+          {announcements.map((announcement, index) => {
             const props = {
               content: announcement.content,
               subject: announcement.subject,

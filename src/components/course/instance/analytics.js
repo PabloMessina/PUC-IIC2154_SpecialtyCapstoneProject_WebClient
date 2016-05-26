@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
+import React, { PropTypes, Component } from 'react';
 import { Line as LineChart, Bar as BarChart } from 'react-chartjs';
 import { Row, Col, Table, Button, ButtonGroup, ControlLabel, Panel } from 'react-bootstrap';
 import Select from 'react-select';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
 
-import app from '../../../app';
+import app, { currentUser } from '../../../app';
 const participantService = app.service('/participants');
 const evaluationService = app.service('/evaluations');
 
@@ -53,12 +53,14 @@ export default class Summary extends Component {
 
   static get propTypes() {
     return {
-      organization: React.PropTypes.object,
-      course: React.PropTypes.object,
-      instance: React.PropTypes.object,
+      organization: PropTypes.object,
+      course: PropTypes.object,
+      participant: PropTypes.object,
+      membership: PropTypes.object,
+      instance: PropTypes.object,
       // React Router
-      params: React.PropTypes.object,
-      evaluations: React.PropTypes.array,
+      params: PropTypes.object,
+      evaluations: PropTypes.array,
     };
   }
 
@@ -134,16 +136,24 @@ export default class Summary extends Component {
   }
 
   render() {
-    const { instance } = this.props;
-    const { students, selectedEvaluations, selectedStudents } = this.state;
-    const evaluations = this.state.evaluations.sort((a, b) => new Date(b.startAt) - new Date(a.startAt));
+    const { instance, membership, participant } = this.props;
+    const { students, selectedEvaluations } = this.state;
+    const evaluations = this.state.evaluations.sort((a, b) => new Date(a.startAt) - new Date(b.startAt));
 
-    const dropdown = students.map(student => ({
+    const canEdit = ['admin', 'write'].includes(membership.permission) || ['admin'].includes(participant.permission);
+
+    const user = currentUser();
+    const dropdown = students.filter(s => canEdit || s.user.id === user.id).map(student => ({
       id: student.user.id,
       value: student.user.id,
       label: student.user.name,
     }));
-
+    const me = {
+      id: user.id,
+      value: user.id,
+      label: user.name,
+    };
+    const selectedStudents = canEdit ? this.state.selectedStudents : [me];
     const filteredEvaluations = evaluations.filter(evaluation => selectedEvaluations.indexOf(evaluation.id) > -1);
 
     const { approvalGrade, minGrade, maxGrade } = instance;
@@ -261,6 +271,7 @@ export default class Summary extends Component {
                 placeholder="Students..."
                 onChange={(value, label) => this.setState({ selectedStudents: label, redraw: true })}
                 isLoading={this.state.loading}
+                disabled={!canEdit}
                 value={selectedStudents}
               />
             </Col>

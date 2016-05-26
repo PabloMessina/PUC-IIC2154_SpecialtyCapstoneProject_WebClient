@@ -79,9 +79,9 @@ class CourseInstances extends Component {
     if (!selected || this.selected === selected) return;
 
     const courseId = this.props.course.id;
-    if (selected === 'SETTINGS') {
+    if (selected === 'settings') {
       this.props.router.replace(`/courses/show/${courseId}/instances/settings`);
-    } else if (selected === 'CREATE') {
+    } else if (selected === 'create') {
       this.props.router.replace(`/courses/show/${courseId}/instances/create`);
     } else {
       this.props.router.replace(`/courses/show/${courseId}/instances/show/${selected}`);
@@ -157,8 +157,8 @@ class CourseInstances extends Component {
               <Tab key={ins.id} eventKey={ins.id} title={ins.period} />
             ))}
             {renderIf(canEdit)(() => [
-              <Tab key="CREATE" eventKey="CREATE" title={<Icon name="plus" />} />,
-              <Tab key="SETTINGS" eventKey="SETTINGS" title={this.renderSettingsIcon()} tabClassName="pull-right" />,
+              <Tab key="create" eventKey="create" title={<Icon name="plus" />} />,
+              <Tab key="settings" eventKey="settings" title={this.renderSettingsIcon()} tabClassName="pull-right" />,
             ])}
           </Tabs>
         </Row>
@@ -166,7 +166,7 @@ class CourseInstances extends Component {
         <br />
 
         {/* Render 'instance' child */}
-        {renderIf(instance && this.props.children)(() =>
+        {renderIf((instance || selected === 'create' || selected === 'settings') && this.props.children)(() =>
           <EasyTransition
             path={this.subpath}
             initialStyle={{ opacity: 0 }}
