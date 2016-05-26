@@ -19,7 +19,11 @@ export default class Renderer3DWrapper extends Component {
   static get defaultProps() {
     return {
       canEdit: true,
-      blockProps: { readOnly: false },
+      blockProps: {
+        readOnly: false,
+        gotFocusCallback: () => {},
+        lostFocusCallback: () => {},
+      },
       remoteFiles: {
         // mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
         // obj: 'https://lopezjuri.com/videos/nRBC.obj',
