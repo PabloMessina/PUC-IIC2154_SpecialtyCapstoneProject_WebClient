@@ -142,7 +142,7 @@ const ThreeUtils = {
    * foregroundColor, borderColor, borderThickness, worldFontHeight, etc.]
    * @return {[THREE::Sprite]}
    */
-  makeTextSprite(text, opacity, worldReferenceSize, params) {
+  makeTextSprite(text, opacity, worldReferenceSize, params, getMinDelCoords) {
     // read params
     const font = params.font || 'Georgia';
     const fontSize = params.fontSize || 50;
@@ -185,6 +185,23 @@ const ThreeUtils = {
     // draw text
     ctx.fillStyle = foregroundColor;
     ctx.fillText(text, (canvas.width - textWidth) * 0.5, (canvas.height - textHeight) * 0.5);
+    // draw minimize symbol
+    const miniX = canvas.width - borderThickness * 0.5 - charWidth * 3.6;
+    const miniY = borderThickness * 0.17;
+    ctx.fillText('-', miniX, miniY);
+    // draw delete symbol
+    const delX = canvas.width - borderThickness * 0.5 - charWidth * 2.1;
+    const delY = borderThickness * 0.16;
+    ctx.fillText('x', delX, delY);
+    // return min and del coords
+    if (getMinDelCoords) {
+      getMinDelCoords({
+        minimization: { x: miniX / canvas.width, y: miniY / canvas.height,
+          w: textWidth / canvas.width, h: textHeight / canvas.height },
+        deletion: { x: delX / canvas.width, y: delY / canvas.height,
+          w: textWidth / canvas.width, h: textHeight / canvas.height },
+      });
+    }
     // generate texture from canvas
     const texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;

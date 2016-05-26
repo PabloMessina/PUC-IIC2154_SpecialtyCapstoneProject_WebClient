@@ -612,7 +612,8 @@ export default class Renderer3D extends Component {
         /** sprite */
         const sprite = ThreeUtils.makeTextSprite(
           label.text || DEFAULT_LABEL_MESSAGE,
-          1, this.mystate.meshDiameter, this.mystate.normalLabelStyle
+          1, this.mystate.meshDiameter, this.mystate.normalLabelStyle,
+          (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
         );
         sprite.position.set(label.position.x, label.position.y, label.position.z);
         this.mystate.spriteGroup.add(sprite);
@@ -1122,7 +1123,8 @@ export default class Renderer3D extends Component {
       labelSettings.text,
       labelSettings.opacity,
       labelSettings.worldReferenceSize,
-      labelSettings.style
+      labelSettings.style,
+      (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
     );
     // copy the same position from the old sprite
     newSprite.position.copy(labelObj.sprite.position);
