@@ -53,3 +53,63 @@ body {
 .teamHover {
   background-color: aqua;
 }
+
+// Editor blocks
+
+.editorBlockQuote{
+  display:block;
+  background: #fff;
+  padding: 15px 20px 15px 45px;
+  margin: 0 0 20px;
+  position: relative;
+
+  /*Font*/
+  font-family: Georgia, serif;
+  font-size: 30;
+  line-height: 1.2;
+  color: #808080;
+  text-align: justify;
+
+  /*Borders - (Optional)*/
+  border-left: 15px solid #16a085;
+  border-right: 2px solid #16a085;
+
+  /*Box Shadow - (Optional)*/
+  -moz-box-shadow: 2px 2px 15px #ccc;
+  -webkit-box-shadow: 2px 2px 15px #ccc;
+  box-shadow: 2px 2px 15px #ccc;
+}
+
+.editorBlockQuote::before{
+  content: "\201C"; /*Unicode for Left Double Quote*/
+
+  /*Font*/
+  font-family: Georgia, serif;
+  font-size: 60px;
+  font-weight: bold;
+  color: #BDC3C7;
+
+  /*Positioning*/
+  position: absolute;
+  left: 10px;
+  top:5px;
+}
+
+.editorBlockQuote::after{
+  /*Reset to make sure*/
+  content: "";
+}
+
+.editorCode {
+  border: none;
+  background-color: #fdf6e3;
+  font-family: 'Inconsolata', 'Menlo', 'Consolas', monospace;
+  font-size: 16px;
+  padding: 0px 10px;
+  margin: 0;
+}
+
+.public-DraftStyleDefault-pre {
+  background-color: #fdf6e3;
+  border: none;
+}

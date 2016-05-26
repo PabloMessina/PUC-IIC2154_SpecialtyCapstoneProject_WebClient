@@ -9,8 +9,11 @@ import {
 import isEmpty from 'lodash/isEmpty';
 import isEqual from 'lodash/isEqual';
 import styleMap from './inline-styles';
+import blockStyleFn from './block-styles';
 import BlockControls from './controls/block-controls';
 import Decorator from './decorator';
+import MultiDecorator from 'draftjs-multidecorators';
+import PrismDecorator from './prismDecorator';
 import Toolbar from './components/toolbar';
 import renderIf from 'render-if';
 import { createBlockRenderer } from './block-renderer';
@@ -30,10 +33,15 @@ export default class RichEditor extends Component {
   constructor(props) {
     super(props);
 
+    const decorator = new MultiDecorator([
+      PrismDecorator,
+      Decorator,
+    ]);
+
     this.state = {
       editorState: props.content
-        ? EditorState.push(EditorState.createEmpty(Decorator), convertFromRaw(props.content))
-        : EditorState.createEmpty(Decorator),
+        ? EditorState.push(EditorState.createEmpty(decorator), convertFromRaw(props.content))
+        : EditorState.createEmpty(decorator),
       editorLocked: false,
     };
 
@@ -109,6 +117,7 @@ export default class RichEditor extends Component {
         >
           <Editor
             blockRendererFn={this.blockRenderer}
+            blockStyleFn={blockStyleFn}
             customStyleMap={styleMap}
             editorState={editorState}
             handleKeyCommand={this.handleKeyCommand}
