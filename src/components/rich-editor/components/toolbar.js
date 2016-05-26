@@ -15,6 +15,7 @@ export default class Toolbar extends Component {
       editingLink: false,
     };
     this.setBarPosition = this.setBarPosition.bind(this);
+    this.getSelectionCoords = this.getSelectionCoords.bind(this);
   }
 
 
@@ -31,7 +32,7 @@ export default class Toolbar extends Component {
     // const offsetBottom =  - rangeBounds.top + editorBounds.top + rangeBounds.height;
     // const offsetBottom = rangeBounds.top - editorBounds.top - (toolbarHeight + 14);
     //const offsetBottom = - rangeBounds.top;
-    const offsetTop = rangeBounds.top - editorBounds.top - (toolbarHeight ? toolbarHeight + 10 : 60);
+    const offsetTop = rangeBounds.top + editor.scrollTop - editorBounds.top - (toolbarHeight ? toolbarHeight + 10 : 60);
     return { offsetLeft, offsetTop };
   }
 
