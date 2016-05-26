@@ -293,8 +293,8 @@ export default class Questions extends Component {
         <CreateQuestionModal show={this.state.creating} onHide={this.onModalClose} onSave={this.onModalSave} />
         <Col style={styles.rigth} xs={12} sm={12} md={5}>
           <Col xs={12}>
-            <Button style={styles.custom} block bsStyle="default" onClick={() => this.setState({ creating: true })}>
-              <h5>Add custom question</h5>
+            <Button style={styles.custom} block bsStyle="primary" onClick={() => this.setState({ creating: true })}>
+              <h5 style={{ color: 'white' }}>Add custom question</h5>
             </Button>
           </Col>
           <Col xs={12}>
@@ -359,7 +359,6 @@ const styles = {
   custom: {
     marginBottom: 15,
     borderColor: Colors.MAIN,
-    color: Colors.MAIN,
   },
   customContainer: {
     display: 'flex',

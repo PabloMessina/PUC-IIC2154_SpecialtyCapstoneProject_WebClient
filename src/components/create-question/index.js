@@ -68,7 +68,7 @@ export default class CreateQuestion extends Component {
 
   getQuestion() {
     const { question } = this.state;
-    if (question.qtype === 'multiChoice') {
+    if (question.qtype === 'multiChoice' && question.answer) {
       const selectable = question.answer.choices.length;
       return { ...question, fields: { ...question.fields, selectable, selected: selectable } };
     }
@@ -106,9 +106,13 @@ export default class CreateQuestion extends Component {
       <div style={styles.container}>
         <Row>
           <Col xs={12}>
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
-            tempor incididunt ut labore et dolore magna aliqua.
-            Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+            This is que question-creator menu, this will add a question to the course pool. To create a new question:
+            <ol>
+              <li>Select the type of the question.</li>
+              <li>Add the respective tags.</li>
+              <li>Write the question body.</li>
+              <li>Add the correct answer and submit.</li>
+            </ol>
           </Col>
         </Row>
         <Row>
@@ -140,7 +144,10 @@ export default class CreateQuestion extends Component {
                 value={selected}
                 options={tags}
                 onChange={this.onTagChange}
-                placeholder={'Tags'}
+                allowCreate
+                addLabelText="Create the tag: {label}"
+                placeholder="Tags..."
+                noResultsText="Type a new tag to create it"
               />
             </div>
           </Col>

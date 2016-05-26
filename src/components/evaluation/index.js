@@ -306,7 +306,6 @@ class EvaluationCreate extends Component {
         evaluationId: evaluation.id,
         $limit: 1,
       };
-      console.log('query', query);
 
       return answerService.find({ query })
         .then(result => result.data[0])
@@ -453,6 +452,7 @@ class EvaluationCreate extends Component {
                 <small style={{ marginLeft: 4 }}> {evaluation.title}</small>
               ))}
             </h2>
+            {/*
             <div>
               {renderIf(this.state.syncing)(() =>
                 <span style={{ color: 'grey' }}>
@@ -460,6 +460,7 @@ class EvaluationCreate extends Component {
                 </span>
               )}
             </div>
+            */}
 
             {/*
             {renderIf(this.state.evaluation && this.state.evaluation.description)(() => (
@@ -469,7 +470,7 @@ class EvaluationCreate extends Component {
           </Col>
           <Col xs={12} md={3}>
             {renderIf(canEdit)(() =>
-              <ButtonToolbar style={{ marginTop: 30 }}>
+              <ButtonToolbar className="pull-right" style={{ marginTop: 30 }}>
                 {renderIf(!evaluation.published)(() =>
                   <Button bsStyle="primary" onClick={() => this.onPublish(true)}>Publish</Button>
                 )}
