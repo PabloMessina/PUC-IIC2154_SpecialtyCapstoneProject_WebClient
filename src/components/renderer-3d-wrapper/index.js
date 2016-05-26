@@ -267,7 +267,7 @@ export default class Renderer3DWrapper extends Component {
       this.mystate.labelWithFocus = false;
       console.log("----------------------");
       console.log("onLabelsChanged()");
-      this.props.lostFocusCallback();
+      this.props.blockprops.lostFocusCallback();
     }
     if (!this.mystate.componentUnmounted) {
       this.props.labelsChangedCallback(labels);
@@ -319,17 +319,18 @@ export default class Renderer3DWrapper extends Component {
       if (this.state.hasSelectedLabel !== !!label) {
         this.setState({ hasSelectedLabel: !!label });
       }
+      const { gotFocusCallback, lostFocusCallback } = this.props.blockProps;
       // check focus state
       if (label && !this.mystate.labelWithFocus) {
         this.mystate.labelWithFocus = true;
         console.log("----------------------");
         console.log("onSelectedLabelChanged()");
-        this.props.gotFocusCallback();
+        gotFocusCallback();
       } else if (!label && this.mystate.labelWithFocus) {
         this.mystate.labelWithFocus = false;
         console.log("----------------------");
         console.log("onSelectedLabelChanged()");
-        this.props.lostFocusCallback();
+        lostFocusCallback();
       }
     }
   }
