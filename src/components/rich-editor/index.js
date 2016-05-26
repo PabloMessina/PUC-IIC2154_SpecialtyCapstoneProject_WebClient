@@ -88,7 +88,7 @@ export default class RichEditor extends Component {
   }
 
   render() {
-    const { style, readOnly } = this.props;
+    const { style, readOnly, onScroll } = this.props;
     const { editorState, editorLocked } = this.state;
     return (
       <div style={styles.container}>
@@ -104,6 +104,7 @@ export default class RichEditor extends Component {
         <div
           ref="editorContainer"
           onClick={this.focus}
+          onScroll={onScroll}
           style={{ ...styles.editor, ...style }}
         >
           <Editor
@@ -130,6 +131,7 @@ export default class RichEditor extends Component {
 const styles = {
   container: {
     width: '100%',
+    paddingTop: 10,
   },
   editor: {
     padding: 50,

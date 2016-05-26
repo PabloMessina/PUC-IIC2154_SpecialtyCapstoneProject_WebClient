@@ -10,6 +10,7 @@ import {
   FormControl,
   Alert,
   Breadcrumb,
+  Input,
 } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
@@ -102,15 +103,22 @@ export default class AtlasCreate extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  mapArray(item) {
-    const array = [item.value].join();
-    return array;
+  getValidationState() {
+    const length = this.state.title.length;
+    if (length > 5) return 'success';
+    else if (length > 0) return 'error';
+    return '';
   }
 
   changeAuthor(event, index) {
     const authors = [...this.state.authors];
     authors[index] = event.target.value;
     this.setState({ authors });
+  }
+
+  mapArray(item) {
+    const array = [item.value].join();
+    return array;
   }
 
   addAuthor() {
@@ -178,11 +186,20 @@ export default class AtlasCreate extends Component {
 
         <Row>
           <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
-            <p>Share knowledge across your organization with rich text books. Students and teachers can download your work on their personal devices and take notes and add bookmarks.</p>
+            <p>
+              Share knowledge across your organization with rich text books.
+              Students and teachers can download your work on their personal devices and take notes and add bookmarks.
+            </p>
             <ul>
               <li>Add contributors and work on parallel.</li>
               <li>Restrict your atlas to selected courses or make it private just for you.</li>
-              <li>Add <strong>sections</strong>, <strong>images</strong>, <strong>videos</strong> and even <strong>3D models</strong>.</li>
+              <li>
+                Add <strong>sections</strong>
+                , <strong>images</strong>,
+                <strong>videos</strong> and even
+                <strong>3D models
+                </strong>.
+              </li>
             </ul>
 
             <hr />
@@ -196,8 +213,8 @@ export default class AtlasCreate extends Component {
 
             <form onSubmit={this.onSubmit}>
 
-              <FormGroup controlId="name">
-                <ControlLabel>Course name</ControlLabel>
+              <FormGroup controlId="name" validationState={this.getValidationState()}>
+                <ControlLabel>Title</ControlLabel>
                 <FormControl
                   type="text"
                   value={this.state.title}
@@ -245,8 +262,7 @@ export default class AtlasCreate extends Component {
                 </div>
               </FormGroup>
 
-              {/*
-              <div style={styles.item}>
+              {/* <div style={styles.item}>
                 <label>Atlas Author:</label>
                 {this.state.authors.map((author, i) => (
                   <div style={styles.authorInput} key={i}>
@@ -279,12 +295,11 @@ export default class AtlasCreate extends Component {
               <div style={styles.item}>
                 <Input type="file" style={styles.imageInput} onChange={this.handleImageChange} />
                 {renderIf(this.state.imagePreviewUrl)(() => (
-                  <img src={this.state.imagePreviewUrl} />
+                  <Image src={this.state.imagePreviewUrl} />
                 ))}
               </div>
-              */}
 
-              <hr />
+              <hr />*/}
 
               <Button bsStyle="primary" type="submit">
                 Create Atlas

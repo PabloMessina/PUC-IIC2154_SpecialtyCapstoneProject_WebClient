@@ -87,7 +87,8 @@ export default class Summary extends Component {
     this.fetchEvaluations(instance)
       .then(evaluations => {
         const selectedEvaluations = evaluations.map(evaluation => evaluation.id);
-        this.setState({ selectedEvaluations, titleHistogram: this.state.evaluations[0].title });
+        const titleHistogram = selectedEvaluations.length ? selectedEvaluations[0].title : '';
+        this.setState({ selectedEvaluations, titleHistogram });
       });
   }
 

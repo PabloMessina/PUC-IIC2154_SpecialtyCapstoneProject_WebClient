@@ -1,8 +1,22 @@
 import React, { Component } from 'react';
-import { Grid, Image, Panel, Col, Row, Button, Glyphicon, Nav, NavItem } from 'react-bootstrap';
+import {
+  Grid,
+  Image,
+  Panel,
+  Col,
+  Row,
+  Button,
+  Glyphicon,
+  Nav,
+  NavItem,
+  FormGroup,
+  FormControl,
+  ControlLabel } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { browserHistory } from 'react-router';
 import moment from 'moment';
+import Select from 'react-select';
+import renderIf from 'render-if';
 
 import app, { currentUser } from '../../app';
 import { Colors } from '../../styles';
@@ -24,9 +38,21 @@ export default class DocumentDescription extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      atlas: props.atlas,
-      tags: [],
+      atlas: this.props.params.atlas,
+      tags: this.props.params.atlas.tags,
       selectedTab: 1,
+      editable: false,
+      title: this.props.params.atlas.title,
+      authors: this.props.params.atlas.authors,
+      description: this.props.params.atlas.description,
+      cover: this.props.params.atlas.cover.url,
+      allTags: [
+        { label: 'Anatomy', value: 'Anatomy' },
+        { label: 'Cardiology', value: 'Cardiology' },
+        { label: 'Astronomy', value: 'Astronomy' },
+        { label: 'Biology', value: 'Biology' },
+        { label: 'Technology', value: 'Technology' },
+      ],
       annotations: [{
         content: 'Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis. Fusce condimentum nunc ac nisi vulputate fringilla. Donec lacinia congue felis in faucibus',
         userId: 'Uhash1234',
@@ -73,12 +99,55 @@ export default class DocumentDescription extends Component {
       }],
     };
     this.handleSelect = this.handleSelect.bind(this);
+    this.handleSelectChange = this.handleSelectChange.bind(this);
     this.handleDeleteAnnotation = this.handleDeleteAnnotation.bind(this);
     this.handleDeleteBookmark = this.handleDeleteBookmark.bind(this);
+    this.onPressDelete = this.onPressDelete.bind(this);
+    this.onSubmitUpdate = this.onSubmitUpdate.bind(this);
+    this.tagsObjectToArray = this.tagsObjectToArray.bind(this);
   }
 
   componentDidMount() {
     this.fetchTree();
+  }
+
+  onPressDelete() {
+    return atlasesService.remove(this.props.params.atlas.id)
+      .then(() => browserHistory.push('/documents'))
+      .catch(error => console.log(error));
+  }
+
+  onSubmitUpdate(e) {
+    e.preventDefault();
+    const tags = this.state.tags;
+    const tagsArray = this.tagsObjectToArray(tags);
+    const newAtlas = {
+      title: this.state.title,
+      description: this.state.description,
+      cover: { url: this.state.cover },
+      tags: tagsArray,
+    };
+
+    atlasesService.patch(this.props.params.atlas.id, newAtlas)
+      .then(this.setState({ editable: false }))
+      .catch(error => this.setState({ error }));
+  }
+
+  getValidationState() {
+    const length = this.state.title.length;
+    if (length > 5) return 'success';
+    else if (length > 0) return 'error';
+    return '';
+  }
+
+  // Get object of tags from API and parse it to an Array (for the Select Component)
+  tagsObjectToArray(tags) {
+    const tagsArray = [];
+    Object.keys(tags).forEach((key, index) => {
+      const tag = tags[key];
+      tagsArray[index] = tag.value;
+    });
+    return tagsArray;
   }
 
   fetchTree() {
@@ -133,6 +202,11 @@ export default class DocumentDescription extends Component {
   handleSelect(eventKey) {
     event.preventDefault();
     this.setState({ selectedTab: eventKey });
+  }
+
+  // To handle the changes in the tags
+  handleSelectChange(value, tags) {
+    return this.setState({ tags });
   }
 
   /**
@@ -254,25 +328,108 @@ export default class DocumentDescription extends Component {
 
   render() {
     const doc = this.props.params.atlas;
-    let image = doc.cover.url;
     const route = `/editor/${doc.id}/`;
+    let image = doc.cover.url;
+    let tags = this.state.tags;
+    if (tags[0] === null || tags[0] === undefined || tags === []) {
+      tags = [];
+    } else if (typeof tags[0] === 'object') {
+      tags = this.tagsObjectToArray(this.state.tags);
+    }
     image = image || 'http://sightlinemediaentertainment.com/wp-content/uploads/2015/09/placeholder-cover.jpg';
     return (
       <Grid>
         <Col md={9}>
-          <Panel style={styles.panel} footer={doc.description}>
+          <Panel style={styles.panel}>
             <Row className="show-grid">
               <Col xs={6} md={4}>
                 <Image src={image} responsive />
               </Col>
               <Col xs={6} md={8}>
-                <h3>{doc.title}</h3>
-                <p>Year: 'Date of creation'</p>
-                <p>Tags: 'Here will be the tags of the atlas</p>
-                <p>{doc.tags}</p>
-                <Button style={styles.button} onClick={() => browserHistory.push(route)}>
-                  Go to Atlas
-                </Button>
+              {(!this.state.editable ?
+                <div>
+                  <h3>{this.state.title}</h3>
+                  <p>{`${moment(doc.createdAt).format('MMMM Do YYYY, h:mm:ss a')}`}</p>
+                  <p>{`Tags: ${tags}`}</p>
+                  <p>{`Description: ${this.state.description}`}</p>
+                  {renderIf(currentUser().id === doc.responsableId)(() =>
+                    <Button
+                      bsStyle="link"
+                      bsSize="small"
+                      onClick={() => this.setState({ editable: true })}
+                    >
+                      <Icon
+                        name="fa fa-pencil"
+                      /> Edit
+                    </Button>
+                  )}
+                  <hr />
+                  <Button style={styles.button} onClick={() => browserHistory.push(route)}>
+                    Go to Atlas
+                  </Button>
+                </div>
+              :
+                <form onSubmit={this.onSubmitUpdate}>
+                  <FormGroup controlId="name" validationState={this.getValidationState()}>
+                    <ControlLabel>Title</ControlLabel>
+                    <FormControl
+                      type="text"
+                      value={this.state.title}
+                      placeholder="Advanced calculus"
+                      label="Atlas title"
+                      onChange={e => this.setState({ title: e.target.value })}
+                    />
+                    <FormControl.Feedback />
+                  </FormGroup>
+
+                  <FormGroup controlId="description">
+                    <ControlLabel>Description</ControlLabel>
+                    <FormControl
+                      componentClass="textarea"
+                      value={this.state.description}
+                      placeholder="Atlas description..."
+                      onChange={e => this.setState({ description: e.target.value })}
+                    />
+                  </FormGroup>
+
+                  <FormGroup controlId="cover">
+                    <ControlLabel>Cover URL</ControlLabel>
+                    <FormControl
+                      type="text"
+                      value={this.state.cover}
+                      placeholder="http://..."
+                      label="Cover URL"
+                      onChange={e => this.setState({ cover: e.target.value })}
+                    />
+                    <FormControl.Feedback />
+                  </FormGroup>
+
+                  <FormGroup controlId="formHorizontalSearch">
+                    <ControlLabel>Tags</ControlLabel>
+                    <div style={styles.formTags}>
+                      <Select
+                        multi
+                        simpleValue={false}
+                        disabled={false}
+                        value={tags}
+                        options={this.state.allTags}
+                        onChange={this.handleSelectChange}
+                        placeholder={'Tags'}
+                      />
+                    </div>
+                  </FormGroup>
+
+                  <Button bsStyle="primary" type="submit">
+                    Update Atlas
+                  </Button>
+                  <Button style={styles.buttonDelete} onClick={() => this.onPressDelete()}>
+                    Delete
+                  </Button>
+                  <Button style={styles.buttonCancel} onClick={() => this.setState({ editable: false })}>
+                    Cancel
+                  </Button>
+                </form>
+              )}
               </Col>
             </Row>
           </Panel>
@@ -319,6 +476,16 @@ const styles = {
     backgroundColor: Colors.MAIN,
     color: Colors.WHITE,
   },
+  buttonDelete: {
+    backgroundColor: Colors.RED,
+    color: Colors.WHITE,
+    marginLeft: 10,
+  },
+  buttonCancel: {
+    backgroundColor: Colors.GRAY,
+    color: Colors.WHITE,
+    marginLeft: 10,
+  },
   tags: {
     color: Colors.MAIN,
   },
@@ -334,6 +501,9 @@ const styles = {
   },
   annotationTitle: {
     paddingBottom: 20,
+  },
+  icon: {
+    marginRight: 4,
   },
 };
 
