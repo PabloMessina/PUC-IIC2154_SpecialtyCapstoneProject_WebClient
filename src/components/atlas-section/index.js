@@ -3,6 +3,7 @@ import _ from 'lodash';
 
 import RichEditor from '../rich-editor';
 
+const minDelta = 30;
 
 export default class AtlasSection extends Component {
 
@@ -23,6 +24,11 @@ export default class AtlasSection extends Component {
 
   constructor(props) {
     super(props);
+    this.state = {
+      previousY: 0,
+      collapsed: false,
+    },
+    this.onEditorScroll = this.onEditorScroll.bind(this);
     this.onChangeContent = this.onChangeContent.bind(this);
     this.onChangeTitle = this.onChangeTitle.bind(this);
     this.onTitleLostFocus = this.onTitleLostFocus.bind(this);
@@ -54,6 +60,22 @@ export default class AtlasSection extends Component {
     }
   }
 
+  onEditorScroll(e) {
+    const y = e.target.scrollTop;
+    const { previousY } = this.state;
+    const delta = y - previousY;
+    if (delta > minDelta && !this.state.collapsed) {
+      console.log('1')
+      this.setState({ collapsed: true })
+    } else if (-delta > minDelta && this.state.collapsed) {
+      console.log('2')
+      this.setState({ collapsed: false })
+    } else {
+      return;
+    }
+    this.setState({ previousY: y });
+  }
+
   render() {
     const { section, readOnly } = this.props;
     return (
@@ -70,6 +92,7 @@ export default class AtlasSection extends Component {
         <RichEditor
           content={section.content}
           onChange={this.onChangeContent}
+          onScroll={this.onEditorScroll}
           readOnly={readOnly}
           style={styles.editor}
         />
