@@ -2,8 +2,9 @@ import React, { Component } from 'react';
 import Renderer3D from '../renderer-3d/';
 import ToggleButton from './toggleButton';
 import LabelStyleControl from './labelStyleControl';
-import { ButtonToolbar, Button, Dropdown } from 'react-bootstrap';
+import { Button, Dropdown } from 'react-bootstrap';
 import renderIf from 'render-if';
+import Icon, { IconStack } from 'react-fa';
 import _ from 'lodash';
 
 const LIGHT_BLUE = '#9fdef7';
@@ -377,19 +378,56 @@ export default class RendererWrapper extends Component {
 
     return (
       <div style={styles.globalDivStyle}>
-        {renderIf(!readOnly)(() => (
+        {renderIf(false && !readOnly)(() => (
           <input ref="filesInput" type="file" onChange={this.onFilesChanged} multiple></input>
         ))}
-        <ButtonToolbar style={styles.toolbar}>
+        <div style={styles.toolbar}>
+          <Button
+            style={styles.toolbarButton}
+            disabled={!this.state.hasLoadedModel}
+            onClick={this.refocusOnModel} bsSize="small"
+          >
+            <IconStack size="2x">
+              <Icon name="circle" stack="2x" />
+              <Icon name="compass" stack="1x" style={styles.icon} />
+            </IconStack>
+          </Button>
+          {renderIf(this.state.labelCount > 0)(() => (
+            <ToggleButton
+              turnedOnIcon="eye"
+              turnedOffIcon="eye-slash"
+              turnedOnCallback={this.showLabels}
+              turnedOffCallback={this.hideLabes}
+              iconStyle={styles.icon}
+              buttonStyle={styles.toolbarButton}
+            />
+          ))}
+          {renderIf(false && readOnly)(() => (
+            <Button
+              disabled={!(this.state.hasSelectedLabel && this.state.showingLabels)}
+              onClick={this.removeSelectedLabel} bsSize="small"
+            >Remove Label</Button>
+          ))}
           {renderIf(!readOnly)(() => (
-            <Dropdown id="label-dropdown-custom" open={this.state.labelDropdownOpen}
+            <Dropdown
+              id="label-dropdown-custom"
+              open={this.state.labelDropdownOpen}
               onToggle={this.onLabelDropDownToggle}
               ref="labelDropdown"
+              dropup
+              pullRight
             >
-              <Dropdown.Toggle bsRole="toggle" bsStyle="default" bsSize="small"
+              <Dropdown.Toggle
+                style={styles.toolbarButton}
+                bsRole="toggle"
+                bsStyle="default"
+                bsSize="small"
                 className="dropdown-with-input dropdown-toggle"
               >
-                Edit Label Styles
+                <IconStack size="2x">
+                  <Icon name="circle" stack="2x"/>
+                  <Icon name="cog" stack="1x" style={styles.icon} />
+                </IconStack>
               </Dropdown.Toggle>
               <Dropdown.Menu className="super-colors">
                 <div ref="labelSettingsDiv" style={styles.labelSettingsDivStyle}>
@@ -413,25 +451,7 @@ export default class RendererWrapper extends Component {
               </Dropdown.Menu>
             </Dropdown>
           ))}
-          <Button
-            disabled={!this.state.hasLoadedModel}
-            onClick={this.refocusOnModel} bsSize="small"
-          >REFOCUS</Button>
-          <ToggleButton
-            enabled={this.state.labelCount > 0}
-            disabledMessage="No labels in scene"
-            turnedOnMessage="Hide Labels"
-            turnedOffMessage="Show Labels"
-            turnedOnCallback={this.showLabels}
-            turnedOffCallback={this.hideLabes}
-          />
-          {renderIf(readOnly)(() => (
-            <Button
-              disabled={!(this.state.hasSelectedLabel && this.state.showingLabels)}
-              onClick={this.removeSelectedLabel} bsSize="small"
-            >Remove Label</Button>
-          ))}
-        </ButtonToolbar>
+        </div>
         <Renderer3D
           ref="r3d"
           canEdit={!readOnly}
@@ -477,11 +497,21 @@ const styles = {
   },
   globalDivStyle: {
     position: 'relative',
+    width: '70%',
   },
   toolbar: {
     position: 'absolute',
     right: 0,
-    bottom: 0,
+    bottom: 60,
+    height: 44,
+  },
+  toolbarButton: {
+    backgroundColor: 'transparent',
+    boxShadow: 'none',
+    padding: 3,
+  },
+  icon: {
+    color: 'white',
   },
   progressDiv: {
     width: '50%',
