@@ -52,6 +52,7 @@ export default class Renderer3D extends Component {
     this.clearAllLabelData = this.clearAllLabelData.bind(this);
     this.onXHRCreated = this.onXHRCreated.bind(this);
     this.onXHRDone = this.onXHRDone.bind(this);
+    this.selectLabel = this.selectLabel.bind(this);
 
     // API functions
     this.loadModel = this.loadModel.bind(this);
@@ -61,6 +62,7 @@ export default class Renderer3D extends Component {
     this.setHighlightedLabelStyle = this.setHighlightedLabelStyle.bind(this);
     this.removeSelectedLabel = this.removeSelectedLabel.bind(this);
     this.refocusOnModel = this.refocusOnModel.bind(this);
+    this.unselectSelectedLabel = this.unselectSelectedLabel.bind(this);
   }
 
   componentDidMount() {
@@ -80,7 +82,7 @@ export default class Renderer3D extends Component {
     // set up instance of THREE.WebGLRenderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
-    renderer.setClearColor(0xeeeeee, 1);
+    renderer.setClearColor(0x4fccf2, 1);
     viewport.appendChild(renderer.domElement);
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
@@ -143,6 +145,7 @@ export default class Renderer3D extends Component {
       labelSet: new Set(),
       normalLabelStyle: this.props.normalLabelStyle,
       highlightedLabelStyle: this.props.highlightedLabelStyle,
+      canFocusHiddenInput: false,
       // draggable label vars
       draggingTempLabel: false,
       tempDraggableLabel: null,
@@ -609,7 +612,8 @@ export default class Renderer3D extends Component {
         /** sprite */
         const sprite = ThreeUtils.makeTextSprite(
           label.text || DEFAULT_LABEL_MESSAGE,
-          1, this.mystate.meshDiameter, this.mystate.normalLabelStyle
+          1, this.mystate.meshDiameter, this.mystate.normalLabelStyle,
+          (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
         );
         sprite.position.set(label.position.x, label.position.y, label.position.z);
         this.mystate.spriteGroup.add(sprite);
@@ -673,6 +677,7 @@ export default class Renderer3D extends Component {
         this.refs.viewport.offsetHeight
       );
       this.mystate.zoom = this.mystate.camera.zoom; // keep the zoom up to date
+      this.updateSpritePlaneOrientations();
       this.animateForAWhile();
     }
   }
@@ -802,25 +807,19 @@ export default class Renderer3D extends Component {
 
             // case 1) sprite plane intersected
             if (pickedGroup === this.mystate.spritePlaneGroup) {
-              // highlight label (if not already)
+              // select label
               const label = this.mystate.spritePlaneToLabelMap[pickedObj.object.uuid];
-              if (label !== prevLabel) {
-                if (prevLabel) this.unhighlightLabel(prevLabel);
-                this.highlightLabel(label);
-                this.mystate.selectedLabel = label;
-                this.props.selectedLabelChangedCallback(this.mystate.selectedLabel);
-              }
-
-              /** starts dragging the label (only if edition is enabled) */
+              this.selectLabel(label);
               if (this.props.canEdit) {
+
+                /** starts dragging the label */
                 this.mystate.draggingSelectedLabel = true;
-                // plane paramters where dragging will happen
+                // plane parameters where dragging will happen
                 this.mystate.dragPlane.normal =
                   ThreeUtils.getCameraForwardNormal(this.mystate.camera);
                 this.mystate.dragPlane.position = label.sprite.position;
 
                 this.refs.hiddenTxtInp.value = label.text;
-                // setTimeout(() => { this.refs.hiddenTxtInp.focus(); }, 0);
                 // no orbits
                 shouldOrbit = false;
               }
@@ -829,7 +828,6 @@ export default class Renderer3D extends Component {
             } else if (pickedGroup === this.mystate.sphereGroup) {
               const sphere = pickedObj.object;
               const label = this.mystate.sphereToLabelMap[sphere.uuid];
-
               // case 2.1) sphere belongs to already selected label
               if (label === prevLabel && this.props.canEdit) {
                 // remove line
@@ -849,17 +847,14 @@ export default class Renderer3D extends Component {
                   this.mystate.selectedLabel = null;
                   this.mystate.labelSet.delete(label);
                   // notify change of selected label
-                  this.props.selectedLabelChangedCallback(this.mystate.selectedLabel);
+                  this.props.selectedLabelChangedCallback(null);
                 }
                 // notify change of labels
                 this.props.labelsChangedCallback(this.labelsToJSON());
 
               // case 2.2) a different label selected
-              } else if (label !== prevLabel) {
-                if (prevLabel) this.unhighlightLabel(prevLabel);
-                this.highlightLabel(label);
-                this.mystate.selectedLabel = label;
-                this.props.selectedLabelChangedCallback(this.mystate.selectedLabel);
+              } else {
+                this.selectLabel(label);
               }
               shouldOrbit = false;
             }
@@ -919,7 +914,7 @@ export default class Renderer3D extends Component {
         if (this.mystate.draggingTempLabel) {
           const dragLabel = this.mystate.tempDraggableLabel;
           // auxiliar pointer
-          let labelToHighlight;
+          let labelToSelect;
           // ----------------------------------------
           // case 2.1) existing label intersected:
           // temp label gets merged into it
@@ -944,7 +939,7 @@ export default class Renderer3D extends Component {
             this.mystate.sphereGroup.add(dragLabel.sphere);
             this.mystate.lineGroup.add(dragLabel.line);
             // set label to highlight
-            labelToHighlight = intrsLabel;
+            labelToSelect = intrsLabel;
 
           // -----------------------------------------
           // case 2.2) no existing label intersected:
@@ -976,17 +971,15 @@ export default class Renderer3D extends Component {
             this.mystate.sphereGroup.add(dragLabel.sphere);
             this.mystate.lineGroup.add(dragLabel.line);
             // set label to highlight
-            labelToHighlight = labelObj;
+            labelToSelect = labelObj;
             // add new label to set
             this.mystate.labelSet.add(labelObj);
           }
           //----------------------------------------
           // Things that happen for both cases 2.1 and 2.2
           // --------------------------------
-          // highlight label
-          this.highlightLabel(labelToHighlight);
-          this.mystate.selectedLabel = labelToHighlight;
-          this.props.selectedLabelChangedCallback(this.mystate.selectedLabel);
+          // select label
+          this.selectLabel(labelToSelect);
           // remove dragged elements directly from scene (because they were added
           // directly into scene for temporal dragging purposes)
           this.mystate.scene.remove(dragLabel.sprite);
@@ -1024,7 +1017,8 @@ export default class Renderer3D extends Component {
               DEFAULT_LABEL_MESSAGE,
               0.5, // opacity
               this.mystate.meshDiameter, // reference size to scale
-              this.mystate.normalLabelStyle // label style
+              this.mystate.normalLabelStyle, // label style
+              (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
             );
             // get camera's normal pointing forward
             const camForwardN = ThreeUtils.getCameraForwardNormal(this.mystate.camera);
@@ -1058,11 +1052,7 @@ export default class Renderer3D extends Component {
             const line = new THREE.Line(lineGeo, lineMat);
 
             // unselect the previously selected label (if any)
-            if (this.mystate.selectedLabel !== null) {
-              this.unhighlightLabel(this.mystate.selectedLabel);
-              this.mystate.selectedLabel = null;
-              this.props.selectedLabelChangedCallback(this.mystate.selectedLabel);
-            }
+            this.unselectSelectedLabel();
 
             // add elements into scene
             this.mystate.scene.add(line);
@@ -1134,7 +1124,8 @@ export default class Renderer3D extends Component {
       labelSettings.text,
       labelSettings.opacity,
       labelSettings.worldReferenceSize,
-      labelSettings.style
+      labelSettings.style,
+      (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
     );
     // copy the same position from the old sprite
     newSprite.position.copy(labelObj.sprite.position);
@@ -1375,7 +1366,7 @@ export default class Renderer3D extends Component {
   }
 
   handleKeypress(e) {
-    if (this.props.canEdit && this.mystate.selectedLabel && this.isMouseOverViewport()) {
+    if (this.props.canEdit && this.mystate.canFocusHiddenInput) {
       const e2 = new KeyboardEvent('e', e);
       this.refs.hiddenTxtInp.focus();
       this.refs.hiddenTxtInp.dispatchEvent(e2);
@@ -1383,7 +1374,7 @@ export default class Renderer3D extends Component {
   }
 
   handleKeydown(e) {
-    if (this.props.canEdit && this.mystate.selectedLabel && this.isMouseOverViewport()) {
+    if (this.props.canEdit && this.mystate.canFocusHiddenInput) {
       const e2 = new KeyboardEvent('e', e);
       this.refs.hiddenTxtInp.focus();
       this.refs.hiddenTxtInp.dispatchEvent(e2);
@@ -1402,10 +1393,34 @@ export default class Renderer3D extends Component {
     }
   }
 
+  unselectSelectedLabel() {
+    const label = this.mystate.selectedLabel;
+    if (label) {
+      this.unhighlightLabel(label);
+      this.mystate.selectedLabel = null;
+      this.animateForAWhile(0);
+      this.mystate.canFocusHiddenInput = false;
+      this.props.selectedLabelChangedCallback(null);
+    }
+  }
+
+  selectLabel(label) {
+    const prevLabel = this.mystate.selectedLabel;
+    if (label !== prevLabel) {
+      if (prevLabel) this.unhighlightLabel(prevLabel);
+      this.mystate.selectedLabel = label;
+      this.highlightLabel(label);
+      this.animateForAWhile(0);
+      this.props.selectedLabelChangedCallback(label);
+      setTimeout(() => { this.mystate.canFocusHiddenInput = true; }, 0);
+    }
+  }
+
   render() {
     return (
       <div>
-        <div style={styles.viewport} ref="viewport"
+        <div
+          style={styles.viewport} ref="viewport"
           onWheel={this.handleWheel} onMouseDown={this.handleMouseDown}
           onContextMenu={this.handleContextMenu}
         >

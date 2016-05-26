@@ -1,4 +1,5 @@
 import Renderer3DWrapper from '../renderer-3d-wrapper';
+import ImageWithLabelsWrapper from '../image-with-labels-wrapper';
 import Latex from './components/latex';
 import { Image, Audio, Video } from './components/media';
 import { removeTeXBlock } from './modifiers/tex-modifiers';
@@ -26,7 +27,21 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
       },
       model: {
         component: Renderer3DWrapper,
-        editable: true,
+        editable: false,
+        props: {
+          readOnly,
+          gotFocusCallback: () => setState({ editorLocked: true }),
+          lostFocusCallback: () => setState({ editorLocked: false }),
+        },
+      },
+      imageWithLabels: {
+        component: ImageWithLabelsWrapper,
+        editable: false,
+        props: {
+          readOnly,
+          gotFocusCallback: () => setState({ editorLocked: true }),
+          lostFocusCallback: () => setState({ editorLocked: false }),
+        },
       },
       // 3d-video: { component: 3DVideo, editable: false },
       // You can see where this is going :)

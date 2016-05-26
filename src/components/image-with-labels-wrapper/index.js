@@ -1,13 +1,15 @@
 import React, { Component } from 'react';
 import ImageWithLabels from '../image-with-labels/';
 import renderIf from 'render-if';
-import { Button } from 'react-bootstrap';
+import Utils2D from '../../_2Dlibrary/Utils2D';
 
-export default class TemplateComponent extends Component {
+export default class ImageWithLabelsWrapper extends Component {
 
   static get defaultProps() {
     return {
       url: 'http://www.humpath.com/IMG/jpg_brain_front_cut_01_10.jpg',
+      gotFocusCallback: () => console.log('img2D::gotFocus()'),
+      lostFocusCallback: () => console.log('img2D::lostFocus()'),
     };
   }
 
@@ -16,13 +18,12 @@ export default class TemplateComponent extends Component {
     this.state = {
       source: props.url ? { url: props.url } : null,
     };
+    this.mystate = {
+      componentFocused: false,
+    };
     this.onFileChanged = this.onFileChanged.bind(this);
-  }
-
-  componentDidMount() {
-  }
-
-  componentWillUnmount() {
+    this.onGotFocus = this.onGotFocus.bind(this);
+    this.onLostFocus = this.onLostFocus.bind(this);
   }
 
   onFileChanged() {
@@ -60,26 +61,41 @@ export default class TemplateComponent extends Component {
     }
   }
 
+  onGotFocus() {
+    this.props.blockProps.gotFocusCallback();
+  }
+  onLostFocus() {
+    this.props.blockProps.lostFocusCallback();
+  }
+
   /** React's render function */
   render() {
+    const { readOnly } = this.props.blockProps;
     return (
       <div>
         <input ref="fileInput" type="file" onChange={this.onFileChanged}></input>
         {renderIf(this.state.source)(() => (
-          <ImageWithLabels
-            style={styles.imgWithLabels}
-            source={this.state.source}
-            renderLabel={this.renderLabel}
-            mode="EDIT"
-          />
+          <div >
+            <ImageWithLabels
+              ref="img"
+              style={styles.imgWithLabels}
+              source={this.state.source}
+              renderLabel={this.renderLabel}
+              mode={readOnly ? '' : 'EDIT'}
+              gotFocusCallback={this.onGotFocus}
+              lostFocusCallback={this.onLostFocus}
+            />
+          </div>
         ))}
       </div>
     );
   }
 }
 
-TemplateComponent.propTypes = {
+ImageWithLabelsWrapper.propTypes = {
   url: React.PropTypes.string,
+  gotFocusCallback: React.PropTypes.func,
+  lostFocusCallback: React.PropTypes.func,
 };
 
 const styles = {

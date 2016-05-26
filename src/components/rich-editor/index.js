@@ -131,7 +131,7 @@ export default class RichEditor extends Component {
 const styles = {
   container: {
     width: '100%',
-    paddingTop: 10,
+    paddingTop: 6,
   },
   editor: {
     padding: 50,

@@ -84,7 +84,6 @@ export default class AtlasSection extends Component {
     const { section, readOnly } = this.props;
     return (
       <div style={styles.container}>
-
         <Collapse in={!this.state.collapsed}>
           <div>
             <input
@@ -120,7 +119,8 @@ const styles = {
   title: {
     outline: 'none',
     border: 'none',
-    padding: 16,
+    paddingTop: 5,
+    paddingLeft: 16,
     fontWeight: 'bold',
     fontSize: 24,
     width: '100%',

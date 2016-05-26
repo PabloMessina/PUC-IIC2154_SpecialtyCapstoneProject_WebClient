@@ -2,9 +2,10 @@ import React, { Component } from 'react';
 import Renderer3D from '../renderer-3d/';
 import ToggleButton from './toggleButton';
 import LabelStyleControl from './labelStyleControl';
-import { ButtonToolbar, Button, Dropdown } from 'react-bootstrap';
+import { Button, Dropdown } from 'react-bootstrap';
 import renderIf from 'render-if';
-import _ from 'lodash';
+import Icon, { IconStack } from 'react-fa';
+import isEqual from 'lodash/isEqual';
 
 const LIGHT_BLUE = '#9fdef7';
 const BLACK = '#000000';
@@ -13,11 +14,12 @@ const BLUE = '#0000ff';
 const YELLOW = '#00ffff';
 const GREEN = '#00ff00';
 
-export default class RendererWrapper extends Component {
+export default class Renderer3DWrapper extends Component {
 
   static get defaultProps() {
     return {
-      canEdit: false,
+      canEdit: true,
+      blockProps: { readOnly: false },
       remoteFiles: {
         // mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
         // obj: 'https://lopezjuri.com/videos/nRBC.obj',
@@ -170,9 +172,11 @@ export default class RendererWrapper extends Component {
         cornerRadiusCoef: 0.4,
         worldFontSizeCoef: 1 / 18,
       },
-      labelsChangedCallback: () => { console.log("default wrapper::labelsChangedCallback()"); },
-      highlightedLabelStyleChangedCallback: (style) => { console.log("highstyle = ", style); },
-      normalLabelStyleChangedCallback: (style) => { console.log("normalstyle = ", style); },
+      labelsChangedCallback: () => console.log("default wrapper::labelsChangedCallback()"),
+      highlightedLabelStyleChangedCallback: (style) => console.log("highstyle = ", style),
+      normalLabelStyleChangedCallback: (style) => console.log("normalstyle = ", style),
+      gotFocusCallback: () => console.log("gotFocusCallback()"),
+      lostFocusCallback: () => console.log("lostFocusCallback()"),
     };
   }
 
@@ -198,6 +202,7 @@ export default class RendererWrapper extends Component {
       labelDropdownY: null,
       lastClickedElem: null,
       componentUnmounted: false,
+      labelWithFocus: false,
     };
 
     this.onFilesChanged = this.onFilesChanged.bind(this);
@@ -222,8 +227,8 @@ export default class RendererWrapper extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (!_.isEqual(this.props.labels, nextProps.labels) &&
-      !_.isEqual(nextProps.labels, this.state.labels)) {
+    if (!isEqual(this.props.labels, nextProps.labels) &&
+      !isEqual(nextProps.labels, this.state.labels)) {
       this.setState({ labels: nextProps.labels });
     }
   }
@@ -234,7 +239,20 @@ export default class RendererWrapper extends Component {
   }
 
   onMouseDown(e) {
-    this.mystate.lastClickedElem = e.target;
+    let elem = e.target;
+    this.mystate.lastClickedElem = elem;
+    // if click is outside wrapper, unselect selected label
+    let inComponent = false;
+    while (elem) {
+      if (elem === this.refs.root) {
+        inComponent = true;
+        break;
+      }
+      elem = elem.parentElement;
+    }
+    if (!inComponent) {
+      this.refs.r3d.unselectSelectedLabel();
+    }
   }
 
   onLabelCountChanged(newCount) {
@@ -245,6 +263,12 @@ export default class RendererWrapper extends Component {
 
   onLabelsChanged(labels) {
     // console.log("===> onLabelsChanged(): labels = ", JSON.stringify(labels, null, '\t'));
+    if (labels.length === 0 && this.mystate.labelWithFocus) {
+      this.mystate.labelWithFocus = false;
+      console.log("----------------------");
+      console.log("onLabelsChanged()");
+      this.props.blockprops.lostFocusCallback();
+    }
     if (!this.mystate.componentUnmounted) {
       this.props.labelsChangedCallback(labels);
       this.setState({
@@ -294,6 +318,19 @@ export default class RendererWrapper extends Component {
     if (!this.mystate.componentUnmounted) {
       if (this.state.hasSelectedLabel !== !!label) {
         this.setState({ hasSelectedLabel: !!label });
+      }
+      const { gotFocusCallback, lostFocusCallback } = this.props.blockProps;
+      // check focus state
+      if (label && !this.mystate.labelWithFocus) {
+        this.mystate.labelWithFocus = true;
+        console.log("----------------------");
+        console.log("onSelectedLabelChanged()");
+        gotFocusCallback();
+      } else if (!label && this.mystate.labelWithFocus) {
+        this.mystate.labelWithFocus = false;
+        console.log("----------------------");
+        console.log("onSelectedLabelChanged()");
+        lostFocusCallback();
       }
     }
   }
@@ -364,6 +401,7 @@ export default class RendererWrapper extends Component {
 
   render() {
     // check label style to use
+    const { readOnly } = this.props.blockProps;
     let labelStyle;
     switch (this.state.labelStyleMode) {
       case 'normal':
@@ -375,20 +413,57 @@ export default class RendererWrapper extends Component {
     }
 
     return (
-      <div style={styles.globalDivStyle}>
-        {renderIf(this.props.canEdit)(() => (
+      <div ref="root" style={styles.globalDivStyle}>
+        {renderIf(false && !readOnly)(() => (
           <input ref="filesInput" type="file" onChange={this.onFilesChanged} multiple></input>
         ))}
-        <ButtonToolbar>
-          {renderIf(this.props.canEdit)(() => (
-            <Dropdown id="label-dropdown-custom" open={this.state.labelDropdownOpen}
+        <div style={styles.toolbar}>
+          <Button
+            style={styles.toolbarButton}
+            disabled={!this.state.hasLoadedModel}
+            onClick={this.refocusOnModel} bsSize="small"
+          >
+            <IconStack size="2x">
+              <Icon name="circle" stack="2x" />
+              <Icon name="compass" stack="1x" style={styles.icon} />
+            </IconStack>
+          </Button>
+          {renderIf(this.state.labelCount > 0)(() => (
+            <ToggleButton
+              turnedOnIcon="eye"
+              turnedOffIcon="eye-slash"
+              turnedOnCallback={this.showLabels}
+              turnedOffCallback={this.hideLabes}
+              iconStyle={styles.icon}
+              buttonStyle={styles.toolbarButton}
+            />
+          ))}
+          {renderIf(false && readOnly)(() => (
+            <Button
+              disabled={!(this.state.hasSelectedLabel && this.state.showingLabels)}
+              onClick={this.removeSelectedLabel} bsSize="small"
+            >Remove Label</Button>
+          ))}
+          {renderIf(!readOnly)(() => (
+            <Dropdown
+              id="label-dropdown-custom"
+              open={this.state.labelDropdownOpen}
               onToggle={this.onLabelDropDownToggle}
               ref="labelDropdown"
+              dropup
+              pullRight
             >
-              <Dropdown.Toggle bsRole="toggle" bsStyle="default" bsSize="small"
+              <Dropdown.Toggle
+                style={styles.toolbarButton}
+                bsRole="toggle"
+                bsStyle="default"
+                bsSize="small"
                 className="dropdown-with-input dropdown-toggle"
               >
-                Edit Label Styles
+                <IconStack size="2x">
+                  <Icon name="circle" stack="2x"/>
+                  <Icon name="cog" stack="1x" style={styles.icon} />
+                </IconStack>
               </Dropdown.Toggle>
               <Dropdown.Menu className="super-colors">
                 <div ref="labelSettingsDiv" style={styles.labelSettingsDivStyle}>
@@ -412,27 +487,10 @@ export default class RendererWrapper extends Component {
               </Dropdown.Menu>
             </Dropdown>
           ))}
-          <Button
-            disabled={!this.state.hasLoadedModel}
-            onClick={this.refocusOnModel} bsSize="small"
-          >REFOCUS</Button>
-          <ToggleButton
-            enabled={this.state.labelCount > 0}
-            disabledMessage="No labels in scene"
-            turnedOnMessage="Hide Labels"
-            turnedOffMessage="Show Labels"
-            turnedOnCallback={this.showLabels}
-            turnedOffCallback={this.hideLabes}
-          />
-          {renderIf(this.props.canEdit)(() => (
-            <Button
-              disabled={!(this.state.hasSelectedLabel && this.state.showingLabels)}
-              onClick={this.removeSelectedLabel} bsSize="small"
-            >Remove Label</Button>
-          ))}
-        </ButtonToolbar>
-        <Renderer3D ref="r3d"
-          canEdit={this.props.canEdit}
+        </div>
+        <Renderer3D
+          ref="r3d"
+          canEdit={!readOnly}
           remoteFiles={this.props.remoteFiles}
           labels={this.state.labels}
           normalLabelStyle={this.state.normalLabelStyle}
@@ -455,17 +513,21 @@ export default class RendererWrapper extends Component {
   }
 }
 
-RendererWrapper.propTypes = {
+Renderer3DWrapper.propTypes = {
   // optional props
   canEdit: React.PropTypes.bool,
   remoteFiles: React.PropTypes.object,
   labels: React.PropTypes.array,
   highlightedLabelStyle: React.PropTypes.object,
   normalLabelStyle: React.PropTypes.object,
+  gotFocusCallback: React.PropTypes.func,
+  lostFocusCallback: React.PropTypes.func,
   // required props
   labelsChangedCallback: React.PropTypes.func.isRequired,
   highlightedLabelStyleChangedCallback: React.PropTypes.func.isRequired,
   normalLabelStyleChangedCallback: React.PropTypes.func.isRequired,
+  // vicho's props
+  blockProps: React.PropTypes.object,
 };
 
 const styles = {
@@ -475,6 +537,21 @@ const styles = {
   },
   globalDivStyle: {
     position: 'relative',
+    width: '70%',
+  },
+  toolbar: {
+    position: 'absolute',
+    right: 0,
+    bottom: 60,
+    height: 44,
+  },
+  toolbarButton: {
+    backgroundColor: 'transparent',
+    boxShadow: 'none',
+    padding: 3,
+  },
+  icon: {
+    color: 'white',
   },
   progressDiv: {
     width: '50%',
