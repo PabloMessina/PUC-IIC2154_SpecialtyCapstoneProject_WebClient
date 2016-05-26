@@ -39,6 +39,8 @@ export default class ImageWithLabelsWrapper extends Component {
       maxResolutionX: 600,
       maxResolutionY: 800,
       labelsChangedCallback: (labels) => console.log(labels),
+      gotFocusCallback: () => console.log('gotFocusCallback()'),
+      lostFocusCallback: () => console.log('lostFocusCallback()'),
       hideLabels: false,
     };
   }
@@ -72,6 +74,7 @@ export default class ImageWithLabelsWrapper extends Component {
       selectedLabelTextDirty: false,
       selectedLabelPositionDirty: false,
       regionWithSelectedString: null,
+      componentFocused: false,
     };
 
     this.renderForAWhile = this.renderForAWhile.bind(this);
@@ -99,6 +102,8 @@ export default class ImageWithLabelsWrapper extends Component {
       this.onMouseMove = this.onMouseMove_EditMode.bind(this);
       this.onMouseUp = this.onMouseUp_EditMode.bind(this);
     }
+    // general case event handlers
+    this.onMouseDownGeneral = this.onMouseDownGeneral.bind(this);
 
     // check if an image was provided
     const source = this.props.source;
@@ -113,6 +118,7 @@ export default class ImageWithLabelsWrapper extends Component {
 
   componentDidMount() {
     // add event listeners
+    window.addEventListener('mousedown', this.onMouseDownGeneral);
     window.addEventListener('mousedown', this.onMouseDown);
     window.addEventListener('mousemove', this.onMouseMove);
     window.addEventListener('mouseup', this.onMouseUp);
@@ -133,9 +139,24 @@ export default class ImageWithLabelsWrapper extends Component {
 
   componentWillUnmount() {
     // remove event listeners
+    window.removeEventListener('mousedown', this.onMouseDownGeneral);
     window.removeEventListener('mousedown', this.onMouseDown);
     window.removeEventListener('mousemove', this.onMouseMove);
     window.removeEventListener('mouseup', this.onMouseUp);
+  }
+
+  onMouseDownGeneral(e) {
+    const cwpr = this.refs.canvasWrapper;
+    const { x, y } = Utils2D.getElementMouseCoords(cwpr, e);
+    // click inside img
+    const inside = (x >= 0 && x <= cwpr.offsetWidth && y >= 0 && y <= cwpr.offsetHeight);
+    if (inside && !this.mystate.componentFocused) {
+      this.mystate.componentFocused = true;
+      this.props.gotFocusCallback();
+    } else if (!inside && this.mystate.componentFocused) {
+      this.mystate.componentFocused = false;
+      this.props.lostFocusCallback();
+    }
   }
 
   /** handle mouse down event */
@@ -1100,6 +1121,8 @@ ImageWithLabelsWrapper.propTypes = {
   renderLabel: React.PropTypes.func.isRequired,
   hideLabels: React.PropTypes.bool,
   mode: React.PropTypes.string.isRequired,
+  gotFocusCallback: React.PropTypes.func.isRequired,
+  lostFocusCallback: React.PropTypes.func.isRequired,
 };
 
 const styles = {

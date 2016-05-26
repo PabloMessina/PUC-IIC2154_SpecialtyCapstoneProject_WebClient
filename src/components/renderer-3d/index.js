@@ -810,9 +810,9 @@ export default class Renderer3D extends Component {
               // select label
               const label = this.mystate.spritePlaneToLabelMap[pickedObj.object.uuid];
               this.selectLabel(label);
-
-              /** starts dragging the label (only if edition is enabled) */
               if (this.props.canEdit) {
+
+                /** starts dragging the label */
                 this.mystate.draggingSelectedLabel = true;
                 // plane parameters where dragging will happen
                 this.mystate.dragPlane.normal =
@@ -1017,7 +1017,8 @@ export default class Renderer3D extends Component {
               DEFAULT_LABEL_MESSAGE,
               0.5, // opacity
               this.mystate.meshDiameter, // reference size to scale
-              this.mystate.normalLabelStyle // label style
+              this.mystate.normalLabelStyle, // label style
+              (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
             );
             // get camera's normal pointing forward
             const camForwardN = ThreeUtils.getCameraForwardNormal(this.mystate.camera);
