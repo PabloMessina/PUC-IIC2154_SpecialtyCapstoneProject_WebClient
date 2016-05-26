@@ -19,7 +19,11 @@ export default class Renderer3DWrapper extends Component {
   static get defaultProps() {
     return {
       canEdit: true,
-      blockProps: { readOnly: false },
+      blockProps: {
+        readOnly: false,
+        gotFocusCallback: () => {},
+        lostFocusCallback: () => {},
+      },
       remoteFiles: {
         // mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
         // obj: 'https://lopezjuri.com/videos/nRBC.obj',
@@ -32,121 +36,101 @@ export default class Renderer3DWrapper extends Component {
         // images: ['http://192.168.1.163:5000/nRBC.jpg'],
       },
       labels: [
-        {
-          points: [
-            {
-              x: 37.826095769242755,
-              y: -17.566643210385312,
-              z: 18.820864995762577,
-            },
-          ],
-          position: {
-            x: 49.84829253067862,
-            y: 5.6762350999919,
-            z: 52.898860960917204,
-          },
-          text: '',
-        },
-        {
-          points: [
-            {
-              x: 7.745012480927347,
-              y: -3.7296656967454576,
-              z: 35.0531834103773,
-            },
-          ],
-          position: {
-            x: -86.31771042423424,
-            y: 24.040124653667554,
-            z: 69.13044214706474,
-          },
-          text: '33333',
-        },
-        {
-          points: [
-            {
-              x: -24.952834201667635,
-              y: -14.927536476092854,
-              z: 19.655668405735582,
-            },
-          ],
-          position: {
-            x: -103.33844040856773,
-            y: 2.0922419016680194,
-            z: 53.73301264121483,
-          },
-          text: '22222',
-        },
-        {
-          points: [
-            {
-              x: -29.879876379393995,
-              y: 19.56257117882312,
-              z: 1.1782289198417857,
-            },
-          ],
-          position: {
-            x: -71.56916451888993,
-            y: -57.36548791730873,
-            z: 35.255295823141296,
-          },
-          text: '1111',
-        },
-        {
-          points: [
-            {
-              x: 2.3798031424778094,
-              y: -37.01679781004535,
-              z: 38.13023229669875,
-            },
-            {
-              x: -29.930726073618043,
-              y: 41.96187166454956,
-              z: -0.7197234775878769,
-            },
-          ],
-          position: {
-            x: -3.5752896225011126,
-            y: 27.502860909167406,
-            z: 72.20866805285107,
-          },
-          text: '3453535',
-        },
-        {
-          points: [
-            {
-              x: 5.673151717363854,
-              y: -23.910251930552754,
-              z: 40.35500374405001,
-            },
-          ],
-          position: {
-            x: -72.94110358801457,
-            y: 68.7874877831534,
-            z: 73.422915237148,
-          },
-          text: 'the quick brown fox jumps over the lazy dog',
-        },
-        {
-          points: [
-            {
-              x: -18.730399968525084,
-              y: 50.10878039668664,
-              z: -0.395419868565682,
-            },
-            {
-              x: 19.713204866675134,
-              y: -26.151476218200646,
-              z: 36.74636976833938,
-            },
-          ],
-          position: {
-            x: 69.94195081678534,
-            y: 62.28517384369443,
-            z: 34.833340982463255,
-          },
-          text: 'ddsfd',
-        },
+      	{
+      		"points": [
+      			{
+      				"x": -21.214546463347062,
+      				"y": 57.65000469461012,
+      				"z": -14.500255495662856
+      			},
+      			{
+      				"x": -13.411042799001905,
+      				"y": 55.21806218247605,
+      				"z": -20.158860003288254
+      			},
+      			{
+      				"x": -11.029465274949757,
+      				"y": 56.17479942634964,
+      				"z": -26.745239529768
+      			}
+      		],
+      		"position": {
+      			"x": 7.294952759821058,
+      			"y": 98.37410094400764,
+      			"z": -34.27216229513908
+      		},
+      		"text": "Aorta"
+      	},
+      	{
+      		"points": [
+      			{
+      				"x": -32.865710734028255,
+      				"y": 57.31516519540327,
+      				"z": -5.177062605672859
+      			}
+      		],
+      		"position": {
+      			"x": -40.926209510856694,
+      			"y": 102.35977727702405,
+      			"z": 17.21597701425094
+      		},
+      		"text": "Superior Vena Cava"
+      	},
+      	{
+      		"points": [
+      			{
+      				"x": 21.479502800811872,
+      				"y": 23.264175125980444,
+      				"z": -27.43319398133451
+      			},
+      			{
+      				"x": 17.815957441906733,
+      				"y": 25.314838170859986,
+      				"z": -16.986192330773633
+      			}
+      		],
+      		"position": {
+      			"x": 72.20902901768375,
+      			"y": 58.636991283386095,
+      			"z": -42.23733762885104
+      		},
+      		"text": "Pulmonary Artery"
+      	},
+      	{
+      		"points": [
+      			{
+      				"x": 26.638758956953495,
+      				"y": 11.398709932821731,
+      				"z": -32.409418235321596
+      			},
+      			{
+      				"x": 28.031732184599036,
+      				"y": 2.7975700848757015,
+      				"z": -34.61691697827138
+      			}
+      		],
+      		"position": {
+      			"x": 95.87746867890667,
+      			"y": 29.876116264481254,
+      			"z": -60.621318380953426
+      		},
+      		"text": "Pulmonary Vein"
+      	},
+      	{
+      		"points": [
+      			{
+      				"x": -33.03240522235461,
+      				"y": -40.93038856010884,
+      				"z": -23.50147817220028
+      			}
+      		],
+      		"position": {
+      			"x": -74.27396086352269,
+      			"y": -74.3037089604203,
+      			"z": -58.297210334662516
+      		},
+      		"text": "Inferior Vena Cava"
+      	}
       ],
       highlightedLabelStyle: {
         font: 'Georgia',
@@ -267,7 +251,7 @@ export default class Renderer3DWrapper extends Component {
       this.mystate.labelWithFocus = false;
       console.log("----------------------");
       console.log("onLabelsChanged()");
-      this.props.blockprops.lostFocusCallback();
+      this.props.blockProps.lostFocusCallback();
     }
     if (!this.mystate.componentUnmounted) {
       this.props.labelsChangedCallback(labels);
@@ -438,11 +422,17 @@ export default class Renderer3DWrapper extends Component {
               buttonStyle={styles.toolbarButton}
             />
           ))}
-          {renderIf(false && readOnly)(() => (
+          {renderIf(!readOnly)(() => (
             <Button
+              style={styles.toolbarButton}
               disabled={!(this.state.hasSelectedLabel && this.state.showingLabels)}
               onClick={this.removeSelectedLabel} bsSize="small"
-            >Remove Label</Button>
+            >
+              <IconStack size="2x">
+                <Icon name="circle" stack="2x" />
+                <Icon name="trash" stack="1x" style={styles.icon} />
+              </IconStack>
+            </Button>
           ))}
           {renderIf(!readOnly)(() => (
             <Dropdown
@@ -527,7 +517,7 @@ Renderer3DWrapper.propTypes = {
   highlightedLabelStyleChangedCallback: React.PropTypes.func.isRequired,
   normalLabelStyleChangedCallback: React.PropTypes.func.isRequired,
   // vicho's props
-  blockProps: React.PropTypes.object,
+  blockProps: React.PropTypes.object.isRequired,
 };
 
 const styles = {

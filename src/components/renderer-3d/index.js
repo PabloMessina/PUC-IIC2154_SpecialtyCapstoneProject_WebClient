@@ -612,8 +612,8 @@ export default class Renderer3D extends Component {
         /** sprite */
         const sprite = ThreeUtils.makeTextSprite(
           label.text || DEFAULT_LABEL_MESSAGE,
-          1, this.mystate.meshDiameter, this.mystate.normalLabelStyle,
-          (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
+          1, this.mystate.meshDiameter, this.mystate.normalLabelStyle// ,
+          // (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
         );
         sprite.position.set(label.position.x, label.position.y, label.position.z);
         this.mystate.spriteGroup.add(sprite);
@@ -1017,8 +1017,8 @@ export default class Renderer3D extends Component {
               DEFAULT_LABEL_MESSAGE,
               0.5, // opacity
               this.mystate.meshDiameter, // reference size to scale
-              this.mystate.normalLabelStyle, // label style
-              (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
+              this.mystate.normalLabelStyle // , // label style
+              // (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
             );
             // get camera's normal pointing forward
             const camForwardN = ThreeUtils.getCameraForwardNormal(this.mystate.camera);
@@ -1124,8 +1124,8 @@ export default class Renderer3D extends Component {
       labelSettings.text,
       labelSettings.opacity,
       labelSettings.worldReferenceSize,
-      labelSettings.style,
-      (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
+      labelSettings.style// ,
+      // (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
     );
     // copy the same position from the old sprite
     newSprite.position.copy(labelObj.sprite.position);
@@ -1412,7 +1412,10 @@ export default class Renderer3D extends Component {
       this.highlightLabel(label);
       this.animateForAWhile(0);
       this.props.selectedLabelChangedCallback(label);
-      setTimeout(() => { this.mystate.canFocusHiddenInput = true; }, 0);
+      setTimeout(() => {
+        this.mystate.canFocusHiddenInput = true;
+        this.refs.hiddenTxtInp.value = label.text;
+      }, 0);
     }
   }
 

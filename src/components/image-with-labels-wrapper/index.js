@@ -8,8 +8,11 @@ export default class ImageWithLabelsWrapper extends Component {
   static get defaultProps() {
     return {
       url: 'http://www.humpath.com/IMG/jpg_brain_front_cut_01_10.jpg',
-      gotFocusCallback: () => console.log('img2D::gotFocus()'),
-      lostFocusCallback: () => console.log('img2D::lostFocus()'),
+      blockProps: {
+        readOnly: false,
+        gotFocusCallback: () => {},
+        lostFocusCallback: () => {},
+      },
     };
   }
 
@@ -94,8 +97,7 @@ export default class ImageWithLabelsWrapper extends Component {
 
 ImageWithLabelsWrapper.propTypes = {
   url: React.PropTypes.string,
-  gotFocusCallback: React.PropTypes.func,
-  lostFocusCallback: React.PropTypes.func,
+  blockProps: React.PropTypes.object.isRequired,
 };
 
 const styles = {
