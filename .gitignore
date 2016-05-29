@@ -1,5 +1,9 @@
 #### joe made this: http://goel.io/joe
 
+dist
+public/*
+!public/index.html
+
 #####=== Node ===#####
 
 # Logs
