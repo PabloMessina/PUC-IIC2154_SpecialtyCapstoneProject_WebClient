@@ -839,6 +839,7 @@ export default class Renderer3D extends Component {
     this.mystate.highlightedLabelStyle = style;
     if (this.mystate.selectedLabel) {
       this.highlightLabel(this.mystate.selectedLabel);
+      this.refreshIconsPositions();
       this.animateForAWhile();
     }
   }
@@ -1624,7 +1625,6 @@ Renderer3D.propTypes = {
 const styles = {
   viewport: {
     height: '350px',
-    minWidth: '700px',
   },
   hiddenTxtInp: {
     width: 0,

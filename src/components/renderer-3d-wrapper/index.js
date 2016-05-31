@@ -182,6 +182,7 @@ export default class Renderer3DWrapper extends Component {
       remoteFiles: props.remoteFiles,
       normalLabelStyle: props.normalLabelStyle,
       highlightedLabelStyle: props.highlightedLabelStyle,
+      labelStyleControlShowAllOptions: false,
     };
     // state not used in render
     this.mystate = {
@@ -207,6 +208,8 @@ export default class Renderer3DWrapper extends Component {
     this.onLoadingProgress = this.onLoadingProgress.bind(this);
     this.onLoadingError = this.onLoadingError.bind(this);
     this.onMouseDown = this.onMouseDown.bind(this);
+    this.onLabelStyleControlCheckboxChanged =
+      this.onLabelStyleControlCheckboxChanged.bind(this);
   }
 
   componentDidMount() {
@@ -252,8 +255,6 @@ export default class Renderer3DWrapper extends Component {
     // console.log("===> onLabelsChanged(): labels = ", JSON.stringify(labels, null, '\t'));
     if (labels.length === 0 && this.mystate.labelWithFocus) {
       this.mystate.labelWithFocus = false;
-      console.log("----------------------");
-      console.log("onLabelsChanged()");
       this.props.blockProps.lostFocusCallback();
     }
     if (!this.mystate.componentUnmounted) {
@@ -310,13 +311,9 @@ export default class Renderer3DWrapper extends Component {
       // check focus state
       if (label && !this.mystate.labelWithFocus) {
         this.mystate.labelWithFocus = true;
-        console.log("----------------------");
-        console.log("onSelectedLabelChanged()");
         gotFocusCallback();
       } else if (!label && this.mystate.labelWithFocus) {
         this.mystate.labelWithFocus = false;
-        console.log("----------------------");
-        console.log("onSelectedLabelChanged()");
         lostFocusCallback();
       }
     }
@@ -386,6 +383,10 @@ export default class Renderer3DWrapper extends Component {
     this.refs.r3d.removeSelectedLabel();
   }
 
+  onLabelStyleControlCheckboxChanged() {
+    this.setState({ labelStyleControlShowAllOptions: this.refs.labelStyleControlCheckbox.checked });
+  }
+
   render() {
     // check label style to use
     const { readOnly } = this.props.blockProps;
@@ -401,6 +402,26 @@ export default class Renderer3DWrapper extends Component {
 
     return (
       <div ref="root" style={styles.globalDivStyle}>
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
         {renderIf(false && !readOnly)(() => (
           <input ref="filesInput" type="file" onChange={this.onFilesChanged} multiple></input>
         ))}
@@ -454,27 +475,37 @@ export default class Renderer3DWrapper extends Component {
                 className="dropdown-with-input dropdown-toggle"
               >
                 <IconStack size="2x">
-                  <Icon name="circle" stack="2x"/>
+                  <Icon name="circle" stack="2x" />
                   <Icon name="cog" stack="1x" style={styles.icon} />
                 </IconStack>
               </Dropdown.Toggle>
               <Dropdown.Menu className="super-colors">
                 <div ref="labelSettingsDiv" style={styles.labelSettingsDivStyle}>
-                  <label><input type="radio" name="labelType" value="normal"
-                    checked={this.state.labelStyleMode === 'normal'}
-                    onChange={this.onLabelRadioBtnChanged}
-                  /> Normal Label
+                  <div style={styles.flexme}>
+                    <label style={styles.normalLabel}><input
+                      type="radio" name="labelType" value="normal"
+                      checked={this.state.labelStyleMode === 'normal'}
+                      onChange={this.onLabelRadioBtnChanged}
+                    /> Normal Label
+                    </label>
+                    <label style={styles.highlightLabel}><input
+                      type="radio" name="labelType" value="highlighted"
+                      checked={this.state.labelStyleMode === 'highlighted'}
+                      onChange={this.onLabelRadioBtnChanged}
+                    /> Highlighted Label
+                    </label>
+                  </div>
+                  <label><input
+                    ref="labelStyleControlCheckbox"
+                    type="checkbox"
+                    checked={this.state.labelStyleControlShowAllOptions}
+                    onChange={this.onLabelStyleControlCheckboxChanged}
+                  /> show all options
                   </label>
-                  <br />
-                  <label><input type="radio" name="labelType" value="highlighted"
-                    checked={this.state.labelStyleMode === 'highlighted'}
-                    onChange={this.onLabelRadioBtnChanged}
-                  /> Highlighted Label
-                  </label>
-                  <hr />
                   <LabelStyleControl
                     labelStyle={labelStyle}
                     labelStyleChangedCallback={this.onLabelStyleChanged}
+                    showAllOptions={this.state.labelStyleControlShowAllOptions}
                   />
                 </div>
               </Dropdown.Menu>
@@ -524,9 +555,18 @@ Renderer3DWrapper.propTypes = {
 };
 
 const styles = {
+  flexme: {
+    display: 'flex',
+  },
   labelSettingsDivStyle: {
-    width: '250px',
+    width: '270px',
+    height: '250px',
     padding: '10px',
+  },
+  normalLabel: {
+  },
+  highlightLabel: {
+    marginLeft: 'auto',
   },
   globalDivStyle: {
     position: 'relative',

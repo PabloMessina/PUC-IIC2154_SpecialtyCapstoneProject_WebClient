@@ -135,11 +135,28 @@ const ThreeUtils = {
     return v3.x === 0 && v3.y === 0 && v3.z === 0;
   },
 
+  nearestPowerOfTwo(n) {
+    let x = 1;
+    while (x < n) x *= 2;
+    return x;
+  },
+
   makeSprite({ editCanvasFunction, editSpriteFunction, opacity }) {
     // create canvas
-    const canvas = document.createElement('canvas');
+    let canvas = document.createElement('canvas');
     // edit canvas
     if (editCanvasFunction) editCanvasFunction(canvas);
+    // make sure all dimensions are power of 2
+    const w2 = ThreeUtils.nearestPowerOfTwo(canvas.width);
+    const h2 = ThreeUtils.nearestPowerOfTwo(canvas.height);
+    if (canvas.width !== w2 || canvas.height !== h2) {
+      const cvs = document.createElement('canvas');
+      cvs.width = w2;
+      cvs.height = h2;
+      const ctx = cvs.getContext('2d');
+      ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, w2, h2);
+      canvas = cvs;
+    }
     // generate texture from canvas
     const texture = new THREE.Texture(canvas);
     texture.needsUpdate = true;
