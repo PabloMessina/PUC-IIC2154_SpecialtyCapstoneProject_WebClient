@@ -25,16 +25,18 @@ export default class Renderer3DWrapper extends Component {
         lostFocusCallback: () => {},
       },
       remoteFiles: {
-        // mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
-        // obj: 'https://lopezjuri.com/videos/nRBC.obj',
-        // images: ['https://lopezjuri.com/videos/M_10___Default1.jpg'],
-        mtl: 'https://lopezjuri.com/videos/Heart.mtl',
-        obj: 'https://lopezjuri.com/videos/Heart.obj',
-        images: [],
+        mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
+        obj: 'https://lopezjuri.com/videos/nRBC.obj',
+        images: ['https://lopezjuri.com/videos/M_10___Default1.jpg'],
+        // mtl: 'https://lopezjuri.com/videos/Heart.mtl',
+        // obj: 'https://lopezjuri.com/videos/Heart.obj',
+        // images: [],
         // mtl: 'http://192.168.1.163:5000/nRBC.mtl',
         // obj: 'http://192.168.1.163:5000/nRBC.obj',
         // images: ['http://192.168.1.163:5000/nRBC.jpg'],
       },
+      labels: [],
+      /*
       labels: [
       	{
       		"points": [
@@ -132,6 +134,7 @@ export default class Renderer3DWrapper extends Component {
       		"text": "Inferior Vena Cava"
       	}
       ],
+      */
       highlightedLabelStyle: {
         font: 'Georgia',
         fontSize: 120,

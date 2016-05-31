@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import ImageWithLabels from '../image-with-labels/';
 import renderIf from 'render-if';
-import Utils2D from '../../_2Dlibrary/Utils2D';
 
 export default class ImageWithLabelsWrapper extends Component {
 

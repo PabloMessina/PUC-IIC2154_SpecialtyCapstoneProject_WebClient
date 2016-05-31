@@ -14,6 +14,12 @@ const DEFAULT_LABEL_MESSAGE = 'empty ...';
 const OBJ_EXT = '.obj';
 const MTL_EXT = '.mtl';
 
+const DELETE_ICON_URL = 'http://localhost:3000/img/delete_icon.png';
+const MINIMIZE_ICON_URL = 'http://localhost:3000/img/minimize_icon.png';
+
+const ICON_COEF = 1 / 40;
+const ICON_RES = 256;
+
 export default class Renderer3D extends Component {
 
   static get defaultProps() {
@@ -53,6 +59,12 @@ export default class Renderer3D extends Component {
     this.onXHRCreated = this.onXHRCreated.bind(this);
     this.onXHRDone = this.onXHRDone.bind(this);
     this.selectLabel = this.selectLabel.bind(this);
+    this.loadIconsFromServer = this.loadIconsFromServer.bind(this);
+    this.refreshIconsPositions = this.refreshIconsPositions.bind(this);
+    this.reloadDeleteIcon = this.reloadDeleteIcon.bind(this);
+    this.reloadMinimizeIcon = this.reloadMinimizeIcon.bind(this);
+    this.reloadIcons = this.reloadIcons.bind(this);
+    this.minimizeSelectedLabel = this.minimizeSelectedLabel.bind(this);
 
     // API functions
     this.loadModel = this.loadModel.bind(this);
@@ -104,6 +116,10 @@ export default class Renderer3D extends Component {
     const spritePlaneGroup = new THREE.Group();
     const lineGroup = new THREE.Group();
     const sphereGroup = new THREE.Group();
+    const iconSpriteGroup = new THREE.Group();
+    const iconCircleGroup = new THREE.Group();
+    iconCircleGroup.visible = false;
+    spritePlaneGroup.visible = false;
     scene.add(spriteGroup);
     scene.add(spritePlaneGroup);
     scene.add(lineGroup);
@@ -169,6 +185,15 @@ export default class Renderer3D extends Component {
         reason: '',
       },
       pendingXHRs: new Set(),
+      // icons
+      deleteImg: null,
+      deleteIconSprite: null,
+      deleteIconCircle: null,
+      minimizeImg: null,
+      minimizeIconSprite: null,
+      minimizeIconCircle: null,
+      iconSpriteGroup,
+      iconCircleGroup,
     };
 
     /** if we are receiving remoteFiles, we load the 3D model
@@ -185,8 +210,75 @@ export default class Renderer3D extends Component {
         this.props.loadingErrorCallback(error);
       });
     }
+    // load icons
+    this.loadIconsFromServer();
     // run animation
     this.animateForAWhile();
+  }
+
+  reloadDeleteIcon() {
+    if (this.mystate.deleteIconSprite) {
+      this.mystate.iconSpriteGroup.remove(this.mystate.deleteIconSprite);
+      this.mystate.iconCircleGroup.remove(this.mystate.deleteIconCircle);
+    }
+    const iconLength = this.mystate.meshDiameter * ICON_COEF;
+    // reload sprite
+    this.mystate.deleteIconSprite = (this.mystate.deleteImg) ?
+      ThreeUtils.makeImageSprite({  // from loaded image
+        img: this.mystate.deleteImg,
+        resX: ICON_RES, resY: ICON_RES, worldWidth: iconLength, worldHeight: iconLength }) :
+      ThreeUtils.makeDeleteIconSprite({ // manual creation
+        resX: ICON_RES, resY: ICON_RES, worldWidth: iconLength, worldHeight: iconLength });
+    this.mystate.iconSpriteGroup.add(this.mystate.deleteIconSprite);
+    // reload mesh used for collision detection
+    const geo = new THREE.CircleGeometry(iconLength * 0.5, 16);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+    const mesh = new THREE.Mesh(geo, mat);
+    this.mystate.deleteIconCircle = mesh;
+    this.mystate.iconCircleGroup.add(mesh);
+  }
+  reloadMinimizeIcon() {
+    if (this.mystate.minimizeIconSprite) {
+      this.mystate.iconSpriteGroup.remove(this.mystate.minimizeIconSprite);
+      this.mystate.iconCircleGroup.remove(this.mystate.minimizeIconCircle);
+    }
+    const iconLength = this.mystate.meshDiameter * ICON_COEF;
+    // reload sprite
+    this.mystate.minimizeIconSprite = (this.mystate.minimizeImg) ?
+      ThreeUtils.makeImageSprite({  // from loaded image
+        img: this.mystate.minimizeImg,
+        resX: ICON_RES, resY: ICON_RES, worldWidth: iconLength, worldHeight: iconLength }) :
+      ThreeUtils.makeDeleteIconSprite({ // manual creation
+        resX: ICON_RES, resY: ICON_RES, worldWidth: iconLength, worldHeight: iconLength });
+    this.mystate.iconSpriteGroup.add(this.mystate.minimizeIconSprite);
+    // reload mesh used for collision detection
+    const geo = new THREE.CircleGeometry(iconLength * 0.5, 16);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+    const mesh = new THREE.Mesh(geo, mat);
+    this.mystate.minimizeIconCircle = mesh;
+    this.mystate.iconCircleGroup.add(mesh);
+  }
+  reloadIcons() {
+    this.reloadDeleteIcon();
+    this.reloadMinimizeIcon();
+  }
+
+  loadIconsFromServer() {
+    // delete icon
+    const deleteImg = new Image();
+    deleteImg.onload = () => {
+      this.mystate.deleteImg = deleteImg;
+      if (this.mystate.meshGroup) this.reloadDeleteIcon();
+    };
+    deleteImg.src = DELETE_ICON_URL;
+
+    // minimize icon
+    const minimizeImg = new Image();
+    minimizeImg.onload = () => {
+      this.mystate.minimizeImg = minimizeImg;
+      if (this.mystate.meshGroup) this.reloadMinimizeIcon();
+    };
+    minimizeImg.src = MINIMIZE_ICON_URL;
   }
 
   componentWillReceiveProps(nextProps) {
@@ -337,6 +429,9 @@ export default class Renderer3D extends Component {
 
         // update orientation of sprite planes
         this.updateSpritePlaneOrientations();
+
+        // if there is a selected label, refresh icons
+        if (this.mystate.selectedLabel) this.refreshIconsPositions();
       }
 
       this.mystate.mouseLeft1.x = this.mystate.mouseLeft2.x;
@@ -512,6 +607,9 @@ export default class Renderer3D extends Component {
       }
       // remove labels
       this.clearAllLabelData();
+      // remove icons
+      this.mystate.scene.remove(this.mystate.iconSpriteGroup);
+      this.mystate.scene.remove(this.mystate.iconCircleGroup);
       // notify parent of changes
       this.props.labelsChangedCallback(this.labelsToJSON());
       this.props.selectedLabelChangedCallback(this.mystate.selectedLabel);
@@ -530,8 +628,10 @@ export default class Renderer3D extends Component {
     this.mystate.scene.add(this.mystate.spriteGroup);
     this.mystate.scene.add(this.mystate.spritePlaneGroup);
     this.mystate.labelsEnabled = true;
+    // reload icons
+    this.reloadIcons();
     // run animation cycle to reflect changes on the screen
-    this.animateForAWhile();
+    this.animateForAWhile(0);
     // refocus the camera on the model
     setTimeout(() => this.refocusOnModel(), 100);
   }
@@ -610,17 +710,17 @@ export default class Renderer3D extends Component {
           this.mystate.sphereToLineMap[sphere.uuid] = line;
         });
         /** sprite */
-        const sprite = ThreeUtils.makeTextSprite(
-          label.text || DEFAULT_LABEL_MESSAGE,
-          1, this.mystate.meshDiameter, this.mystate.normalLabelStyle// ,
-          // (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
-        );
+        const sprite = ThreeUtils.makeTextSprite({
+          text: label.text || DEFAULT_LABEL_MESSAGE,
+          opacity: 1,
+          worldReferenceSize: this.mystate.meshDiameter,
+          params: this.mystate.normalLabelStyle,
+        });
         sprite.position.set(label.position.x, label.position.y, label.position.z);
         this.mystate.spriteGroup.add(sprite);
         /** sprite plane */
         const spritePlane =
           ThreeUtils.createPlaneFromSprite(sprite, this.mystate.camera);
-        spritePlane.visible = false; // make sure it's invisible
         this.mystate.spritePlaneGroup.add(spritePlane);
         this.mystate.spritePlaneToLabelMap[spritePlane.uuid] = labelObj;
         /** set labelObj's fields */
@@ -763,7 +863,7 @@ export default class Renderer3D extends Component {
         /**
          * Conditions:
          * 	  1) there is 3D Model already loaded
-         *    2) we are not dragging a temporal label (transparent label)
+         *    2) we are not dragging a temporary label (transparent label)
          *
          * What can happen:
          * 	  1) left click on spritePlane
@@ -786,19 +886,20 @@ export default class Renderer3D extends Component {
         // is to start orbiting the camera
         let shouldOrbit = true;
         if (this.mystate.labelsEnabled) {
-          const splanes = this.mystate.spritePlaneGroup.children;
           // make sprite planes visible for intersection
-          for (let i = 0; i < splanes.length; ++i) splanes[i].visible = true;
+          this.mystate.spritePlaneGroup.visible = true;
+          this.mystate.iconCircleGroup.visible = true;
           // check intersection with sprite planes, spheres and meshes
           const intrs = ThreeUtils.getClosestIntersectedObject(
             screenX, screenY, viewport.offsetWidth, viewport.offsetHeight,
             this.mystate.raycaster, this.mystate.camera,
-            this.mystate.sphereGroup,
-            this.mystate.meshGroup,
-            this.mystate.spritePlaneGroup
+            this.mystate.sphereGroup, this.mystate.meshGroup,
+            this.mystate.spritePlaneGroup,
+            this.mystate.selectedLabel ? this.mystate.iconCircleGroup : null
           );
           // make sprite planes invisible again
-          for (let i = 0; i < splanes.length; ++i) splanes[i].visible = false;
+          this.mystate.spritePlaneGroup.visible = false;
+          this.mystate.iconCircleGroup.visible = false;
 
           if (intrs) {
             const pickedObj = intrs.object;
@@ -811,7 +912,6 @@ export default class Renderer3D extends Component {
               const label = this.mystate.spritePlaneToLabelMap[pickedObj.object.uuid];
               this.selectLabel(label);
               if (this.props.canEdit) {
-
                 /** starts dragging the label */
                 this.mystate.draggingSelectedLabel = true;
                 // plane parameters where dragging will happen
@@ -839,23 +939,23 @@ export default class Renderer3D extends Component {
                 label.spheres.delete(sphere); // from label
                 delete this.mystate.sphereToLineMap[sphere.uuid]; // from maps
                 delete this.mystate.sphereToLabelMap[sphere.uuid];
-                // ----
                 // if label runs out of spheres, delete label as well
-                if (label.spheres.size === 0) {
-                  this.mystate.spritePlaneGroup.remove(label.spritePlane);
-                  this.mystate.spriteGroup.remove(label.sprite);
-                  this.mystate.selectedLabel = null;
-                  this.mystate.labelSet.delete(label);
-                  // notify change of selected label
-                  this.props.selectedLabelChangedCallback(null);
-                }
-                // notify change of labels
-                this.props.labelsChangedCallback(this.labelsToJSON());
+                if (label.spheres.size === 0) this.removeSelectedLabel();
+                else this.props.labelsChangedCallback(this.labelsToJSON());
 
               // case 2.2) a different label selected
               } else {
                 this.selectLabel(label);
               }
+              shouldOrbit = false;
+
+            /* case 3) left click on icon */
+            } else if (pickedGroup === this.mystate.iconCircleGroup) {
+              const circle = pickedObj.object;
+              /* case 3.1) delete icon */
+              if (circle === this.mystate.deleteIconCircle) this.removeSelectedLabel();
+              /* case 3.2) minimize icon */
+              else this.minimizeSelectedLabel();
               shouldOrbit = false;
             }
           }
@@ -881,13 +981,13 @@ export default class Renderer3D extends Component {
          * What can happen:
          *  1) first right click on model:
          *  	an initial sphere is dropped in intersection point,
-         *  	and a temporal, transparent label will start following the mouse cursor
-         *  2) second right click (a temporal label already being dragged)
+         *  	and a temporary, transparent label will start following the mouse cursor
+         *  2) second right click (a temporary label already being dragged)
          *  	2.1) intersection with an already existing label
          *  		the new sphere and line get merged into the existing label
          *  	2.2) no intersection with existing labels
          *  		a new label gets created
-         *  	In both cases the dragging cycle of temporal label finishes
+         *  	In both cases the dragging cycle of temporary label finishes
          **/
 
         // -----------------
@@ -896,21 +996,21 @@ export default class Renderer3D extends Component {
         this.mystate.mouseClipping.y = (screenY / viewport.offsetHeight) * 2 - 1;
         this.mystate.raycaster.setFromCamera(this.mystate.mouseClipping, this.mystate.camera);
         // --------------------------------------------
-        // intersect against meshes, spheres and sprite planes
-        const splanes = this.mystate.spritePlaneGroup.children;
-        // make sprite planes visible for intersection
-        for (let i = 0; i < splanes.length; ++i) splanes[i].visible = true;
-        // check intersection with sprite planes, spheres and meshes
+        // intersect against meshes, spheres, sprite planes, icons
+        this.mystate.spritePlaneGroup.visible = true;
+        this.mystate.iconCircleGroup.visible = true;
         const intrs = ThreeUtils.getClosestIntersectedObject(
           screenX, screenY, viewport.offsetWidth, viewport.offsetHeight,
           this.mystate.raycaster, this.mystate.camera,
-          this.mystate.sphereGroup, this.mystate.meshGroup, this.mystate.spritePlaneGroup
+          this.mystate.sphereGroup, this.mystate.meshGroup,
+          this.mystate.spritePlaneGroup,
+          this.mystate.selectedLabel ? this.mystate.iconCircleGroup : null
         );
-        // make sprite planes invisible again
-        for (let i = 0; i < splanes.length; ++i) splanes[i].visible = false;
+        this.mystate.spritePlaneGroup.visible = false;
+        this.mystate.iconCircleGroup.visible = false;
 
         // --------------------------------------------
-        // case 2) already dragging a temporal label
+        // case 2) already dragging a temporary label
         if (this.mystate.draggingTempLabel) {
           const dragLabel = this.mystate.tempDraggableLabel;
           // auxiliar pointer
@@ -981,12 +1081,12 @@ export default class Renderer3D extends Component {
           // select label
           this.selectLabel(labelToSelect);
           // remove dragged elements directly from scene (because they were added
-          // directly into scene for temporal dragging purposes)
+          // directly into scene for temporary dragging purposes)
           this.mystate.scene.remove(dragLabel.sprite);
           this.mystate.scene.remove(dragLabel.sphere);
           this.mystate.scene.remove(dragLabel.line);
           this.mystate.scene.remove(dragLabel.spritePlane);
-          // temporal dragging is over
+          // temporary dragging is over
           this.mystate.tempDraggableLabel = null;
           this.mystate.draggingTempLabel = false;
           // and notify parent of changes in labels
@@ -1012,14 +1112,13 @@ export default class Renderer3D extends Component {
             sphere.position.copy(point);
 
             // ---------------------------------------------
-            // get temporal, transparent label
-            const sprite = ThreeUtils.makeTextSprite(
-              DEFAULT_LABEL_MESSAGE,
-              0.5, // opacity
-              this.mystate.meshDiameter, // reference size to scale
-              this.mystate.normalLabelStyle // , // label style
-              // (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
-            );
+            // get temporary, transparent label
+            const sprite = ThreeUtils.makeTextSprite({
+              text: DEFAULT_LABEL_MESSAGE,
+              opacity: 0.5,
+              worldReferenceSize: this.mystate.meshDiameter,
+              params: this.mystate.normalLabelStyle,
+            });
             // get camera's normal pointing forward
             const camForwardN = ThreeUtils.getCameraForwardNormal(this.mystate.camera);
             // get dir towards camera
@@ -1041,7 +1140,7 @@ export default class Renderer3D extends Component {
             // get plane from sprite (for intersection purposes),
             // not the same as the previous one
             const spritePlane = ThreeUtils.createPlaneFromSprite(sprite, this.mystate.camera);
-            spritePlane.visible = false; // should not be visible
+            spritePlane.visible = false; // it should be invisible
 
             // get line connecting the sphere with the label
             const lineGeo = new THREE.Geometry();
@@ -1060,7 +1159,7 @@ export default class Renderer3D extends Component {
             this.mystate.scene.add(sphere);
             this.mystate.scene.add(spritePlane);
 
-            // remember that we are dragging a temporal label
+            // remember that we are dragging a temporary label
             const labelObj = { sprite, spritePlane, sphere, line, text: '' };
             this.mystate.tempDraggableLabel = labelObj;
             this.mystate.draggingTempLabel = true;
@@ -1110,23 +1209,18 @@ export default class Renderer3D extends Component {
   setLabelStyle(labelObj, labelSettings) {
     const labelStyle = labelSettings.style;
     // change spheres color
-    for (const sphere of labelObj.spheres) {
-      sphere.material.color.set(labelStyle.sphereColor);
-    }
+    for (const sphere of labelObj.spheres) sphere.material.color.set(labelStyle.sphereColor);
     // change lines color
-    for (const line of labelObj.lines) {
-      line.material.color.set(labelStyle.lineColor);
-    }
+    for (const line of labelObj.lines) line.material.color.set(labelStyle.lineColor);
     // remove current sprite
     this.mystate.spriteGroup.remove(labelObj.sprite);
     // create a new sprite
-    const newSprite = ThreeUtils.makeTextSprite(
-      labelSettings.text,
-      labelSettings.opacity,
-      labelSettings.worldReferenceSize,
-      labelSettings.style// ,
-      // (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
-    );
+    const newSprite = ThreeUtils.makeTextSprite({
+      text: labelSettings.text,
+      opacity: labelSettings.opacity,
+      worldReferenceSize: labelSettings.worldReferenceSize,
+      params: labelSettings.style,
+    });
     // copy the same position from the old sprite
     newSprite.position.copy(labelObj.sprite.position);
     // replace with new sprite
@@ -1138,7 +1232,6 @@ export default class Renderer3D extends Component {
     // replace with new spritePlane
     const newSpritePlane =
       ThreeUtils.createPlaneFromSprite(newSprite, this.mystate.camera);
-    newSpritePlane.visible = false; // make sure it's invisible
     this.mystate.spritePlaneGroup.add(newSpritePlane);
     this.mystate.spritePlaneToLabelMap[newSpritePlane.uuid] = labelObj;
     labelObj.spritePlane = newSpritePlane;
@@ -1149,8 +1242,10 @@ export default class Renderer3D extends Component {
     this.mystate.scene.remove(this.mystate.lineGroup);
     this.mystate.scene.remove(this.mystate.spriteGroup);
     this.mystate.scene.remove(this.mystate.spritePlaneGroup);
+    this.mystate.scene.remove(this.mystate.iconCircleGroup);
+    this.mystate.scene.remove(this.mystate.iconSpriteGroup);
     this.mystate.labelsEnabled = false;
-    this.animateForAWhile();
+    this.animateForAWhile(0);
   }
 
   showLabels() {
@@ -1158,8 +1253,10 @@ export default class Renderer3D extends Component {
     this.mystate.scene.add(this.mystate.lineGroup);
     this.mystate.scene.add(this.mystate.spriteGroup);
     this.mystate.scene.add(this.mystate.spritePlaneGroup);
+    this.mystate.scene.add(this.mystate.iconCircleGroup);
+    this.mystate.scene.add(this.mystate.iconSpriteGroup);
     this.mystate.labelsEnabled = true;
-    this.animateForAWhile();
+    this.animateForAWhile(0);
   }
 
   removeSelectedLabel() {
@@ -1191,10 +1288,35 @@ export default class Renderer3D extends Component {
       this.mystate.selectedLabel = null;
       // interrupt any possible dragging in process
       this.mystate.draggingSelectedLabel = false;
+      // remove icons from scene
+      this.mystate.scene.remove(this.mystate.iconCircleGroup);
+      this.mystate.scene.remove(this.mystate.iconSpriteGroup);
+      // notify parent
       this.props.selectedLabelChangedCallback(null);
     }
     // refresh scene
     this.animateForAWhile();
+  }
+
+  minimizeSelectedLabel() {
+    // hide everything except
+    const label = this.mystate.selectedLabel;
+    this.mystate.spriteGroup.remove(label.sprite);
+    this.mystate.spritePlaneGroup.remove(label.spritePlane);
+    for (const line of label.lines) this.mystate.lineGroup.remove(line);
+    this.mystate.scene.remove(this.mystate.iconSpriteGroup);
+    this.mystate.scene.remove(this.mystate.iconCircleGroup);
+    label.minimized = true; // remember it's minimized
+    // reset sphere colors back to normal
+    const style = this.mystate.normalLabelStyle;
+    for (const sphere of label.spheres) sphere.material.color.set(style.sphereColor);
+    // unselect selected label
+    this.mystate.selectedLabel = null;
+    this.mystate.canFocusHiddenInput = false;
+    // refresh scene
+    this.animateForAWhile(0);
+    // notify selected label is null
+    this.props.selectedLabelChangedCallback(null);
   }
 
   labelsToJSON() {
@@ -1231,7 +1353,7 @@ export default class Renderer3D extends Component {
     const screenY = this.mystate.mouseViewportCoords.y;
     const viewport = this.refs.viewport;
 
-    // if dragging a temporal label
+    // if dragging a temporary label
     if (this.mystate.draggingTempLabel) {
       // get world coords from screen coords
       const worldPos = ThreeUtils.unprojectFromScreenToWorld(
@@ -1294,6 +1416,8 @@ export default class Renderer3D extends Component {
         // update spritePlane
         selectedLabel.spritePlane.position.copy(intersPoint);
         selectedLabel.spritePlane.quaternion.copy(this.mystate.camera.quaternion);
+        // refresh icons
+        this.refreshIconsPositions();
         this.animateForAWhile();
       }
     }
@@ -1388,6 +1512,7 @@ export default class Renderer3D extends Component {
     if (selectedLabel) {
       selectedLabel.text = text;
       this.highlightLabel(selectedLabel);
+      this.refreshIconsPositions();
       this.animateForAWhile();
       this.props.labelsChangedCallback(this.labelsToJSON());
     }
@@ -1398,8 +1523,13 @@ export default class Renderer3D extends Component {
     if (label) {
       this.unhighlightLabel(label);
       this.mystate.selectedLabel = null;
-      this.animateForAWhile(0);
       this.mystate.canFocusHiddenInput = false;
+      // remove icons from scene
+      this.mystate.scene.remove(this.mystate.iconSpriteGroup);
+      this.mystate.scene.remove(this.mystate.iconCircleGroup);
+      // refresh scene
+      this.animateForAWhile(0);
+      // notify selected label is null
       this.props.selectedLabelChangedCallback(null);
     }
   }
@@ -1407,17 +1537,60 @@ export default class Renderer3D extends Component {
   selectLabel(label) {
     const prevLabel = this.mystate.selectedLabel;
     if (label !== prevLabel) {
+      // unhighlight previous label
       if (prevLabel) this.unhighlightLabel(prevLabel);
+      // unminimize the label if it was minimized
+      if (label.minimized) {
+        for (const line of label.lines) this.mystate.lineGroup.add(line);
+        label.minimized = false;
+      }
+      // highlight selected label
       this.mystate.selectedLabel = label;
       this.highlightLabel(label);
+      // add icons back to scene and refresh their positions
+      this.mystate.scene.add(this.mystate.iconSpriteGroup);
+      this.mystate.scene.add(this.mystate.iconCircleGroup);
+      this.refreshIconsPositions();
+      // refresh scene
       this.animateForAWhile(0);
+      // notify parent about new selected label
       this.props.selectedLabelChangedCallback(label);
       setTimeout(() => {
+        // prepare hidden input for writing on it
         this.mystate.canFocusHiddenInput = true;
         this.refs.hiddenTxtInp.value = label.text;
       }, 0);
     }
   }
+
+  refreshIconsPositions() {
+    // debugger
+    const label = this.mystate.selectedLabel;
+    const bbox = new THREE.BoundingBoxHelper(label.sprite);
+    bbox.update();
+    const w = bbox.box.max.x - bbox.box.min.x;
+    const h = bbox.box.max.y - bbox.box.min.y;
+    const quat = this.mystate.camera.quaternion;
+    // // update minimize icon's position
+    this.mystate.minimizeIconSprite.position
+      .set(w * 0.5 + h * 0.02, h * 0.6, 0)
+      .applyQuaternion(quat)
+      .add(label.sprite.position);
+    // and circle
+    this.mystate.minimizeIconCircle.position
+      .copy(this.mystate.minimizeIconSprite.position);
+    this.mystate.minimizeIconCircle.quaternion.copy(quat);
+    // update delete icon's position
+    this.mystate.deleteIconSprite.position
+      .set(w * 0.5 + h * 0.04 + this.mystate.meshDiameter * ICON_COEF, h * 0.6, 0)
+      .applyQuaternion(quat)
+      .add(label.sprite.position);
+    // and circle
+    this.mystate.deleteIconCircle.position
+      .copy(this.mystate.deleteIconSprite.position);
+    this.mystate.deleteIconCircle.quaternion.copy(quat);
+  }
+
 
   render() {
     return (
