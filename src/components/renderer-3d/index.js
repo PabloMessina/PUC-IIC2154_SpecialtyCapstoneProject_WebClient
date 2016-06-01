@@ -3,7 +3,7 @@ import THREE from 'n3d-threejs';
 import MTLLoader from '../../_3Dlibrary/MTLLoader';
 import OBJLoader from '../../_3Dlibrary/OBJLoader';
 import ThreeUtils from '../../_3Dlibrary/ThreeUtils';
-import _ from 'lodash';
+import isEqual from 'lodash/isEqual';
 
 // button constants
 const LEFT_BUTTON = 0;
@@ -65,6 +65,7 @@ export default class Renderer3D extends Component {
     this.reloadMinimizeIcon = this.reloadMinimizeIcon.bind(this);
     this.reloadIcons = this.reloadIcons.bind(this);
     this.minimizeSelectedLabel = this.minimizeSelectedLabel.bind(this);
+    this.onFileDownloadStarted = this.onFileDownloadStarted.bind(this);
 
     // API functions
     this.loadModel = this.loadModel.bind(this);
@@ -200,15 +201,12 @@ export default class Renderer3D extends Component {
     from the server */
     if (this.props.remoteFiles) {
       const remoteFiles = this.props.remoteFiles;
-      this.props.loadingStartingCallback();
       this.load3DModelFromUrls(remoteFiles)
       .then(() => {
         this.loadLabels(this.props.labels);
         this.props.loadingCompletedCallback();
       })
-      .catch(error => {
-        this.props.loadingErrorCallback(error);
-      });
+      .catch(error => this.props.loadingErrorCallback(error));
     }
     // load icons
     this.loadIconsFromServer();
@@ -284,7 +282,7 @@ export default class Renderer3D extends Component {
   componentWillReceiveProps(nextProps) {
     /** check if we are receving new remote files */
     if (nextProps.remoteFiles &&
-      !_.isEqual(this.props.remoteFiles, nextProps.remoteFiles)) {
+      !isEqual(this.props.remoteFiles, nextProps.remoteFiles)) {
       const remoteFiles = nextProps.remoteFiles;
       this.props.loadingStartingCallback();
       this.load3DModelFromUrls(remoteFiles)
@@ -301,10 +299,8 @@ export default class Renderer3D extends Component {
         // notify successful completion
         this.props.loadingCompletedCallback();
       })
-      .catch(error => {
-        // notify any errors
-        this.props.loadingErrorCallback(error);
-      });
+      // notify any errors
+      .catch(error => this.props.loadingErrorCallback(error));
     }
   }
 
@@ -473,28 +469,28 @@ export default class Renderer3D extends Component {
         textureUrls[filename] = url;
       }
     }
+    // check mtl url was provided
+    if (mtlUrl === null) return Promise.reject('mtl url not found');
+    // check obj url was provided
+    if (objUrl === null) return Promise.reject('obj url not found');
 
-    if (mtlUrl === null) { // check mtl url was provided
-      return Promise.reject('mtl url not found');
-    }
-    if (objUrl === null) { // check obj url was provided
-      return Promise.reject('obj url not found');
-    }
-
-    const progressCallback = this.props.loadingProgressCallback;
-    progressCallback(`Loading MTL file from ${mtlUrl} ...`, 0, 1);
-
-    return MTLLoader.loadMaterialsFromUrl(mtlUrl, textureUrls, this.mystate.loadingInterrupter)
+    this.props.downloadCycleStartedCallback();
+    this.onFileDownloadStarted(mtlUrl);
+    return MTLLoader.loadMaterialsFromUrl(
+      mtlUrl, textureUrls,
+      this.mystate.loadingInterrupter,
+      this.onFileDownloadStarted)
     .then((materials) => {
       if (this.mystate.loadingInterrupter.stop) {
         throw new Error(this.mystate.loadingInterrupter.reason);
       }
-      progressCallback(`Loading OBJ file from ${objUrl} ...`, 0, 1);
+      this.onFileDownloadStarted(objUrl);
       return OBJLoader.loadObjectsFromUrl(
         objUrl,
         materials,
         (lengthSoFar, totalLength) =>
-          progressCallback(`Loading OBJ file from ${objUrl} ...`, lengthSoFar, totalLength),
+          this.props.loadingProgressCallback(
+            `Loading OBJ file from ${objUrl} ...`, lengthSoFar, totalLength),
         this.onXHRCreated,
         this.onXHRDone,
         this.mystate.loadingInterrupter
@@ -515,6 +511,11 @@ export default class Renderer3D extends Component {
   }
   onXHRDone(xhr) {
     this.mystate.pendingXHRs.delete(xhr);
+    this.props.downloadCycleFinishedCallback();
+    this.props.loadingStartingCallback();
+  }
+  onFileDownloadStarted(url) {
+    this.props.downloadingFileCallback(url);
   }
 
   /**
@@ -548,34 +549,35 @@ export default class Renderer3D extends Component {
         mtlFile = file; // mtl file
       } else {
         // save path to texture image file
-        texturePaths[fname] = window.URL.createObjectURL(file);
+        texturePaths[fname] = URL.createObjectURL(file);
       }
     }
 
     // ---------------------------------
     // parse MTL and OBJ files
     // ---------------------------------
-    if (mtlFile === null) { // check mtl file was provided
-      return Promise.reject('mtl file not found');
-    }
-    if (objFile === null) { // check obj file was provided
-      return Promise.reject('obj file not found');
-    }
+    if (mtlFile === null) return Promise.reject('mtl file not found');
+    if (objFile === null) return Promise.reject('obj file not found');
 
-    const progressCallback = this.props.loadingProgressCallback;
-    progressCallback(`Loading MTL file ${mtlFile.name} ...`, 0, mtlFile.size);
+    this.props.downloadCycleStartedCallback();
+    this.onFileDownloadStarted(URL.createObjectURL(mtlFile));
     // use MTLLoader to load materials from MTL file
-    return MTLLoader.loadMaterialsFromFile(mtlFile, texturePaths, this.mystate.loadingInterrupter)
+    return MTLLoader.loadMaterialsFromFile(
+      mtlFile, texturePaths,
+      this.mystate.loadingInterrupter,
+      this.onFileDownloadStarted)
     .then((materials) => {
       if (this.mystate.loadingInterrupter.stop) {
         throw new Error(this.mystate.loadingInterrupter.reason);
       }
-      progressCallback(`Loading MTL file ${mtlFile.name} ...`, mtlFile.size, mtlFile.size);
-      // on success, proceed to use the OBJLoader to load the 3D objects
-      // from OBJ file
-      return OBJLoader.loadObjectsFromFile(objFile, materials, (lengthSoFar, totalLength) => {
-        progressCallback(`Loading OBJ file ${objFile.name} ...`, lengthSoFar, totalLength);
-      }, this.mystate.loadingInterrupter);
+      // on success, proceed to use the OBJLoader to load the 3D objects from OBJ file
+      this.onDownloadStarted(URL.createObjectURL(objFile));
+      return OBJLoader.loadObjectsFromFile(
+        objFile, materials,
+        (lengthSoFar, totalLength) =>
+          this.props.loadingProgressCallback(
+            `Loading OBJ file ${objFile.name} ...`, lengthSoFar, totalLength),
+        this.mystate.loadingInterrupter);
     })
     .then((meshGroup) => {
       if (this.mystate.loadingInterrupter.stop) {
@@ -633,7 +635,7 @@ export default class Renderer3D extends Component {
     // run animation cycle to reflect changes on the screen
     this.animateForAWhile(0);
     // refocus the camera on the model
-    setTimeout(() => this.refocusOnModel(), 100);
+    setTimeout(() => !this.mystate.loadingInterrupter.stop && this.refocusOnModel(), 100);
   }
 
   /**
@@ -778,6 +780,7 @@ export default class Renderer3D extends Component {
       );
       this.mystate.zoom = this.mystate.camera.zoom; // keep the zoom up to date
       this.updateSpritePlaneOrientations();
+      if (this.mystate.selectedLabel) this.refreshIconsPositions();
       this.animateForAWhile();
     }
   }
@@ -787,7 +790,7 @@ export default class Renderer3D extends Component {
    * The purpose is to ensure that updates and rendering are performed
    * only when it's necessary, and not all the time
    */
-  animateForAWhile(milliseconds = 100) {
+  animateForAWhile(milliseconds = 200) {
     if (this.mystate.updateTimerRunning) return; // already running? ignore
     if (this.mystate.componentUnmounted) return; // unmounted ? ignore
     this.mystate.updateTimerRunning = true;
@@ -1493,15 +1496,16 @@ export default class Renderer3D extends Component {
   handleKeypress(e) {
     if (this.props.canEdit && this.mystate.canFocusHiddenInput) {
       const e2 = new KeyboardEvent('e', e);
-      this.refs.hiddenTxtInp.focus();
-      this.refs.hiddenTxtInp.dispatchEvent(e2);
+      const hti = this.refs.hiddenTxtInp;
+      hti.focus();
+      hti.dispatchEvent(e2);
     }
   }
 
   handleKeydown(e) {
     if (this.props.canEdit && this.mystate.canFocusHiddenInput) {
       const e2 = new KeyboardEvent('e', e);
-      this.refs.hiddenTxtInp.focus();
+      // this.refs.hiddenTxtInp.focus();
       this.refs.hiddenTxtInp.dispatchEvent(e2);
     }
   }
@@ -1592,7 +1596,6 @@ export default class Renderer3D extends Component {
     this.mystate.deleteIconCircle.quaternion.copy(quat);
   }
 
-
   render() {
     return (
       <div>
@@ -1618,6 +1621,9 @@ Renderer3D.propTypes = {
   loadingProgressCallback: React.PropTypes.func.isRequired,
   loadingErrorCallback: React.PropTypes.func.isRequired,
   loadingCompletedCallback: React.PropTypes.func.isRequired,
+  downloadCycleStartedCallback: React.PropTypes.func.isRequired,
+  downloadCycleFinishedCallback: React.PropTypes.func.isRequired,
+  downloadingFileCallback: React.PropTypes.func.isRequired,
   highlightedLabelStyle: React.PropTypes.object.isRequired,
   normalLabelStyle: React.PropTypes.object.isRequired,
 };
@@ -1627,8 +1633,11 @@ const styles = {
     height: '350px',
   },
   hiddenTxtInp: {
+    position: 'absolute',
+    overflow: 'hidden',
     width: 0,
     height: 0,
-    marginLeft: -9999,
+    top: '50%',
+    left: '-9999%',
   },
 };

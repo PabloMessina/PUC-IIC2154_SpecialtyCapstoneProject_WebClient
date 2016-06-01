@@ -121,7 +121,7 @@ const ThreeUtils = {
     const m = rDir.dot(pNormal);
     const n = rPos.dot(pNormal) - pPos.dot(pNormal);
     if (m === 0) {
-      console.log("WARNING: division by 0 detected");
+      console.log('WARNING: division by 0 detected');
       return null;
     }
     const t = - n / m;

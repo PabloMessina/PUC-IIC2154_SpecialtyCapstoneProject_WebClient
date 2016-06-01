@@ -167,13 +167,10 @@ const OBJLoader = {
         let material;
         if (object.material.name !== '') {
           material = materials[object.material.name];
-          if (material === undefined) {
-            throw new Error('Material ' + object.material.name + ' was not found');
-          }
+          if (material === undefined) throw new Error(`Material ${object.material.name} was not found`);
         } else {
           material = new THREE.MeshPhongMaterial({ color: 0x0000ff });
         }
-
         material.shading = object.material.smooth ? THREE.SmoothShading : THREE.FlatShading;
 
         const mesh = new THREE.Mesh(buffergeometry, material);
@@ -609,7 +606,7 @@ function fetchTextFile(url, onXHRCreated, onXHRDone) {
       xhr.abortMessage = `Error while fetching ${url}: ${reason}`;
       xhr.abort();
     };
-    xhr.send(null);
     onXHRCreated(xhr); // give access to xhr
+    xhr.send(null);
   });
 }

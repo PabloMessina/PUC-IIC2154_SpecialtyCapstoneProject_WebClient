@@ -25,15 +25,15 @@ export default class Renderer3DWrapper extends Component {
         lostFocusCallback: () => {},
       },
       remoteFiles: {
-        mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
-        obj: 'https://lopezjuri.com/videos/nRBC.obj',
-        images: ['https://lopezjuri.com/videos/M_10___Default1.jpg'],
-        // mtl: 'https://lopezjuri.com/videos/Heart.mtl',
-        // obj: 'https://lopezjuri.com/videos/Heart.obj',
+        // mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
+        // obj: 'https://lopezjuri.com/videos/nRBC.obj',
+        // images: ['https://lopezjuri.com/videos/M_10___Default1.jpg'],
+        mtl: 'https://lopezjuri.com/videos/Heart.mtl',
+        obj: 'https://lopezjuri.com/videos/Heart.obj',
         // images: [],
-        // mtl: 'http://192.168.1.163:5000/nRBC.mtl',
-        // obj: 'http://192.168.1.163:5000/nRBC.obj',
-        // images: ['http://192.168.1.163:5000/nRBC.jpg'],
+        // mtl: 'http://localhost:5000/nRBC.mtl',
+        // obj: 'http://localhost:5000/nRBC.obj',
+        // images: ['http://localhost:5000/nRBC.jpg'],
       },
       labels: [],
       /*
@@ -178,6 +178,8 @@ export default class Renderer3DWrapper extends Component {
       hasSelectedLabel: false,
       showingLabels: true,
       loadingModel: false,
+      downloading: false,
+      downloadMessage: '',
       labels: props.labels,
       remoteFiles: props.remoteFiles,
       normalLabelStyle: props.normalLabelStyle,
@@ -210,6 +212,9 @@ export default class Renderer3DWrapper extends Component {
     this.onMouseDown = this.onMouseDown.bind(this);
     this.onLabelStyleControlCheckboxChanged =
       this.onLabelStyleControlCheckboxChanged.bind(this);
+    this.onDownloadCycleStarted = this.onDownloadCycleStarted.bind(this);
+    this.onDownloadCycleFinished = this.onDownloadCycleFinished.bind(this);
+    this.onDownloadingFile = this.onDownloadingFile.bind(this);
   }
 
   componentDidMount() {
@@ -335,6 +340,18 @@ export default class Renderer3DWrapper extends Component {
     }
   }
 
+  onDownloadCycleStarted() {
+    this.setState({ downloading: true });
+  }
+
+  onDownloadCycleFinished() {
+    this.setState({ downloading: false });
+  }
+
+  onDownloadingFile(path) {
+    this.setState({ downloadMessage: `fetching file: ${path}` });
+  }
+
   onLoadingProgress(message, lengthSoFar, totalLength) {
     if (!this.mystate.componentUnmounted) {
       const percentage = (lengthSoFar / totalLength * 100).toFixed(2);
@@ -361,6 +378,7 @@ export default class Renderer3DWrapper extends Component {
     if (!this.mystate.componentUnmounted) {
       this.setState({
         loadingModel: false,
+        downloading: false,
       });
     }
   }
@@ -402,26 +420,6 @@ export default class Renderer3DWrapper extends Component {
 
     return (
       <div ref="root" style={styles.globalDivStyle}>
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
         {renderIf(false && !readOnly)(() => (
           <input ref="filesInput" type="file" onChange={this.onFilesChanged} multiple></input>
         ))}
@@ -445,18 +443,6 @@ export default class Renderer3DWrapper extends Component {
               iconStyle={styles.icon}
               buttonStyle={styles.toolbarButton}
             />
-          ))}
-          {renderIf(!readOnly)(() => (
-            <Button
-              style={styles.toolbarButton}
-              disabled={!(this.state.hasSelectedLabel && this.state.showingLabels)}
-              onClick={this.removeSelectedLabel} bsSize="small"
-            >
-              <IconStack size="2x">
-                <Icon name="circle" stack="2x" />
-                <Icon name="trash" stack="1x" style={styles.icon} />
-              </IconStack>
-            </Button>
           ))}
           {renderIf(!readOnly)(() => (
             <Dropdown
@@ -525,13 +511,43 @@ export default class Renderer3DWrapper extends Component {
           loadingProgressCallback={this.onLoadingProgress}
           loadingErrorCallback={this.onLoadingError}
           loadingCompletedCallback={this.onLoadingCompleted}
+          downloadCycleStartedCallback={this.onDownloadCycleStarted}
+          downloadCycleFinishedCallback={this.onDownloadCycleFinished}
+          downloadingFileCallback={this.onDownloadingFile}
         />
-        {renderIf(this.state.loadingModel)(() => (
+        {this.state.loadingModel ?
           <div style={styles.progressDiv}>
             <span height="20px">{this.state.progressMessage}</span> <br />
             <progress style={styles.progressBar} value={this.state.progressPercentage} max="100" />
+          </div> : null}
+        {this.state.downloading ? (
+          <div style={styles.spinnerDiv}>
+            <div className="download-spinner" /><span height="20px">{this.state.downloadMessage}</span>
           </div>
-        ))}
+        ) : null}
+        <style
+          dangerouslySetInnerHTML={{
+            __html:
+              `.download-spinner {
+                display: inline-block;
+                border: 16px solid #f3f3f3;
+                border-radius: 50%;
+                border-top: 16px solid #3498db;
+                width: 20px;
+                height: 20px;
+                -webkit-animation: spin 1s linear infinite;
+                animation: spin 1s linear infinite;
+              }
+              @-webkit-keyframes spin {
+                0% { -webkit-transform: rotate(0deg); }
+                100% { -webkit-transform: rotate(360deg); }
+              }
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }`,
+          }}
+        />
       </div>
     );
   }
@@ -570,12 +586,12 @@ const styles = {
   },
   globalDivStyle: {
     position: 'relative',
-    width: '70%',
+    width: '85%',
   },
   toolbar: {
     position: 'absolute',
     right: 0,
-    bottom: 60,
+    bottom: 10,
     height: 44,
   },
   toolbarButton: {
@@ -590,7 +606,14 @@ const styles = {
     width: '50%',
     position: 'absolute',
     left: '25%',
-    top: '50%',
+    top: '38%',
+    backgroundColor: 'rgba(240,240,240,0.7)',
+  },
+  spinnerDiv: {
+    width: '50%',
+    position: 'absolute',
+    left: '25%',
+    top: '38%',
     backgroundColor: 'rgba(240,240,240,0.7)',
   },
   progressBar: {

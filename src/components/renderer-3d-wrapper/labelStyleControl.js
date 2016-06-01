@@ -157,18 +157,17 @@ export default class LabelStyleControl extends Component {
         </div>))}
         <style
           dangerouslySetInnerHTML={{
-            __html: [
-              '#labelstylecontrol-root::-webkit-scrollbar {',
-              '  -webkit-appearance: none;',
-              '  width: 7px;',
-              '}',
-              '#labelstylecontrol-root::-webkit-scrollbar-thumb {',
-              '  border-radius: 4px;',
-              '  background-color: rgba(0,0,0,.5);',
-              '  -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);',
-              '  border-radius: 4px;',
-              '}',
-            ].join('\n'),
+            __html:
+              `#labelstylecontrol-root::-webkit-scrollbar {
+                -webkit-appearance: none;
+                width: 7px;
+              }
+              #labelstylecontrol-root::-webkit-scrollbar-thumb {
+                border-radius: 4px;
+                background-color: rgba(0,0,0,.5);
+                -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
+                border-radius: 4px;
+              }`,
           }}
         >
         </style>
