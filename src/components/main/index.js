@@ -5,7 +5,7 @@ import React, { Component } from 'react';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
 
-import { currentUser, auth } from '../../app';
+import app, { currentUser, auth } from '../../app';
 import NavigationBar from '../navigation-bar';
 
 const STATES = {
@@ -28,9 +28,22 @@ export default class Main extends Component {
     super(props);
     this.state = {
       state: STATES.LOADING,
+      connected: false,
       error: null,
     };
+    this.auth = this.auth.bind(this);
+  }
+
+  componentDidMount() {
     this.auth();
+
+    app.io.on('connect', () => {
+      this.setState({ connected: true });
+    });
+
+    app.io.on('disconnect', () => {
+      this.setState({ connected: false });
+    });
   }
 
   auth() {
@@ -46,16 +59,16 @@ export default class Main extends Component {
   render() {
     const { route, ...props } = this.props;
     const { title } = route;
-    const { state } = this.state;
+    const { state, connected } = this.state;
     const user = currentUser();
 
     return (
       <div>
 
-        <NavigationBar title={title} fixedTop user={user} />
+        <NavigationBar title={title} fixedTop user={user} connected={connected} />
 
         {/* Render content only if the user is annon or is authed */}
-        {renderIf(state === STATES.ANNON || state === STATES.AUTHED)(() => (
+        {renderIf(state !== STATES.LOADING)(() => (
           <div style={styles.content} {...props}>
             {this.props.children}
           </div>
