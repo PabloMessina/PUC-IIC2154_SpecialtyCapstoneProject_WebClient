@@ -9,13 +9,13 @@ export default {
   target: {
     drop(props, monitor) {
       if (monitor.isOver()) {   // do nothing if student was dropped over a team
-        const { user, withoutGroup } = monitor.getItem();
+        const { attendance, withoutGroup } = monitor.getItem();
         if (withoutGroup) {
           if (props.updateOrCreateAttendance) { // TODO: this is unnecessary if "canDrop" is implemented
-            props.updateOrCreateAttendance(user.id);
+            props.updateOrCreateAttendance(attendance);
           }
         } else {
-          props.removeFromGroup(user.id);
+          props.removeFromGroup(attendance);
         }
       }
     },

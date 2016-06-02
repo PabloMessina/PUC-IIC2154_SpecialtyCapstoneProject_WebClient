@@ -1,5 +1,4 @@
 import React, { PropTypes, Component } from 'react';
-import { ListGroup } from 'react-bootstrap';
 
 import { DropTarget } from 'react-dnd';
 import { findDOMNode } from 'react-dom';
@@ -37,28 +36,30 @@ class Team extends Component {
   static get propTypes() {
     return {
       team: PropTypes.object.isRequired,
+      identifier: PropTypes.any.isRequired,
       updateOrCreateAttendance: PropTypes.func,
-
+      strip: PropTypes.bool,
       connectDropTarget: PropTypes.func.isRequired,
       isOverAnotherGroup: PropTypes.func.isRequired,
     };
   }
 
   render() {
-    const { connectDropTarget, isOverAnotherGroup, team } = this.props;
+    const { identifier, connectDropTarget, isOverAnotherGroup, team, strip } = this.props;
 
     return (
-      <ListGroup
-        ref={instance => connectDropTarget(findDOMNode(instance))}
-      >
-        {team.users.map((student, i) =>
+      <tbody ref={instance => connectDropTarget(findDOMNode(instance))}>
+        {team.users.map(({ user, ...attendance }, i) =>
           <Student
+            className={strip ? 'active' : undefined}
             key={i}
-            student={student}
+            identifier={identifier}
+            attendance={attendance}
+            user={user}
             highlight={isOverAnotherGroup(team)}
           />
         )}
-      </ListGroup>
+      </tbody>
     );
   }
 }
