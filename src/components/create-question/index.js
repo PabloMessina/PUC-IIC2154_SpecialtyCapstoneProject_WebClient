@@ -21,9 +21,7 @@ const QUESTION_TYPES = {
 const EMPTY_QUESTION = {
   id: 1,
   qtype: Object.keys(QUESTION_TYPES)[0],
-  content: {
-    insert: '¿Sed ut posuere velit?',
-  },
+  content: null,
   tags: [''],
 };
 
@@ -97,6 +95,7 @@ export default class CreateQuestion extends Component {
       fields: question.fields,
       disabled: false,
       mode: 'editor',
+      showType: false,
       onAnswerChange: answer => this.setState({ question: { ...this.state.question, answer } }),
       onFieldsChange: fields => this.setState({ question: { ...this.state.question, fields } }),
       onBodyChange: content => this.setState({ question: { ...this.state.question, content } }),
@@ -154,7 +153,6 @@ export default class CreateQuestion extends Component {
         </Row>
         <Row>
           <Col xs={12}>
-            <hr />
             {element}
           </Col>
         </Row>

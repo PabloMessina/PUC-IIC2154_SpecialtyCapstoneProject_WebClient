@@ -15,7 +15,7 @@ import RxJS from 'rxjs';
  * import app, { join, login, auth, logout, user } from '../../app';
  */
 
-const host = 'https://karp.ing.puc.cl';
+const host = 'https://karp.ing.puc.cl/';
 const socket = io(host);
 
 // Set up Feathers client side
