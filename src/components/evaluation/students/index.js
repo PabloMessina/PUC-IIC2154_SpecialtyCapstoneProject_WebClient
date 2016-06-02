@@ -1,5 +1,6 @@
 import React, { PropTypes, Component } from 'react';
-import { Row, Col, Button, Form, FormControl, Panel } from 'react-bootstrap';
+import { Row, Col, Button, Form, FormControl, Panel, Table } from 'react-bootstrap';
+import moment from 'moment';
 import crypto from 'crypto';
 
 import { DragDropContext } from 'react-dnd';
@@ -15,6 +16,14 @@ import UnselectedList from './unselected-list.js';
 const MODES = {
   instructor: 'instructor',
   student: 'student',
+};
+
+const translateAttendance = (value) => {
+  switch (value) {
+    case -1: return 'Absent';
+    case 1: return 'Attended';
+    default: return 'Unknown';
+  }
 };
 
 /**
@@ -140,11 +149,8 @@ class Students extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  removeFromGroup(user) {
-    // console.log('removeFromGroup', user);
-    const userId = user.id || user;
-    const attendance = this.props.attendances.find(a => a.userId === userId);
-    return attendanceService.remove(attendance.id)
+  removeFromGroup(attendance) {
+    return attendanceService.remove(attendance.id || attendance)
       .catch(error => this.setState({ error }));
   }
 
@@ -177,25 +183,26 @@ class Students extends Component {
     }
     const unselectedStudents = shuffle(this.state.students);
     const teams = [];
+    const promises = [];
     while (unselectedStudents.length > 0) {
       const users = unselectedStudents.splice(0, groupSize);
       if (users.length < groupSize) {
         // remaining students get distributed in other groups
-        users.forEach((user, index) => {
+        promises.push(...users.map((user, index) => {
           const team = teams[index % teams.length];
           team.users.push(user);
-          this.updateOrCreateAttendance(user.id, team.id);
-        });
+          return this.updateOrCreateAttendance(user.id, team.id);
+        }));
       } else {
         const teamId = generateId();
         teams.push({
           id: teamId,
           users,
         });
-        users.forEach((user) => this.updateOrCreateAttendance(user.id, teamId));
+        promises.push(...users.map(user => this.updateOrCreateAttendance(user.id, teamId)));
       }
     }
-    return teams;
+    return Promise.all(promises);
   }
 
   renderMode(mode) {
@@ -208,27 +215,50 @@ class Students extends Component {
 
   renderStudent() {
     const user = currentUser();
-    const attendances = this.props.attendances;
-    const attendance = attendances.find(att => att.userId === user.id);
-    const teamIds = attendances.filter(att => att.teamId === attendance.teamId).map(item => item.userId);
-    const team = this.state.students.filter(student => teamIds.indexOf(student.id) > -1);
+    const teamId = this.props.attendances.find(att => att.userId === user.id).teamId;
+    const attendances = this.props.attendances
+      .filter(att => att.teamId === teamId);
+
     return (
-      <Row>
+      <Col xs={12}>
         <Panel>
-          {team.map(student =>
-            <p>{student.name}</p>
-          )}
+          <Table fill striped hover>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Started at</th>
+                <th>Finished</th>
+                <th>Attendance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {attendances.map(({ startedAt, finished, attended, ...attendance }, i) => {
+                const name = attendance.user ? attendance.user.name : 'Problem loading user info';
+                const time = startedAt ? moment(startedAt).format('dddd, MMMM Do, HH:mm') : null;
+                return (
+                  <tr key={i}>
+                    <td>{i + 1}</td>
+                    <td>{name}</td>
+                    <td>{time || 'Not yet'}</td>
+                    <td>{finished ? 'Yes' : 'No'}</td>
+                    <td>{translateAttendance(attended)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </Table>
         </Panel>
-      </Row>
+      </Col>
     );
   }
 
   renderInstructor() {
-    const all = this.state.students;
+    // const all = this.state.students;
     const attendances = this.props.attendances;
-    attendances.forEach(attendance => {
-      attendance.user = all.find(student => student.id === attendance.userId);  // eslint-disable-line
-    });
+    // attendances.forEach(attendance => {
+    //   attendance.user = all.find(student => student.id === attendance.userId);  // eslint-disable-line
+    // });
 
     if (this.state.error) {
       // console.log(this.state.error);

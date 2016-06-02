@@ -4,7 +4,8 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Router, Route, IndexRoute, IndexRedirect, browserHistory } from 'react-router';
+import { Router, Route, Redirect, IndexRoute, IndexRedirect, browserHistory } from 'react-router';
+import errors from 'feathers-errors';
 
 import app, { auth, currentUser } from './app';
 
@@ -26,6 +27,7 @@ import DocumentList from './components/document-list';
 import DocumentDescription from './components/document-description';
 
 import UserProfile from './components/profile';
+import ErrorPage from './components/error-page';
 
 import OrganizationCreate from './components/organization-create/';
 import Organization from './components/organization';
@@ -67,15 +69,6 @@ import ImageWithLabelsWrapper from './components/image-with-labels-wrapper/';
 // Go AtlasBook: http://localhost:3000/template
 import Template from './utils/template';
 
-function requireAuth(nextState, replace) {
-  const user = currentUser();
-  if (!user) {
-    replace({
-      pathname: '/login',
-      state: { redirection: nextState.location.pathname },
-    });
-  }
-}
 
 function requireAnnon(nextState, replace) {
   // FIXME: this doesn't work on page reload
@@ -91,10 +84,11 @@ function requireAnnon(nextState, replace) {
 function fetching(...names) {
   return function func(nextState, replace, next) {
     // Auth if user is not present
-    const user = currentUser() ? Promise.resolve(true) : auth();
+    const user = currentUser();
+    const authenticating = user ? Promise.resolve(user) : auth();
 
     // Auth user (if needed) then perform parallel requests to the server
-    const requests = user.then(() => {
+    return authenticating.then(() => {
       const promises = names.map(({ field, to, service, populate }) => {
         // TODO: Get object in params if present
         // const param = nextState.params[to];
@@ -106,16 +100,27 @@ function fetching(...names) {
           $limit: 1,
           $populate: populate,
         };
-        return app.service(service || `/${to}s`).find({ query })
-          // TODO: redirect to 404 if not found
-          .then(result => (result.total ? result.data[0] : {}))
+        const path = service || `/${to}s`;
+        return app.service(path).find({ query })
+          .then(result => {
+            if (result.total > 0) return result.data[0];
+            else throw new errors.NotFound(`${nextState.params[field]} not found on ${path}`);
+          })
           .then(object => (nextState.params[to] = object));
       });
       return Promise.all(promises);
+    })
+    // Continue to route
+    .then(() => next())
+    // Redirect to login if error is 401
+    .catch(error => {
+      if (error.name === 'NotAuthenticated') {
+        replace({ pathname: '/login', state: { redirection: nextState.location.pathname } });
+      } else {
+        replace({ pathname: '/error', state: { error } });
+      }
+      return next();
     });
-
-    // Finish hook
-    return requests.then(() => next());
   };
 }
 
@@ -124,7 +129,7 @@ const Routing = (
     <Route path="/" component={Main} title="App">
       <IndexRedirect to="dashboard" />
 
-      <Route path="dashboard" component={Dashboard} onEnter={requireAuth}>
+      <Route path="dashboard" component={Dashboard} onEnter={fetching()}>
         <IndexRedirect to="academic" />
         <Route path="academic" component={DashboardAcademic} />
       </Route>
@@ -136,14 +141,14 @@ const Routing = (
       <Route path="image-with-labels" component={ImageWithLabels} />
       <Route path="image-with-labels-wrapper" component={ImageWithLabelsWrapper} />
 
-      <Route path="documents" component={DocumentList} onEnter={requireAuth} />
+      <Route path="documents" component={DocumentList} onEnter={fetching()} />
       <Route
         path="documents/:docId"
         component={DocumentDescription}
         onEnter={fetching({ field: 'docId', to: 'atlas', service: 'atlases' })}
       />
 
-      <Route path="settings" component={Settings} >
+      <Route path="settings" component={Settings} onEnter={fetching()}>
         <IndexRoute component={GeneralSettings} />
         <Route path="notifications" component={NotificationSettings} />
         <Route path="security" component={SecuritySettings} />
@@ -151,7 +156,7 @@ const Routing = (
         <Route path="myatlas" component={MyAtlasSettings} />
       </Route>
 
-      <Route path="organizations/create" component={OrganizationCreate} />
+      <Route path="organizations/create" component={OrganizationCreate} onEnter={fetching()} />
 
       <Route
         path="organizations/show/:organizationId"
@@ -225,7 +230,10 @@ const Routing = (
         onEnter={fetching({ field: 'atlasId', to: 'atlas', service: 'atlases' })}
       />
 
-      <Route path="profile" component={UserProfile} />
+      <Route path="profile" component={UserProfile} onEnter={fetching()} />
+
+      <Route path="error(/:number)" component={ErrorPage} />
+      <Redirect from="*" to="error/404" />
 
       <Route path="template" component={Template} />
     </Route>

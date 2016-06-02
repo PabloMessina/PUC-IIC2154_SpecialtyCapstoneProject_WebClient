@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
+import React, { PropTypes, Component } from 'react';
 import {
   Button,
-  ControlLabel,
   FormGroup,
   FormControl,
 } from 'react-bootstrap';
 import renderIf from 'render-if';
+import debounce from 'lodash/debounce';
 
 
 import compose, { QuestionPropTypes } from './question';
@@ -14,58 +14,72 @@ import compose, { QuestionPropTypes } from './question';
 class TShort extends Component {
 
   static get propTypes() {
-    return QuestionPropTypes;
+    return { ...QuestionPropTypes, interval: PropTypes.number };
   }
 
   static get defaultProps() {
-    return { answer: { options: [] } };
+    return { answer: { options: [] }, interval: 700 };
   }
 
   constructor(props) {
     super(props);
-    this.state = {};
+    const answer = props.answer;
+    this.state = {
+      values: answer.options && answer.options.length ? answer.options : [''],
+    };
     this.onTextChange = this.onTextChange.bind(this);
     this.onAddAnswer = this.onAddAnswer.bind(this);
     this.onRemoveAnswer = this.onRemoveAnswer.bind(this);
+
+    if (this.props.onAnswerChange) {
+      // Debouce this method call (only call it if has no change after the interval)
+      this.onAnswerChange = debounce(this.props.onAnswerChange, props.interval);
+    }
+  }
+
+  componentWillReceiveProps(nextProps) {
+    this.setState({ values: nextProps.answer.options || [] });
   }
 
   onAddAnswer() {
-    const { answer } = this.props;
-    const options = answer.options && answer.options.length ? answer.options : [''];
-    this.props.onAnswerChange({ options: [...options, ''] });
+    const values = [...this.state.values, ''];
+    this.setState({ values });
+    if (this.onAnswerChange) this.onAnswerChange({ options: values });
   }
 
   onRemoveAnswer(event, index) {
     event.preventDefault();
 
-    const { answer } = this.props;
-    const options = answer.options && answer.options.length ? answer.options : [''];
-    options.splice(index, 1);
-    this.props.onAnswerChange({ options });
+    const values = [...this.state.values];
+    values.splice(index, 1);
+    this.setState({ values });
+    if (this.onAnswerChange) this.onAnswerChange({ options: values });
   }
 
-  onTextChange(value, index) {
-    const { answer } = this.props;
-    const options = answer.options && answer.options.length ? answer.options : [''];
-    options[index] = value;
-    this.props.onAnswerChange({ options });
+  onTextChange(event, index) {
+    event.preventDefault();
+
+    const values = [...this.state.values];
+    values[index] = event.target.value;
+    this.setState({ values });
+    if (this.onAnswerChange) this.onAnswerChange({ options: values });
   }
 
   renderEditor() {
-    const { answer, disabled } = this.props;
-    const options = answer.options && answer.options.length ? answer.options : [''];
+    const { disabled } = this.props;
+    const { values } = this.state;
 
     return (
-      <form style={styles.container}>
+      <form style={styles.container} onSubmit={e => e.preventDefault()}>
         <FormGroup>
-          {options.map((option, i) => (
+          {values.map((value, i) => (
             <FormGroup key={i} style={styles.row}>
               <FormControl
                 type="text"
                 placeholder={i > 0 ? 'Enter alternative answer' : 'Enter answer'}
-                value={option}
+                value={value}
                 disabled={disabled}
-                onChange={e => this.onTextChange(e.target.value, i)}
+                onChange={e => this.onTextChange(e, i)}
               />
               {renderIf(!disabled && i > 0)(() => (
                 <Button
@@ -95,18 +109,18 @@ class TShort extends Component {
 
 
   renderResponder() {
-    const { answer, disabled } = this.props;
-    const options = answer.options;
+    const { disabled } = this.props;
+    const { values } = this.state;
 
     return (
-      <form style={styles.container}>
+      <form style={styles.container} onSubmit={e => e.preventDefault()}>
         <FormControl
           style={styles.input}
           type="text"
           disabled={disabled}
           placeholder="Your answer"
-          value={options[0]}
-          onChange={e => this.onTextChange(e.target.value, 0)}
+          value={values[0]}
+          onChange={e => this.onTextChange(e, 0)}
         />
       </form>
     );

@@ -1,5 +1,5 @@
 import React, { PropTypes, Component } from 'react';
-import { Panel, ListGroup } from 'react-bootstrap';
+import { Panel, Table } from 'react-bootstrap';
 import { Colors } from '../../../styles';
 
 import { DropTarget } from 'react-dnd';
@@ -38,15 +38,18 @@ class UnselectedList extends Component {
         :
           <p style={styles.grayText}>All students are assigned to groups.</p>
         }
-        <ListGroup>
-          {unselected.map(student => (
-            <Student
-              key={student.id}
-              student={student}
-              withoutGroup
-            />
-          ))}
-        </ListGroup>
+        <Table hover>
+          <tbody>
+            {unselected.map(user =>
+              <Student
+                key={user.id}
+                user={user}
+                simple
+                withoutGroup
+              />
+            )}
+          </tbody>
+        </Table>
       </Panel>
     );
   }

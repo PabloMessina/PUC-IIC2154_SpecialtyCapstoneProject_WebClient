@@ -1,16 +1,13 @@
 import React, { PropTypes, Component } from 'react';
-import { ListGroupItem } from 'react-bootstrap';
-import { Colors } from '../../../styles';
-
+import moment from 'moment';
 import { DragSource } from 'react-dnd';
 import { findDOMNode } from 'react-dom';
 
+import { Colors } from '../../../styles';
 
 const studentSource = {
   beginDrag(props) {
-    const { student, withoutGroup } = props;
-    const user = student.user || student;   // prop "student" can be an attendance or a user
-    return { user, withoutGroup };
+    return props;
   },
 };
 
@@ -25,28 +22,48 @@ class Student extends Component {
 
   static get propTypes() {
     return {
-      student: PropTypes.any.isRequired,
+      user: PropTypes.any.isRequired,
+      identifier: PropTypes.any,
+      attendance: PropTypes.any,
       highlight: PropTypes.bool,
       withoutGroup: PropTypes.bool,
-
-      connectDragSource: PropTypes.func.isRequired,
-      isDragging: PropTypes.bool.isRequired,
+      simple: PropTypes.bool,
+      connectDragSource: PropTypes.func,
+      isDragging: PropTypes.bool,
     };
   }
 
   render() {
-    const { connectDragSource, student, highlight } = this.props;
-    const user = student.user || student;   // prop "student" can be an attendance or a user
+    const { connectDragSource, simple, user, identifier, attendance, highlight, ...props } = this.props;
+    const name = user ? user.name : 'Problem loading user info';
 
-    return (
-      <ListGroupItem
-        style={highlight ? style : {}}
-        onClick={this.onClick}
-        ref={instance => connectDragSource(findDOMNode(instance))}
-      >
-        {user ? user.name : 'Loading...'}
-      </ListGroupItem>
-    );
+    const properties = {
+      style: highlight ? style : {},
+      onClick: this.onClick,
+      ref: instance => connectDragSource(findDOMNode(instance)),
+      ...props,
+    };
+
+    if (simple) {
+      return (
+        <tr {...properties}>
+          <td>{name}</td>
+        </tr>
+      );
+    } else {
+      const { startedAt, finished, attended } = attendance;
+      const time = startedAt ? moment(startedAt).format('dddd, MMMM Do, HH:mm') : null;
+
+      return (
+        <tr {...properties}>
+          <td>{identifier}</td>
+          <td>{name}</td>
+          <td>{time || 'Not yet'}</td>
+          <td>{finished ? 'Yes' : 'No'}</td>
+          <td>{attended}</td>
+        </tr>
+      );
+    }
   }
 }
 

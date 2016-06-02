@@ -1,5 +1,5 @@
 import React, { PropTypes, Component } from 'react';
-import { Panel } from 'react-bootstrap';
+import { Panel, Table } from 'react-bootstrap';
 
 import { DropTarget } from 'react-dnd';
 import { findDOMNode } from 'react-dom';
@@ -10,7 +10,7 @@ import StudentRemoveTarget from './student-remove-target.js';
 class TeamList extends Component {
   static get propTypes() {
     return {
-      teams: PropTypes.any.isRequired,
+      teams: PropTypes.array.isRequired,
       removeFromGroup: PropTypes.func.isRequired,
       updateOrCreateAttendance: PropTypes.func.isRequired,
 
@@ -37,17 +37,27 @@ class TeamList extends Component {
         ref={instance => connectDropTarget(findDOMNode(instance))}
       >
         <h4> Selected Students </h4>
-        {teams.length > 0 ?
-          teams.map((team, i) =>      // TODO: sort???   random team id => random order
+        <hr />
+        <Table hover>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Started at</th>
+              <th>Finished</th>
+              <th>Attendance</th>
+            </tr>
+          </thead>
+          {teams.map((team, i) =>      // TODO: sort???   random team id => random order
             <Team
               key={i}
+              strip={i % 2 === 0}
+              identifier={i + 1}
               team={team}
               updateOrCreateAttendance={this.props.updateOrCreateAttendance}
             />
-          )
-        :
-          <p>There are no groups yet. Drag a student here to create one.</p>
-        }
+          )}
+        </Table>
       </Panel>
     );
   }
