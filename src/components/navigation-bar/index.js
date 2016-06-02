@@ -71,8 +71,9 @@ export default class NavigationBar extends Component {
     const { user, connected, animated } = this.props;
 
     const color = connected ? Colors.MAIN : Colors.RED;
+    const tooltip = <Tooltip id="status-tooltip">{connected ? 'Connected' : 'Disconnected'}</Tooltip>;
     const connection = (
-      <OverlayTrigger placement="left" overlay={<Tooltip>{connected ? 'Connected' : 'Disconnected'}</Tooltip>}>
+      <OverlayTrigger placement="left" overlay={tooltip}>
         {animated
           ? <Pulse size={18} color={color} />
           : <Icon style={{ color }} name="circle" />}

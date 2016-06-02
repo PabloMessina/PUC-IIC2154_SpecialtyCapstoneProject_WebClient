@@ -50,7 +50,15 @@ export function login(options) {
  * @return {Promise}
  */
 export function auth() {
-  return app.authenticate();
+  return app.authenticate()
+    .then(result => {
+      console.log('Logged as:', result.data.name);
+      return result;
+    })
+    .catch(err => {
+      console.log('Auth error:', err);
+      throw err;
+    });
 }
 
 /**
