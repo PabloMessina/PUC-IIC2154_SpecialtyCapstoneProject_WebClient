@@ -10,9 +10,13 @@ const LEFT_BUTTON = 0;
 const RIGHT_BUTTON = 2;
 // default message
 const DEFAULT_LABEL_MESSAGE = 'empty ...';
+const DEFAULT_EVALUATION_LABEL_MESSAGE = 'answer me ..';
 // file extensions
 const OBJ_EXT = '.obj';
 const MTL_EXT = '.mtl';
+
+const OBJ_SIZE_THRESHOLD = 1024 * 1014 * 7;
+const MTL_SIZE_THRESHOLD = 1024 * 512;
 
 const DELETE_ICON_URL = 'http://localhost:3000/img/delete_icon.png';
 const MINIMIZE_ICON_URL = 'http://localhost:3000/img/minimize_icon.png';
@@ -20,16 +24,17 @@ const MINIMIZE_ICON_URL = 'http://localhost:3000/img/minimize_icon.png';
 const ICON_COEF = 1 / 40;
 const ICON_RES = 256;
 
-export default class Renderer3D extends Component {
+const SPHERE_RADIUS_COEF = 1 / 200;
+const LABEL_DROP_DIST_COEF = 1 / 7;
 
-  static get defaultProps() {
-    return {
-      canEdit: true,
-    };
-  }
+export default class Renderer3D extends Component {
 
   constructor(props) {
     super(props);
+
+    this.state = {
+      mode: props.mode,
+    };
 
     this.threeUpdate = this.threeUpdate.bind(this);
     this.threeRender = this.threeRender.bind(this);
@@ -38,18 +43,18 @@ export default class Renderer3D extends Component {
     this.load3DModelFromUrls = this.load3DModelFromUrls.bind(this);
     this.loadMeshGroup = this.loadMeshGroup.bind(this);
     this.handleWheel = this.handleWheel.bind(this);
-    this.handleMouseUp = this.handleMouseUp.bind(this);
-    this.handleMouseDown = this.handleMouseDown.bind(this);
-    this.handleMouseMove = this.handleMouseMove.bind(this);
-    this.handleWindowMouseDown = this.handleWindowMouseDown.bind(this);
+    this.onMouseUp = this.onMouseUp.bind(this);
+    this.onMouseDown = this.onMouseDown.bind(this);
+    this.onMouseMove = this.onMouseMove.bind(this);
+    this.onWindowMouseDown = this.onWindowMouseDown.bind(this);
     this.animateForAWhile = this.animateForAWhile.bind(this);
     this.highlightLabel = this.highlightLabel.bind(this);
     this.unhighlightLabel = this.unhighlightLabel.bind(this);
 
-    this.handleResize = this.handleResize.bind(this);
-    this.handleKeypress = this.handleKeypress.bind(this);
-    this.handleKeydown = this.handleKeydown.bind(this);
-    this.onHiddenTextChanged = this.onHiddenTextChanged.bind(this);
+    this.onResize = this.onResize.bind(this);
+    this.onKeypress = this.onKeypress.bind(this);
+    this.onKeydown = this.onKeydown.bind(this);
+
     this.updateSpritePlaneOrientations =
       this.updateSpritePlaneOrientations.bind(this);
     this.getViewportCoords = this.getViewportCoords.bind(this);
@@ -66,6 +71,9 @@ export default class Renderer3D extends Component {
     this.reloadIcons = this.reloadIcons.bind(this);
     this.minimizeSelectedLabel = this.minimizeSelectedLabel.bind(this);
     this.onFileDownloadStarted = this.onFileDownloadStarted.bind(this);
+    this.onHiddenTextChanged = this.onHiddenTextChanged.bind(this);
+    this.checkAndCorrectLabelIds = this.checkAndCorrectLabelIds.bind(this);
+    this.getNextId = this.getNextId.bind(this);
 
     // API functions
     this.loadModel = this.loadModel.bind(this);
@@ -76,16 +84,17 @@ export default class Renderer3D extends Component {
     this.removeSelectedLabel = this.removeSelectedLabel.bind(this);
     this.refocusOnModel = this.refocusOnModel.bind(this);
     this.unselectSelectedLabel = this.unselectSelectedLabel.bind(this);
+    this.setSphereRadiusCoef = this.setSphereRadiusCoef.bind(this);
   }
 
   componentDidMount() {
     // add event listeners
-    window.addEventListener('resize', this.handleResize);
-    window.addEventListener('keypress', this.handleKeypress);
-    window.addEventListener('keydown', this.handleKeydown);
-    window.addEventListener('mouseup', this.handleMouseUp);
-    window.addEventListener('mousemove', this.handleMouseMove);
-    window.addEventListener('mousedown', this.handleWindowMouseDown);
+    window.addEventListener('resize', this.onResize);
+    window.addEventListener('keypress', this.onKeypress);
+    window.addEventListener('keydown', this.onKeydown);
+    window.addEventListener('mouseup', this.onMouseUp);
+    window.addEventListener('mousemove', this.onMouseMove);
+    window.addEventListener('mousedown', this.onWindowMouseDown);
 
     // reference to the viewport div
     const viewport = this.refs.viewport;
@@ -139,6 +148,7 @@ export default class Renderer3D extends Component {
     // that we don't want to expose to the client code
     // into "this.mystate" (that's why mystate instead of state)
     this.mystate = {
+      sphereRadiusCoef: this.props.sphereRadiusCoef,
       renderer,
       scene,
       camera,
@@ -160,9 +170,11 @@ export default class Renderer3D extends Component {
       labels: this.props.labels,
       labelsEnabled: true,
       labelSet: new Set(),
+      id2labelMap: {},
       normalLabelStyle: this.props.normalLabelStyle,
       highlightedLabelStyle: this.props.highlightedLabelStyle,
       canFocusHiddenInput: false,
+      selectedLabelTextDirty: false,
       // draggable label vars
       draggingTempLabel: false,
       tempDraggableLabel: null,
@@ -186,6 +198,7 @@ export default class Renderer3D extends Component {
         reason: '',
       },
       pendingXHRs: new Set(),
+      labelIds: new Set(),
       // icons
       deleteImg: null,
       deleteIconSprite: null,
@@ -256,8 +269,9 @@ export default class Renderer3D extends Component {
     this.mystate.minimizeIconCircle = mesh;
     this.mystate.iconCircleGroup.add(mesh);
   }
+
   reloadIcons() {
-    this.reloadDeleteIcon();
+    if (this.state.mode === 'EDITION') this.reloadDeleteIcon();
     this.reloadMinimizeIcon();
   }
 
@@ -279,29 +293,65 @@ export default class Renderer3D extends Component {
     minimizeImg.src = MINIMIZE_ICON_URL;
   }
 
+
   componentWillReceiveProps(nextProps) {
-    /** check if we are receving new remote files */
-    if (nextProps.remoteFiles &&
-      !isEqual(this.props.remoteFiles, nextProps.remoteFiles)) {
-      const remoteFiles = nextProps.remoteFiles;
-      this.props.loadingStartingCallback();
-      this.load3DModelFromUrls(remoteFiles)
-      .then(() => {
-        /** update label styles if they are provided */
-        if (nextProps.highlightedLabelStyle) {
-          this.mystate.highlightedLabelStyle = nextProps.highlightedLabelStyle;
-        }
-        if (nextProps.normalLabelStyle) {
-          this.mystate.normalLabelStyle = nextProps.normalLabelStyle;
-        }
-        /** update labels **/
-        this.loadLabels(nextProps.labels);
-        // notify successful completion
-        this.props.loadingCompletedCallback();
-      })
-      // notify any errors
-      .catch(error => this.props.loadingErrorCallback(error));
+    console.log('====> componentWillReceiveProps()');
+
+    if (this.state.mode === 'EDITION') {
+      /** check if we are receving new remote files */
+      if (nextProps.remoteFiles &&
+        !isEqual(this.props.remoteFiles, nextProps.remoteFiles)) {
+        const remoteFiles = nextProps.remoteFiles;
+        this.props.loadingStartingCallback();
+        this.load3DModelFromUrls(remoteFiles)
+        .then(() => {
+          /** update label styles if they are provided */
+          if (nextProps.highlightedLabelStyle) {
+            this.mystate.highlightedLabelStyle = nextProps.highlightedLabelStyle;
+          }
+          if (nextProps.normalLabelStyle) {
+            this.mystate.normalLabelStyle = nextProps.normalLabelStyle;
+          }
+          /** update labels **/
+          this.loadLabels(nextProps.labels);
+          // notify successful completion
+          this.props.loadingCompletedCallback();
+        })
+        // notify any errors
+        .catch(error => this.props.loadingErrorCallback(error));
+      }
+    } else if (this.state.mode === 'EVALUATION') {
+      /* check if we are receving new label answers */
+      if (nextProps.labelAnswersDirty) this.loadLabelAnswers(nextProps.labelAnswers);
     }
+  }
+
+  /** refresh labels with the answers received **/
+  loadLabelAnswers(labelAnswers) {
+    // refresh each label that needs to be updated
+    for (const labelAns of labelAnswers) {
+      const label = this.mystate.id2labelMap[labelAns.id];
+      if (!label) {
+        console.log(`WARNING: no label with id = ${labelAns.id} found`);
+        continue;
+      }
+      if (typeof labelAns.text !== 'string') continue;
+      if (label.student_answer !== labelAns.text) {
+        label.student_answer = labelAns.text;
+        if (label === this.mystate.selectedLabel) {
+          this.refs.hiddenTxtInp.value = labelAns.text;
+          this.highlightLabel(label);
+          this.refreshIconsPositions();
+          this.mystate.selectedLabelTextDirty = false;
+        } else if (!label.minimized) {
+          this.unhighlightLabel(label);
+        }
+      }
+    }
+    // notify that we have consumed the labels
+    this.props.labelAnswersConsumedCallback();
+    // refresh scene
+    this.animateForAWhile();
   }
 
   /** Avoid updates altogether (they are not necessary) */
@@ -312,12 +362,12 @@ export default class Renderer3D extends Component {
   componentWillUnmount() {
     console.log("==> Renderer3D::componentWillUnmount()");
     // remove event listeners
-    window.removeEventListener('resize', this.handleResize);
-    window.removeEventListener('keypress', this.handleKeypress);
-    window.removeEventListener('keydown', this.handleKeydown);
-    window.removeEventListener('mouseup', this.handleMouseUp);
-    window.removeEventListener('mousemove', this.handleMouseMove);
-    window.removeEventListener('mousedown', this.handleWindowMouseDown);
+    window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('keypress', this.onKeypress);
+    window.removeEventListener('keydown', this.onKeydown);
+    window.removeEventListener('mouseup', this.onMouseUp);
+    window.removeEventListener('mousemove', this.onMouseMove);
+    window.removeEventListener('mousedown', this.onWindowMouseDown);
     // abort any pending xhr requests
     for (const xhr of this.mystate.pendingXHRs) {
       xhr.abortAndRejectPromise('Fetch interrupted because the 3d renderer has been unmounted');
@@ -558,6 +608,15 @@ export default class Renderer3D extends Component {
     // ---------------------------------
     if (mtlFile === null) return Promise.reject('mtl file not found');
     if (objFile === null) return Promise.reject('obj file not found');
+    if (mtlFile.size > MTL_SIZE_THRESHOLD) {
+      return Promise.reject(`${mtlFile.name} has ${mtlFile.size}
+        bytes > ${MTL_SIZE_THRESHOLD}. It's too heavy :S`);
+    }
+    if (objFile.size > OBJ_SIZE_THRESHOLD) {
+      return Promise.reject(`${objFile.name} has ${objFile.size}
+bytes > ${OBJ_SIZE_THRESHOLD} bytes. It's too heavy :S. Maybe you should
+reduce the complexity of your mesh by applying mesh simplification on it.`);
+    }
 
     this.props.downloadCycleStartedCallback();
     this.onFileDownloadStarted(URL.createObjectURL(mtlFile));
@@ -570,8 +629,8 @@ export default class Renderer3D extends Component {
       if (this.mystate.loadingInterrupter.stop) {
         throw new Error(this.mystate.loadingInterrupter.reason);
       }
+      this.props.downloadCycleFinishedCallback();
       // on success, proceed to use the OBJLoader to load the 3D objects from OBJ file
-      this.onDownloadStarted(URL.createObjectURL(objFile));
       return OBJLoader.loadObjectsFromFile(
         objFile, materials,
         (lengthSoFar, totalLength) =>
@@ -691,11 +750,12 @@ export default class Renderer3D extends Component {
         label.points.forEach((p) => {
           const point = new THREE.Vector3(p.x, p.y, p.z);
           // sphere
-          const radius = this.mystate.meshDiameter / 100;
-          const sphereGeom = new THREE.SphereGeometry(radius, 32, 32);
+          const radius = this.mystate.meshDiameter * this.mystate.sphereRadiusCoef;
+          const sphereGeom = new THREE.SphereGeometry(1, 32, 32);
           const material = new THREE.MeshPhongMaterial({
             color: this.props.normalLabelStyle.sphereColor });
           const sphere = new THREE.Mesh(sphereGeom, material);
+          sphere.scale.set(radius, radius, radius);
           sphere.position.copy(point);
           spheres.add(sphere);
           this.mystate.sphereGroup.add(sphere);
@@ -708,8 +768,8 @@ export default class Renderer3D extends Component {
             color: this.props.normalLabelStyle.lineColor, linewidth: 2 });
           const line = new THREE.Line(lineGeo, lineMat);
           lines.add(line);
-          this.mystate.lineGroup.add(line);
           this.mystate.sphereToLineMap[sphere.uuid] = line;
+          if (this.state.mode !== 'EVALUATION') this.mystate.lineGroup.add(line);
         });
         /** sprite */
         const sprite = ThreeUtils.makeTextSprite({
@@ -719,27 +779,57 @@ export default class Renderer3D extends Component {
           params: this.mystate.normalLabelStyle,
         });
         sprite.position.set(label.position.x, label.position.y, label.position.z);
-        this.mystate.spriteGroup.add(sprite);
+        if (this.state.mode !== 'EVALUATION') this.mystate.spriteGroup.add(sprite);
         /** sprite plane */
         const spritePlane =
           ThreeUtils.createPlaneFromSprite(sprite, this.mystate.camera);
-        this.mystate.spritePlaneGroup.add(spritePlane);
         this.mystate.spritePlaneToLabelMap[spritePlane.uuid] = labelObj;
+        if (this.state.mode !== 'EVALUATION') this.mystate.spritePlaneGroup.add(spritePlane);
         /** set labelObj's fields */
         labelObj.spheres = spheres;
         labelObj.lines = lines;
         labelObj.spritePlane = spritePlane;
         labelObj.sprite = sprite;
         labelObj.text = label.text;
+        labelObj.id = label.id;
+        if (this.state.mode === 'EVALUATION') {
+          labelObj.minimized = true;
+          labelObj.student_answer = '';
+        }
         /** add label to set */
         this.mystate.labelSet.add(labelObj);
       });
     }
+    // correct label ids
+    this.checkAndCorrectLabelIds();
     // notify parent of changes
     this.props.labelsChangedCallback(this.labelsToJSON());
     this.props.selectedLabelChangedCallback(this.mystate.selectedLabel);
     // refresh screen
     this.animateForAWhile();
+  }
+
+  getNextId() {
+    let i = 0;
+    while (this.mystate.labelIds.has(i)) ++i;
+    this.mystate.labelIds.add(i);
+    return i;
+  }
+
+  checkAndCorrectLabelIds() {
+    const labelIds = this.mystate.labelIds;
+    const labelSet = this.mystate.labelSet;
+    labelIds.clear();
+    this.mystate.id2labelMap = {};
+    for (const label of labelSet) {
+      if (isInt(label.id)) {
+        const id = parseInt(label.id, 10);
+        if (id < 0 || labelIds.has(id)) label.id = null;
+        else labelIds.add(id);
+      }
+    }
+    for (const label of labelSet) if (!isInt(label.id)) label.id = this.getNextId();
+    for (const label of labelSet) this.mystate.id2labelMap[label.id] = label;
   }
 
   // ======================================================
@@ -755,7 +845,6 @@ export default class Renderer3D extends Component {
    * @return {[type]}             [description]
    */
   loadModel(files, labels) {
-    this.props.loadingStartingCallback();
     this.load3DModelFromFiles(files)
     .then(() => {
       this.loadLabels(labels);
@@ -827,7 +916,7 @@ export default class Renderer3D extends Component {
     this.mystate.normalLabelStyle = style;
     if (this.mystate.labelSet.size > 0) {
       for (const label of this.mystate.labelSet) {
-        if (label === this.mystate.selectedLabel) continue;
+        if (label === this.mystate.selectedLabel || label.minimized) continue;
         this.unhighlightLabel(label);
       }
       this.animateForAWhile();
@@ -847,7 +936,16 @@ export default class Renderer3D extends Component {
     }
   }
 
-  handleWindowMouseDown() {
+  setSphereRadiusCoef(coef) {
+    this.mystate.sphereRadiusCoef = coef;
+    if (this.mystate.meshGroup) {
+      const r = coef * this.mystate.meshDiameter;
+      for (const sphere of this.mystate.sphereGroup.children) sphere.scale.set(r, r, r);
+    }
+    this.animateForAWhile();
+  }
+
+  onWindowMouseDown() {
     // update canvasHasFocus
     this.mystate.canvasHasFocus = this.isMouseOverViewport();
   }
@@ -855,8 +953,8 @@ export default class Renderer3D extends Component {
   /**
    * Handle mouse down events
    */
-  handleMouseDown(event) {
-    console.log("====> handleMouseDown()");
+  onMouseDown(event) {
+    console.log("====> onMouseDown()");
     const viewport = this.refs.viewport;
     const vpcoords = this.getViewportCoords(event);
     const screenX = vpcoords.x;
@@ -873,9 +971,9 @@ export default class Renderer3D extends Component {
          * 	  1) left click on spritePlane
          * 	  	-> selects/highlight the label
          * 	  	-> unselect/unhighlight previously selected label (if any)
-         * 	  	-> starts dragging this label (if canEdit)
+         * 	  	-> starts dragging this label (if in edition mode)
          * 	  2) left click on sphere
-         * 	  	2.1) if the sphere belongs to a highlighted label (and canEdit)
+         * 	  	2.1) if the sphere belongs to a highlighted label (and in edition mode)
          * 	  		-> remove the sphere and the line
          * 	  		if the label runs out of spheres
          * 	  			-> remove the label too
@@ -915,7 +1013,7 @@ export default class Renderer3D extends Component {
               // select label
               const label = this.mystate.spritePlaneToLabelMap[pickedObj.object.uuid];
               this.selectLabel(label);
-              if (this.props.canEdit) {
+              if (this.state.mode === 'EDITION') {
                 /** starts dragging the label */
                 this.mystate.draggingSelectedLabel = true;
                 // plane parameters where dragging will happen
@@ -933,7 +1031,7 @@ export default class Renderer3D extends Component {
               const sphere = pickedObj.object;
               const label = this.mystate.sphereToLabelMap[sphere.uuid];
               // case 2.1) sphere belongs to already selected label
-              if (label === prevLabel && this.props.canEdit) {
+              if (label === prevLabel && this.state.mode === 'EDITION') {
                 // remove line
                 const line = this.mystate.sphereToLineMap[sphere.uuid];
                 this.mystate.lineGroup.remove(line); // from scene
@@ -948,18 +1046,16 @@ export default class Renderer3D extends Component {
                 else this.props.labelsChangedCallback(this.labelsToJSON());
 
               // case 2.2) a different label selected
-              } else {
-                this.selectLabel(label);
-              }
+              } else this.selectLabel(label);
               shouldOrbit = false;
 
             /* case 3) left click on icon */
             } else if (pickedGroup === this.mystate.iconCircleGroup) {
               const circle = pickedObj.object;
-              /* case 3.1) delete icon */
-              if (circle === this.mystate.deleteIconCircle) this.removeSelectedLabel();
-              /* case 3.2) minimize icon */
-              else this.minimizeSelectedLabel();
+              /* case 3.1) minimize icon */
+              if (circle === this.mystate.minimizeIconCircle) this.minimizeSelectedLabel();
+              /* case 3.2) delete icon */
+              else this.removeSelectedLabel();
               shouldOrbit = false;
             }
           }
@@ -975,7 +1071,7 @@ export default class Renderer3D extends Component {
       }
     } else if (event.button === RIGHT_BUTTON) {
       if (this.mystate.meshGroup !== null && this.mystate.labelsEnabled
-        && this.props.canEdit) {
+        && this.state.mode === 'EDITION') {
         /**
          * Conditions:
          * 	1) there is a 3D Model already loaded
@@ -1064,6 +1160,7 @@ export default class Renderer3D extends Component {
               sprite: dragLabel.sprite, // copy sprite
               spheres, // set of spheres
               lines, // set of lines
+              id: this.getNextId(),
             };
             // create matches between elements
             this.mystate.sphereToLabelMap[dragLabel.sphere.uuid] = labelObj;
@@ -1078,6 +1175,7 @@ export default class Renderer3D extends Component {
             labelToSelect = labelObj;
             // add new label to set
             this.mystate.labelSet.add(labelObj);
+            this.mystate.id2labelMap[labelObj.id] = labelObj;
           }
           //----------------------------------------
           // Things that happen for both cases 2.1 and 2.2
@@ -1108,7 +1206,7 @@ export default class Renderer3D extends Component {
             // -------------
             // get sphere
             const point = intrs.object.point;
-            const radius = this.mystate.meshDiameter / 100;
+            const radius = this.mystate.meshDiameter * this.mystate.sphereRadiusCoef;
             const sphereGeom = new THREE.SphereGeometry(radius, 32, 32);
             const material = new THREE.MeshPhongMaterial({
               color: this.props.normalLabelStyle.sphereColor });
@@ -1130,7 +1228,7 @@ export default class Renderer3D extends Component {
               .copy(camForwardN)
               .multiplyScalar(-1);
             // get dist
-            const dist = this.mystate.meshDiameter / 5;
+            const dist = this.mystate.meshDiameter * LABEL_DROP_DIST_COEF;
             // position sprite
             sprite.position
               .copy(point)
@@ -1187,23 +1285,35 @@ export default class Renderer3D extends Component {
   /**
    * [shows label as highlighted]
    */
-  highlightLabel(labelObj) {
-    this.setLabelStyle(labelObj, {
-      text: labelObj.text || DEFAULT_LABEL_MESSAGE,
-      worldReferenceSize: this.mystate.meshDiameter,
-      style: this.mystate.highlightedLabelStyle,
-    });
+  highlightLabel(label) {
+    // set text to display according to mode
+    // debugger
+    let text;
+    if (this.state.mode === 'EVALUATION') {
+      text = label.student_answer || DEFAULT_EVALUATION_LABEL_MESSAGE;
+    } else {
+      text = label.text || DEFAULT_LABEL_MESSAGE;
+    }
+    // set style to label
+    this.setLabelStyle(label, { text, worldReferenceSize: this.mystate.meshDiameter,
+      style: this.mystate.highlightedLabelStyle });
   }
 
   /**
    * [shows label as non-highlighted]
    */
-  unhighlightLabel(labelObj) {
-    this.setLabelStyle(labelObj, {
-      text: labelObj.text || DEFAULT_LABEL_MESSAGE,
-      worldReferenceSize: this.mystate.meshDiameter,
-      style: this.mystate.normalLabelStyle,
-    });
+  unhighlightLabel(label) {
+    // debugger
+    // set text to display according to mode
+    let text;
+    if (this.state.mode === 'EVALUATION') {
+      text = label.student_answer || DEFAULT_EVALUATION_LABEL_MESSAGE;
+    } else {
+      text = label.text || DEFAULT_LABEL_MESSAGE;
+    }
+    // set style to label
+    this.setLabelStyle(label, { text, worldReferenceSize: this.mystate.meshDiameter,
+      style: this.mystate.normalLabelStyle });
   }
 
   /**
@@ -1257,8 +1367,10 @@ export default class Renderer3D extends Component {
     this.mystate.scene.add(this.mystate.lineGroup);
     this.mystate.scene.add(this.mystate.spriteGroup);
     this.mystate.scene.add(this.mystate.spritePlaneGroup);
-    this.mystate.scene.add(this.mystate.iconCircleGroup);
-    this.mystate.scene.add(this.mystate.iconSpriteGroup);
+    if (this.mystate.selectedLabel) {
+      this.mystate.scene.add(this.mystate.iconCircleGroup);
+      this.mystate.scene.add(this.mystate.iconSpriteGroup);
+    }
     this.mystate.labelsEnabled = true;
     this.animateForAWhile(0);
   }
@@ -1286,6 +1398,7 @@ export default class Renderer3D extends Component {
     }
     // remove label
     this.mystate.labelSet.delete(label);
+    delete this.mystate.id2labelMap[label.id];
     this.props.labelsChangedCallback(this.labelsToJSON());
     // check if label was the selectedLabel
     if (label === this.mystate.selectedLabel) {
@@ -1351,7 +1464,7 @@ export default class Renderer3D extends Component {
   /**
    * Handle mouse move events
    */
-  handleMouseMove(event) {
+  onMouseMove(event) {
     this.mystate.mouseViewportCoords = this.getViewportCoords(event);
     const screenX = this.mystate.mouseViewportCoords.x;
     const screenY = this.mystate.mouseViewportCoords.y;
@@ -1448,7 +1561,7 @@ export default class Renderer3D extends Component {
   /**
    * Handle Mouse Up events
    */
-  handleMouseUp(event) {
+  onMouseUp(event) {
     if (event.button === LEFT_BUTTON) {
       // notify parent of labels changed if we were dragging one
       if (this.mystate.draggingSelectedLabel) {
@@ -1468,7 +1581,7 @@ export default class Renderer3D extends Component {
     return false;
   }
 
-  handleResize() {
+  onResize() {
     if (this.mystate.meshGroup !== null) {
       const viewport = this.refs.viewport;
       const w = viewport.offsetWidth;
@@ -1493,33 +1606,38 @@ export default class Renderer3D extends Component {
     return (mvpc.x >= 0 && mvpc.x <= w && mvpc.y >= 0 && mvpc.y <= h);
   }
 
-  handleKeypress(e) {
-    if (this.props.canEdit && this.mystate.canFocusHiddenInput) {
+  onKeypress(e) {
+    if (this.state.mode === 'READONLY') return;
+    if (this.mystate.canFocusHiddenInput) {
       const e2 = new KeyboardEvent('e', e);
-      const hti = this.refs.hiddenTxtInp;
-      hti.focus();
-      hti.dispatchEvent(e2);
-    }
-  }
-
-  handleKeydown(e) {
-    if (this.props.canEdit && this.mystate.canFocusHiddenInput) {
-      const e2 = new KeyboardEvent('e', e);
-      // this.refs.hiddenTxtInp.focus();
+      this.refs.hiddenTxtInp.focus();
       this.refs.hiddenTxtInp.dispatchEvent(e2);
     }
   }
 
-  onHiddenTextChanged(event) {
-    event.preventDefault();
+  onKeydown(e) {
+    if (this.state.mode === 'READONLY') return;
+    if (e.keyCode === 13 && this.mystate.selectedLabel) { // enter key
+      this.unselectSelectedLabel();
+    } else if (this.mystate.canFocusHiddenInput) {
+      const e2 = new KeyboardEvent('e', e);
+      this.refs.hiddenTxtInp.focus();
+      this.refs.hiddenTxtInp.dispatchEvent(e2);
+    }
+  }
+
+  onHiddenTextChanged() {
+    console.log('===> onHiddenTextChanged()');
+    if (this.state.mode === 'READONLY') return;
     const text = this.refs.hiddenTxtInp.value;
-    const selectedLabel = this.mystate.selectedLabel;
-    if (selectedLabel) {
-      selectedLabel.text = text;
-      this.highlightLabel(selectedLabel);
+    const label = this.mystate.selectedLabel;
+    if (label) {
+      if (this.state.mode === 'EDITION') label.text = text;
+      else label.student_answer = text; // EVALUATION
+      this.highlightLabel(label);
       this.refreshIconsPositions();
       this.animateForAWhile();
-      this.props.labelsChangedCallback(this.labelsToJSON());
+      this.mystate.selectedLabelTextDirty = true;
     }
   }
 
@@ -1536,6 +1654,15 @@ export default class Renderer3D extends Component {
       this.animateForAWhile(0);
       // notify selected label is null
       this.props.selectedLabelChangedCallback(null);
+      // if text is dirty, notify parent about it (according to mode)
+      if (this.mystate.selectedLabelTextDirty) {
+        if (this.state.mode === 'EDTION') {
+          this.props.labelsChangedCallback(this.labelsToJSON());
+        } else if (this.state.mode === 'EVALUATION') {
+          this.props.labelChangedCallback({ id: label.id, text: label.student_answer });
+        }
+        this.mystate.selectedLabelTextDirty = false;
+      }
     }
   }
 
@@ -1560,11 +1687,19 @@ export default class Renderer3D extends Component {
       this.animateForAWhile(0);
       // notify parent about new selected label
       this.props.selectedLabelChangedCallback(label);
-      setTimeout(() => {
-        // prepare hidden input for writing on it
-        this.mystate.canFocusHiddenInput = true;
-        this.refs.hiddenTxtInp.value = label.text;
-      }, 0);
+      if (this.state.mode === 'EDITION') {
+        setTimeout(() => {
+          // prepare hidden input for writing on it
+          this.mystate.canFocusHiddenInput = true;
+          this.refs.hiddenTxtInp.value = label.text;
+        }, 0);
+      } else if (this.state.mode === 'EVALUATION') {
+        setTimeout(() => {
+          // prepare hidden input for writing on it
+          this.mystate.canFocusHiddenInput = true;
+          this.refs.hiddenTxtInp.value = label.student_answer;
+        }, 0);
+      }
     }
   }
 
@@ -1585,15 +1720,18 @@ export default class Renderer3D extends Component {
     this.mystate.minimizeIconCircle.position
       .copy(this.mystate.minimizeIconSprite.position);
     this.mystate.minimizeIconCircle.quaternion.copy(quat);
-    // update delete icon's position
-    this.mystate.deleteIconSprite.position
-      .set(w * 0.5 + h * 0.04 + this.mystate.meshDiameter * ICON_COEF, h * 0.6, 0)
-      .applyQuaternion(quat)
-      .add(label.sprite.position);
-    // and circle
-    this.mystate.deleteIconCircle.position
-      .copy(this.mystate.deleteIconSprite.position);
-    this.mystate.deleteIconCircle.quaternion.copy(quat);
+
+    if (this.state.mode === 'EDITION') {
+      // update delete icon's position
+      this.mystate.deleteIconSprite.position
+        .set(w * 0.5 + h * 0.04 + this.mystate.meshDiameter * ICON_COEF, h * 0.6, 0)
+        .applyQuaternion(quat)
+        .add(label.sprite.position);
+      // and circle
+      this.mystate.deleteIconCircle.position
+        .copy(this.mystate.deleteIconSprite.position);
+      this.mystate.deleteIconCircle.quaternion.copy(quat);
+    }
   }
 
   render() {
@@ -1601,7 +1739,7 @@ export default class Renderer3D extends Component {
       <div>
         <div
           style={styles.viewport} ref="viewport"
-          onWheel={this.handleWheel} onMouseDown={this.handleMouseDown}
+          onWheel={this.handleWheel} onMouseDown={this.onMouseDown}
           onContextMenu={this.handleContextMenu}
         >
         </div>
@@ -1612,10 +1750,17 @@ export default class Renderer3D extends Component {
 }
 
 Renderer3D.propTypes = {
-  canEdit: React.PropTypes.bool,
+  /* ===========================*/
+  /* 1) props for for ALL modes */
+  /* ===========================*/
+  /* --- props to read from (INPUT) ---- */
+  mode: React.PropTypes.string.isRequired,
   remoteFiles: React.PropTypes.object,
   labels: React.PropTypes.array,
-  labelsChangedCallback: React.PropTypes.func.isRequired,
+  highlightedLabelStyle: React.PropTypes.object.isRequired,
+  normalLabelStyle: React.PropTypes.object.isRequired,
+  sphereRadiusCoef: React.PropTypes.number.isRequired,
+  /* --- callback props to notify parent about changes (OUTPUT) --- */
   selectedLabelChangedCallback: React.PropTypes.func.isRequired,
   loadingStartingCallback: React.PropTypes.func.isRequired,
   loadingProgressCallback: React.PropTypes.func.isRequired,
@@ -1624,8 +1769,20 @@ Renderer3D.propTypes = {
   downloadCycleStartedCallback: React.PropTypes.func.isRequired,
   downloadCycleFinishedCallback: React.PropTypes.func.isRequired,
   downloadingFileCallback: React.PropTypes.func.isRequired,
-  highlightedLabelStyle: React.PropTypes.object.isRequired,
-  normalLabelStyle: React.PropTypes.object.isRequired,
+  /* ===========================*/
+  /* 2) props for EDITION mode  */
+  /* ===========================*/
+  /* --- callback props to notify parent about changes (OUTPUT) --- */
+  labelsChangedCallback: React.PropTypes.func,
+  /* ==============================*/
+  /* 3) props for EVALUATION mode  */
+  /* ==============================*/
+  /* --- props to read from (INPUT) ---- */
+  labelAnswers: React.PropTypes.array,
+  labelAnswersDirty: React.PropTypes.bool,
+  /* --- callback props to notify parent about changes (OUTPUT) --- */
+  labelAnswersConsumedCallback: React.PropTypes.func,
+  labelChangedCallback: React.PropTypes.func,
 };
 
 const styles = {
@@ -1641,3 +1798,8 @@ const styles = {
     left: '-9999%',
   },
 };
+
+function isInt(value) {
+  let x;
+  return isNaN(value) ? !1 : (x = parseFloat(value), (0 | x) === x);
+}

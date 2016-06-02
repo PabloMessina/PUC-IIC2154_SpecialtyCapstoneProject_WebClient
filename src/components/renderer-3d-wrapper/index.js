@@ -18,123 +18,131 @@ export default class Renderer3DWrapper extends Component {
 
   static get defaultProps() {
     return {
-      canEdit: true,
       blockProps: {
-        readOnly: false,
+        mode: 'EDITION',
         gotFocusCallback: () => {},
         lostFocusCallback: () => {},
       },
+      sphereRadiusCoef: 1 / 200,
       remoteFiles: {
-        // mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
-        // obj: 'https://lopezjuri.com/videos/nRBC.obj',
-        // images: ['https://lopezjuri.com/videos/M_10___Default1.jpg'],
-        mtl: 'https://lopezjuri.com/videos/Heart.mtl',
-        obj: 'https://lopezjuri.com/videos/Heart.obj',
+        mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
+        obj: 'https://lopezjuri.com/videos/nRBC.obj',
+        images: ['https://lopezjuri.com/videos/M_10___Default1.jpg'],
+        // mtl: 'https://lopezjuri.com/videos/Heart.mtl',
+        // obj: 'https://lopezjuri.com/videos/Heart.obj',
         // images: [],
         // mtl: 'http://localhost:5000/nRBC.mtl',
         // obj: 'http://localhost:5000/nRBC.obj',
         // images: ['http://localhost:5000/nRBC.jpg'],
       },
-      labels: [],
-      /*
       labels: [
       	{
       		"points": [
       			{
-      				"x": -21.214546463347062,
-      				"y": 57.65000469461012,
-      				"z": -14.500255495662856
+      				"x": 0.08011267886422502,
+      				"y": 1.7630375099710704,
+      				"z": 0.2855099769166429
       			},
       			{
-      				"x": -13.411042799001905,
-      				"y": 55.21806218247605,
-      				"z": -20.158860003288254
-      			},
-      			{
-      				"x": -11.029465274949757,
-      				"y": 56.17479942634964,
-      				"z": -26.745239529768
+      				"x": 0.07996274114879043,
+      				"y": 1.7642502742242812,
+      				"z": -0.24056268813839665
       			}
       		],
       		"position": {
-      			"x": 7.294952759821058,
-      			"y": 98.37410094400764,
-      			"z": -34.27216229513908
+      			"x": -1.2019907948864557,
+      			"y": 2.368970534761047,
+      			"z": -0.06227645813365079
       		},
-      		"text": "Aorta"
+      		"text": "shoulders",
+          "id": 1,
       	},
       	{
       		"points": [
       			{
-      				"x": -32.865710734028255,
-      				"y": 57.31516519540327,
-      				"z": -5.177062605672859
+      				"x": 0.03834693213218543,
+      				"y": 1.643665271571109,
+      				"z": -0.9189726189875955
       			}
       		],
       		"position": {
-      			"x": -40.926209510856694,
-      			"y": 102.35977727702405,
-      			"z": 17.21597701425094
+      			"x": 0.5210503123113313,
+      			"y": 2.325146086504418,
+      			"z": -1.4203780284125997
       		},
-      		"text": "Superior Vena Cava"
+      		"text": "left hand",
+          "id": 2,
       	},
       	{
       		"points": [
       			{
-      				"x": 21.479502800811872,
-      				"y": 23.264175125980444,
-      				"z": -27.43319398133451
+      				"x": 0.05562013466743565,
+      				"y": 1.6404827763992103,
+      				"z": 0.9533487794309679
+      			}
+      		],
+      		"position": {
+      			"x": 0.18885065242216115,
+      			"y": 2.2365201279125415,
+      			"z": 1.2479100379638908
+      		},
+      		"text": "right hand",
+          "id": 3,
+      	},
+      	{
+      		"points": [
+      			{
+      				"x": 0.1636169699651191,
+      				"y": 0.6388932187009857,
+      				"z": -0.07602061097736623
       			},
       			{
-      				"x": 17.815957441906733,
-      				"y": 25.314838170859986,
-      				"z": -16.986192330773633
+      				"x": 0.18297738656877982,
+      				"y": 0.6669522616368795,
+      				"z": 0.12959693525661464
       			}
       		],
       		"position": {
-      			"x": 72.20902901768375,
-      			"y": 58.636991283386095,
-      			"z": -42.23733762885104
+      			"x": 1.0465285433723466,
+      			"y": 0.5071482887253147,
+      			"z": 0.07387170013075206
       		},
-      		"text": "Pulmonary Artery"
+      		"text": "knees",
+          "id": 4,
       	},
       	{
       		"points": [
       			{
-      				"x": 26.638758956953495,
-      				"y": 11.398709932821731,
-      				"z": -32.409418235321596
-      			},
-      			{
-      				"x": 28.031732184599036,
-      				"y": 2.7975700848757015,
-      				"z": -34.61691697827138
+      				"x": -0.38885138245308326,
+      				"y": 1.5720951288809317,
+      				"z": 0.05662421976961696
       			}
       		],
       		"position": {
-      			"x": 95.87746867890667,
-      			"y": 29.876116264481254,
-      			"z": -60.621318380953426
+      			"x": -1.2029175571224187,
+      			"y": 1.5549022450299006,
+      			"z": -0.011820433183759249
       		},
-      		"text": "Pulmonary Vein"
+      		"text": "backpack",
+          "id": 5,
       	},
       	{
       		"points": [
       			{
-      				"x": -33.03240522235461,
-      				"y": -40.93038856010884,
-      				"z": -23.50147817220028
+      				"x": 0.004955719812194559,
+      				"y": 2.051210552175462,
+      				"z": 0.009528489769337511
       			}
       		],
       		"position": {
-      			"x": -74.27396086352269,
-      			"y": -74.3037089604203,
-      			"z": -58.297210334662516
+      			"x": 0.5725380247647536,
+      			"y": 2.6584205095426796,
+      			"z": 0.011737539989184143
       		},
-      		"text": "Inferior Vena Cava"
+      		"text": "head",
+          "id": 6,
       	}
       ],
-      */
       highlightedLabelStyle: {
         font: 'Georgia',
         fontSize: 120,
@@ -162,8 +170,7 @@ export default class Renderer3DWrapper extends Component {
       labelsChangedCallback: () => console.log("default wrapper::labelsChangedCallback()"),
       highlightedLabelStyleChangedCallback: (style) => console.log("highstyle = ", style),
       normalLabelStyleChangedCallback: (style) => console.log("normalstyle = ", style),
-      gotFocusCallback: () => console.log("gotFocusCallback()"),
-      lostFocusCallback: () => console.log("lostFocusCallback()"),
+      sphereRadiusCoefChangedCallback: (coef) => console.log("sphere radius coef = ", coef),
     };
   }
 
@@ -171,11 +178,11 @@ export default class Renderer3DWrapper extends Component {
     super(props);
     // state used in render
     this.state = {
+      mode: props.blockProps.mode,
       labelCount: 0,
       labelStyleMode: 'normal',
       labelDropdownOpen: false,
       hasLoadedModel: false,
-      hasSelectedLabel: false,
       showingLabels: true,
       loadingModel: false,
       downloading: false,
@@ -184,6 +191,7 @@ export default class Renderer3DWrapper extends Component {
       remoteFiles: props.remoteFiles,
       normalLabelStyle: props.normalLabelStyle,
       highlightedLabelStyle: props.highlightedLabelStyle,
+      sphereRadiusCoef: props.sphereRadiusCoef,
       labelStyleControlShowAllOptions: false,
     };
     // state not used in render
@@ -215,6 +223,7 @@ export default class Renderer3DWrapper extends Component {
     this.onDownloadCycleStarted = this.onDownloadCycleStarted.bind(this);
     this.onDownloadCycleFinished = this.onDownloadCycleFinished.bind(this);
     this.onDownloadingFile = this.onDownloadingFile.bind(this);
+    this.onSphereRadiusCoefChanged = this.onSphereRadiusCoefChanged.bind(this);
   }
 
   componentDidMount() {
@@ -252,7 +261,7 @@ export default class Renderer3DWrapper extends Component {
 
   onLabelCountChanged(newCount) {
     this.setState({
-      labelCount: newCount,
+      labelount: newCount,
     });
   }
 
@@ -309,25 +318,26 @@ export default class Renderer3DWrapper extends Component {
 
   onSelectedLabelChanged(label) {
     if (!this.mystate.componentUnmounted) {
-      if (this.state.hasSelectedLabel !== !!label) {
-        this.setState({ hasSelectedLabel: !!label });
-      }
-      const { gotFocusCallback, lostFocusCallback } = this.props.blockProps;
       // check focus state
       if (label && !this.mystate.labelWithFocus) {
         this.mystate.labelWithFocus = true;
-        gotFocusCallback();
+        // tell parent that we got focus (if EDITION mode)
+        if (this.state.mode === 'EDITION') {
+          this.props.blockProps.gotFocusCallback();
+        }
       } else if (!label && this.mystate.labelWithFocus) {
         this.mystate.labelWithFocus = false;
-        lostFocusCallback();
+        // tell parent that we lost focus (if EDITION mode)
+        if (this.state.mode === 'EDITION') {
+          this.props.blockProps.lostFocusCallback();
+        }
       }
     }
   }
 
   onFilesChanged() {
     const files = this.refs.filesInput.files;
-    this.setState({ labels: null });
-    setTimeout(() => this.refs.r3d.loadModel(files, this.state.labels), 0);
+    this.refs.r3d.loadModel(files, null);
   }
 
   onLoadingStarting() {
@@ -405,9 +415,15 @@ export default class Renderer3DWrapper extends Component {
     this.setState({ labelStyleControlShowAllOptions: this.refs.labelStyleControlCheckbox.checked });
   }
 
+  onSphereRadiusCoefChanged(e) {
+    const coef = Number(e.target.value);
+    this.refs.r3d.setSphereRadiusCoef(coef);
+    this.props.sphereRadiusCoefChangedCallback(coef);
+    this.setState({ sphereRadiusCoef: coef });
+  }
+
   render() {
     // check label style to use
-    const { readOnly } = this.props.blockProps;
     let labelStyle;
     switch (this.state.labelStyleMode) {
       case 'normal':
@@ -417,12 +433,14 @@ export default class Renderer3DWrapper extends Component {
         labelStyle = this.state.highlightedLabelStyle;
         break;
     }
+    const mode = this.state.mode;
+    const isEdition = mode === 'EDITION';
 
     return (
       <div ref="root" style={styles.globalDivStyle}>
-        {renderIf(false && !readOnly)(() => (
-          <input ref="filesInput" type="file" onChange={this.onFilesChanged} multiple></input>
-        ))}
+        {isEdition ?
+          <input style={styles.filesInput} ref="filesInput" type="file" onChange={this.onFilesChanged} multiple></input>
+        : null}
         <div style={styles.toolbar}>
           <Button
             style={styles.toolbarButton}
@@ -434,7 +452,7 @@ export default class Renderer3DWrapper extends Component {
               <Icon name="compass" stack="1x" style={styles.icon} />
             </IconStack>
           </Button>
-          {renderIf(this.state.labelCount > 0)(() => (
+          {this.state.labelCount > 0 ?
             <ToggleButton
               turnedOnIcon="eye"
               turnedOffIcon="eye-slash"
@@ -442,9 +460,8 @@ export default class Renderer3DWrapper extends Component {
               turnedOffCallback={this.hideLabes}
               iconStyle={styles.icon}
               buttonStyle={styles.toolbarButton}
-            />
-          ))}
-          {renderIf(!readOnly)(() => (
+            /> : null}
+          {renderIf(isEdition)(() => (
             <Dropdown
               id="label-dropdown-custom"
               open={this.state.labelDropdownOpen}
@@ -467,6 +484,12 @@ export default class Renderer3DWrapper extends Component {
               </Dropdown.Toggle>
               <Dropdown.Menu className="super-colors">
                 <div ref="labelSettingsDiv" style={styles.labelSettingsDivStyle}>
+                  <label> SphereRadiusCoef: </label><br />
+                  <input
+                    type="range" min={0.001} max={0.03} step={0.0005} style={styles.rangeInput}
+                    value={this.state.sphereRadiusCoef} onChange={this.onSphereRadiusCoefChanged}
+                  />
+                  <span>{this.state.sphereRadiusCoef.toFixed(5)}</span>
                   <div style={styles.flexme}>
                     <label style={styles.normalLabel}><input
                       type="radio" name="labelType" value="normal"
@@ -500,11 +523,12 @@ export default class Renderer3DWrapper extends Component {
         </div>
         <Renderer3D
           ref="r3d"
-          canEdit={!readOnly}
+          mode={mode}
           remoteFiles={this.props.remoteFiles}
           labels={this.state.labels}
           normalLabelStyle={this.state.normalLabelStyle}
           highlightedLabelStyle={this.state.highlightedLabelStyle}
+          sphereRadiusCoef={this.state.sphereRadiusCoef}
           labelsChangedCallback={this.onLabelsChanged}
           selectedLabelChangedCallback={this.onSelectedLabelChanged}
           loadingStartingCallback={this.onLoadingStarting}
@@ -514,6 +538,11 @@ export default class Renderer3DWrapper extends Component {
           downloadCycleStartedCallback={this.onDownloadCycleStarted}
           downloadCycleFinishedCallback={this.onDownloadCycleFinished}
           downloadingFileCallback={this.onDownloadingFile}
+          // props to handle the sending and receving of label answers (in EVALUATION mode)
+          labelAnswers={this.props.labelAnswers}
+          labelAnswersDirty={this.props.labelAnswersDirty}
+          labelAnswersConsumedCallback={this.props.labelAnswersConsumedCallback}
+          labelChangedCallback={this.props.labelChangedCallback}
         />
         {this.state.loadingModel ?
           <div style={styles.progressDiv}>
@@ -554,29 +583,58 @@ export default class Renderer3DWrapper extends Component {
 }
 
 Renderer3DWrapper.propTypes = {
-  // optional props
-  canEdit: React.PropTypes.bool,
+  /* ===========================*/
+  /* 1) props for for ALL modes */
+  /* ===========================*/
+  /* --- props to read from (INPUT) ---- */
+  mode: React.PropTypes.string,
   remoteFiles: React.PropTypes.object,
   labels: React.PropTypes.array,
   highlightedLabelStyle: React.PropTypes.object,
   normalLabelStyle: React.PropTypes.object,
-  gotFocusCallback: React.PropTypes.func,
-  lostFocusCallback: React.PropTypes.func,
-  // required props
-  labelsChangedCallback: React.PropTypes.func.isRequired,
-  highlightedLabelStyleChangedCallback: React.PropTypes.func.isRequired,
-  normalLabelStyleChangedCallback: React.PropTypes.func.isRequired,
-  // vicho's props
-  blockProps: React.PropTypes.object.isRequired,
+  sphereRadiusCoef: React.PropTypes.number,
+  /* ===========================*/
+  /* 2) props for EDITION mode  */
+  /* ===========================*/
+  /* --- callback props to notify parent about changes (OUTPUT) --- */
+  labelsChangedCallback: React.PropTypes.func,
+  highlightedLabelStyleChangedCallback: React.PropTypes.func,
+  normalLabelStyleChangedCallback: React.PropTypes.func,
+  sphereRadiusCoefChangedCallback: React.PropTypes.func,
+  // vicho's prop
+  //   it has: mode, gotFocusCallback, lostFocusCallback
+  blockProps: React.PropTypes.object,
+  /* ==============================*/
+  /* 3) props for EVALUATION mode  */
+  /* ==============================*/
+  /* --- props to read from (INPUT) ---- */
+  labelAnswers: React.PropTypes.object,
+  labelAnswersDirty: React.PropTypes.bool,
+  /* --- callback props to notify parent about changes (OUTPUT) --- */
+  labelAnswersConsumedCallback: React.PropTypes.func,
+  labelChangedCallback: React.PropTypes.func,
 };
 
 const styles = {
+  rangeInput: {
+    width: '140px',
+    display: 'inline',
+    marginRight: '10px',
+  },
+  filesInput: {
+    position: 'absolute',
+    left: 5,
+    bottom: 4,
+    fontFamily: 'Times New Roman',
+    fontSize: '11px',
+    color: 'black',
+  },
   flexme: {
     display: 'flex',
   },
   labelSettingsDivStyle: {
     width: '270px',
-    height: '250px',
+    height: '285px',
     padding: '10px',
   },
   normalLabel: {
@@ -608,6 +666,8 @@ const styles = {
     left: '25%',
     top: '38%',
     backgroundColor: 'rgba(240,240,240,0.7)',
+    fontFamily: 'Times New Roman',
+    fontSize: 14,
   },
   spinnerDiv: {
     width: '50%',
@@ -615,6 +675,8 @@ const styles = {
     left: '25%',
     top: '38%',
     backgroundColor: 'rgba(240,240,240,0.7)',
+    fontFamily: 'Times New Roman',
+    fontSize: 14,
   },
   progressBar: {
     backgroundColor: '#f3f3f3',
