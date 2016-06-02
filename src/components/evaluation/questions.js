@@ -312,6 +312,7 @@ export default class Questions extends Component {
     const mode = ['admin', 'write'].includes(this.props.participant.permission) ? MODES.instructor : MODES.student;
     return (
       <div>
+        <p>{this.state.error}</p>
         {this.renderMode(mode)}
       </div>
     );

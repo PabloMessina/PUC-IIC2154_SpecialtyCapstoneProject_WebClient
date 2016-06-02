@@ -293,7 +293,7 @@ class EvaluationCreate extends Component {
     const participant = this.state.participants.find(p => p.userId === user.id);
     const mode = ['admin', 'write'].includes(participant.permission) ? MODES.instructor : MODES.student;
 
-    const { evaluation, attendances } = this.state;
+    const { evaluation, attendances, evaluationQuestions } = this.state;
 
     // If we are a student
     if (mode === MODES.student) {
@@ -323,6 +323,8 @@ class EvaluationCreate extends Component {
         //   return changed;
         // })
         .catch(error => this.setState({ error }));
+    } else {
+      const eq = evaluationQuestions.findIndex(item => item.questionId ===  question.id);
     }
     return null;
   }

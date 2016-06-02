@@ -47,11 +47,13 @@ export default class Login extends Component {
           </h5>
           <p>{formatDate(date)}</p>
         </div>
-        <RichEditor
-          style={styles.richEditor}
-          content={content}
-          readOnly
-        />
+        <div style={styles.editorContainer}>
+          <RichEditor
+            style={styles.richEditor}
+            content={content}
+            readOnly
+          />
+        </div>
       </div>
     );
   }
@@ -59,9 +61,15 @@ export default class Login extends Component {
 
 const styles = {
   richEditor: {
-    margin: 0,
     padding: 0,
     fontSize: 15,
+    overflow: 'auto',
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  editorContainer: {
+    height: 200,
   },
   subject: {
     fontSize: 16,
