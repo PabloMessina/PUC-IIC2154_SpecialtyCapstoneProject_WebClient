@@ -1,18 +1,23 @@
-import React, { Component } from 'react';
-import { Navbar, Nav, NavItem, NavDropdown, MenuItem } from 'react-bootstrap';
+import React, { PropTypes, Component } from 'react';
+import { Navbar, Nav, NavItem, NavDropdown, MenuItem, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { browserHistory } from 'react-router';
+import { Pulse } from 'better-react-spinkit';
 import renderIf from 'render-if';
 import Icon from 'react-fa';
 
 import app, { logout } from '../../app';
 const membershipService = app.service('/memberships');
 
+import { Colors } from '../../styles';
+
 export default class NavigationBar extends Component {
 
   static get propTypes() {
     return {
-      title: React.PropTypes.node,
-      user: React.PropTypes.any,
+      title: PropTypes.node,
+      user: PropTypes.any,
+      connected: PropTypes.bool,
+      animated: PropTypes.bool,
     };
   }
 
@@ -20,6 +25,8 @@ export default class NavigationBar extends Component {
     return {
       title: 'Title',
       user: null,
+      connected: false,
+      animated: false,
     };
   }
 
@@ -61,10 +68,25 @@ export default class NavigationBar extends Component {
   }
 
   renderRightNavigation() {
-    if (this.props.user) {
+    const { user, connected, animated } = this.props;
+
+    const color = connected ? Colors.MAIN : Colors.RED;
+    const tooltip = <Tooltip id="status-tooltip">{connected ? 'Connected' : 'Disconnected'}</Tooltip>;
+    const connection = (
+      <OverlayTrigger placement="left" overlay={tooltip}>
+        {animated
+          ? <Pulse size={18} color={color} />
+          : <Icon style={{ color }} name="circle" />}
+      </OverlayTrigger>
+    );
+
+    if (user) {
       return (
         <Nav pullRight>
-          <NavDropdown eventKey={1} title={this.props.user.name} id="basic-nav-dropdown">
+          <Navbar.Text eventKey={0}>
+            {connection}
+          </Navbar.Text>
+          <NavDropdown eventKey={1} title={user.name} id="basic-nav-dropdown">
             <MenuItem eventKey={1.1} onClick={() => browserHistory.push('/profile')}>
               Profile
             </MenuItem>
@@ -78,17 +100,21 @@ export default class NavigationBar extends Component {
           </NavDropdown>
         </Nav>
       );
+    } else {
+      return (
+        <Nav pullRight activeKey={2}>
+          <Navbar.Text eventKey={0}>
+            {connection}
+          </Navbar.Text>
+          <NavItem eventKey={1} href="#" onClick={() => browserHistory.push('/login')}>
+            Login
+          </NavItem>
+          <NavItem eventKey={2} href="#" onClick={() => browserHistory.push('/signup')}>
+            Sign Up
+          </NavItem>
+        </Nav>
+      );
     }
-    return (
-      <Nav pullRight activeKey={2}>
-        <NavItem eventKey={1} href="#" onClick={() => browserHistory.push('/login')}>
-          Login
-        </NavItem>
-        <NavItem eventKey={2} href="#" onClick={() => browserHistory.push('/signup')}>
-          Sign Up
-        </NavItem>
-      </Nav>
-    );
   }
 
   renderDropDown() {

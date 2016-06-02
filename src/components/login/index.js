@@ -20,7 +20,6 @@
 
     static get propTypes() {
       return {
-        redirection: React.PropTypes.string,
         location: React.PropTypes.any,
       };
     }

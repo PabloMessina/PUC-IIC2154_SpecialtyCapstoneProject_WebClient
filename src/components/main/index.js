@@ -3,16 +3,10 @@
 import React, { Component } from 'react';
 // import { Grid } from 'react-bootstrap';
 import Icon from 'react-fa';
-import renderIf from 'render-if';
 
-import { currentUser, auth } from '../../app';
+import app, { currentUser } from '../../app';
 import NavigationBar from '../navigation-bar';
 
-const STATES = {
-  LOADING: 'LOADING',
-  AUTHED: 'AUTHED',
-  ANNON: 'ANNON',
-};
 
 export default class Main extends Component {
 
@@ -27,39 +21,46 @@ export default class Main extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      state: STATES.LOADING,
+      connected: app.io.connected,
       error: null,
     };
-    this.auth();
+    this.observeStatus = this.observeStatus.bind(this);
   }
 
-  auth() {
-    return auth().then(result => {
-      console.log('Logged as:', result.data.name);
-      this.setState({ state: STATES.AUTHED });
-    }).catch(err => {
-      console.log('Auth error:', err);
-      this.setState({ state: STATES.ANNON, error: err });
+  componentDidMount() {
+    this.observeStatus();
+  }
+
+  componentWillUpdate() {
+    this.observeStatus();
+  }
+
+  observeStatus() {
+    app.io.on('connect', () => {
+      console.log('Connected');
+      this.setState({ connected: true });
+    });
+
+    app.io.on('disconnect', () => {
+      console.log('Disconnected');
+      this.setState({ connected: false });
     });
   }
 
   render() {
     const { route, ...props } = this.props;
     const { title } = route;
-    const { state } = this.state;
+    const { connected } = this.state;
     const user = currentUser();
 
     return (
       <div>
 
-        <NavigationBar title={title} fixedTop user={user} />
+        <NavigationBar title={title} fixedTop user={user} connected={connected} />
 
-        {/* Render content only if the user is annon or is authed */}
-        {renderIf(state === STATES.ANNON || state === STATES.AUTHED)(() => (
-          <div style={styles.content} {...props}>
-            {this.props.children}
-          </div>
-        ))}
+        <div style={styles.content} {...props}>
+          {this.props.children}
+        </div>
 
         <footer className="footer">
           <div className="container">
