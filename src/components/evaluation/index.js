@@ -14,33 +14,27 @@ const evaluationsQuestionService = app.service('/evaluations-questions');
 const answerService = app.service('/answers');
 const attendanceService = app.service('/attendances');
 
-const SECTIONS = [
-  {
-    name: 'Information',
-    description: 'Evaluation terms and date',
-    path: 'description',
-  },
-  {
-    name: 'Students',
-    description: 'Participants and groups',
-    path: 'students',
-  },
-  {
-    name: 'Questions',
-    description: 'List of questions',
-    path: 'questions',
-  },
-  {
-    name: 'Results',
-    description: 'Answers and results',
-    path: 'results',
-  },
-  {
-    name: 'Recorrection',
-    description: 'Problems reported',
-    path: 'recorrection',
-  },
-];
+const SECTIONS = [{
+  name: 'Information',
+  description: 'Evaluation terms and date',
+  path: 'description',
+}, {
+  name: 'Students',
+  description: 'Participants and groups',
+  path: 'students',
+}, {
+  name: 'Questions',
+  description: 'List of questions',
+  path: 'questions',
+}, {
+  name: 'Results',
+  description: 'Answers and results',
+  path: 'results',
+}, {
+  name: 'Recorrection',
+  description: 'Problems reported',
+  path: 'recorrection',
+}];
 
 const MODES = {
   instructor: 'instructor',
@@ -103,6 +97,7 @@ class EvaluationCreate extends Component {
     this.renderSections = this.renderSections.bind(this);
 
     this.findOrCreateAnswer = this.findOrCreateAnswer.bind(this);
+    this.startEvaluation = this.startEvaluation.bind(this);
 
     this.observe = this.observe.bind(this);
     this.observeEvaluation = this.observeEvaluation.bind(this);
@@ -361,6 +356,14 @@ class EvaluationCreate extends Component {
       .catch(error => this.setState({ error }));
   }
 
+  startEvaluation(attendance) {
+    if (attendance) {
+      return attendanceService.patch(attendance.id, { startedAt: new Date() });
+    } else {
+      return Promise.reject(new Error('Attendance not found'));
+    }
+  }
+
   get selected() {
     const location = this.props.location.pathname.split('/').filter(Boolean);
     const [/* evaluations */, /* show */, /* :id */, selected] = location;
@@ -411,9 +414,12 @@ class EvaluationCreate extends Component {
       participants,
     } = this.state;
 
+    const user = currentUser();
+    const participant = participants.find(p => p.userId === user.id);
+    const attendance = attendances
+      .find(att => att.userId === user.id && att.evaluationId === evaluation.id);
 
-    const userId = currentUser().id;
-    const participant = participants.find(p => p.userId === userId);
+
     const canEdit = participant && ['admin', 'write'].includes(participant.permission);
 
     return (
@@ -481,6 +487,9 @@ class EvaluationCreate extends Component {
                 )}
                 <Button bsStyle="danger" onClick={this.onDelete}>Delete</Button>
               </ButtonToolbar>
+            )}
+            {renderIf(!canEdit && attendance && !attendance.startedAt)(() =>
+              <Button bsStyle="primary" onClick={() => this.startEvaluation(attendance)}>Start evaluation</Button>
             )}
           </Col>
         </Row>
