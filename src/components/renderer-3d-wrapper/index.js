@@ -167,10 +167,11 @@ export default class Renderer3DWrapper extends Component {
         cornerRadiusCoef: 0.4,
         worldFontSizeCoef: 1 / 18,
       },
-      labelsChangedCallback: () => console.log("default wrapper::labelsChangedCallback()"),
-      highlightedLabelStyleChangedCallback: (style) => console.log("highstyle = ", style),
-      normalLabelStyleChangedCallback: (style) => console.log("normalstyle = ", style),
-      sphereRadiusCoefChangedCallback: (coef) => console.log("sphere radius coef = ", coef),
+      labelsChangedCallback: () => console.log('default wrapper::labelsChangedCallback()'),
+      highlightedLabelStyleChangedCallback: (style) => console.log('highstyle = ', style),
+      normalLabelStyleChangedCallback: (style) => console.log('normalstyle = ', style),
+      sphereRadiusCoefChangedCallback: (coef) => console.log('sphere radius coef = ', coef),
+      local3DFilesLoadedCallback: (files) => console.log('local files: ', files),
     };
   }
 
@@ -200,19 +201,18 @@ export default class Renderer3DWrapper extends Component {
       labelDropdownY: null,
       lastClickedElem: null,
       componentUnmounted: false,
-      labelWithFocus: false,
+      componentFocused: false,
     };
 
     this.onFilesChanged = this.onFilesChanged.bind(this);
     this.refocusOnModel = this.refocusOnModel.bind(this);
     this.showLabels = this.showLabels.bind(this);
-    this.hideLabes = this.hideLabes.bind(this);
+    this.hideLabels = this.hideLabels.bind(this);
     this.removeSelectedLabel = this.removeSelectedLabel.bind(this);
     this.onLabelsChanged = this.onLabelsChanged.bind(this);
     this.onLabelStyleChanged = this.onLabelStyleChanged.bind(this);
     this.onLabelRadioBtnChanged = this.onLabelRadioBtnChanged.bind(this);
     this.onLabelDropDownToggle = this.onLabelDropDownToggle.bind(this);
-    this.onSelectedLabelChanged = this.onSelectedLabelChanged.bind(this);
     this.onLoadingStarting = this.onLoadingStarting.bind(this);
     this.onLoadingCompleted = this.onLoadingCompleted.bind(this);
     this.onLoadingProgress = this.onLoadingProgress.bind(this);
@@ -224,6 +224,8 @@ export default class Renderer3DWrapper extends Component {
     this.onDownloadCycleFinished = this.onDownloadCycleFinished.bind(this);
     this.onDownloadingFile = this.onDownloadingFile.bind(this);
     this.onSphereRadiusCoefChanged = this.onSphereRadiusCoefChanged.bind(this);
+    this.minimizeAllLabels = this.minimizeAllLabels.bind(this);
+    this.maximizeAllLabels = this.maximizeAllLabels.bind(this);
   }
 
   componentDidMount() {
@@ -248,14 +250,20 @@ export default class Renderer3DWrapper extends Component {
     // if click is outside wrapper, unselect selected label
     let inComponent = false;
     while (elem) {
-      if (elem === this.refs.root) {
-        inComponent = true;
-        break;
-      }
+      if (elem === this.refs.root) { inComponent = true; break; }
       elem = elem.parentElement;
     }
-    if (!inComponent) {
-      this.refs.r3d.unselectSelectedLabel();
+    if (!inComponent) this.refs.r3d.unselectSelectedLabel();
+    if (this.state.mode === 'EDITION') {
+      if (inComponent && !this.mystate.componentFocused) {
+        this.mystate.componentFocused = true;
+        this.refs.r3d.gotFocus();
+        this.props.blockProps.gotFocusCallback();
+      } else if (!inComponent && this.mystate.componentFocused) {
+        this.mystate.componentFocused = false;
+        this.refs.r3d.lostFocus();
+        this.props.blockProps.lostFocusCallback();
+      }
     }
   }
 
@@ -316,70 +324,51 @@ export default class Renderer3DWrapper extends Component {
     this.setState({ labelDropdownOpen: open });
   }
 
-  onSelectedLabelChanged(label) {
-    if (!this.mystate.componentUnmounted) {
-      // check focus state
-      if (label && !this.mystate.labelWithFocus) {
-        this.mystate.labelWithFocus = true;
-        // tell parent that we got focus (if EDITION mode)
-        if (this.state.mode === 'EDITION') {
-          this.props.blockProps.gotFocusCallback();
-        }
-      } else if (!label && this.mystate.labelWithFocus) {
-        this.mystate.labelWithFocus = false;
-        // tell parent that we lost focus (if EDITION mode)
-        if (this.state.mode === 'EDITION') {
-          this.props.blockProps.lostFocusCallback();
-        }
-      }
-    }
-  }
-
   onFilesChanged() {
     const files = this.refs.filesInput.files;
     this.refs.r3d.loadModel(files, null);
   }
 
   onLoadingStarting() {
-    if (!this.mystate.componentUnmounted) {
-      this.setState({
-        loadingModel: true,
-        progressPercentage: 0,
-        progressMessage: 'Beginning to load model ...',
-      });
-    }
+    if (this.mystate.componentUnmounted) return;
+    this.setState({
+      loadingModel: true,
+      progressPercentage: 0,
+      progressMessage: 'Beginning to load model ...',
+    });
   }
 
   onDownloadCycleStarted() {
+    if (this.mystate.componentUnmounted) return;
     this.setState({ downloading: true });
   }
 
   onDownloadCycleFinished() {
+    if (this.mystate.componentUnmounted) return;
     this.setState({ downloading: false });
   }
 
   onDownloadingFile(path) {
+    if (this.mystate.componentUnmounted) return;
     this.setState({ downloadMessage: `fetching file: ${path}` });
   }
 
   onLoadingProgress(message, lengthSoFar, totalLength) {
-    if (!this.mystate.componentUnmounted) {
-      const percentage = (lengthSoFar / totalLength * 100).toFixed(2);
-      this.setState({
-        progressPercentage: percentage,
-        progressMessage: `${message} ${percentage}%`,
-      });
-    }
+    if (this.mystate.componentUnmounted) return;
+    const percentage = (lengthSoFar / totalLength * 100).toFixed(2);
+    this.setState({
+      progressPercentage: percentage,
+      progressMessage: `${message} ${percentage}%`,
+    });
   }
 
   onLoadingCompleted() {
-    if (!this.mystate.componentUnmounted) {
-      this.setState({
-        hasLoadedModel: true,
-        loadingModel: false,
-        showingLabels: true,
-      });
-    }
+    if (this.mystate.componentUnmounted) return;
+    this.setState({
+      hasLoadedModel: true,
+      loadingModel: false,
+      showingLabels: true,
+    });
   }
 
   onLoadingError(error) {
@@ -402,8 +391,8 @@ export default class Renderer3DWrapper extends Component {
     this.refs.r3d.refocusOnModel();
   }
 
-  hideLabes() {
-    this.refs.r3d.hideLabes();
+  hideLabels() {
+    this.refs.r3d.hideLabels();
     this.setState({ showingLabels: false });
   }
 
@@ -420,6 +409,14 @@ export default class Renderer3DWrapper extends Component {
     this.refs.r3d.setSphereRadiusCoef(coef);
     this.props.sphereRadiusCoefChangedCallback(coef);
     this.setState({ sphereRadiusCoef: coef });
+  }
+
+  minimizeAllLabels() {
+    this.refs.r3d.minimizeAllLabels();
+  }
+
+  maximizeAllLabels() {
+    this.refs.r3d.maximizeAllLabels();
   }
 
   render() {
@@ -457,10 +454,30 @@ export default class Renderer3DWrapper extends Component {
               turnedOnIcon="eye"
               turnedOffIcon="eye-slash"
               turnedOnCallback={this.showLabels}
-              turnedOffCallback={this.hideLabes}
+              turnedOffCallback={this.hideLabels}
               iconStyle={styles.icon}
               buttonStyle={styles.toolbarButton}
             /> : null}
+          {this.state.labelCount > 0 ?
+            <Button
+              style={styles.toolbarButton}
+              onClick={this.minimizeAllLabels} bsSize="small"
+            >
+              <IconStack size="2x">
+                <Icon name="circle" stack="2x" />
+                <Icon name="minus-square" stack="1x" style={styles.icon} />
+              </IconStack>
+            </Button> : null}
+          {this.state.labelCount > 0 ?
+            <Button
+              style={styles.toolbarButton}
+              onClick={this.maximizeAllLabels} bsSize="small"
+            >
+              <IconStack size="2x">
+                <Icon name="circle" stack="2x" />
+                <Icon name="plus-square" stack="1x" style={styles.icon} />
+              </IconStack>
+            </Button> : null}
           {renderIf(isEdition)(() => (
             <Dropdown
               id="label-dropdown-custom"
@@ -530,7 +547,6 @@ export default class Renderer3DWrapper extends Component {
           highlightedLabelStyle={this.state.highlightedLabelStyle}
           sphereRadiusCoef={this.state.sphereRadiusCoef}
           labelsChangedCallback={this.onLabelsChanged}
-          selectedLabelChangedCallback={this.onSelectedLabelChanged}
           loadingStartingCallback={this.onLoadingStarting}
           loadingProgressCallback={this.onLoadingProgress}
           loadingErrorCallback={this.onLoadingError}
@@ -538,6 +554,8 @@ export default class Renderer3DWrapper extends Component {
           downloadCycleStartedCallback={this.onDownloadCycleStarted}
           downloadCycleFinishedCallback={this.onDownloadCycleFinished}
           downloadingFileCallback={this.onDownloadingFile}
+          local3DFilesLoadedCallback={this.props.local3DFilesLoadedCallback}
+
           // props to handle the sending and receving of label answers (in EVALUATION mode)
           labelAnswers={this.props.labelAnswers}
           labelAnswersDirty={this.props.labelAnswersDirty}
@@ -601,6 +619,7 @@ Renderer3DWrapper.propTypes = {
   highlightedLabelStyleChangedCallback: React.PropTypes.func,
   normalLabelStyleChangedCallback: React.PropTypes.func,
   sphereRadiusCoefChangedCallback: React.PropTypes.func,
+  local3DFilesLoadedCallback: React.PropTypes.func,
   // vicho's prop
   //   it has: mode, gotFocusCallback, lostFocusCallback
   blockProps: React.PropTypes.object,

@@ -60,6 +60,7 @@ function parseMtlText(mtlText, texturePaths, resolve, reject, interrupter, onFil
   const promiseList = [];
   const textureMap = {};
   const auxList = [];
+  const texturePathsUsed = [];
   let params = null;
 
   // parse each line
@@ -183,13 +184,13 @@ function parseMtlText(mtlText, texturePaths, resolve, reject, interrupter, onFil
       }
       // generate materials and resolve
       paramsList.forEach((p) => { materials[p.name] = new THREE.MeshPhongMaterial(p); });
-      resolve(materials);
+      resolve({ materials, texturePathsUsed });
     })
     .catch(err => reject(err));
   } else { // no promises (nobody is using textures)
     // generate materials and resolve
     paramsList.forEach((p) => { materials[p.name] = new THREE.MeshPhongMaterial(p); });
-    resolve(materials);
+    resolve({ materials, texturePathsUsed });
   }
 
   /**
@@ -220,6 +221,7 @@ function parseMtlText(mtlText, texturePaths, resolve, reject, interrupter, onFil
         loader.load(
           path, (texture) => {
             textureMap[textureName] = texture;
+            texturePathsUsed.push(path);
             res();
           },
           null, (err) => {

@@ -23,8 +23,6 @@ const MINIMIZE_ICON_URL = 'http://localhost:3000/img/minimize_icon.png';
 
 const ICON_COEF = 1 / 40;
 const ICON_RES = 256;
-
-const SPHERE_RADIUS_COEF = 1 / 200;
 const LABEL_DROP_DIST_COEF = 1 / 7;
 
 export default class Renderer3D extends Component {
@@ -52,7 +50,6 @@ export default class Renderer3D extends Component {
     this.unhighlightLabel = this.unhighlightLabel.bind(this);
 
     this.onResize = this.onResize.bind(this);
-    this.onKeypress = this.onKeypress.bind(this);
     this.onKeydown = this.onKeydown.bind(this);
 
     this.updateSpritePlaneOrientations =
@@ -77,7 +74,7 @@ export default class Renderer3D extends Component {
 
     // API functions
     this.loadModel = this.loadModel.bind(this);
-    this.hideLabes = this.hideLabes.bind(this);
+    this.hideLabels = this.hideLabels.bind(this);
     this.showLabels = this.showLabels.bind(this);
     this.setNormalLabelStyle = this.setNormalLabelStyle.bind(this);
     this.setHighlightedLabelStyle = this.setHighlightedLabelStyle.bind(this);
@@ -85,12 +82,15 @@ export default class Renderer3D extends Component {
     this.refocusOnModel = this.refocusOnModel.bind(this);
     this.unselectSelectedLabel = this.unselectSelectedLabel.bind(this);
     this.setSphereRadiusCoef = this.setSphereRadiusCoef.bind(this);
+    this.minimizeAllLabels = this.minimizeAllLabels.bind(this);
+    this.maximizeAllLabels = this.maximizeAllLabels.bind(this);
+    this.gotFocus = this.gotFocus.bind(this);
+    this.lostFocus = this.lostFocus.bind(this);
   }
 
   componentDidMount() {
     // add event listeners
     window.addEventListener('resize', this.onResize);
-    window.addEventListener('keypress', this.onKeypress);
     window.addEventListener('keydown', this.onKeydown);
     window.addEventListener('mouseup', this.onMouseUp);
     window.addEventListener('mousemove', this.onMouseMove);
@@ -199,6 +199,7 @@ export default class Renderer3D extends Component {
       },
       pendingXHRs: new Set(),
       labelIds: new Set(),
+      componentFocused: false,
       // icons
       deleteImg: null,
       deleteIconSprite: null,
@@ -259,7 +260,7 @@ export default class Renderer3D extends Component {
       ThreeUtils.makeImageSprite({  // from loaded image
         img: this.mystate.minimizeImg,
         resX: ICON_RES, resY: ICON_RES, worldWidth: iconLength, worldHeight: iconLength }) :
-      ThreeUtils.makeDeleteIconSprite({ // manual creation
+      ThreeUtils.makeMinimizeIconSprite({ // manual creation
         resX: ICON_RES, resY: ICON_RES, worldWidth: iconLength, worldHeight: iconLength });
     this.mystate.iconSpriteGroup.add(this.mystate.minimizeIconSprite);
     // reload mesh used for collision detection
@@ -363,7 +364,6 @@ export default class Renderer3D extends Component {
     console.log("==> Renderer3D::componentWillUnmount()");
     // remove event listeners
     window.removeEventListener('resize', this.onResize);
-    window.removeEventListener('keypress', this.onKeypress);
     window.removeEventListener('keydown', this.onKeydown);
     window.removeEventListener('mouseup', this.onMouseUp);
     window.removeEventListener('mousemove', this.onMouseMove);
@@ -530,7 +530,7 @@ export default class Renderer3D extends Component {
       mtlUrl, textureUrls,
       this.mystate.loadingInterrupter,
       this.onFileDownloadStarted)
-    .then((materials) => {
+    .then(({ materials }) => {
       if (this.mystate.loadingInterrupter.stop) {
         throw new Error(this.mystate.loadingInterrupter.reason);
       }
@@ -618,6 +618,8 @@ bytes > ${OBJ_SIZE_THRESHOLD} bytes. It's too heavy :S. Maybe you should
 reduce the complexity of your mesh by applying mesh simplification on it.`);
     }
 
+    let imagePathsUsed;
+
     this.props.downloadCycleStartedCallback();
     this.onFileDownloadStarted(URL.createObjectURL(mtlFile));
     // use MTLLoader to load materials from MTL file
@@ -625,7 +627,8 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       mtlFile, texturePaths,
       this.mystate.loadingInterrupter,
       this.onFileDownloadStarted)
-    .then((materials) => {
+    .then(({ materials, texturePathsUsed }) => {
+      imagePathsUsed = texturePathsUsed;
       if (this.mystate.loadingInterrupter.stop) {
         throw new Error(this.mystate.loadingInterrupter.reason);
       }
@@ -642,9 +645,9 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       if (this.mystate.loadingInterrupter.stop) {
         throw new Error(this.mystate.loadingInterrupter.reason);
       }
-      // on success, proceed to incorporte the meshes into the scene
-      // and render them
+      // on success, proceed to incorporte the meshes into the scene and render them
       this.loadMeshGroup(meshGroup);
+      this.props.local3DFilesLoadedCallback({ mtlFile, objFile, texturePaths: imagePathsUsed });
     });
   }
 
@@ -673,7 +676,6 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       this.mystate.scene.remove(this.mystate.iconCircleGroup);
       // notify parent of changes
       this.props.labelsChangedCallback(this.labelsToJSON());
-      this.props.selectedLabelChangedCallback(this.mystate.selectedLabel);
     }
     // set the new meshGroup
     this.mystate.meshGroup = meshGroup;
@@ -804,7 +806,6 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     this.checkAndCorrectLabelIds();
     // notify parent of changes
     this.props.labelsChangedCallback(this.labelsToJSON());
-    this.props.selectedLabelChangedCallback(this.mystate.selectedLabel);
     // refresh screen
     this.animateForAWhile();
   }
@@ -1206,11 +1207,12 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
             // -------------
             // get sphere
             const point = intrs.object.point;
-            const radius = this.mystate.meshDiameter * this.mystate.sphereRadiusCoef;
-            const sphereGeom = new THREE.SphereGeometry(radius, 32, 32);
+            const sphereGeom = new THREE.SphereGeometry(1, 32, 32);
             const material = new THREE.MeshPhongMaterial({
               color: this.props.normalLabelStyle.sphereColor });
             const sphere = new THREE.Mesh(sphereGeom, material);
+            const radius = this.mystate.meshDiameter * this.mystate.sphereRadiusCoef;
+            sphere.scale.set(radius, radius, radius);
             sphere.position.copy(point);
 
             // ---------------------------------------------
@@ -1351,7 +1353,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     labelObj.spritePlane = newSpritePlane;
   }
 
-  hideLabes() {
+  hideLabels() {
     this.mystate.scene.remove(this.mystate.sphereGroup);
     this.mystate.scene.remove(this.mystate.lineGroup);
     this.mystate.scene.remove(this.mystate.spriteGroup);
@@ -1408,16 +1410,18 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       // remove icons from scene
       this.mystate.scene.remove(this.mystate.iconCircleGroup);
       this.mystate.scene.remove(this.mystate.iconSpriteGroup);
-      // notify parent
-      this.props.selectedLabelChangedCallback(null);
     }
     // refresh scene
     this.animateForAWhile();
   }
 
   minimizeSelectedLabel() {
-    // hide everything except
     const label = this.mystate.selectedLabel;
+    // unselect selected label
+    this.mystate.selectedLabel = null;
+    this.mystate.canFocusHiddenInput = false;
+    this.unhighlightLabel(label);
+    // hide everything except spheres
     this.mystate.spriteGroup.remove(label.sprite);
     this.mystate.spritePlaneGroup.remove(label.spritePlane);
     for (const line of label.lines) this.mystate.lineGroup.remove(line);
@@ -1427,13 +1431,48 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     // reset sphere colors back to normal
     const style = this.mystate.normalLabelStyle;
     for (const sphere of label.spheres) sphere.material.color.set(style.sphereColor);
-    // unselect selected label
-    this.mystate.selectedLabel = null;
-    this.mystate.canFocusHiddenInput = false;
     // refresh scene
     this.animateForAWhile(0);
-    // notify selected label is null
-    this.props.selectedLabelChangedCallback(null);
+  }
+
+  minimizeAllLabels() {
+    // special actions for selected label
+    const sl = this.mystate.selectedLabel;
+    if (sl) {
+      // reset sphere colors back to normal
+      const style = this.mystate.normalLabelStyle;
+      for (const sphere of sl.spheres) sphere.material.color.set(style.sphereColor);
+      // unselect selected label
+      this.mystate.selectedLabel = null;
+      this.mystate.canFocusHiddenInput = false;
+      this.unhighlightLabel(sl);
+      // hide icons
+      this.mystate.scene.remove(this.mystate.iconSpriteGroup);
+      this.mystate.scene.remove(this.mystate.iconCircleGroup);
+    }
+    // minimize all labels
+    for (const label of this.mystate.labelSet) {
+      if (label.minimized) continue;
+      label.minimized = true; // remember it's minimized
+      this.mystate.spriteGroup.remove(label.sprite);
+      this.mystate.spritePlaneGroup.remove(label.spritePlane);
+      for (const line of label.lines) this.mystate.lineGroup.remove(line);
+    }
+    // refresh scene
+    this.animateForAWhile(0);
+  }
+
+  maximizeAllLabels() {
+    for (const label of this.mystate.labelSet) {
+      if (label.minimized) {
+        label.minimized = false;
+        this.mystate.spriteGroup.add(label.sprite);
+        this.mystate.spritePlaneGroup.add(label.spritePlane);
+        for (const line of label.lines) this.mystate.lineGroup.add(line);
+      }
+    }
+    // refresh scene
+    this.animateForAWhile(0);
   }
 
   labelsToJSON() {
@@ -1606,23 +1645,57 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     return (mvpc.x >= 0 && mvpc.x <= w && mvpc.y >= 0 && mvpc.y <= h);
   }
 
-  onKeypress(e) {
-    if (this.state.mode === 'READONLY') return;
-    if (this.mystate.canFocusHiddenInput) {
-      const e2 = new KeyboardEvent('e', e);
-      this.refs.hiddenTxtInp.focus();
-      this.refs.hiddenTxtInp.dispatchEvent(e2);
-    }
+  gotFocus() {
+    this.mystate.componentFocused = true;
+  }
+  lostFocus() {
+    this.mystate.componentFocused = false;
   }
 
   onKeydown(e) {
-    if (this.state.mode === 'READONLY') return;
-    if (e.keyCode === 13 && this.mystate.selectedLabel) { // enter key
-      this.unselectSelectedLabel();
-    } else if (this.mystate.canFocusHiddenInput) {
-      const e2 = new KeyboardEvent('e', e);
-      this.refs.hiddenTxtInp.focus();
-      this.refs.hiddenTxtInp.dispatchEvent(e2);
+    if (!this.mystate.componentFocused) return;
+    const key = e.keyCode;
+
+    if (this.mystate.meshGroup) {
+      if (key >= 37 && key <= 40) {
+        e.preventDefault();
+        let dist;
+        let shift;
+        const cam = this.mystate.camera;
+        switch (key) {
+          case 37: // key left
+            dist = (cam.right - cam.left) * 0.04 / cam.zoom;
+            // dist = 1;
+            shift = new THREE.Vector3(dist, 0, 0)
+            .applyMatrix4(this.mystate.camera.matrixWorld);
+            break;
+          case 38: // key up
+            dist = (cam.top - cam.bottom) * 0.04 / cam.zoom;
+            // dist = 1;
+            shift = new THREE.Vector3(0, -dist, 0)
+            .applyMatrix4(this.mystate.camera.matrixWorld);
+            break;
+          case 39: // key right
+            dist = (cam.right - cam.left) * 0.04 / cam.zoom;
+            shift = new THREE.Vector3(-dist, 0, 0)
+            .applyMatrix4(this.mystate.camera.matrixWorld);
+            break;
+          default: // key down
+            dist = (cam.top - cam.bottom) * 0.04 / cam.zoom;
+            shift = new THREE.Vector3(0, dist, 0)
+            .applyMatrix4(this.mystate.camera.matrixWorld);
+            break;
+        }
+        cam.position.copy(shift);
+        this.refs.hiddenTxtInp.blur();
+        this.animateForAWhile();
+        return;
+      }
+    }
+    if (this.state.mode === 'READONLY' || !this.mystate.labelsEnabled) return;
+    if (this.mystate.selectedLabel) {
+      if (key === 13) this.unselectSelectedLabel();
+      else this.refs.hiddenTxtInp.focus();
     }
   }
 
@@ -1652,8 +1725,6 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       this.mystate.scene.remove(this.mystate.iconCircleGroup);
       // refresh scene
       this.animateForAWhile(0);
-      // notify selected label is null
-      this.props.selectedLabelChangedCallback(null);
       // if text is dirty, notify parent about it (according to mode)
       if (this.mystate.selectedLabelTextDirty) {
         if (this.state.mode === 'EDTION') {
@@ -1671,7 +1742,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     if (label !== prevLabel) {
       // unhighlight previous label
       if (prevLabel) this.unhighlightLabel(prevLabel);
-      // unminimize the label if it was minimized
+      // maximize the label if it was minimized
       if (label.minimized) {
         for (const line of label.lines) this.mystate.lineGroup.add(line);
         label.minimized = false;
@@ -1685,21 +1756,12 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       this.refreshIconsPositions();
       // refresh scene
       this.animateForAWhile(0);
-      // notify parent about new selected label
-      this.props.selectedLabelChangedCallback(label);
-      if (this.state.mode === 'EDITION') {
-        setTimeout(() => {
-          // prepare hidden input for writing on it
-          this.mystate.canFocusHiddenInput = true;
-          this.refs.hiddenTxtInp.value = label.text;
-        }, 0);
-      } else if (this.state.mode === 'EVALUATION') {
-        setTimeout(() => {
-          // prepare hidden input for writing on it
-          this.mystate.canFocusHiddenInput = true;
-          this.refs.hiddenTxtInp.value = label.student_answer;
-        }, 0);
-      }
+      // prepare hidden input for writing on it
+      setTimeout(() => {
+        this.mystate.canFocusHiddenInput = true;
+        this.refs.hiddenTxtInp.value =
+          (this.state.mode === 'EDITION') ? label.text : label.student_answer;
+      }, 0);
     }
   }
 
@@ -1761,7 +1823,6 @@ Renderer3D.propTypes = {
   normalLabelStyle: React.PropTypes.object.isRequired,
   sphereRadiusCoef: React.PropTypes.number.isRequired,
   /* --- callback props to notify parent about changes (OUTPUT) --- */
-  selectedLabelChangedCallback: React.PropTypes.func.isRequired,
   loadingStartingCallback: React.PropTypes.func.isRequired,
   loadingProgressCallback: React.PropTypes.func.isRequired,
   loadingErrorCallback: React.PropTypes.func.isRequired,
@@ -1774,6 +1835,7 @@ Renderer3D.propTypes = {
   /* ===========================*/
   /* --- callback props to notify parent about changes (OUTPUT) --- */
   labelsChangedCallback: React.PropTypes.func,
+  local3DFilesLoadedCallback: React.PropTypes.func,
   /* ==============================*/
   /* 3) props for EVALUATION mode  */
   /* ==============================*/
