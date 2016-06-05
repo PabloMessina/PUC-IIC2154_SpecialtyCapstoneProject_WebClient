@@ -7,7 +7,6 @@ import renderIf from 'render-if';
 import app from '../../../app';
 const participantService = app.service('/participants');
 const organizationService = app.service('/organizations');
-const userService = app.service('/users');
 
 
 const ROLES = [
@@ -43,23 +42,28 @@ export default class InstanceStudents extends Component {
       selected: [],
       role: ROLES[0].value,
       permission: '',
+      error: null,
     };
     this.fetchUsers = this.fetchUsers.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
-    this.fetchParticipants = this.fetchParticipants.bind(this);
-    this.fetchUsers = this.fetchUsers.bind(this);
+    this.observeParticipants = this.observeParticipants.bind(this);
+    this.observe = this.observe.bind(this);
   }
 
   componentDidMount() {
     const { organization, instance } = this.props;
     this.fetchUsers(organization);
-    this.fetchParticipants(instance);
+    this.observe(instance);
   }
 
   componentWillReceiveProps(nextProps) {
     if (nextProps.instance && nextProps.instance.id !== this.props.instance.id) {
-      this.fetchParticipants(nextProps.instance);
+      this.observe(nextProps.instance);
     }
+  }
+
+  componentWillUnmount() {
+    if (this.participantObserver) this.participantObserver.unsubscribe();
   }
 
   onSubmit(e) {
@@ -96,47 +100,21 @@ export default class InstanceStudents extends Component {
     };
     return organizationService.find({ query })
       .then(result => result.data[0])
-      .then(org => this.setState({ users: org.users, loading: false, error: false }))
+      .then(org => this.setState({ users: org.users, loading: false, error: null }))
       .catch(error => this.setState({ error, loading: false }));
   }
 
-  fetchParticipants(instance) {
-    this.setState({ loading: true });
-
-    const renew = (participant) => {
-      const index = this.state.participants.findIndex(p => p.id === participant.id);
-      if (index > -1) {
-        const participants = [...this.state.participants];
-        participants[index] = { ...participants[index], ...participant };
-        this.setState({ participants });
-      }
-    };
-
-    participantService.on('created', participant => {
-      userService.get(participant.userId).then(user => {
-        this.setState({ participants: [...this.state.participants, { ...participant, user }] });
-      });
+  observe(instance) {
+    this.participantObserver = this.observeParticipants(instance).subscribe(participants => {
+      this.setState({ participants });
     });
+  }
 
-    participantService.on('patched', renew);
-    participantService.on('updated', renew);
-    participantService.on('removed', participant => {
-      const index = this.state.participants.findIndex(p => p.id === participant.id);
-      if (index) {
-        const participants = [...this.state.participants];
-        participants.splice(index, 1);
-        this.setState({ participants });
-      }
-    });
-
+  observeParticipants(instance) {
     const query = {
       instanceId: instance.id || instance,
-      $populate: 'user',
     };
-    return participantService.find({ query })
-      .then(result => result.data)
-      .then(participants => this.setState({ participants, error: null, loading: false }))
-      .catch(error => this.setState({ error, loading: false }));
+    return participantService.find({ query }).map(result => result.data);
   }
 
   render() {
@@ -154,10 +132,6 @@ export default class InstanceStudents extends Component {
     });
     const permissions = {};
     ROLES.forEach(({ value, label }) => (permissions[value] = label));
-
-    if (this.state.error) {
-      console.log(this.state.error);
-    }
 
     const canEdit = ['admin', 'write'].includes(membership.permission) || ['admin'].includes(participant.permission);
 
