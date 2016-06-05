@@ -8,6 +8,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 module.exports = {
   devtool: false,
   entry: [
+    'babel-polyfill',
     './src/index.js',
     './stylesheets/app.less',
   ],
