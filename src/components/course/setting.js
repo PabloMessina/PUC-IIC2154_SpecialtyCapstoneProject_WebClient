@@ -1,18 +1,19 @@
 import React, { Component } from 'react';
 import { Row, Col, Grid, Button, Table, Panel } from 'react-bootstrap';
 import Icon from 'react-fa';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 
 import app from '../../app';
 const instanceService = app.service('/instances');
 const courseService = app.service('/courses');
 
-export default class MinTemplate extends Component {
+class MinTemplate extends Component {
 
   static get propTypes() {
     return {
       instances: React.PropTypes.array,
       course: React.PropTypes.object,
+      router: React.PropTypes.object,
     };
   }
 
@@ -38,7 +39,7 @@ export default class MinTemplate extends Component {
 
   onDeleteCourse() {
     return courseService.remove(this.props.course.id)
-      .then(() => browserHistory.push(`/organizations/show/${this.props.course.organizationId}/courses`));
+      .then(() => this.props.router.push(`/organizations/show/${this.props.course.organizationId}/courses`));
   }
 
   fetchInstances() {
@@ -105,3 +106,5 @@ const styles = {
 
   },
 };
+
+export default withRouter(MinTemplate);

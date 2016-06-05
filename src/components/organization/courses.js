@@ -1,18 +1,19 @@
 import React, { PropTypes, Component } from 'react';
 import { Grid, Col, Panel, Button, Glyphicon } from 'react-bootstrap';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 import renderIf from 'render-if';
 import CourseList from '../course-list/';
 
 import app from '../../app';
 const courseService = app.service('/courses');
 
-export default class CourseTab extends Component {
+class CourseTab extends Component {
 
   static get propTypes() {
     return {
       organization: PropTypes.object,
       membership: PropTypes.object,
+      router: PropTypes.object,
     };
   }
 
@@ -37,7 +38,7 @@ export default class CourseTab extends Component {
 
   onCreateCourse() {
     const url = `/organizations/show/${this.props.organization.id}/courses/create`;
-    return browserHistory.push(url);
+    return this.props.router.push(url);
   }
 
   fetchCourses(organizationId) {
@@ -84,3 +85,5 @@ const styles = {
 
   },
 };
+
+export default withRouter(CourseTab);

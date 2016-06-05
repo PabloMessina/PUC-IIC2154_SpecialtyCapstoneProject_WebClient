@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Col, Grid, ListGroup, ListGroupItem } from 'react-bootstrap';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 // import renderIf from 'render-if';
 
 /**
@@ -13,7 +13,14 @@ import { browserHistory } from 'react-router';
  * https://react-bootstrap.github.io/components.html
  */
 
-export default class Settings extends Component {
+class Settings extends Component {
+
+  static get propTypes() {
+    return {
+      router: React.PropTypes.object,
+      children: React.PropTypes.object,
+    };
+  }
 
   static get defaultProps() {
     return {
@@ -38,7 +45,7 @@ export default class Settings extends Component {
               style={styles.lista}
               active={this.state.selected === 1}
               onClick={() => {
-                browserHistory.push('/settings');
+                this.props.router.push('/settings');
                 this.setState({ selected: 1 });
               }}
             >
@@ -48,7 +55,7 @@ export default class Settings extends Component {
               style={styles.lista}
               active={this.state.selected === 2}
               onClick={() => {
-                browserHistory.push('/settings/security');
+                this.props.router.push('/settings/security');
                 this.setState({ selected: 2 });
               }}
             >
@@ -58,7 +65,7 @@ export default class Settings extends Component {
               style={styles.lista}
               active={this.state.selected === 3}
               onClick={() => {
-                browserHistory.push('/settings/notifications');
+                this.props.router.push('/settings/notifications');
                 this.setState({ selected: 3 });
               }}
             >
@@ -68,7 +75,7 @@ export default class Settings extends Component {
               style={styles.lista}
               active={this.state.selected === 4}
               onClick={() => {
-                browserHistory.push('/settings/payments');
+                this.props.router.push('/settings/payments');
                 this.setState({ selected: 4 });
               }}
             >
@@ -78,7 +85,7 @@ export default class Settings extends Component {
               style={styles.lista}
               active={this.state.selected === 5}
               onClick={() => {
-                browserHistory.push('/settings/myatlas');
+                this.props.router.push('/settings/myatlas');
                 this.setState({ selected: 5 });
               }}
             >
@@ -93,11 +100,6 @@ export default class Settings extends Component {
     );
   }
 }
-
-Settings.propTypes = {
-  children: React.PropTypes.object,
-};
-
 
 /*
   See: https://facebook.github.io/react/docs/reusable-components.html#prop-validation
@@ -114,3 +116,5 @@ const styles = {
     margin: 3,
   },
 };
+
+export default withRouter(Settings);

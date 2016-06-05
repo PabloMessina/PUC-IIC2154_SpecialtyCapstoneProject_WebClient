@@ -11,7 +11,7 @@ import {
   ControlLabel,
   HelpBlock,
 } from 'react-bootstrap';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 import renderIf from 'render-if';
 
 import { login, join } from '../../app';
@@ -26,7 +26,13 @@ import { login, join } from '../../app';
  * https://react-bootstrap.github.io/components.html
  */
 
-export default class SignUp extends Component {
+class SignUp extends Component {
+
+  static get propTypes() {
+    return {
+      router: React.PropTypes.object,
+    };
+  }
 
   static get defaultProps() {
     return {
@@ -98,7 +104,7 @@ export default class SignUp extends Component {
       // Login with credentials
       .then(() => login(options))
       // Go to root
-      .then(() => browserHistory.push('/'))
+      .then(() => this.props.router.push('/'))
       // Show and error if present
       .catch(err => this.setState({ error: err }));
   }
@@ -182,13 +188,6 @@ export default class SignUp extends Component {
 }
 
 /*
-  See: https://facebook.github.io/react/docs/reusable-components.html#prop-validation
- */
-SignUp.propTypes = {
-
-};
-
-/*
   See: https://facebook.github.io/react/tips/inline-styles.html
   CSS: http://www.w3schools.com/css/
  */
@@ -197,3 +196,5 @@ const styles = {
 
   },
 };
+
+export default withRouter(SignUp);

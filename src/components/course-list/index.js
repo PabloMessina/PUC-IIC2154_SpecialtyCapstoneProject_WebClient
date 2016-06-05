@@ -1,14 +1,15 @@
 import React, { Component } from 'react';
 import { Media } from 'react-bootstrap';
 import renderIf from 'render-if';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 
 
-export default class CourseList extends Component {
+class CourseList extends Component {
 
   static get propTypes() {
     return {
       courses: React.PropTypes.array,
+      router: React.PropTypes.object,
     };
   }
 
@@ -26,7 +27,7 @@ export default class CourseList extends Component {
 
   onClick(course) {
     const url = `/courses/show/${course.id}`;
-    return browserHistory.push(url);
+    return this.props.router.push(url);
   }
 
   renderRow(course) {
@@ -84,3 +85,5 @@ const styles = {
     paddingRight: 8,
   },
 };
+
+export default withRouter(CourseList);
