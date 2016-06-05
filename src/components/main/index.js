@@ -4,7 +4,7 @@ import React, { Component } from 'react';
 // import { Grid } from 'react-bootstrap';
 import Icon from 'react-fa';
 
-import app, { currentUser, events } from '../../app';
+import { currentUser, events } from '../../app';
 import NavigationBar from '../navigation-bar';
 
 
@@ -21,25 +21,27 @@ export default class Main extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      connected: app.io.connected,
+      connected: false,
       error: null,
     };
+    this.observers = [];
   }
 
   componentDidMount() {
-    this.connectionObserver = events.connected.subscribe(() => {
-      console.log('Connected');
-      this.setState({ connected: true });
-    });
-    this.disconnectionObserver = events.disconnected.subscribe(() => {
-      console.log('Disconnected');
-      this.setState({ connected: false });
-    });
+    this.observers = [
+      this.connectionObserver = events.connected.subscribe(() => {
+        console.log('Connected');
+        this.setState({ connected: true });
+      }),
+      this.disconnectionObserver = events.disconnected.subscribe(() => {
+        console.log('Disconnected');
+        this.setState({ connected: false });
+      }),
+    ];
   }
 
   componentWillUnmount() {
-    if (this.connectionObserver) this.connectionObserver.unsubscribe();
-    if (this.disconnectionObserver) this.disconnectionObserver.unsubscribe();
+    this.observers.forEach(observer => observer.unsubscribe());
   }
 
   render() {
