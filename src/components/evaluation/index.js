@@ -50,9 +50,7 @@ class EvaluationCreate extends Component {
       // Defaults
       evaluationQuestions: React.PropTypes.array,
       questions: React.PropTypes.array,
-      // groups: React.PropTypes.array,
       attendances: React.PropTypes.array,
-      // attendance: React.PropTypes.object,
       answers: React.PropTypes.object,
       // React Router
       router: React.PropTypes.object,
@@ -68,7 +66,6 @@ class EvaluationCreate extends Component {
       evaluationQuestions: [],
       answers: {},
       attendances: [],
-      // attendance: {},
     };
   }
 
@@ -77,13 +74,17 @@ class EvaluationCreate extends Component {
     this.state = {
       // Current evaluation
       evaluation: props.params.evaluation,
-      // Students rending the evaluation
+
       participants: [],
-      evaluationQuestions: props.params.evaluation.evaluationQuestions || props.evaluationQuestions,
-      questions: props.params.evaluation.questions || props.questions,
-      answers: props.answers,
       attendances: props.params.evaluation.attendances || props.attendances,
-      // attendance: props.attendance,
+      questions: props.params.evaluation.questions || props.questions,
+
+      // Student mode
+      answers: props.answers,
+
+      // Instructor mode
+      evaluationQuestions: props.params.evaluation.evaluationQuestions || props.evaluationQuestions,
+
       // Other
       organization: null,
       course: null,
@@ -107,10 +108,7 @@ class EvaluationCreate extends Component {
 
     this.onPublish = this.onPublish.bind(this);
     this.onDelete = this.onDelete.bind(this);
-
     this.onNavigateTo = this.onNavigateTo.bind(this);
-    // this.onGroupsChange = this.onGroupsChange.bind(this);
-    // this.onAttendantsChange = this.onAttendantsChange.bind(this);
     this.onAnswerChange = this.onAnswerChange.bind(this);
     this.onFieldsChange = this.onFieldsChange.bind(this);
     this.onQuestionAdd = this.onQuestionAdd.bind(this);
@@ -225,7 +223,7 @@ class EvaluationCreate extends Component {
       this.evalQuestionObserver = this.observeEvaluationQuestions(evl).subscribe(evaluationQuestions => {
         // console.debug('evaluationQuestions$', evaluationQuestions);
         this.setState({ evaluationQuestions });
-        const ids = evaluationQuestions.map(eq => eq.questionId);
+        const ids = evaluationQuestions.map(eq => (eq.questionId));
 
         const userId = currentUser().id;
         const attendance = attendances
@@ -288,7 +286,7 @@ class EvaluationCreate extends Component {
     const participant = this.state.participants.find(p => p.userId === user.id);
     const mode = ['admin', 'write'].includes(participant.permission) ? MODES.instructor : MODES.student;
 
-    const { evaluation, attendances, evaluationQuestions } = this.state;
+    const { evaluation, attendances } = this.state;
 
     // If we are a student
     if (mode === MODES.student) {
@@ -318,8 +316,6 @@ class EvaluationCreate extends Component {
         //   return changed;
         // })
         .catch(error => this.setState({ error }));
-    } else {
-      const eq = evaluationQuestions.findIndex(item => item.questionId ===  question.id);
     }
     return null;
   }
@@ -411,6 +407,7 @@ class EvaluationCreate extends Component {
       instance,
       organization,
       questions,
+      evaluationQuestions,
       participants,
     } = this.state;
 
@@ -519,6 +516,7 @@ class EvaluationCreate extends Component {
                   evaluation,
                   // Evaluation questions
                   questions,
+                  evaluationQuestions,
                   // Current user answers
                   answers,
                   // Current user attendaces taking this evaluation

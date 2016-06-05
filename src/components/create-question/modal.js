@@ -12,8 +12,15 @@ export default class CreateQuestionModal extends Component {
   static get propTypes() {
     return {
       question: PropTypes.object,
+      edit: PropTypes.bool,
       onSave: PropTypes.func,
       onHide: PropTypes.func,
+    };
+  }
+
+  static get defaultProps() {
+    return {
+      edit: true,
     };
   }
 
@@ -34,14 +41,14 @@ export default class CreateQuestionModal extends Component {
   }
 
   render() {
-    const { question, ...props } = this.props;
+    const { question, edit, ...props } = this.props;
     return (
       <Modal {...props} onHide={this.onHide}>
         <Modal.Header closeButton>
-          <Modal.Title id="question-modal">Create question</Modal.Title>
+          <Modal.Title id="question-modal">{edit ? 'Edit question' : 'Create question'}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <CreateQuestion ref="creator" question={question} />
+          <CreateQuestion ref="creator" question={question} edit />
         </Modal.Body>
         <Modal.Footer>
           <Button onClick={this.onHide}>Close</Button>

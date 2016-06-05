@@ -14,6 +14,7 @@ import Icon from 'react-fa';
 
 import app from '../../app';
 const questionService = app.service('/questions');
+const evaluationsQuestionService = app.service('/evaluations-questions');
 
 import { TrueFalse, MultiChoice, TShort } from '../questions';
 import Progress from './progress';
@@ -50,9 +51,14 @@ export default class Questions extends Component {
       course: PropTypes.object,
       participant: PropTypes.object,
       evaluation: PropTypes.object,
-      answers: PropTypes.object,
       questions: PropTypes.array,
       interval: PropTypes.number,
+
+      // Instructor mode
+      answers: PropTypes.object,
+
+      // Student mode
+      evaluationQuestions: PropTypes.array,
 
       onEvaluationChange: PropTypes.func,
       onAnswerChange: PropTypes.func,
@@ -89,6 +95,10 @@ export default class Questions extends Component {
       pool: props.pool,
       // is creating a new question
       creating: false,
+      // is editing a question
+      editing: false,
+      // question that is being edited
+      currentQuestion: undefined,
       // common error
       error: null,
     };
@@ -97,8 +107,10 @@ export default class Questions extends Component {
     this.renderEvaluation = this.renderEvaluation.bind(this);
     this.renderQuestionPool = this.renderQuestionPool.bind(this);
     this.renderQuestionList = this.renderQuestionList.bind(this);
+
     this.onModalClose = this.onModalClose.bind(this);
     this.onModalSave = this.onModalSave.bind(this);
+    this.onEdit = this.onEdit.bind(this);
   }
 
   componentDidMount() {
@@ -107,23 +119,46 @@ export default class Questions extends Component {
   }
 
   onModalClose(/* question */) {
-    this.setState({ creating: false });
+    this.setState({ creating: false, editing: false });
   }
 
   onModalSave(question) {
-    const data = { ...question, id: undefined, organizationId: this.props.organization.id };
-
-    return questionService.create(data)
-      .then(created => {
-        this.setState({ creating: false, error: null });
-        this.props.onQuestionAdd(created);
+    if (this.state.creating) {
+      const data = { ...question, id: undefined, organizationId: this.props.organization.id };
+      return questionService.create(data)
+        .then(created => {
+          this.setState({ creating: false, editing: false, error: null });
+          this.props.onQuestionAdd(created);
+        })
+        .catch(error => this.setState({ error }));
+    } else if (this.state.editing) {
+      const query = {
+        questionId: question.id,
+        evaluationId: this.state.evaluationId,
+      };
+      return evaluationsQuestionService.find({ query })
+      .then(result => result.data[0])
+      .then(old => {
+        const data = {
+          customContent: question.content,
+          customField: question.fields,
+          customAnswer: question.answer,
+        };
+        return evaluationsQuestionService.patch(old.id, { ...data });
       })
+      .then(() => this.setState({ creating: false, editing: false, error: null }))
       .catch(error => this.setState({ error }));
+    }
+    return null;
+  }
+
+  onEdit(currentQuestion) {
+    this.setState({ editing: true, currentQuestion });
   }
 
   fetchTags() {
     const query = {
-      // organizationId: TODO: set organization
+      organizationId: this.props.organization.id,
     };
     return questionService.find({ query })
       .then(result => result.data)
@@ -143,7 +178,6 @@ export default class Questions extends Component {
 
   renderQuestionList(questions) {
     const { pool, selected } = this.state;
-
     const objects = pool
       // Match tags
       .filter(question => selected.every(tag => question.tags.indexOf(tag.label) > -1))
@@ -152,13 +186,14 @@ export default class Questions extends Component {
       // Convert custom object
       .map(question => ({
         question,
+        qtype: question.qtype,
+        content: question.content,
         answer: question.answer,
         fields: question.fields,
         disabled: true,
         // TODO: add gradient
         // style: { height: 200, overflow: 'hidden' },
       }));
-
     return (
       <div>
         {objects.map((object, i) => (
@@ -173,19 +208,18 @@ export default class Questions extends Component {
     );
   }
 
-  renderQuestion(props, identifier, mode) {
+  renderQuestion(question, identifier, userMode) {
     const { onAnswerChange, onFieldsChange } = this.props;
-    const question = props.question;
-    let questionMode = 'reader';
-    switch (mode) {
-      case 'instructor': questionMode = 'editor'; break;
-      case 'student': questionMode = 'responder'; break;
-      default: questionMode = 'responder'; break;
+    let mode = 'reader';
+    switch (userMode) {
+      case 'instructor': mode = 'reader'; break;
+      case 'student': mode = 'responder'; break;
+      default: mode = 'reader'; break;
     }
     const element = questionFactory(question.qtype, {
-      ...props,
+      ...question,
       identifier,
-      mode: questionMode,
+      mode,
       onAnswerChange: answer => onAnswerChange(question, answer),
       onFieldsChange: field => onFieldsChange(question, field),
     });
@@ -230,13 +264,19 @@ export default class Questions extends Component {
   }
 
   renderEvaluation(mode) {
-    const { evaluation, questions, answers, onQuestionRemove } = this.props;
-    const objects = questions.map(question => ({
-      question,
-      answer: answers[question.id] || (mode === 'instructor' ? question.answer : undefined),
-      fields: question.fields,
-      disabled: false,
-    }));
+    const { evaluation, questions, answers, onQuestionRemove, evaluationQuestions } = this.props;
+    const objects = questions.map(question => {
+      const eq = evaluationQuestions.find(item => item.questionId === question.id);
+      const answ = (eq && eq.customAnswer) ? eq.customAnswer : answers[question.id];
+      return ({
+        question,
+        answer: answ || (mode === 'instructor' ? question.answer : undefined),
+        fields: (eq && eq.customField) ? eq.customField : question.fields,
+        content: (eq && eq.customContent) ? eq.customContent : question.content,
+        disabled: mode === 'instructor',
+        qtype: question.qtype,
+      });
+    });
     return (
       <Panel>
         <div style={styles.row}>
@@ -248,8 +288,18 @@ export default class Questions extends Component {
           <div key={i} style={styles.wrapper}>
             {this.renderQuestion(question, i + 1)}
             {renderIf(mode === 'instructor')(
-              <div style={styles.icons} onClick={() => onQuestionRemove(question.question)}>
-                <Icon size="lg" name="minus" style={{ color: Colors.RED }} />
+              <div style={styles.icons}>
+                <Icon
+                  size="lg"
+                  name="times"
+                  onClick={() => onQuestionRemove(question)}
+                />
+                <Icon
+                  size="lg"
+                  name="pencil"
+                  style={{ marginTop: 10 }}
+                  onClick={() => this.setState({ editing: true, currentQuestion: question })}
+                />
               </div>
             )}
           </div>
@@ -288,12 +338,24 @@ export default class Questions extends Component {
   }
 
   renderInstructor() {
+    const { editing, creating, currentQuestion } = this.state;
     return (
       <Row>
-        <CreateQuestionModal show={this.state.creating} onHide={this.onModalClose} onSave={this.onModalSave} />
+        <CreateQuestionModal
+          edit={editing}
+          show={creating || editing}
+          onHide={this.onModalClose}
+          onSave={this.onModalSave}
+          question={currentQuestion}
+        />
         <Col style={styles.rigth} xs={12} sm={12} md={5}>
           <Col xs={12}>
-            <Button style={styles.custom} block bsStyle="primary" onClick={() => this.setState({ creating: true })}>
+            <Button
+              style={styles.custom}
+              block
+              bsStyle="primary"
+              onClick={() => this.setState({ creating: true, currentQuestion: undefined })}
+            >
               <h5 style={{ color: 'white' }}>Add custom question</h5>
             </Button>
           </Col>

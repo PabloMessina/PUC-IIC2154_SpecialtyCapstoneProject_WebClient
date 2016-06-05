@@ -7,6 +7,7 @@ import {
 } from 'react-bootstrap';
 import Select from 'react-select';
 
+import renderIf from 'render-if';
 import app from '../../app';
 const questionService = app.service('/questions');
 
@@ -37,11 +38,17 @@ function questionFactory(qtype, props) {
 export default class CreateQuestion extends Component {
 
   static get propTypes() {
-    return { question: PropTypes.object };
+    return {
+      edit: PropTypes.bool,
+      question: PropTypes.object,
+    };
   }
 
   static get defaultProps() {
-    return { question: EMPTY_QUESTION };
+    return {
+      edit: true,
+      question: EMPTY_QUESTION,
+    };
   }
 
   constructor(props) {
@@ -88,7 +95,6 @@ export default class CreateQuestion extends Component {
 
   render() {
     const { question, selected, tags } = this.state;
-
     const element = questionFactory(question.qtype, {
       question,
       answer: question.answer,
@@ -100,19 +106,21 @@ export default class CreateQuestion extends Component {
       onFieldsChange: fields => this.setState({ question: { ...this.state.question, fields } }),
       onBodyChange: content => this.setState({ question: { ...this.state.question, content } }),
     });
-
     return (
       <div style={styles.container}>
         <Row>
-          <Col xs={12}>
-            This is que question-creator menu, this will add a question to the course pool. To create a new question:
-            <ol>
-              <li>Select the type of the question.</li>
-              <li>Add the respective tags.</li>
-              <li>Write the question body.</li>
-              <li>Add the correct answer and submit.</li>
-            </ol>
-          </Col>
+          {renderIf(!this.props.edit)(
+              <Col xs={12}>
+                This is que question-creator menu, this will add a question to the course pool.
+                To create a new question:
+                <ol>
+                <li>Select the type of the question.</li>
+                <li>Add the respective tags.</li>
+                <li>Write the question body.</li>
+                <li>Add the correct answer and submit.</li>
+                </ol>
+              </Col>
+          )}
         </Row>
         <Row>
           <hr />
