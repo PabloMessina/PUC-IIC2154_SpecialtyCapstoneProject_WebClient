@@ -3,6 +3,7 @@ import { Grid, Row, Col, Panel, Button, Table, ControlLabel, DropdownButton, Men
 import Select from 'react-select';
 import moment from 'moment';
 import renderIf from 'render-if';
+
 import app from '../../app';
 const membershipService = app.service('/memberships');
 const userService = app.service('/users');
@@ -36,20 +37,26 @@ export default class CourseTab extends Component {
       loading: false,
       error: null,
     };
-    this.fetchMemberships = this.fetchMemberships.bind(this);
     this.fetchUsers = this.fetchUsers.bind(this);
+    this.observeMemberships = this.observeMemberships.bind(this);
+    this.observe = this.observe.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
   }
 
   componentDidMount() {
-    this.fetchMemberships(this.props.organization.id);
+    const { organization } = this.props;
+    this.observe(organization);
     this.fetchUsers();
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.organization) {
-      this.fetchMemberships(nextProps.organization.id);
+    if (nextProps.organization && nextProps.organization.id !== this.props.organization.id) {
+      this.observe(nextProps.organization);
     }
+  }
+
+  componentWillUnmount() {
+    if (this.membershipObserver) this.membershipObserver.unsubscribe();
   }
 
   onPermissionSelect(key, user, membership) {
@@ -82,40 +89,17 @@ export default class CourseTab extends Component {
       .then(users => this.setState({ users, loading: false }));
   }
 
-  fetchMemberships(organizationId) {
-    const renew = (membership) => {
-      const index = this.state.memberships.findIndex(p => p.id === membership.id);
-      if (index > -1) {
-        const memberships = [...this.state.memberships];
-        memberships[index] = { ...memberships[index], ...membership };
-        this.setState({ memberships });
-      }
-    };
-
-    membershipService.on('created', membership => {
-      userService.get(membership.userId).then(user => {
-        this.setState({ memberships: [...this.state.memberships, { ...membership, user }] });
-      });
+  observe(organization) {
+    this.membershipObserver = this.observeMemberships(organization).subscribe(memberships => {
+      this.setState({ memberships });
     });
+  }
 
-    membershipService.on('patched', renew);
-    membershipService.on('updated', renew);
-    membershipService.on('removed', membership => {
-      const index = this.state.memberships.map(m => m.id).indexOf(membership.id);
-      if (index > -1) {
-        const memberships = [...this.state.memberships];
-        memberships.splice(index, 1);
-        this.setState({ memberships });
-      }
-    });
-
+  observeMemberships(organization) {
     const query = {
-      organizationId,
-      $populate: 'user',
+      organizationId: organization.id || organization,
     };
-    return membershipService.find({ query })
-      .then(result => result.data)
-      .then(memberships => this.setState({ memberships }));
+    return membershipService.find({ query }).map(result => result.data);
   }
 
   render() {

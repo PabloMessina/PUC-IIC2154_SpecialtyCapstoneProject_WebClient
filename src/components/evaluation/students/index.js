@@ -191,7 +191,7 @@ class Students extends Component {
         promises.push(...users.map((user, index) => {
           const team = teams[index % teams.length];
           team.users.push(user);
-          return this.updateOrCreateAttendance(user.id, team.id);
+          return this.updateOrCreateAttendance(user, team.id);
         }));
       } else {
         const teamId = generateId();
@@ -199,7 +199,7 @@ class Students extends Component {
           id: teamId,
           users,
         });
-        promises.push(...users.map(user => this.updateOrCreateAttendance(user.id, teamId)));
+        promises.push(...users.map(user => this.updateOrCreateAttendance(user, teamId)));
       }
     }
     return Promise.all(promises);

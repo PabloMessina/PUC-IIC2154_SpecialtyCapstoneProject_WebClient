@@ -9,7 +9,7 @@ import Student from './student';
 const teamTarget = {
   drop(props, monitor) {
     const { user } = monitor.getItem();
-    props.updateOrCreateAttendance(user.id, props.team.id);
+    props.updateOrCreateAttendance(user, props.team.id);
   },
 };
 

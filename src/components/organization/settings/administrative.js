@@ -1,17 +1,18 @@
 import React, { Component } from 'react';
 import { Row, Col, Alert, Button } from 'react-bootstrap';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 import renderIf from 'render-if';
 
 import app from '../../../app';
 const organizationService = app.service('/organizations');
 
 
-export default class OrganizationSettingsAdministrative extends Component {
+class OrganizationSettingsAdministrative extends Component {
 
   static get propTypes() {
     return {
       organization: React.PropTypes.object,
+      router: React.PropTypes.object,
     };
   }
 
@@ -26,7 +27,7 @@ export default class OrganizationSettingsAdministrative extends Component {
   onPress() {
     const organization = this.props.organization;
     return organizationService.remove(organization.id)
-      .then(() => browserHistory.push('/'))
+      .then(() => this.props.router.push('/'))
       .catch(error => this.setState({ error }));
   }
 
@@ -58,3 +59,5 @@ const styles = {
 
   },
 };
+
+export default withRouter(OrganizationSettingsAdministrative);

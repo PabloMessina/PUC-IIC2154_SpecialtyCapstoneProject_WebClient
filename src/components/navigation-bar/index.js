@@ -1,6 +1,6 @@
 import React, { PropTypes, Component } from 'react';
 import { Navbar, Nav, NavItem, NavDropdown, MenuItem, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 import { Pulse } from 'better-react-spinkit';
 import renderIf from 'render-if';
 import Icon from 'react-fa';
@@ -10,7 +10,7 @@ const membershipService = app.service('/memberships');
 
 import { Colors } from '../../styles';
 
-export default class NavigationBar extends Component {
+class NavigationBar extends Component {
 
   static get propTypes() {
     return {
@@ -18,6 +18,7 @@ export default class NavigationBar extends Component {
       user: PropTypes.any,
       connected: PropTypes.bool,
       animated: PropTypes.bool,
+      router: PropTypes.object,
     };
   }
 
@@ -48,7 +49,7 @@ export default class NavigationBar extends Component {
   }
 
   onLogout() {
-    return logout().then(() => browserHistory.push('/login'));
+    return logout().then(() => this.props.router.push('/login'));
   }
 
   fetchMemberships() {
@@ -71,7 +72,7 @@ export default class NavigationBar extends Component {
     const { user, connected, animated } = this.props;
 
     const color = connected ? Colors.MAIN : Colors.RED;
-    const tooltip = <Tooltip id="status-tooltip">{connected ? 'Connected' : 'Disconnected'}</Tooltip>;
+    const tooltip = <Tooltip id="status-tooltip">{connected ? 'Connected' : 'Reconnecting...'}</Tooltip>;
     const connection = (
       <OverlayTrigger placement="left" overlay={tooltip}>
         {animated
@@ -87,10 +88,10 @@ export default class NavigationBar extends Component {
             {connection}
           </Navbar.Text>
           <NavDropdown eventKey={1} title={user.name} id="basic-nav-dropdown">
-            <MenuItem eventKey={1.1} onClick={() => browserHistory.push('/profile')}>
+            <MenuItem eventKey={1.1} onClick={() => this.props.router.push('/profile')}>
               Profile
             </MenuItem>
-            <MenuItem eventKey={1.2} onClick={() => browserHistory.push('/settings')}>
+            <MenuItem eventKey={1.2} onClick={() => this.props.router.push('/settings')}>
               Settings
             </MenuItem>
             <MenuItem divider />
@@ -106,10 +107,10 @@ export default class NavigationBar extends Component {
           <Navbar.Text eventKey={0}>
             {connection}
           </Navbar.Text>
-          <NavItem eventKey={1} href="#" onClick={() => browserHistory.push('/login')}>
+          <NavItem eventKey={1} href="#" onClick={() => this.props.router.push('/login')}>
             Login
           </NavItem>
-          <NavItem eventKey={2} href="#" onClick={() => browserHistory.push('/signup')}>
+          <NavItem eventKey={2} href="#" onClick={() => this.props.router.push('/signup')}>
             Sign Up
           </NavItem>
         </Nav>
@@ -130,7 +131,7 @@ export default class NavigationBar extends Component {
           const eventKey = 2 + i * 0.1;
           const url = `/organizations/show/${organization.id}`;
           return (
-            <MenuItem key={i} eventKey={eventKey} onSelect={() => browserHistory.push(url)}>
+            <MenuItem key={i} eventKey={eventKey} onSelect={() => this.props.router.push(url)}>
               {name}
             </MenuItem>
           );
@@ -139,7 +140,7 @@ export default class NavigationBar extends Component {
           <MenuItem eventKey={2.1} disabled>None</MenuItem>
         ))}
         <MenuItem divider />
-        <MenuItem eventKey={3} onSelect={() => browserHistory.push('/organizations/create')}>
+        <MenuItem eventKey={3} onSelect={() => this.props.router.push('/organizations/create')}>
           <Icon style={styles.icon} name="plus" /> Create organization
         </MenuItem>
       </NavDropdown>
@@ -154,7 +155,7 @@ export default class NavigationBar extends Component {
 
         <Navbar.Header>
           <Navbar.Brand>
-            <a href="#" onClick={() => browserHistory.push('/')}>{title}</a>
+            <a href="#" onClick={() => this.props.router.push('/')}>{title}</a>
           </Navbar.Brand>
           <Navbar.Toggle />
         </Navbar.Header>
@@ -172,7 +173,7 @@ export default class NavigationBar extends Component {
             </Navbar.Form>
             */}
 
-            <NavItem eventKey={1} onClick={() => browserHistory.push('/documents')}>
+            <NavItem eventKey={1} onClick={() => this.props.router.push('/documents')}>
               <Icon style={styles.navIcon} name="book" /> Atlases
             </NavItem>
 
@@ -199,3 +200,5 @@ const styles = {
     marginRight: 3,
   },
 };
+
+export default withRouter(NavigationBar);

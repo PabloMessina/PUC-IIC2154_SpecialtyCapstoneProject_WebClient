@@ -1,13 +1,16 @@
-/* eslint strict:0 no-param-reassign: 0 */
-
+/* eslint strict:0 no-param-reassign:0, no-console:0 */
 'use strict';
+
+// Add Babel polyfill to have ES7 features
+import 'babel-core/register';
+import 'babel-polyfill';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Router, Route, Redirect, IndexRoute, IndexRedirect, browserHistory } from 'react-router';
 import errors from 'feathers-errors';
 
-import app, { auth, currentUser } from './app';
+import app, { auth, currentUser, events } from './app';
 
 import Main from './components/main';
 import Login from './components/login/';
@@ -69,6 +72,10 @@ import ImageWithLabelsWrapper from './components/image-with-labels-wrapper/';
 // Go AtlasBook: http://localhost:3000/template
 import Template from './utils/template';
 
+events.reconnected.subscribe(attempts => {
+  console.log(`Reconnected after ${attempts} attempts`);
+  return auth();
+});
 
 function requireAnnon(nextState, replace) {
   // FIXME: this doesn't work on page reload

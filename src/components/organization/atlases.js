@@ -1,18 +1,19 @@
 import React, { PropTypes, Component } from 'react';
 import { Grid, Col, Panel, Button, Glyphicon } from 'react-bootstrap';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 import AtlasGrid from '../document-list/atlas-grid';
 import renderIf from 'render-if';
 
 import app from '../../app';
 const atlasService = app.service('/atlases');
 
-export default class AtlasTab extends Component {
+class AtlasTab extends Component {
 
   static get propTypes() {
     return {
       organization: PropTypes.object,
       membership: PropTypes.object,
+      router: PropTypes.object,
     };
   }
 
@@ -46,7 +47,7 @@ export default class AtlasTab extends Component {
 
   createAtlas() {
     const url = `/organizations/show/${this.props.organization.id}/atlases/create`;
-    return browserHistory.push(url);
+    return this.props.router.push(url);
   }
 
   render() {
@@ -82,3 +83,5 @@ const styles = {
 
   },
 };
+
+export default withRouter(AtlasTab);

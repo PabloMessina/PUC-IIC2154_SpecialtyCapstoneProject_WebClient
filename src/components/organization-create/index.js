@@ -7,7 +7,7 @@ import {
   Alert,
 } from 'react-bootstrap';
 import Icon from 'react-fa';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 import renderIf from 'render-if';
 
 import OrganizationFrom from '../organization-form/';
@@ -16,10 +16,11 @@ import app from '../../app';
 const organizationService = app.service('/organizations');
 
 
-export default class OrganizationCreate extends Component {
+class OrganizationCreate extends Component {
   static get propTypes() {
     return {
       static: React.PropTypes.bool,
+      router: React.PropTypes.object,
     };
   }
 
@@ -42,7 +43,7 @@ export default class OrganizationCreate extends Component {
     this.setState({ disabled: true });
 
     return organizationService.create(organization)
-      .then(result => browserHistory.push(`/organizations/show/${result.id}`))
+      .then(result => this.props.router.push(`/organizations/show/${result.id}`))
       .catch(error => this.setState({ error, disabled: false }));
   }
 
@@ -100,3 +101,5 @@ const styles = {
     marginRight: 7,
   },
 };
+
+export default withRouter(OrganizationCreate);

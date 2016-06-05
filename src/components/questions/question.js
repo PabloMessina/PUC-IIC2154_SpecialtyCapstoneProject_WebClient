@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
-import { FormGroup, FormControl } from 'react-bootstrap';
+import { FormGroup } from 'react-bootstrap';
 import renderIf from 'render-if';
+import RichEditor from '../rich-editor';
 
 export const QuestionPropTypes = {
   style: React.PropTypes.object,
   question: React.PropTypes.object,
+  content: React.PropTypes.object,
   fields: React.PropTypes.object,
   answer: React.PropTypes.any,
   identifier: React.PropTypes.any,
@@ -45,13 +47,28 @@ export default function compose(ComposedComponent) {
     }
 
     render() {
-      const { question, mode, identifier, style, showType, padding, ...props } = this.props;
-
+      const {
+        content,
+        answer,
+        fields,
+        question,
+        mode,
+        identifier,
+        style,
+        showType,
+        padding,
+        onBodyChange,
+        ...props,
+      } = this.props;
+      const customQuestion = {
+        ...question,
+        answer: answer || question.answer,
+        content: content || question.content,
+        fields: fields || question.fields,
+      };
       const pad = { paddingLeft: padding, paddingRight: padding };
-
       // Convert to array
       const contents = [].concat(question.content);
-
       return (
         <div style={{ ...styles.question, ...style }}>
 
@@ -71,26 +88,38 @@ export default function compose(ComposedComponent) {
 
             {/* Render common question wording */}
             {renderIf(mode === 'editor')(() =>
-              <FormGroup controlId="description">
-                <FormControl
+              <FormGroup controlId="description" style={styles.description}>
+                <RichEditor
+                  style={styles.richEditor}
+                  content={customQuestion.content}
+                  onChange={onBodyChange}
+                />
+                {/* <FormControl
                   componentClass="textarea"
                   value={question.content.insert}
                   placeholder="Question body"
                   onChange={e => this.props.onBodyChange({ insert: e.target.value })}
-                />
+                /> */}
               </FormGroup>
             )}
             {renderIf(mode !== 'editor')(() =>
               <div style={styles.texts}>
-                {contents.map((content, i) => (
-                  <p key={i}>{content.insert || content}</p>
+                {contents.map((cont, i) => (
+                  <RichEditor
+                    key={i}
+                    style={styles.richText}
+                    content={customQuestion.content}
+                    onChange={onBodyChange}
+                    readOnly
+                  />
+                  // <p key={i}>{content.insert || content}</p>
                 ))}
               </div>
             )}
 
             {/* Render specific content */}
             <div style={{ ...pad, ...styles.component }}>
-              <ComposedComponent {...props} question={question} mode={mode} />
+              <ComposedComponent {...props} question={customQuestion} mode={mode} />
             </div>
 
           </div>
@@ -123,5 +152,16 @@ const styles = {
   },
   identifier: {
     marginRight: 15,
+  },
+  richEditor: {
+    padding: 50,
+    fontSize: 15,
+  },
+  richText: {
+    padding: 10,
+    fontSize: 15,
+  },
+  description: {
+    padding: 5,
   },
 };

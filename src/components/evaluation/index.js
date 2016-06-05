@@ -14,33 +14,27 @@ const evaluationsQuestionService = app.service('/evaluations-questions');
 const answerService = app.service('/answers');
 const attendanceService = app.service('/attendances');
 
-const SECTIONS = [
-  {
-    name: 'Information',
-    description: 'Evaluation terms and date',
-    path: 'description',
-  },
-  {
-    name: 'Students',
-    description: 'Participants and groups',
-    path: 'students',
-  },
-  {
-    name: 'Questions',
-    description: 'List of questions',
-    path: 'questions',
-  },
-  {
-    name: 'Results',
-    description: 'Answers and results',
-    path: 'results',
-  },
-  {
-    name: 'Recorrection',
-    description: 'Problems reported',
-    path: 'recorrection',
-  },
-];
+const SECTIONS = [{
+  name: 'Information',
+  description: 'Evaluation terms and date',
+  path: 'description',
+}, {
+  name: 'Students',
+  description: 'Participants and groups',
+  path: 'students',
+}, {
+  name: 'Questions',
+  description: 'List of questions',
+  path: 'questions',
+}, {
+  name: 'Results',
+  description: 'Answers and results',
+  path: 'results',
+}, {
+  name: 'Recorrection',
+  description: 'Problems reported',
+  path: 'recorrection',
+}];
 
 const MODES = {
   instructor: 'instructor',
@@ -56,9 +50,7 @@ class EvaluationCreate extends Component {
       // Defaults
       evaluationQuestions: React.PropTypes.array,
       questions: React.PropTypes.array,
-      // groups: React.PropTypes.array,
       attendances: React.PropTypes.array,
-      // attendance: React.PropTypes.object,
       answers: React.PropTypes.object,
       // React Router
       router: React.PropTypes.object,
@@ -74,7 +66,6 @@ class EvaluationCreate extends Component {
       evaluationQuestions: [],
       answers: {},
       attendances: [],
-      // attendance: {},
     };
   }
 
@@ -83,13 +74,17 @@ class EvaluationCreate extends Component {
     this.state = {
       // Current evaluation
       evaluation: props.params.evaluation,
-      // Students rending the evaluation
+
       participants: [],
-      evaluationQuestions: props.params.evaluation.evaluationQuestions || props.evaluationQuestions,
-      questions: props.params.evaluation.questions || props.questions,
-      answers: props.answers,
       attendances: props.params.evaluation.attendances || props.attendances,
-      // attendance: props.attendance,
+      questions: props.params.evaluation.questions || props.questions,
+
+      // Student mode
+      answers: props.answers,
+
+      // Instructor mode
+      evaluationQuestions: props.params.evaluation.evaluationQuestions || props.evaluationQuestions,
+
       // Other
       organization: null,
       course: null,
@@ -103,6 +98,7 @@ class EvaluationCreate extends Component {
     this.renderSections = this.renderSections.bind(this);
 
     this.findOrCreateAnswer = this.findOrCreateAnswer.bind(this);
+    this.startEvaluation = this.startEvaluation.bind(this);
 
     this.observe = this.observe.bind(this);
     this.observeEvaluation = this.observeEvaluation.bind(this);
@@ -112,10 +108,7 @@ class EvaluationCreate extends Component {
 
     this.onPublish = this.onPublish.bind(this);
     this.onDelete = this.onDelete.bind(this);
-
     this.onNavigateTo = this.onNavigateTo.bind(this);
-    // this.onGroupsChange = this.onGroupsChange.bind(this);
-    // this.onAttendantsChange = this.onAttendantsChange.bind(this);
     this.onAnswerChange = this.onAnswerChange.bind(this);
     this.onFieldsChange = this.onFieldsChange.bind(this);
     this.onQuestionAdd = this.onQuestionAdd.bind(this);
@@ -230,7 +223,7 @@ class EvaluationCreate extends Component {
       this.evalQuestionObserver = this.observeEvaluationQuestions(evl).subscribe(evaluationQuestions => {
         // console.debug('evaluationQuestions$', evaluationQuestions);
         this.setState({ evaluationQuestions });
-        const ids = evaluationQuestions.map(eq => eq.questionId);
+        const ids = evaluationQuestions.map(eq => (eq.questionId));
 
         const userId = currentUser().id;
         const attendance = attendances
@@ -359,6 +352,14 @@ class EvaluationCreate extends Component {
       .catch(error => this.setState({ error }));
   }
 
+  startEvaluation(attendance) {
+    if (attendance) {
+      return attendanceService.patch(attendance.id, { startedAt: new Date() });
+    } else {
+      return Promise.reject(new Error('Attendance not found'));
+    }
+  }
+
   get selected() {
     const location = this.props.location.pathname.split('/').filter(Boolean);
     const [/* evaluations */, /* show */, /* :id */, selected] = location;
@@ -406,12 +407,16 @@ class EvaluationCreate extends Component {
       instance,
       organization,
       questions,
+      evaluationQuestions,
       participants,
     } = this.state;
 
+    const user = currentUser();
+    const participant = participants.find(p => p.userId === user.id);
+    const attendance = attendances
+      .find(att => att.userId === user.id && att.evaluationId === evaluation.id);
 
-    const userId = currentUser().id;
-    const participant = participants.find(p => p.userId === userId);
+
     const canEdit = participant && ['admin', 'write'].includes(participant.permission);
 
     return (
@@ -480,6 +485,9 @@ class EvaluationCreate extends Component {
                 <Button bsStyle="danger" onClick={this.onDelete}>Delete</Button>
               </ButtonToolbar>
             )}
+            {renderIf(!canEdit && attendance && !attendance.startedAt)(() =>
+              <Button bsStyle="primary" onClick={() => this.startEvaluation(attendance)}>Start evaluation</Button>
+            )}
           </Col>
         </Row>
 
@@ -508,6 +516,7 @@ class EvaluationCreate extends Component {
                   evaluation,
                   // Evaluation questions
                   questions,
+                  evaluationQuestions,
                   // Current user answers
                   answers,
                   // Current user attendaces taking this evaluation
