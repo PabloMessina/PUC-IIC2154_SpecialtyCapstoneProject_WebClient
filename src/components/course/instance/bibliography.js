@@ -1,7 +1,7 @@
 import React, { PropTypes, Component } from 'react';
 import { Col, Panel, Button, Modal, ListGroup, ListGroupItem } from 'react-bootstrap';
 import Icon from 'react-fa';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 import AtlasGrid from '../../document-list/atlas-grid';
 
 import renderIf from 'render-if';
@@ -10,13 +10,14 @@ const biblographyService = app.service('/biblographies');
 const atlasService = app.service('/atlases');
 
 
-export default class CourseBibliography extends Component {
+class CourseBibliography extends Component {
   static get propTypes() {
     return {
       organization: PropTypes.object,
       course: PropTypes.object,
       instance: PropTypes.object,
       participant: PropTypes.object,
+      router: PropTypes.object,
     };
   }
   constructor(props) {
@@ -44,7 +45,7 @@ export default class CourseBibliography extends Component {
 
   onAtlasCreate() {
     const url = `/organizations/show/${this.props.organization.id}/atlases/create`;
-    return browserHistory.push(url);
+    return this.props.router.push(url);
   }
 
   onAtlasSelect(atlas) {
@@ -157,3 +158,5 @@ const styles = {
     marginRight: 7,
   },
 };
+
+export default withRouter(CourseBibliography);

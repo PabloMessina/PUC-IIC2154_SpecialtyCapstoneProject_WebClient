@@ -5,7 +5,7 @@ import {
   Row,
   Breadcrumb,
 } from 'react-bootstrap';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 import renderIf from 'render-if';
 
 /**
@@ -18,13 +18,14 @@ import renderIf from 'render-if';
  * https://react-bootstrap.github.io/components.html
  */
 
-export default class Course extends Component {
+class Course extends Component {
 
   static get propTypes() {
     return {
       // React Router
       params: React.PropTypes.object,
       location: React.PropTypes.object,
+      router: React.PropTypes.object,
       children: React.PropTypes.any,
     };
   }
@@ -59,10 +60,10 @@ export default class Course extends Component {
           <Breadcrumb.Item>
             Organizations
           </Breadcrumb.Item>
-          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
+          <Breadcrumb.Item onClick={() => this.props.router.push(`/organizations/show/${organization.id}`)}>
             {organization ? organization.name : 'Loading...'}
           </Breadcrumb.Item>
-          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}/courses`)}>
+          <Breadcrumb.Item onClick={() => this.props.router.push(`/organizations/show/${organization.id}/courses`)}>
             Courses
           </Breadcrumb.Item>
           <Breadcrumb.Item active>
@@ -113,3 +114,5 @@ const styles = {
     marginRight: 7,
   },
 };
+
+export default withRouter(Course);

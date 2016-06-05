@@ -13,7 +13,7 @@ import {
   FormControl,
   ControlLabel } from 'react-bootstrap';
 import Icon from 'react-fa';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 import moment from 'moment';
 import Select from 'react-select';
 import renderIf from 'render-if';
@@ -27,7 +27,15 @@ const atlasesService = app.service('/atlases');
 // TODO descomentar feathers y asegurar conexion
 // TODO apretar ojo para navegar a bookmark/annotation
 
-export default class DocumentDescription extends Component {
+class DocumentDescription extends Component {
+
+  static get propTypes() {
+    return {
+      router: React.PropTypes.object,
+      atlas: React.PropTypes.object,
+      params: React.PropTypes.object,
+    };
+  }
 
   static get defaultProps() {
     return {
@@ -113,7 +121,7 @@ export default class DocumentDescription extends Component {
 
   onPressDelete() {
     return atlasesService.remove(this.props.params.atlas.id)
-      .then(() => browserHistory.push('/documents'))
+      .then(() => this.props.router.push('/documents'))
       .catch(error => console.log(error));
   }
 
@@ -364,7 +372,7 @@ export default class DocumentDescription extends Component {
                     </Button>
                   )}
                   <hr />
-                  <Button style={styles.button} onClick={() => browserHistory.push(route)}>
+                  <Button style={styles.button} onClick={() => this.props.router.push(route)}>
                     Go to Atlas
                   </Button>
                 </div>
@@ -463,11 +471,6 @@ export default class DocumentDescription extends Component {
   }
 }
 
-DocumentDescription.propTypes = {
-  atlas: React.PropTypes.object,
-  params: React.PropTypes.object,
-};
-
 const styles = {
   panel: {
     marginTop: 20,
@@ -508,3 +511,4 @@ const styles = {
 };
 
 // this.props.params.docId
+export default withRouter(DocumentDescription);
