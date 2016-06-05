@@ -92,4 +92,10 @@ export function currentUser() {
   return app.get('user');
 }
 
+export const events = {
+  connected: RxJS.Observable.fromEvent(app.io, 'connect'),
+  disconnected: RxJS.Observable.fromEvent(app.io, 'disconnect'),
+  reconnected: RxJS.Observable.fromEvent(app.io, 'reconnect'),
+};
+
 export default app;
