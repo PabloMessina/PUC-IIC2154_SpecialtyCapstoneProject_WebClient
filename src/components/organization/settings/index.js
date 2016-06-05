@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Grid, Row, Col, ListGroup, ListGroupItem } from 'react-bootstrap';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 import Icon from 'react-fa';
 
 const ELEMENTS = [
@@ -15,12 +15,13 @@ const ELEMENTS = [
   },
 ];
 
-export default class SettingsTab extends Component {
+class SettingsTab extends Component {
 
   static get propTypes() {
     return {
       children: React.PropTypes.any,
       organization: React.PropTypes.object,
+      router: React.PropTypes.object,
     };
   }
 
@@ -35,7 +36,7 @@ export default class SettingsTab extends Component {
     const organization = this.props.organization;
     const url = `/organizations/show/${organization.id}/settings/${element.path}`;
     return (
-      <ListGroupItem key={i} onClick={() => browserHistory.push(url)}>
+      <ListGroupItem key={i} onClick={() => this.props.router.push(url)}>
         <Icon style={styles.icon} name={element.icon} /> {element.name}
       </ListGroupItem>
     );
@@ -69,3 +70,5 @@ const styles = {
     marginRight: 7,
   },
 };
+
+export default withRouter(SettingsTab);

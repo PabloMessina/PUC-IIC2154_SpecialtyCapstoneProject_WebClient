@@ -16,16 +16,17 @@ import renderIf from 'render-if';
 import app from '../../app';
 
 const instanceService = app.service('/instances');
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 
 
-export default class InstanceCreate extends Component {
+class InstanceCreate extends Component {
 
   static get propTypes() {
     return {
       // From parent
       organization: React.PropTypes.object,
       course: React.PropTypes.object,
+      router: React.PropTypes.object,
     };
   }
 
@@ -52,7 +53,7 @@ export default class InstanceCreate extends Component {
       approvalGrade: this.state.approvalGrade,
     };
     return instanceService.create(instance)
-      .then(() => browserHistory.push(`/courses/show/${courseId}`))
+      .then(() => this.props.router.push(`/courses/show/${courseId}`))
       .catch(error => this.setState({ submiting: false, error }));
   }
 
@@ -171,3 +172,5 @@ const styles = {
 
   },
 };
+
+export default withRouter(InstanceCreate);

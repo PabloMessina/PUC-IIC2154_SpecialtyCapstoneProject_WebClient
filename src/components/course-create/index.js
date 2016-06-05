@@ -13,7 +13,7 @@ import {
   Breadcrumb,
 } from 'react-bootstrap';
 import Icon from 'react-fa';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 import renderIf from 'render-if';
 import Select from 'react-select';
 
@@ -32,7 +32,7 @@ const instanceService = app.service('/instances');
  * https://react-bootstrap.github.io/components.html
  */
 
-export default class CourseCreate extends Component {
+class CourseCreate extends Component {
 
   static get propTypes() {
     return {
@@ -40,6 +40,7 @@ export default class CourseCreate extends Component {
       description: React.PropTypes.string,
       // From react-router
       params: React.PropTypes.object,
+      router: React.PropTypes.object,
     };
   }
 
@@ -99,7 +100,7 @@ export default class CourseCreate extends Component {
 
         // Run operations in parallel
         return Promise.all(promises)
-          .then(() => browserHistory.push(`/courses/show/${courseId}`));
+          .then(() => this.props.router.push(`/courses/show/${courseId}`));
       })
       .catch(error => this.setState({ submiting: false, error }));
   }
@@ -116,10 +117,10 @@ export default class CourseCreate extends Component {
           <Breadcrumb.Item>
             Organizations
           </Breadcrumb.Item>
-          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
+          <Breadcrumb.Item onClick={() => this.props.router.push(`/organizations/show/${organization.id}`)}>
             {organization ? organization.name : 'Loading...'}
           </Breadcrumb.Item>
-          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}/courses`)}>
+          <Breadcrumb.Item onClick={() => this.props.router.push(`/organizations/show/${organization.id}/courses`)}>
             Courses
           </Breadcrumb.Item>
           <Breadcrumb.Item active>
@@ -238,3 +239,5 @@ const styles = {
     marginRight: 7,
   },
 };
+
+export default withRouter(CourseCreate);

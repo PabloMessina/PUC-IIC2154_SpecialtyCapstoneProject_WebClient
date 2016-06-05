@@ -13,14 +13,14 @@ import {
   Input,
 } from 'react-bootstrap';
 import Icon from 'react-fa';
-import { browserHistory } from 'react-router';
+import { withRouter } from 'react-router';
 import renderIf from 'render-if';
 import Select from 'react-select';
 
 import app from '../../app.js';
 const atlasService = app.service('/atlases');
 
-export default class AtlasCreate extends Component {
+class AtlasCreate extends Component {
 
   static get propTypes() {
     return {
@@ -31,6 +31,7 @@ export default class AtlasCreate extends Component {
       cover: React.PropTypes.string,
       imagePreviewUrl: React.PropTypes.string,
       // From react-router
+      router: React.PropTypes.object,
       params: React.PropTypes.object,
     };
   }
@@ -99,7 +100,7 @@ export default class AtlasCreate extends Component {
     };
 
     atlasService.create(newAtlas)
-      .then(atlas => browserHistory.push(`/editor/${atlas.id}/`))
+      .then(atlas => this.props.router.push(`/editor/${atlas.id}/`))
       .catch(error => this.setState({ error }));
   }
 
@@ -167,10 +168,10 @@ export default class AtlasCreate extends Component {
           <Breadcrumb.Item>
             Organizations
           </Breadcrumb.Item>
-          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}`)}>
+          <Breadcrumb.Item onClick={() => this.props.router.push(`/organizations/show/${organization.id}`)}>
             {organization ? organization.name : 'Loading...'}
           </Breadcrumb.Item>
-          <Breadcrumb.Item onClick={() => browserHistory.push(`/organizations/show/${organization.id}/atlases`)}>
+          <Breadcrumb.Item onClick={() => this.props.router.push(`/organizations/show/${organization.id}/atlases`)}>
             Atlases
           </Breadcrumb.Item>
           <Breadcrumb.Item active>
@@ -365,3 +366,5 @@ const styles = {
     justifyContent: 'space-between',
   },
 };
+
+export default withRouter(AtlasCreate);
