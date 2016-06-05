@@ -226,6 +226,8 @@ export default class Renderer3DWrapper extends Component {
     this.onSphereRadiusCoefChanged = this.onSphereRadiusCoefChanged.bind(this);
     this.minimizeAllLabels = this.minimizeAllLabels.bind(this);
     this.maximizeAllLabels = this.maximizeAllLabels.bind(this);
+    this.onTouchStart = this.onTouchStart.bind(this);
+    this.checkInComponente = this.checkInComponente.bind(this);
   }
 
   componentDidMount() {
@@ -245,10 +247,18 @@ export default class Renderer3DWrapper extends Component {
   }
 
   onMouseDown(e) {
-    let elem = e.target;
-    this.mystate.lastClickedElem = elem;
-    // if click is outside wrapper, unselect selected label
+    this.mystate.lastClickedElem = e.target;
+    this.checkInComponente(e.target);
+  }
+
+  onTouchStart(e) {
+    this.mystate.lastClickedElem = e.target;
+    this.checkInComponente(e.target)
+  }
+
+  checkInComponente(element) {
     let inComponent = false;
+    let elem = element;
     while (elem) {
       if (elem === this.refs.root) { inComponent = true; break; }
       elem = elem.parentElement;

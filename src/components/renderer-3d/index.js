@@ -4,6 +4,7 @@ import MTLLoader from '../../_3Dlibrary/MTLLoader';
 import OBJLoader from '../../_3Dlibrary/OBJLoader';
 import ThreeUtils from '../../_3Dlibrary/ThreeUtils';
 import isEqual from 'lodash/isEqual';
+import TouchUtils from '../../utils/touch-utils';
 
 // button constants
 const LEFT_BUTTON = 0;
@@ -72,7 +73,13 @@ export default class Renderer3D extends Component {
     this.checkAndCorrectLabelIds = this.checkAndCorrectLabelIds.bind(this);
     this.getNextId = this.getNextId.bind(this);
 
-    // API functions
+    /* --- Touch Event Handlers --- */
+    this.onTouchStart = this.onTouchStart.bind(this);
+    this.onTouchMove = this.onTouchMove.bind(this);
+    this.onTouchEnd = this.onTouchEnd.bind(this);
+    this.orbitCamera = this.orbitCamera.bind(this);
+
+    /* --- API FUNCTIONS (to be used by the parent wrapper component) --- */
     this.loadModel = this.loadModel.bind(this);
     this.hideLabels = this.hideLabels.bind(this);
     this.showLabels = this.showLabels.bind(this);
@@ -200,6 +207,15 @@ export default class Renderer3D extends Component {
       pendingXHRs: new Set(),
       labelIds: new Set(),
       componentFocused: false,
+      // touch state data,
+      orbitingCamera_touch: false,
+      orbitingCamera_touch_updatePending: false,
+      draggingCamera_touch: false,
+      draggingCamera_touch_updatePending: false,
+      pinching: false,
+      pinching_updatePending: false,
+      touchCoords1: { x: null, y: null },
+      touchCoords2: { x: null, y: null },
       // icons
       deleteImg: null,
       deleteIconSprite: null,
@@ -382,6 +398,11 @@ export default class Renderer3D extends Component {
     // if no mesh has been set yet, abort updates
     if (this.mystate.meshGroup === null) return;
 
+    /* ============= */
+    /* MOUSE UPDATES */
+    /* ============= */
+
+    /* zoom */
     if (this.mystate.updateCameraZoom) {
       // get viewport's dimensions
       const width = this.refs.viewport.offsetWidth;
@@ -410,79 +431,132 @@ export default class Renderer3D extends Component {
       target.add(shift);
       this.mystate.camera.lookAt(target);
 
+    /* orbit */
     } else if (this.mystate.cameraOrbitUpdatePending) {
-      // get viewport's dimensions
-      const width = this.refs.viewport.offsetWidth;
-      const height = this.refs.viewport.offsetHeight;
-      // convert previous mouse screen coords into world coords
-      const w1 = ThreeUtils.unprojectFromScreenToWorld(
-        this.mystate.mouseLeft1.x,
-        this.mystate.mouseLeft1.y,
-        width, height, this.mystate.camera
-      );
-      // convert current mouse screen coords into world coords
-      const w2 = ThreeUtils.unprojectFromScreenToWorld(
-        this.mystate.mouseLeft2.x,
-        this.mystate.mouseLeft2.y,
-        width, height, this.mystate.camera
-      );
-      // get diff vectors
-      const v01 = (new THREE.Vector3()).subVectors(w1, this.mystate.meshCenter);
-      const v12 = (new THREE.Vector3()).subVectors(w2, w1);
-
-      if (!ThreeUtils.isZero(v01) && !ThreeUtils.isZero(v12)) {
-        // compute axis
-        const axis = (new THREE.Vector3()).crossVectors(v01, v12);
-        axis.normalize();
-
-        // compute angle
-        let xx = (this.mystate.mouseLeft2.x - this.mystate.mouseLeft1.x);
-        xx *= xx;
-        let yy = (this.mystate.mouseLeft2.y - this.mystate.mouseLeft1.y);
-        yy *= yy;
-        const angle = 0.003 + Math.min(0.4, (xx + yy) / 100);
-
-        // set quaternion
-        const quat = new THREE.Quaternion();
-        quat.setFromAxisAngle(axis, angle);
-
-        // rotate camera's position
-        this.mystate.camera.position
-          .sub(this.mystate.meshCenter)
-          .applyQuaternion(quat)
-          .add(this.mystate.meshCenter);
-
-        // rotate camera's target
-        const target = (new THREE.Vector3(0, 0, -1)).applyMatrix4(this.mystate.camera.matrixWorld);
-        target
-          .sub(this.mystate.meshCenter)
-          .applyQuaternion(quat)
-          .add(this.mystate.meshCenter);
-
-        // rotate camera's up
-        const up = (new THREE.Vector3(0, 1, 0)).applyMatrix4(this.mystate.camera.matrixWorld);
-        up.sub(this.mystate.meshCenter)
-        .applyQuaternion(quat)
-        .add(this.mystate.meshCenter)
-        .sub(this.mystate.camera.position);
-
-        // set camera's up and target
-        this.mystate.camera.up.copy(up);
-        this.mystate.camera.lookAt(target);
-
-        // update camera's light's position
-        this.mystate.cameraLight.position.copy(this.mystate.camera.position);
-
-        // update orientation of sprite planes
-        this.updateSpritePlaneOrientations();
-
-        // if there is a selected label, refresh icons
-        if (this.mystate.selectedLabel) this.refreshIconsPositions();
-      }
-
+      this.orbitCamera(this.mystate.mouseLeft1, this.mystate.mouseLeft2);
       this.mystate.mouseLeft1.x = this.mystate.mouseLeft2.x;
       this.mystate.mouseLeft1.y = this.mystate.mouseLeft2.y;
       this.mystate.cameraOrbitUpdatePending = false;
+    }
+
+    /* ============= */
+    /* TOUCH UPDATES */
+    /* ============= */
+
+    /* pinching (zoom) */
+    if (this.mystate.pinching_updatePending) {
+      const deltaDist = this.mystate.pinchDist2 - this.mystate.pinchDist1;
+      // get viewport's dimensions
+      const width = this.refs.viewport.offsetWidth;
+      const height = this.refs.viewport.offsetHeight;
+      // get viewport coords of pinch center
+      const center = this.mystate.pinchCenter;
+      const coords = this.getViewportCoords(center.x, center.y);
+      // get mouse's world coords before zoom update
+      const mw1 = ThreeUtils.unprojectFromScreenToWorld(
+        coords.x, coords.y, width, height, this.mystate.camera);
+      // update zoom
+      let minD = Math.min(width, height);
+      minD *= minD;
+      const factor = 1 + deltaDist / minD;
+      let zoom = this.mystate.camera.zoom;
+      zoom *= factor;
+      if (zoom < 0.01) zoom = 0.01;
+      this.mystate.camera.zoom = zoom;
+      this.mystate.camera.updateProjectionMatrix();
+      this.mystate.updateCameraZoom = false;
+      // get mouse's world coords after zoom update
+      const mw2 = ThreeUtils.unprojectFromScreenToWorld(
+        coords.x, coords.y, width, height, this.mystate.camera);
+      // get shift vector to update camera's position, light and target
+      const shift = mw1.sub(mw2);
+      this.mystate.camera.position.add(shift);
+      this.mystate.cameraLight.position.copy(this.mystate.camera.position);
+      const target = (new THREE.Vector3(0, 0, -1)).applyMatrix4(this.mystate.camera.matrixWorld);
+      target.add(shift);
+      this.mystate.camera.lookAt(target);
+
+      this.mystate.pinching_updatePending = false;
+
+    /* orbiting camera */
+    } else if (this.mystate.orbitingCamera_touch_updatePending) {
+      this.orbitCamera(this.mystate.touchCoords1, this.mystate.touchCoords2);
+      this.mystate.touchCoords1.x = this.mystate.touchCoords2.x;
+      this.mystate.touchCoords1.y = this.mystate.touchCoords2.y;
+      this.mystate.orbitingCamera_touch_updatePending = false;
+
+    /* dragging camera */
+    } else if (this.mystate.draggingCamera_touch_updatePending) {
+      const cam = this.mystate.camera;
+      const dx = (this.mystate.touchCoords2.x - this.mystate.touchCoords1.x) * 0.08 / cam.zoom;
+      const dy = (this.mystate.touchCoords2.y - this.mystate.touchCoords1.y) * 0.08 / cam.zoom;
+      cam.position.set(-dx, dy, 0).applyMatrix4(cam.matrixWorld);
+      this.mystate.draggingCamera_touch_updatePending = false;
+    }
+  }
+
+  orbitCamera(coords1, coords2) {
+    // get viewport's dimensions
+    const width = this.refs.viewport.offsetWidth;
+    const height = this.refs.viewport.offsetHeight;
+    // convert previous screen coords into world coords
+    const w1 = ThreeUtils.unprojectFromScreenToWorld(
+      coords1.x, coords1.y, width, height, this.mystate.camera);
+    // convert current screen coords into world coords
+    const w2 = ThreeUtils.unprojectFromScreenToWorld(
+      coords2.x, coords2.y, width, height, this.mystate.camera);
+    // get diff vectors
+    const v01 = (new THREE.Vector3()).subVectors(w1, this.mystate.meshCenter);
+    const v12 = (new THREE.Vector3()).subVectors(w2, w1);
+
+    if (!ThreeUtils.isZero(v01) && !ThreeUtils.isZero(v12)) {
+      // compute axis
+      const axis = (new THREE.Vector3()).crossVectors(v01, v12);
+      axis.normalize();
+
+      // compute angle
+      let xx = (coords2.x - coords1.x);
+      xx *= xx;
+      let yy = (coords2.y - coords1.y);
+      yy *= yy;
+      const angle = 0.003 + Math.min(0.4, (xx + yy) / 100);
+
+      // set quaternion
+      const quat = new THREE.Quaternion();
+      quat.setFromAxisAngle(axis, angle);
+
+      // rotate camera's position
+      this.mystate.camera.position
+        .sub(this.mystate.meshCenter)
+        .applyQuaternion(quat)
+        .add(this.mystate.meshCenter);
+
+      // rotate camera's target
+      const target = (new THREE.Vector3(0, 0, -1)).applyMatrix4(this.mystate.camera.matrixWorld);
+      target
+        .sub(this.mystate.meshCenter)
+        .applyQuaternion(quat)
+        .add(this.mystate.meshCenter);
+
+      // rotate camera's up
+      const up = (new THREE.Vector3(0, 1, 0)).applyMatrix4(this.mystate.camera.matrixWorld);
+      up.sub(this.mystate.meshCenter)
+      .applyQuaternion(quat)
+      .add(this.mystate.meshCenter)
+      .sub(this.mystate.camera.position);
+
+      // set camera's up and target
+      this.mystate.camera.up.copy(up);
+      this.mystate.camera.lookAt(target);
+
+      // update camera's light's position
+      this.mystate.cameraLight.position.copy(this.mystate.camera.position);
+
+      // update orientation of sprite planes
+      this.updateSpritePlaneOrientations();
+
+      // if there is a selected label, refresh icons
+      if (this.mystate.selectedLabel) this.refreshIconsPositions();
     }
   }
 
@@ -957,7 +1031,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
   onMouseDown(event) {
     console.log("====> onMouseDown()");
     const viewport = this.refs.viewport;
-    const vpcoords = this.getViewportCoords(event);
+    const vpcoords = this.getViewportCoords(event.clientX, event.clientY);
     const screenX = vpcoords.x;
     const screenY = vpcoords.y;
 
@@ -1504,7 +1578,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
    * Handle mouse move events
    */
   onMouseMove(event) {
-    this.mystate.mouseViewportCoords = this.getViewportCoords(event);
+    this.mystate.mouseViewportCoords = this.getViewportCoords(event.clientX, event.clientY);
     const screenX = this.mystate.mouseViewportCoords.x;
     const screenY = this.mystate.mouseViewportCoords.y;
     const viewport = this.refs.viewport;
@@ -1587,12 +1661,12 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     }
   }
 
-  getViewportCoords(event) {
+  getViewportCoords(clientX, clientY) {
     const vp = this.refs.viewport;
     const bcr = vp.getBoundingClientRect();
     const ans = {
-      x: event.clientX - bcr.left,
-      y: vp.offsetHeight + bcr.top - event.clientY,
+      x: clientX - bcr.left,
+      y: vp.offsetHeight + bcr.top - clientY,
     };
     return ans;
   }
@@ -1665,13 +1739,11 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
         switch (key) {
           case 37: // key left
             dist = (cam.right - cam.left) * 0.04 / cam.zoom;
-            // dist = 1;
             shift = new THREE.Vector3(dist, 0, 0)
             .applyMatrix4(this.mystate.camera.matrixWorld);
             break;
           case 38: // key up
             dist = (cam.top - cam.bottom) * 0.04 / cam.zoom;
-            // dist = 1;
             shift = new THREE.Vector3(0, -dist, 0)
             .applyMatrix4(this.mystate.camera.matrixWorld);
             break;
@@ -1756,13 +1828,12 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       this.refreshIconsPositions();
       // refresh scene
       this.animateForAWhile(0);
-      // prepare hidden input for writing on it
-      setTimeout(() => {
-        this.mystate.canFocusHiddenInput = true;
-        this.refs.hiddenTxtInp.value =
-          (this.state.mode === 'EDITION') ? label.text : label.student_answer;
-      }, 0);
     }
+    // prepare hidden input for writing on it
+    this.mystate.canFocusHiddenInput = true;
+    this.refs.hiddenTxtInp.value =
+      (this.state.mode === 'EDITION') ? label.text : label.student_answer;
+    this.refs.hiddenTxtInp.focus();
   }
 
   refreshIconsPositions() {
@@ -1796,20 +1867,157 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     }
   }
 
+  onTouchStart(e) {
+    e.preventDefault();
+    const touches = e.touches;
+
+    if (touches.length === 1) {
+      const viewport = this.refs.viewport;
+      const vpcoords = this.getViewportCoords(touches[0].clientX, touches[0].clientY);
+      const screenX = vpcoords.x;
+      const screenY = vpcoords.y;
+      if (this.mystate.labelsEnabled) {
+        // make sprite planes visible for intersection
+        this.mystate.spritePlaneGroup.visible = true;
+        this.mystate.iconCircleGroup.visible = true;
+        // check intersection with sprite planes, spheres and meshes
+        const intrs = ThreeUtils.getClosestIntersectedObject(
+          screenX, screenY, viewport.offsetWidth, viewport.offsetHeight,
+          this.mystate.raycaster, this.mystate.camera,
+          this.mystate.sphereGroup, this.mystate.meshGroup,
+          this.mystate.spritePlaneGroup,
+          this.mystate.selectedLabel ? this.mystate.iconCircleGroup : null
+        );
+        // make sprite planes invisible again
+        this.mystate.spritePlaneGroup.visible = false;
+        this.mystate.iconCircleGroup.visible = false;
+
+        if (intrs) {
+          const pickedObj = intrs.object;
+          const pickedGroup = intrs.group;
+
+          // case 1) sprite plane intersected
+          if (pickedGroup === this.mystate.spritePlaneGroup) {
+            // select label
+            const label = this.mystate.spritePlaneToLabelMap[pickedObj.object.uuid];
+            this.selectLabel(label);
+
+          // case 2) sphere intersected
+          } else if (pickedGroup === this.mystate.sphereGroup) {
+            const sphere = pickedObj.object;
+            const label = this.mystate.sphereToLabelMap[sphere.uuid];
+            this.selectLabel(label);
+
+          /* case 3) minimize icon intersected */
+          } else if (pickedGroup === this.mystate.iconCircleGroup
+            && pickedObj.object === this.mystate.minimizeIconCircle) {
+            this.minimizeSelectedLabel();
+          }
+        }
+      }
+      // initiate a camera orbit around 3D Model
+      this.mystate.orbitingCamera_touch = true;
+      this.mystate.touchCoords1.x = screenX;
+      this.mystate.touchCoords1.y = screenY;
+
+    /* panning -> dragging camera */
+    } else if (touches.length === 2) {
+      const center = TouchUtils.touchesClientCenter(touches);
+      this.mystate.draggingCamera_touch = true;
+      this.mystate.touchCoords1.x = center.x;
+      this.mystate.touchCoords1.y = center.y;
+
+    } else if (touches.length >= 3) {
+      this.mystate.pinchDist1 = TouchUtils.touchesAvgSquareDistanceToCenter(touches);
+      this.mystate.pinching = true;
+    }
+    // refresh canvas
+    this.animateForAWhile();
+    console.log('onTouchStart: ', e);
+    this.refs.debugSpan.textContent = `onTouchStart, count = ${e.touches.length}, ${hammerCount++}`;
+  }
+  onTouchMove(e) {
+    try {
+      e.preventDefault();
+      const touches = e.touches;
+      if (touches.length === 1) {
+        const vpcoords = this.getViewportCoords(touches[0].clientX, touches[0].clientY);
+        const screenX = vpcoords.x;
+        const screenY = vpcoords.y;
+        if (this.mystate.orbitingCamera_touch) {
+          this.mystate.touchCoords2.x = screenX;
+          this.mystate.touchCoords2.y = screenY;
+          this.mystate.orbitingCamera_touch_updatePending = true;
+        } else {
+          this.mystate.orbitingCamera_touch = true;
+          this.mystate.touchCoords1.x = screenX;
+          this.mystate.touchCoords1.y = screenY;
+        }
+        this.mystate.draggingCamera_touch = false;
+        this.mystate.pinching = false;
+        this.refs.debugSpan.textContent = `panning(1 finger), count = ${touches.length}, ${hammerCount++}`;
+      } else if (touches.length === 2) {
+        this.refs.debugSpan.textContent = `panning(2 fingers), count = ${touches.length}, ${hammerCount++}`;
+        const center = TouchUtils.touchesClientCenter(touches);
+        if (this.mystate.draggingCamera_touch) {
+          this.mystate.touchCoords2.x = center.x;
+          this.mystate.touchCoords2.y = center.y;
+          this.mystate.draggingCamera_touch_updatePending = true;
+        } else {
+          this.mystate.draggingCamera_touch = true;
+          this.mystate.touchCoords1.x = center.x;
+          this.mystate.touchCoords1.y = center.y;
+        }
+        this.mystate.orbitingCamera_touch = false;
+        this.mystate.pinching = false;
+      } else if (touches.length >= 3) {
+        const pinchDist = TouchUtils.touchesAvgSquareDistanceToCenter(touches);
+        if (this.mystate.pinching) {
+          this.mystate.pinchDist2 = pinchDist;
+          this.mystate.pinchCenter = TouchUtils.touchesClientCenter(touches);
+          this.mystate.pinching_updatePending = true;
+        } else {
+          this.mystate.pinchDist1 = pinchDist;
+          this.mystate.pinching = true;
+        }
+        this.mystate.orbitingCamera_touch = false;
+        this.mystate.draggingCamera_touch = false;
+        this.refs.debugSpan.textContent = `pinching, count = ${touches.length}, ${hammerCount++}`;
+      }
+      this.animateForAWhile();
+    } catch (err) {
+      this.refs.debugSpan.textContent = `error: ${err.stack}`;
+    }
+  }
+  onTouchEnd(e) {
+    this.mystate.orbitingCamera_touch = false;
+    this.mystate.draggingCamera_touch = false;
+    this.mystate.pinching = false;
+    console.log('onTouchEnd: ', e);
+    this.refs.debugSpan.textContent = `onTouchEnd, count = ${e.touches.length}, ${hammerCount++}`;
+  }
+
   render() {
     return (
       <div>
         <div
           style={styles.viewport} ref="viewport"
-          onWheel={this.handleWheel} onMouseDown={this.onMouseDown}
+          onWheel={this.handleWheel}
+          onMouseDown={this.onMouseDown}
           onContextMenu={this.handleContextMenu}
+          onTouchStart={this.onTouchStart}
+          onTouchMove={this.onTouchMove}
+          onTouchEnd={this.onTouchEnd}
         >
         </div>
         <input ref="hiddenTxtInp" onChange={this.onHiddenTextChanged} style={styles.hiddenTxtInp}></input>
+        <textarea ref="debugSpan" style={styles.debugSpan}></textarea>
       </div>
     );
   }
 }
+
+let hammerCount = 0;
 
 Renderer3D.propTypes = {
   /* ===========================*/
@@ -1850,6 +2058,14 @@ Renderer3D.propTypes = {
 const styles = {
   viewport: {
     height: '350px',
+  },
+  debugSpan: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    minWidth: '350px',
+    minHeight: '50px',
+    backgroundColor: 'red',
   },
   hiddenTxtInp: {
     position: 'absolute',
