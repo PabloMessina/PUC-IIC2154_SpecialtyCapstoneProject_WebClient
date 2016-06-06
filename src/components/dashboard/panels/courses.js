@@ -1,7 +1,8 @@
 import React, { Component, PropTypes } from 'react';
 import { Panel, Image } from 'react-bootstrap';
-import { LinkContainer } from 'react-router-bootstrap';
 import renderIf from 'render-if';
+import { Link } from 'react-router';
+
 
 import app, { currentUser } from '../../../app';
 const participantService = app.service('/participants');
@@ -58,18 +59,16 @@ class CoursesPanel extends Component {
   }
 
   renderInstance({ course, ...instance }) {
-    const pathname = `/courses/show/${course.id}/instances/show/${instance.id}`;
+    const url = `/courses/show/${course.id}/instances/show/${instance.id}`;
     return (
-      <LinkContainer key={instance.id} to={{ pathname }}>
-        <a style={styles.cell}>
-          <Image style={styles.logo} src="https://coursera-university-assets.s3.amazonaws.com/89/d0ddf06ad611e4b53d95ff03ce5aa7/360px.png" />
-          <h6 style={styles.course}>
-            {course.name}
-            <br />
-            <small>{instance.period}</small>
-          </h6>
-        </a>
-      </LinkContainer>
+      <Link key={instance.id} style={styles.cell} to={url}>
+        <Image style={styles.logo} src="https://coursera-university-assets.s3.amazonaws.com/89/d0ddf06ad611e4b53d95ff03ce5aa7/360px.png" />
+        <h6 style={styles.course}>
+          {course.name}
+          <br />
+          <small>{instance.period}</small>
+        </h6>
+      </Link>
     );
   }
 

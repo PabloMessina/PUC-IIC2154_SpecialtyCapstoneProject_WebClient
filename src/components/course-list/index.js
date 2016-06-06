@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Media } from 'react-bootstrap';
 import renderIf from 'render-if';
-import { withRouter } from 'react-router';
+import { Link, withRouter } from 'react-router';
 
 
 class CourseList extends Component {
@@ -21,32 +21,31 @@ class CourseList extends Component {
 
   constructor(props) {
     super(props);
-    this.onClick = this.onClick.bind(this);
     this.renderRow = this.renderRow.bind(this);
   }
 
-  onClick(course) {
-    const url = `/courses/show/${course.id}`;
-    return this.props.router.push(url);
-  }
-
   renderRow(course) {
+    const url = `/courses/show/${course.id}`;
     return (
       <div key={course.id}>
         <Media style={styles.cell}>
           <Media.Left>
-            <img
-              style={{ cursor: 'pointer' }}
-              width={70}
-              height={70}
-              onClick={() => this.onClick(course)}
-              src="https://d3njjcbhbojbot.cloudfront.net/api/utilities/v1/imageproxy/https://coursera-university-assets.s3.amazonaws.com/89/d0ddf06ad611e4b53d95ff03ce5aa7/360px.png"
-              alt="Not available"
-            />
+            <Link to={url}>
+              <img
+                style={{ cursor: 'pointer' }}
+                width={70}
+                height={70}
+                onClick={() => this.onClick(course)}
+                src="https://d3njjcbhbojbot.cloudfront.net/api/utilities/v1/imageproxy/https://coursera-university-assets.s3.amazonaws.com/89/d0ddf06ad611e4b53d95ff03ce5aa7/360px.png"
+                alt="Not available"
+              />
+            </Link>
           </Media.Left>
           <Media.Body>
-            <Media.Heading style={{ cursor: 'pointer' }}>
-              <a href="#" onClick={() => this.onClick(course)}>{course.name}</a>
+            <Media.Heading>
+              <Link to={url}>
+                {course.name}
+              </Link>
             </Media.Heading>
             <p>{course.description}</p>
           </Media.Body>
