@@ -2,6 +2,8 @@ import React, { PropTypes } from 'react';
 import Icon from 'react-fa';
 import moment from 'moment';
 import renderIf from 'render-if';
+import truncate from 'lodash/truncate';
+
 
 import { calculateDuration } from '../../utils/time';
 
@@ -9,14 +11,12 @@ const EvaluationCell = ({ style, evaluation, length, onEvaluationClick, ...props
   const duration = calculateDuration(evaluation);
   const date = moment(evaluation.startAt).format('dddd, MMMM Do, HH:mm');
 
-  const description = evaluation.description && evaluation.description.length > 140
-    ? `${evaluation.description.substr(0, length)}...`
-    : evaluation.description;
+  const description = truncate(evaluation.description, { length });
 
   return (
     <div style={{ ...styles.container, ...style }} {...props}>
       <h5 style={styles.title}>
-        <a href="#" onClick={() => onEvaluationClick(evaluation)}>{evaluation.title}</a>
+        <a onClick={() => onEvaluationClick(evaluation)}>{evaluation.title}</a>
         {renderIf(evaluation.responsable)(() =>
           <small style={styles.small}>by {evaluation.responsable.name}</small>
         )}
