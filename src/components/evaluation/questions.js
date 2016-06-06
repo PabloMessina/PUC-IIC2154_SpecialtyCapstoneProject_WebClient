@@ -46,6 +46,12 @@ export default class Questions extends Component {
       tags: PropTypes.array,
       hidden: PropTypes.array,
 
+      // Instructor mode
+      answers: PropTypes.object,
+
+      // Student mode
+      evaluationQuestions: PropTypes.array,
+
       // From parent
       organization: PropTypes.object,
       course: PropTypes.object,
@@ -53,12 +59,6 @@ export default class Questions extends Component {
       evaluation: PropTypes.object,
       questions: PropTypes.array,
       interval: PropTypes.number,
-
-      // Instructor mode
-      answers: PropTypes.object,
-
-      // Student mode
-      evaluationQuestions: PropTypes.array,
 
       onEvaluationChange: PropTypes.func,
       onAnswerChange: PropTypes.func,
@@ -110,7 +110,6 @@ export default class Questions extends Component {
 
     this.onModalClose = this.onModalClose.bind(this);
     this.onModalSave = this.onModalSave.bind(this);
-    this.onEdit = this.onEdit.bind(this);
   }
 
   componentDidMount() {
@@ -152,10 +151,6 @@ export default class Questions extends Component {
     return null;
   }
 
-  onEdit(currentQuestion) {
-    this.setState({ editing: true, currentQuestion });
-  }
-
   fetchTags() {
     const query = {
       organizationId: this.props.organization.id,
@@ -187,9 +182,6 @@ export default class Questions extends Component {
       .map(question => ({
         question,
         qtype: question.qtype,
-        content: question.content,
-        answer: question.answer,
-        fields: question.fields,
         disabled: true,
         // TODO: add gradient
         // style: { height: 200, overflow: 'hidden' },
@@ -208,8 +200,9 @@ export default class Questions extends Component {
     );
   }
 
-  renderQuestion(question, identifier, userMode) {
+  renderQuestion(props, identifier, userMode) {
     const { onAnswerChange, onFieldsChange } = this.props;
+    const question = props.question;
     let mode = 'reader';
     switch (userMode) {
       case 'instructor': mode = 'reader'; break;
@@ -217,7 +210,7 @@ export default class Questions extends Component {
       default: mode = 'reader'; break;
     }
     const element = questionFactory(question.qtype, {
-      ...question,
+      ...props,
       identifier,
       mode,
       onAnswerChange: answer => onAnswerChange(question, answer),
@@ -264,17 +257,24 @@ export default class Questions extends Component {
   }
 
   renderEvaluation(mode) {
-    const { evaluation, questions, answers, onQuestionRemove, evaluationQuestions } = this.props;
+    const {
+      evaluation,
+      questions,
+      answers,
+      onQuestionRemove,
+      evaluationQuestions,
+    } = this.props;
     const objects = questions.map(question => {
       const eq = evaluationQuestions.find(item => item.questionId === question.id);
       const answ = (eq && eq.customAnswer) ? eq.customAnswer : answers[question.id];
       return ({
-        question,
-        answer: answ || (mode === 'instructor' ? question.answer : undefined),
-        fields: (eq && eq.customField) ? eq.customField : question.fields,
-        content: (eq && eq.customContent) ? eq.customContent : question.content,
+        question: {
+          ...question,
+          answer: answ || (mode === 'instructor' ? question.answer : undefined),
+          fields: (eq && eq.customField) ? eq.customField : question.fields,
+          content: (eq && eq.customContent) ? eq.customContent : question.content,
+        },
         disabled: mode === 'instructor',
-        qtype: question.qtype,
       });
     });
     return (
@@ -284,21 +284,21 @@ export default class Questions extends Component {
         </div>
         <p>{evaluation.description || ''}</p>
 
-        {objects.map((question, i) => (
+        {objects.map((object, i) => (
           <div key={i} style={styles.wrapper}>
-            {this.renderQuestion(question, i + 1)}
+            {this.renderQuestion(object, i + 1)}
             {renderIf(mode === 'instructor')(
               <div style={styles.icons}>
                 <Icon
                   size="lg"
                   name="times"
-                  onClick={() => onQuestionRemove(question)}
+                  onClick={() => onQuestionRemove(object.question)}
                 />
                 <Icon
                   size="lg"
                   name="pencil"
                   style={{ marginTop: 10 }}
-                  onClick={() => this.setState({ editing: true, currentQuestion: question })}
+                  onClick={() => this.setState({ editing: true, currentQuestion: object.question })}
                 />
               </div>
             )}

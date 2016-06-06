@@ -47,16 +47,24 @@ class EvaluationCreate extends Component {
     return {
       // Main object
       evaluation: React.PropTypes.object,
+
       // Defaults
-      evaluationQuestions: React.PropTypes.array,
       questions: React.PropTypes.array,
       attendances: React.PropTypes.array,
+
+      // Instructor mode
+      evaluationQuestions: React.PropTypes.array,
+      // Student mode
       answers: React.PropTypes.object,
+
       // React Router
       router: React.PropTypes.object,
       params: React.PropTypes.object,
       children: React.PropTypes.any,
       location: React.PropTypes.any,
+
+      // groups: React.PropTypes.array,
+      // attendance: React.PropTypes.object,
     };
   }
 
@@ -74,14 +82,12 @@ class EvaluationCreate extends Component {
     this.state = {
       // Current evaluation
       evaluation: props.params.evaluation,
-
       participants: [],
-      attendances: props.params.evaluation.attendances || props.attendances,
       questions: props.params.evaluation.questions || props.questions,
+      attendances: props.params.evaluation.attendances || props.attendances,
 
-      // Student mode
+      // Students mode
       answers: props.answers,
-
       // Instructor mode
       evaluationQuestions: props.params.evaluation.evaluationQuestions || props.evaluationQuestions,
 
@@ -91,6 +97,8 @@ class EvaluationCreate extends Component {
       instance: props.params.evaluation.instance,
       syncing: false,
       tabStates: Array(SECTIONS.length).fill('default'),
+
+      // attendance: props.attendance,
     };
 
     // console.log(JSON.stringify(this.state.evaluation, null, 4));
@@ -101,10 +109,10 @@ class EvaluationCreate extends Component {
     this.startEvaluation = this.startEvaluation.bind(this);
 
     this.observe = this.observe.bind(this);
+    this.observeAnswers = this.observeAnswers.bind(this);
     this.observeEvaluation = this.observeEvaluation.bind(this);
     this.observeEvaluationQuestions = this.observeEvaluationQuestions.bind(this);
     this.observeQuestions = this.observeQuestions.bind(this);
-    this.observeAnswers = this.observeAnswers.bind(this);
 
     this.onPublish = this.onPublish.bind(this);
     this.onDelete = this.onDelete.bind(this);
@@ -113,6 +121,8 @@ class EvaluationCreate extends Component {
     this.onFieldsChange = this.onFieldsChange.bind(this);
     this.onQuestionAdd = this.onQuestionAdd.bind(this);
     this.onQuestionRemove = this.onQuestionRemove.bind(this);
+    // this.onGroupsChange = this.onGroupsChange.bind(this);
+    // this.onAttendantsChange = this.onAttendantsChange.bind(this);
   }
 
   componentDidMount() {
@@ -172,13 +182,14 @@ class EvaluationCreate extends Component {
   }
 
   onFieldsChange(id, fields) {
-    if (id) {
+    throw new Error('onFieldsChange: not implemented!');
+    // if (id) {
       // console.log('onFieldsChange', id, fields);
       // const questions = this.state.questions;
       // const index = this.state.question.findIndex(q => q.id === id);
       // if (index > -1) questions[index].fields = fields;
       // this.setState({ questions });
-    }
+    // }
   }
 
   onQuestionAdd(question) {
