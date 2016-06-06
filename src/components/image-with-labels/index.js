@@ -27,6 +27,9 @@ const TEMPORARY_LABEL_REF = 'temporaryLabelRef';
 
 const REG_STRING_HEIGHT = 26;
 
+const DELETE_ICON_WIDTH = 12;
+const DELETE_ICON_HEIGHT = 12;
+
 export default class ImageWithLabels extends Component {
 
   static get defaultProps() {
@@ -411,8 +414,11 @@ export default class ImageWithLabels extends Component {
   intersectRegionDeleteBtns(mouseCanvasX, mouseCanvasY) {
     const label = this.mystate.selectedLabel;
     if (label) {
+      const canvas = this.refs.labelCanvas;
       for (const reg of label.regions) {
-        if (Utils2D.coordsInElement(mouseCanvasX, mouseCanvasY, this.refs[getRegionDeleteBtnRef(reg.id)])) {
+        const pos = reg.deleteIconPosition;
+        if (Utils2D.coordsInEllipse(mouseCanvasX, mouseCanvasY,
+          pos.x * canvas.width, pos.y * canvas.height, DELETE_ICON_WIDTH * 0.5, DELETE_ICON_HEIGHT * 0.5)) {
           return { region: reg, label };
         }
       }
@@ -714,10 +720,10 @@ export default class ImageWithLabels extends Component {
     label.minimized = false;
     this.unselectSelectedLabel();
     this.mystate.selectedLabel = label;
+    this.refreshAllDeleteRegionBtns();
     this.renderForAWhile();
     this.forceUpdate(() => {
       this.refreshLabelPosition(label);
-      this.refreshAllDeleteRegionBtns();
       setTimeout(() => {
         const elem = document.getElementById(getLabelFocusId(label.id));
         elem.focus();
@@ -959,6 +965,16 @@ export default class ImageWithLabels extends Component {
           }
         }
       }
+
+      /* 6) Draw delete icons */
+      if (this.mystate.selectedLabel) {
+        // debugger
+        for (const reg of this.mystate.selectedLabel.regions) {
+          const pos = reg.deleteIconPosition;
+          Utils2D.drawDeleteIcon(ctx, pos.x * canvas.width, pos.y * canvas.height,
+            DELETE_ICON_WIDTH, DELETE_ICON_HEIGHT);
+        }
+      }
     }
   }
 
@@ -1019,6 +1035,7 @@ export default class ImageWithLabels extends Component {
   }
 
   refreshAllDeleteRegionBtns() {
+    // debugger
     const label = this.mystate.selectedLabel;
     if (label) {
       for (const reg of label.regions) this.refreshDeleteRegionBtnPosition(reg);
@@ -1027,28 +1044,29 @@ export default class ImageWithLabels extends Component {
 
   refreshDeleteRegionBtnPosition(reg) {
     const canvas = this.refs.labelCanvas;
-    const elem = this.refs[getRegionDeleteBtnRef(reg.id)];
-    const w = elem.offsetWidth;
-    const h = elem.offsetHeight;
+    const rx = DELETE_ICON_WIDTH * 0.5;
+    const ry = DELETE_ICON_HEIGHT * 0.5;
     // try different directions
+    const d = 8;
     const xys = [
-      reg.x * canvas.width + 5, reg.y * canvas.height - 5 - h, // top right
-      reg.x * canvas.width - w * 0.5, reg.y * canvas.height - 5 - h, // top
-      reg.x * canvas.width + 5, reg.y * canvas.height - h * 0.5, // right
-      reg.x * canvas.width - w * 0.5, reg.y * canvas.height - 5 - h, // bottom
+      reg.x * canvas.width + d, reg.y * canvas.height - d, // top right
+      reg.x * canvas.width,     reg.y * canvas.height - d, // top
+      reg.x * canvas.width + d, reg.y * canvas.height, // right
+      reg.x * canvas.width,     reg.y * canvas.height - d, // bottom
+      reg.x * canvas.width - d, reg.y * canvas.height, // left
+      reg.x * canvas.width - d, reg.y * canvas.height + d, // bottom left
+      reg.x * canvas.width + d, reg.y * canvas.height + d, // bottom right
     ];
     for (let i = 0; i < xys.length; i += 2) {
       const x = xys[i];
       const y = xys[i + 1];
-      if (x >= 0 && x + w <= canvas.width && y >= 0 && y + h <= canvas.height) {
-        elem.style.left = `${xys[i]}px`;
-        elem.style.top = `${xys[i + 1]}px`;
+      if (x >= rx && x + rx <= canvas.width && y >= ry && y + ry <= canvas.height) {
+        reg.deleteIconPosition = { x:  x / canvas.width, y: y / canvas.height };
         return;
       }
     }
     // default
-    elem.style.left = `${reg.x * canvas.width - w * 0.5}px`;
-    elem.style.top = `${reg.y * canvas.height - h * 0.5}px`;
+    reg.deleteIconPosition = { x: reg.x , y: reg.y };
   }
 
   /** React's render function */
@@ -1084,20 +1102,6 @@ export default class ImageWithLabels extends Component {
               onMinimize: this.getOnMinimizeCallback(label),
             })
           );
-        }
-        // close links for regions
-        if (this.mystate.selectedLabel) {
-          const label = this.mystate.selectedLabel;
-          for (const reg of label.regions) {
-            dynamicElements.push(
-              <a
-                href="#"
-                ref={getRegionDeleteBtnRef(reg.id)}
-                key={getRegionDeleteBtnRef(reg.id)}
-                style={styles.deleteRegionBtn}
-              >x</a>
-            );
-          }
         }
         break;
       }
@@ -1142,9 +1146,6 @@ ImageWithLabels.propTypes = {
 };
 
 const styles = {
-  deleteRegionBtn: {
-    position: 'absolute',
-  },
   canvas: {
     position: 'absolute',
     top: 0,
@@ -1169,8 +1170,4 @@ function getLabelRef(id) {
 
 function getLabelFocusId(id) {
   return `_label${id}_focus`;
-}
-
-function getRegionDeleteBtnRef(id) {
-  return `_region${id}_close`;
 }

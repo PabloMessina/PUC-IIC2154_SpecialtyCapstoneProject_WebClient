@@ -145,6 +145,31 @@ const Utils2D = {
     ctx.stroke();
   },
 
+  /** draw a polygon */
+  drawDeleteIcon: (ctx, x, y, width, height) => {
+    // draw ellipse
+    const blw = (width + height) * 0.02;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 0.5 * (width - blw), 0.5 * (height - blw), 0, 0, 2 * Math.PI);
+    ctx.fillStyle = 'red';
+    ctx.fill();
+    ctx.lineWidth = blw;
+    ctx.strokeStyle = 'black';
+    ctx.stroke();
+    // draw an X symbol
+    ctx.lineWidth = (width + height) * 0.075;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'white';
+    ctx.beginPath();
+    ctx.moveTo(x - 0.2 * width, y - 0.2 * height);
+    ctx.lineTo(x + 0.2 * width, y + 0.2 * height);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x + 0.2 * width, y - 0.2 * height);
+    ctx.lineTo(x - 0.2 * width, y + 0.2 * height);
+    ctx.stroke();
+  },
+
   /** get the convex hull of the given points */
   getConvexHull: (pts) => {
     // sort by x and y
