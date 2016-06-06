@@ -17,7 +17,6 @@ const TEMP_CIRCLE_STYLE = {
 };
 
 const TMP_CIRCLE_RADIUS = 3;
-const DEFAULT_CIRCLE_RADIUS = 3;
 const AREA_THRESHOLD = 50;
 const POLYGON_TYPE = 'POLYGON';
 const ELLIPSE_TYPE = 'ELLIPSE';
@@ -28,7 +27,7 @@ const TEMPORARY_LABEL_REF = 'temporaryLabelRef';
 
 const REG_STRING_HEIGHT = 26;
 
-export default class ImageWithLabelsWrapper extends Component {
+export default class ImageWithLabels extends Component {
 
   static get defaultProps() {
     return {
@@ -42,6 +41,8 @@ export default class ImageWithLabelsWrapper extends Component {
       gotFocusCallback: () => console.log('gotFocusCallback()'),
       lostFocusCallback: () => console.log('lostFocusCallback()'),
       hideLabels: false,
+      mode: 'EDITION',
+      circleRadius: 4,
     };
   }
 
@@ -97,7 +98,7 @@ export default class ImageWithLabelsWrapper extends Component {
     this.intersectRegionDeleteBtns = this.intersectRegionDeleteBtns.bind(this);
 
     // set event handlers according to mode
-    if (this.props.mode === 'EDIT') {
+    if (this.props.mode === 'EDITION') {
       this.onMouseDown = this.onMouseDown_EditMode.bind(this);
       this.onMouseMove = this.onMouseMove_EditMode.bind(this);
       this.onMouseUp = this.onMouseUp_EditMode.bind(this);
@@ -125,15 +126,28 @@ export default class ImageWithLabelsWrapper extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    /** check if a new source was provided */
+    /* check if a new source was provided */
     const newSource = nextProps.source;
-    if (nextProps.source && !_.isEqual(this.mystate.source, newSource)) {
-      this.mystate.source = newSource;
+    if (nextProps.source && !_.isEqual(this.props.source, newSource)) {
       if (newSource.file) {
         this.loadLocalImage(newSource.file);
       } else if (newSource.url) {
         this.loadRemoteImage(newSource.url);
       }
+    }
+    /* check if a new circle radius was provided */
+    if (nextProps.circleRadius && nextProps.circleRadius !== this.props.circleRadius) {
+      // update radius of all ellipses
+      const canvas = this.refs.labelCanvas;
+      for (const label of this.mystate.labelSet) {
+        for (const reg of label.regions) {
+          if (reg.type === ELLIPSE_TYPE) {
+            reg.rx = nextProps.circleRadius / canvas.width;
+            reg.ry = nextProps.circleRadius / canvas.height;
+          }
+        }
+      }
+      this.renderForAWhile();
     }
   }
 
@@ -240,8 +254,8 @@ export default class ImageWithLabelsWrapper extends Component {
                 const { x, y } = centroid || nccoords;
                 newRegion = {
                   type: ELLIPSE_TYPE, x, y,
-                  rx: DEFAULT_CIRCLE_RADIUS / canvas.width,
-                  ry: DEFAULT_CIRCLE_RADIUS / canvas.height,
+                  rx: this.props.circleRadius / canvas.width,
+                  ry: this.props.circleRadius / canvas.height,
                   id: this.mystate.regionId++,
                 };
               }
@@ -546,8 +560,8 @@ export default class ImageWithLabelsWrapper extends Component {
       reg.x += dx;
       reg.y += dy;
       reg.stringPosition = this.getRegionStringPosition(reg);
-      this.renderForAWhile();
       this.refreshDeleteRegionBtnPosition(reg);
+      this.renderForAWhile();
       this.mystate.regionLastPos = ncmcoords;
     }
   }
@@ -576,8 +590,8 @@ export default class ImageWithLabelsWrapper extends Component {
         const { x, y } = ncmcoords;
         const newRegion = {
           type: ELLIPSE_TYPE, x, y,
-          rx: DEFAULT_CIRCLE_RADIUS / canvas.width,
-          ry: DEFAULT_CIRCLE_RADIUS / canvas.height,
+          rx: this.props.circleRadius / canvas.width,
+          ry: this.props.circleRadius / canvas.height,
           id: this.mystate.regionId++,
         };
         /** define region's string */
@@ -1039,9 +1053,10 @@ export default class ImageWithLabelsWrapper extends Component {
 
   /** React's render function */
   render() {
+    console.log('====> render()');
     let dynamicElements = [];
     switch (this.props.mode) {
-      case 'EDIT': {
+      case 'EDITION': {
         // temporary label
         if (this.mystate.temporaryLabel) {
           dynamicElements.push(this.props.renderLabel({
@@ -1107,7 +1122,7 @@ export default class ImageWithLabelsWrapper extends Component {
   }
 }
 
-ImageWithLabelsWrapper.propTypes = {
+ImageWithLabels.propTypes = {
   style: React.PropTypes.object,
   source: React.PropTypes.object,
   maxWidth: React.PropTypes.number,
@@ -1123,6 +1138,7 @@ ImageWithLabelsWrapper.propTypes = {
   mode: React.PropTypes.string.isRequired,
   gotFocusCallback: React.PropTypes.func.isRequired,
   lostFocusCallback: React.PropTypes.func.isRequired,
+  circleRadius: React.PropTypes.number,
 };
 
 const styles = {

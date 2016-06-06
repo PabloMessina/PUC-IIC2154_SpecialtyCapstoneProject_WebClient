@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
 import ImageWithLabels from '../image-with-labels/';
 import renderIf from 'render-if';
-import Utils2D from '../../_2Dlibrary/Utils2D';
+import { Button, Dropdown } from 'react-bootstrap';
+import Icon, { IconStack } from 'react-fa';
 
 export default class ImageWithLabelsWrapper extends Component {
 
@@ -13,6 +14,7 @@ export default class ImageWithLabelsWrapper extends Component {
         gotFocusCallback: () => {},
         lostFocusCallback: () => {},
       },
+      circleRadius: 4,
     };
   }
 
@@ -20,6 +22,7 @@ export default class ImageWithLabelsWrapper extends Component {
     super(props);
     this.state = {
       source: props.url ? { url: props.url } : null,
+      circleRadius: props.circleRadius,
     };
     this.mystate = {
       componentFocused: false,
@@ -27,11 +30,19 @@ export default class ImageWithLabelsWrapper extends Component {
     this.onFileChanged = this.onFileChanged.bind(this);
     this.onGotFocus = this.onGotFocus.bind(this);
     this.onLostFocus = this.onLostFocus.bind(this);
+    this.onCircleRadiusChanged = this.onCircleRadiusChanged.bind(this);
   }
 
   onFileChanged() {
     const file = this.refs.fileInput.files[0];
     if (file) this.setState({ source: { file } });
+  }
+
+  onGotFocus() {
+    this.props.blockProps.gotFocusCallback();
+  }
+  onLostFocus() {
+    this.props.blockProps.lostFocusCallback();
   }
 
   renderLabel({ label, focusId, ref, key, style, isReadOnly,
@@ -64,18 +75,52 @@ export default class ImageWithLabelsWrapper extends Component {
     }
   }
 
-  onGotFocus() {
-    this.props.blockProps.gotFocusCallback();
-  }
-  onLostFocus() {
-    this.props.blockProps.lostFocusCallback();
+  onCircleRadiusChanged(e) {
+    this.setState({ circleRadius: Number(e.target.value) });
   }
 
   /** React's render function */
   render() {
     const { readOnly } = this.props.blockProps;
+    const circleRadius = this.state.circleRadius;
     return (
       <div>
+        <div style={styles.toolbar}>
+          <Dropdown
+            id="label-dropdown-custom"
+            /*
+            open={this.state.labelDropdownOpen}
+            onToggle={this.onLabelDropDownToggle}
+            ref="labelDropdown"
+            dropup
+            pullRight*/
+          >
+            <Dropdown.Toggle
+              style={styles.toolbarButton}
+              bsRole="toggle"
+              bsStyle="default"
+              bsSize="small"
+              className="dropdown-with-input dropdown-toggle"
+            >
+              <IconStack size="2x">
+                <Icon name="circle" stack="2x" />
+                <Icon name="cog" stack="1x" style={styles.icon} />
+              </IconStack>
+            </Dropdown.Toggle>
+            <Dropdown.Menu className="super-colors">
+              <div>
+                <label>Circle Radius Coef: </label>
+                <input
+                  ref="circleRadiusInput"
+                  type="range" min={1} max={20} step={0.2}
+                  value={circleRadius}
+                  onChange={this.onCircleRadiusChanged}
+                />
+                <span>{circleRadius.toFixed(2)}</span>
+              </div>
+            </Dropdown.Menu>
+          </Dropdown>
+        </div>
         <input ref="fileInput" type="file" onChange={this.onFileChanged}></input>
         {renderIf(this.state.source)(() => (
           <div >
@@ -84,7 +129,8 @@ export default class ImageWithLabelsWrapper extends Component {
               style={styles.imgWithLabels}
               source={this.state.source}
               renderLabel={this.renderLabel}
-              mode={readOnly ? '' : 'EDIT'}
+              mode={readOnly ? 'READONLY' : 'EDITION'}
+              circleRadius={circleRadius}
               gotFocusCallback={this.onGotFocus}
               lostFocusCallback={this.onLostFocus}
             />
@@ -98,6 +144,7 @@ export default class ImageWithLabelsWrapper extends Component {
 ImageWithLabelsWrapper.propTypes = {
   url: React.PropTypes.string,
   blockProps: React.PropTypes.object.isRequired,
+  circleRadius: React.PropTypes.number,
 };
 
 const styles = {
@@ -105,6 +152,20 @@ const styles = {
     marginLeft: 100,
   },
   label: {
+    toolbar: {
+      position: 'absolute',
+      left: '0%',
+      bottom: '100%',
+      height: '44px',
+    },
+    toolbarButton: {
+      backgroundColor: 'transparent',
+      boxShadow: 'none',
+      padding: 3,
+    },
+    icon: {
+      color: 'white',
+    },
     innerDiv: {
       position: 'relative',
       backgroundColor: 'white',

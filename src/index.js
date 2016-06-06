@@ -65,7 +65,6 @@ import AtlasCreate from './components/atlas-create/';
 import AtlasBook from './components/atlas-book/';
 
 import Renderer3DWrapper from './components/renderer-3d-wrapper/';
-import ImageWithLabels from './components/image-with-labels/';
 import ImageWithLabelsWrapper from './components/image-with-labels-wrapper/';
 
 // Development help
@@ -145,7 +144,6 @@ const Routing = (
       <Route path="signup" component={SignUp} onEnter={requireAnnon} />
 
       <Route path="renderer-3d-wrapper" component={Renderer3DWrapper} />
-      <Route path="image-with-labels" component={ImageWithLabels} />
       <Route path="image-with-labels-wrapper" component={ImageWithLabelsWrapper} />
 
       <Route path="documents" component={DocumentList} onEnter={fetching()} />
