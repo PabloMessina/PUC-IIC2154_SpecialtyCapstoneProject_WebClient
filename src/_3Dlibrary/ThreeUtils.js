@@ -1,4 +1,4 @@
-import THREE from 'n3d-threejs';
+import THREE from 'three';
 
 //unit vectors
 const UnitX_p = new THREE.Vector3(1, 0, 0);
@@ -385,12 +385,10 @@ const ThreeUtils = {
    * @return {[THREE.Mesh]}        [the plane]
    */
   createPlaneFromSprite(sprite, camera) {
-    const bbox = new THREE.BoundingBoxHelper(sprite);
-    bbox.update();
-    const width = bbox.box.max.x - bbox.box.min.x;
-    const height = bbox.box.max.y - bbox.box.min.y;
+    const width = sprite.scale.x;
+    const height = sprite.scale.y;
     const planeGeo = new THREE.PlaneGeometry(width, height);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const mat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     const spritePlane = new THREE.Mesh(planeGeo, mat);
     spritePlane.position.copy(sprite.position);
     spritePlane.quaternion.copy(camera.quaternion);

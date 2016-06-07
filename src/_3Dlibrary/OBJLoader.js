@@ -1,4 +1,4 @@
-import THREE from 'n3d-threejs';
+import THREE from 'three';
 import BufferedReader from './buffered-reader';
 
 // v float float float

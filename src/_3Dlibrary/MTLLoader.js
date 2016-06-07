@@ -1,4 +1,4 @@
-import THREE from 'n3d-threejs';
+import THREE from 'three';
 
 /**
  * An object to parse and retrieve the material list from
