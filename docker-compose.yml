@@ -1,0 +1,30 @@
+proxy:
+  image: zzrot/alpine-caddy
+  restart: always
+  ports:
+    - 80:80
+    - 443:443
+  links:
+    - webclient
+  volumes:
+    - ./Caddyfile:/etc/Caddyfile
+    - ./.caddy:/root/.caddy
+
+webclient:
+  build: .
+  restart: always
+  environment:
+    - NODE_ENV=production
+
+newrelic:
+  image: uzyexe/newrelic
+  restart: "on-failure"
+  privileged: true
+  volumes:
+    - "/var/run/docker.sock:/var/run/docker.sock"
+    - "/dev:/dev"
+    - "/sys:/sys"
+  environment:
+    - NEW_RELIC_LICENSE_KEY
+  pid: host
+  net: host

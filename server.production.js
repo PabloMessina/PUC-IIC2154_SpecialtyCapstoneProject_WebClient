@@ -4,7 +4,10 @@
 
 const express = require('express');
 const path = require('path');
+const morgan = require('morgan');
 const app = express();
+
+app.use(morgan('combined'));
 
 // serve static assets normally
 app.use(express.static(`${__dirname}/public`));

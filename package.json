@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start:dev": "node server.js",
-    "start:prod": "node server.production.js",
+    "start:prod": "npm run build && node server.production.js",
     "build": "webpack --config webpack.production.config.js -p",
     "test": "jest",
     "clean": "rm -fr $TMPDIR/react-* && rm -rf node_modules && npm install"
@@ -32,6 +32,7 @@
     "katex": "^0.6.0",
     "lodash": "^4.11.1",
     "moment": "^2.13.0",
+    "morgan": "^1.7.0",
     "n3d-threejs": "^75.0.0",
     "prismjs": "^1.5.0",
     "react": "^15.0.2",
