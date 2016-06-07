@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import { Row, Col, Alert, Button } from 'react-bootstrap';
+import { Row, Col, Button } from 'react-bootstrap';
 import { withRouter } from 'react-router';
-import renderIf from 'render-if';
+import ErrorAlert from '../../error-alert';
 
 import app from '../../../app';
 const organizationService = app.service('/organizations');
@@ -36,11 +36,10 @@ class OrganizationSettingsAdministrative extends Component {
       <div style={styles.container}>
         <Row>
           <Col xs={12}>
-            {renderIf(this.state.error)(() =>
-              <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
-                <p>{this.state.error.message}</p>
-              </Alert>
-            )}
+            <ErrorAlert
+              error={this.state.error}
+              onDismiss={() => this.setState({ error: null })}
+            />
             <p>
               Delete organization and all their courses.
             </p>

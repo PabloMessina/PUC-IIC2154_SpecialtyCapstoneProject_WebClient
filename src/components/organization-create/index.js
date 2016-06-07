@@ -4,11 +4,10 @@ import {
   Row,
   Col,
   Panel,
-  Alert,
 } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { withRouter } from 'react-router';
-import renderIf from 'render-if';
+import ErrorAlert from '../error-alert';
 
 import OrganizationFrom from '../organization-form/';
 
@@ -69,11 +68,10 @@ class OrganizationCreate extends Component {
 
             <hr />
 
-            {renderIf(this.state.error)(() =>
-              <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
-                <p>{this.state.error.message}</p>
-              </Alert>
-            )}
+            <ErrorAlert
+              error={this.state.error}
+              onDismiss={() => this.setState({ error: null })}
+            />
 
             <OrganizationFrom disabled={this.state.disabled} onSubmit={this.onSubmit} />
 

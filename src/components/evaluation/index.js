@@ -3,6 +3,7 @@ import { Grid, Row, Col, ButtonToolbar, ButtonGroup, Button, Breadcrumb } from '
 import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
 import renderIf from 'render-if';
+import ErrorAlert from '../error-alert';
 
 import app, { currentUser } from '../../app';
 const organizationService = app.service('/organizations');
@@ -502,6 +503,10 @@ class EvaluationCreate extends Component {
           </Col>
         </Row>
 
+        <ErrorAlert
+          error={this.state.error}
+          onDismiss={() => this.setState({ error: null })}
+        />
 
         <Row>
           <Col style={styles.bar} xsOffset={0} xs={12}>

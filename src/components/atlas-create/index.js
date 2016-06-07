@@ -8,14 +8,12 @@ import {
   FormGroup,
   ControlLabel,
   FormControl,
-  Alert,
   Breadcrumb,
-  Input,
 } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { withRouter } from 'react-router';
-import renderIf from 'render-if';
 import Select from 'react-select';
+import ErrorAlert from '../error-alert';
 
 import app from '../../app.js';
 const atlasService = app.service('/atlases');
@@ -198,19 +196,16 @@ class AtlasCreate extends Component {
                 Add <strong>sections</strong>
                 , <strong>images</strong>,
                 <strong>videos</strong> and even
-                <strong>3D models
-                </strong>.
+                <strong>3D models</strong>.
               </li>
             </ul>
 
             <hr />
 
-            {renderIf(this.state.error)(() =>
-              <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
-                <h4>Oh snap! You got an error!</h4>
-                <p>{this.state.error.message}</p>
-              </Alert>
-            )}
+            <ErrorAlert
+              error={this.state.error}
+              onDismiss={() => this.setState({ error: null })}
+            />
 
             <form onSubmit={this.onSubmit}>
 

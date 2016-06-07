@@ -12,12 +12,12 @@ import {
   Checkbox,
   Tabs,
   Tab,
-  Alert,
 } from 'react-bootstrap';
 import Icon from 'react-fa';
 import Select from 'react-select';
 import renderIf from 'render-if';
 import moment from 'moment';
+import ErrorAlert from '../error-alert';
 
 import app from '../../app';
 const evaluationService = app.service('/evaluations');
@@ -444,11 +444,10 @@ export default class EvaluationDescription extends Component {
                         }
                       })()}
                     </Button>
-                    {renderIf(this.state.error)(() =>
-                      <Alert style={styles.error} bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
-                        <p>{this.state.error.message}</p>
-                      </Alert>
-                    )}
+                    <ErrorAlert
+                      error={this.state.error}
+                      onDismiss={() => this.setState({ error: null })}
+                    />
                   </div>
                 )}
               </Panel>
