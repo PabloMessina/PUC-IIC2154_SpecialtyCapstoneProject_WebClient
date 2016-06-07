@@ -16,6 +16,7 @@ export default class ImageWithLabelsWrapper extends Component {
         lostFocusCallback: () => {},
       },
       circleRadius: 4,
+      labels: [{"regions":[{"type":"C","x":0.328,"y":0.6201923076923077,"id":0,"string":"1"},{"type":"C","x":0.652,"y":0.6225961538461539,"id":1,"string":"2"}],"x":0.524,"y":0.25,"text":"label 1","id":0},{"regions":[{"type":"P","points":[{"x":0.772,"y":0.5528846153846154},{"x":0.838,"y":0.7932692307692307},{"x":0.932,"y":0.6225961538461539}],"x":0.847333333333334,"y":0.6562500000000004,"id":2,"string":"3"},{"type":"P","points":[{"x":0.198,"y":0.5072115384615384},{"x":0.082,"y":0.6105769230769231},{"x":0.224,"y":0.7235576923076923}],"x":0.16799999999999993,"y":0.6137820512820512,"id":3,"string":"4"}],"x":0.506,"y":0.8701923076923077,"text":"label 2","id":1}],
     };
   }
 
@@ -53,6 +54,7 @@ export default class ImageWithLabelsWrapper extends Component {
   }
 
   onLabelsChanged(labels) {
+    console.log('labels = ', JSON.stringify(labels, '\t'));
     this.setState({ labelCount: labels.length });
   }
 
@@ -103,36 +105,37 @@ export default class ImageWithLabelsWrapper extends Component {
         <input ref="fileInput" type="file" onChange={this.onFileChanged}></input>
         {renderIf(this.state.source)(() => (
           <div style={styles.toolbarWrapper}>
-            <div style={styles.toolbar}>
-              <Dropdown
-                id="label-dropdown-custom"
-              >
-                <Dropdown.Toggle
-                  style={styles.toolbarButton}
-                  bsRole="toggle"
-                  bsStyle="default"
-                  bsSize="small"
-                  className="dropdown-with-input dropdown-toggle"
+            {this.state.labelCount > 0 ?
+              <div style={styles.toolbar}>
+                <Dropdown
+                  id="label-dropdown-custom"
+                  dropup
                 >
-                  <IconStack size="2x">
-                    <Icon name="circle" stack="2x" />
-                    <Icon name="cog" stack="1x" style={styles.icon} />
-                  </IconStack>
-                </Dropdown.Toggle>
-                <Dropdown.Menu className="super-colors">
-                  <div>
-                    <label>Circle Radius: </label>
-                    <input
-                      ref="circleRadiusInput"
-                      type="range" min={1} max={20} step={0.2}
-                      value={circleRadius}
-                      onChange={this.onCircleRadiusChanged}
-                    />
-                    <span>{circleRadius.toFixed(2)}</span>
-                  </div>
-                </Dropdown.Menu>
-              </Dropdown>
-              {this.state.labelCount > 0 ?
+                  <Dropdown.Toggle
+                    style={styles.toolbarButton}
+                    bsRole="toggle"
+                    bsStyle="default"
+                    bsSize="small"
+                    className="dropdown-with-input dropdown-toggle"
+                  >
+                    <IconStack size="2x">
+                      <Icon name="circle" stack="2x" />
+                      <Icon name="cog" stack="1x" style={styles.icon} />
+                    </IconStack>
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu className="super-colors">
+                    <div>
+                      <label>Circle Radius: </label>
+                      <input
+                        ref="circleRadiusInput"
+                        type="range" min={1} max={20} step={0.2}
+                        value={circleRadius}
+                        onChange={this.onCircleRadiusChanged}
+                      />
+                      <span>{circleRadius.toFixed(2)}</span>
+                    </div>
+                  </Dropdown.Menu>
+                </Dropdown>
                 <ToggleButton
                   turnedOnIcon="eye"
                   turnedOffIcon="eye-slash"
@@ -140,8 +143,7 @@ export default class ImageWithLabelsWrapper extends Component {
                   turnedOffCallback={this.hideLabels}
                   iconStyle={styles.icon}
                   buttonStyle={styles.toolbarButton}
-                /> : null}
-              {this.state.labelCount > 0 ?
+                />
                 <Button
                   style={styles.toolbarButton}
                   onClick={() => this.refs.img.minimizeAllLabels()}
@@ -151,8 +153,7 @@ export default class ImageWithLabelsWrapper extends Component {
                     <Icon name="circle" stack="2x" />
                     <Icon name="minus-square" stack="1x" style={styles.icon} />
                   </IconStack>
-                </Button> : null}
-              {this.state.labelCount > 0 ?
+                </Button>
                 <Button
                   style={styles.toolbarButton}
                   onClick={() => this.refs.img.maximizeAllLabels()}
@@ -162,19 +163,28 @@ export default class ImageWithLabelsWrapper extends Component {
                     <Icon name="circle" stack="2x" />
                     <Icon name="plus-square" stack="1x" style={styles.icon} />
                   </IconStack>
-                </Button> : null}
-            </div>
+                </Button>
+              </div> : null}
             <ImageWithLabels
               ref="img"
               style={styles.imgWithLabels}
               source={this.state.source}
+              labels={this.props.labels}
               renderLabel={this.renderLabel}
               mode={readOnly ? 'READONLY' : 'EDITION'}
               circleRadius={circleRadius}
+              showLabels={this.state.showLabels}
               gotFocusCallback={this.onGotFocus}
               lostFocusCallback={this.onLostFocus}
               labelsChangedCallback={this.onLabelsChanged}
-              showLabels={this.state.showLabels}
+              // colors
+              lineHighlightColor="rgb(255,0,0)"
+              lineNormalColor="rgb(0,0,0)"
+              regionHighlightColor="rgba(255,255,0,0.2)"
+              regionNormalColor="rgba(0,255,0,0.2)"
+              stringFocusColor="rgb(255,255,0)"
+              stringHighlightColor="rgb(236,150,13)"
+              stringNormalColor="rgb(255,255,255)"
             />
           </div>
         ))}
@@ -185,6 +195,7 @@ export default class ImageWithLabelsWrapper extends Component {
 
 ImageWithLabelsWrapper.propTypes = {
   url: React.PropTypes.string,
+  labels: React.PropTypes.array,
   blockProps: React.PropTypes.object.isRequired,
   circleRadius: React.PropTypes.number,
 };

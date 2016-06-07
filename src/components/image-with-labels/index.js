@@ -1,14 +1,13 @@
 import React, { Component } from 'react';
 import Utils2D from '../../_2Dlibrary/Utils2D';
-import _ from 'lodash';
+import isEqual from 'lodash/isEqual';
+import cloneDeep from 'lodash/cloneDeep';
 
 const LEFT_BUTTON = 0;
 const RIGHT_BUTTON = 1;
 
 const GREEN = 'rgba(0,255,0,0.2)';
-const BLACK = '#000000';
-const YELLOW = 'rgba(255,255,0,0.35)';
-const RED = 'rgb(255,0,0)';
+const BLACK = 'rgb(0,0,0)';
 
 const TEMP_CIRCLE_STYLE = {
   fillColor: GREEN,
@@ -18,14 +17,14 @@ const TEMP_CIRCLE_STYLE = {
 
 const TMP_CIRCLE_RADIUS = 3;
 const AREA_THRESHOLD = 50;
-const POLYGON_TYPE = 'POLYGON';
-const ELLIPSE_TYPE = 'ELLIPSE';
+const POLYGON_TYPE = 'P';
+const CIRCLE_TYPE = 'C';
 
 const DEFAULT_LABEL_TEXT = 'write something ...';
 const TEMPORARY_LABEL_TEXT = 'temporary label';
 const TEMPORARY_LABEL_REF = 'temporaryLabelRef';
 
-const REG_STRING_HEIGHT = 26;
+const REG_STRING_HEIGHT = 30;
 
 const DELETE_ICON_WIDTH = 12;
 const DELETE_ICON_HEIGHT = 12;
@@ -43,9 +42,18 @@ export default class ImageWithLabels extends Component {
       labelsChangedCallback: (labels) => console.log(labels),
       gotFocusCallback: () => console.log('gotFocusCallback()'),
       lostFocusCallback: () => console.log('lostFocusCallback()'),
+      errorDetectedCallback: err => { alert(err); console.log(err); },
       showLabels: true,
       mode: 'EDITION',
       circleRadius: 4,
+      // colors
+      lineHighlightColor: 'rgb(255,0,0)',
+      lineNormalColor: 'rgb(0,0,0)',
+      regionHighlightColor: 'rgba(255,255,0,0.2)',
+      regionNormalColor: 'rgba(0,255,0,0.2)',
+      stringFocusColor: 'rgb(255,255,0)',
+      stringHighlightColor: 'rgb(236,150,13)',
+      stringNormalColor: 'rgb(255,255,255)',
     };
   }
 
@@ -80,6 +88,7 @@ export default class ImageWithLabels extends Component {
       selectedLabelPositionDirty: false,
       regionWithSelectedString: null,
       componentFocused: false,
+      componentUnmounted: false,
       showLabels: props.showLabels,
     };
 
@@ -107,6 +116,8 @@ export default class ImageWithLabels extends Component {
     this.onHiddenInputKeyDown = this.onHiddenInputKeyDown.bind(this);
     this.unselectSelectedRegionString = this.unselectSelectedRegionString.bind(this);
     this.selectRegionString = this.selectRegionString.bind(this);
+    this.loadImageAndLabels = this.loadImageAndLabels.bind(this);
+    this.loadLabels = this.loadLabels.bind(this);
 
     // set event handlers according to mode
     if (this.props.mode === 'EDITION') {
@@ -116,16 +127,6 @@ export default class ImageWithLabels extends Component {
     }
     // general case event handlers
     this.onMouseDownGeneral = this.onMouseDownGeneral.bind(this);
-
-    // check if an image was provided
-    const source = this.props.source;
-    if (source) {
-      if (source.file) {
-        this.loadLocalImage(source.file);
-      } else if (source.url) {
-        this.loadRemoteImage(source.url);
-      }
-    }
   }
 
   componentDidMount() {
@@ -134,17 +135,15 @@ export default class ImageWithLabels extends Component {
     window.addEventListener('mousedown', this.onMouseDown);
     window.addEventListener('mousemove', this.onMouseMove);
     window.addEventListener('mouseup', this.onMouseUp);
+
+    // load image and labels provided (if any)
+    this.loadImageAndLabels(this.props.source, this.props.labels);
   }
 
   componentWillReceiveProps(nextProps) {
     /* check if a new source was provided */
-    const newSource = nextProps.source;
-    if (nextProps.source && !_.isEqual(this.props.source, newSource)) {
-      if (newSource.file) {
-        this.loadLocalImage(newSource.file);
-      } else if (newSource.url) {
-        this.loadRemoteImage(newSource.url);
-      }
+    if (nextProps.source && !isEqual(this.props.source, nextProps.source)) {
+      this.loadImageAndLabels(nextProps.source, nextProps.labels);
     }
     /* check if a new circle radius was provided */
     if (nextProps.circleRadius !== this.props.circleRadius) {
@@ -152,7 +151,7 @@ export default class ImageWithLabels extends Component {
       const canvas = this.refs.labelCanvas;
       for (const label of this.mystate.labelSet) {
         for (const reg of label.regions) {
-          if (reg.type === ELLIPSE_TYPE) {
+          if (reg.type === CIRCLE_TYPE) {
             reg.rx = nextProps.circleRadius / canvas.width;
             reg.ry = nextProps.circleRadius / canvas.height;
           }
@@ -177,12 +176,31 @@ export default class ImageWithLabels extends Component {
     }
   }
 
+  loadImageAndLabels(source, labels) {
+    if (source) {
+      let sourcePromise = null;
+      if (source.file) {
+        sourcePromise = this.loadLocalImage(source.file);
+      } else if (source.url) {
+        sourcePromise = this.loadRemoteImage(source.url);
+      }
+      if (sourcePromise) {
+        sourcePromise
+          .then(() => this.loadLabels(labels))
+          .catch(err => this.props.errorDetectedCallback(err));
+      } else {
+        this.props.errorDetectedCallback('No file or url found in source');
+      }
+    }
+  }
+
   componentWillUnmount() {
     // remove event listeners
     window.removeEventListener('mousedown', this.onMouseDownGeneral);
     window.removeEventListener('mousedown', this.onMouseDown);
     window.removeEventListener('mousemove', this.onMouseMove);
     window.removeEventListener('mouseup', this.onMouseUp);
+    this.mystate.componentUnmounted = true;
   }
 
   onMouseDownGeneral(e) {
@@ -251,13 +269,13 @@ export default class ImageWithLabels extends Component {
           // check intersection against dropped points
           let intersected = false;
           const tmpPts = this.mystate.tmpPoints;
-          for (let i = 0; i < tmpPts.length - 1; ++i) {
-            const p = tmpPts[i];
+          if (tmpPts.length >= 2) {
+            const p = tmpPts[0];
             if (Utils2D.circlesIntersect(p.x * canvas.width, p.y * canvas.height,
               TMP_CIRCLE_RADIUS, nccoords.x * canvas.width, nccoords.y * canvas.height,
               TMP_CIRCLE_RADIUS)) {
               /** case 2.1) previous point intersected */
-              const points = tmpPts.slice(i, -1);
+              const points = tmpPts.slice(0, -1);
               // get convex hull
               const convexPts = Utils2D.getConvexHull(points);
               // get its area
@@ -280,7 +298,7 @@ export default class ImageWithLabels extends Component {
               } else {
                 const { x, y } = centroid || nccoords;
                 newRegion = {
-                  type: ELLIPSE_TYPE, x, y,
+                  type: CIRCLE_TYPE, x, y,
                   rx: this.props.circleRadius / canvas.width,
                   ry: this.props.circleRadius / canvas.height,
                   id: this.mystate.regionId++,
@@ -314,13 +332,10 @@ export default class ImageWithLabels extends Component {
 
               // end loop
               intersected = true;
-              break;
             }
           }
           /** case 2.2) no intersection -> add a new point */
-          if (!intersected) {
-            this.mystate.tmpPoints.push({ x: nccoords.x, y: nccoords.y, id: this.mystate.tmpPoints.length });
-          }
+          if (!intersected) this.mystate.tmpPoints.push({ x: nccoords.x, y: nccoords.y });
 
         /** case 3) Nothing being dragged */
         } else {
@@ -346,6 +361,7 @@ export default class ImageWithLabels extends Component {
               else {
                 this.renderForAWhile(0);
                 this.forceUpdate();
+                this.props.labelsChangedCallback(this.exportLabelsToJSON());
               }
               break;
             }
@@ -387,8 +403,8 @@ export default class ImageWithLabels extends Component {
 
             /** case 3.5)  DEFAULT: click on canvas */
             // we drop the first 2 points of the temporary polygon
-            this.mystate.tmpPoints.push({ x: nccoords.x, y: nccoords.y, id: this.mystate.tmpPoints.length });
-            this.mystate.tmpPoints.push({ x: nccoords.x, y: nccoords.y, id: this.mystate.tmpPoints.length });
+            this.mystate.tmpPoints.push({ x: nccoords.x, y: nccoords.y });
+            this.mystate.tmpPoints.push({ x: nccoords.x, y: nccoords.y });
             // start dragging the last point
             this.mystate.draggingFirstTempPoint = true;
             break; // pseudo GOTO
@@ -413,6 +429,7 @@ export default class ImageWithLabels extends Component {
   unselectSelectedRegionString() {
     const reg = this.mystate.regionWithSelectedString;
     if (reg) {
+      if (!reg.string) reg.string = this.getNextRegionString();
       this.mystate.regionWithSelectedString = null;
       this.refs.hiddenInput.blur();
       if (this.mystate.selectedRegionStringDirty) {
@@ -645,7 +662,7 @@ export default class ImageWithLabels extends Component {
         TMP_CIRCLE_RADIUS)) {
         const { x, y } = ncmcoords;
         const newRegion = {
-          type: ELLIPSE_TYPE, x, y,
+          type: CIRCLE_TYPE, x, y,
           rx: this.props.circleRadius / canvas.width,
           ry: this.props.circleRadius / canvas.height,
           id: this.mystate.regionId++,
@@ -678,7 +695,7 @@ export default class ImageWithLabels extends Component {
 
       /** no intersection -> add a new point */
       } else {
-        this.mystate.tmpPoints.push({ x: ncmcoords.x, y: ncmcoords.y, id: this.mystate.tmpPoints.length });
+        this.mystate.tmpPoints.push({ x: ncmcoords.x, y: ncmcoords.y });
         /**  stop dragging first temporary point but start dragging next ones */
         this.mystate.draggingFirstTempPoint = false;
         this.mystate.draggingNextTempPoint = true;
@@ -817,40 +834,80 @@ export default class ImageWithLabels extends Component {
       const regions = [];
       for (const reg of label.regions) {
         if (reg.type === POLYGON_TYPE) {
-          regions.push({ type: POLYGON_TYPE, points: reg.points, cx: reg.x, cy: reg.y });
+          regions.push({ type: POLYGON_TYPE, points: reg.points, x: reg.x, y: reg.y, id: reg.id, string: reg.string });
         } else {
-          regions.push({ type: ELLIPSE_TYPE, x: reg.x, y: reg.y, rx: reg.rx, ry: reg.ry });
+          regions.push({ type: CIRCLE_TYPE, x: reg.x, y: reg.y, id: reg.id, string: reg.string });
         }
       }
-      labelJSONArray.push({ regions, x: label.x, y: label.y, text: label.text });
+      labelJSONArray.push({ regions, x: label.x, y: label.y, text: label.text, id: label.id });
     }
     return labelJSONArray;
   }
 
+  /**
+   * Load labels over the current image. It is assumed that an image has already been loaded
+   * and all previous labels were removed
+   */
+  loadLabels(labels) {
+    if (!labels) return;
+    const canvas = this.refs.labelCanvas;
+    let lid = 0;
+    let rid = 0;
+    for (const label of labels) {
+      const regions = new Set();
+      this.mystate.labelSet.add({ id: label.id, regions, x: label.x, y: label.y, text: label.text });
+      for (const reg of label.regions) {
+        if (rid < reg.id) rid = reg.id;
+        const region = cloneDeep(reg);
+        if (region.type === CIRCLE_TYPE) {
+          region.rx = this.props.circleRadius / canvas.width;
+          region.ry = this.props.circleRadius / canvas.height;
+        }
+        region.stringPosition = this.getRegionStringPosition(region);
+        regions.add(region);
+      }
+      if (lid < label.id) lid = label.id;
+    }
+    this.mystate.labelId = lid + 1;
+    this.mystate.regionId = rid + 1;
+    this.renderForAWhile(0);
+    this.forceUpdate(this.refreshAllLabelsPositions);
+  }
+
   /** load image from local file */
   loadLocalImage(file) {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      this.loadImage(img);
-      URL.revokeObjectURL(url);
-      this.renderForAWhile(0);
-    };
-    img.src = url;
+    return new Promise((res, rej) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        this.loadImage(img);
+        URL.revokeObjectURL(url);
+        this.renderForAWhile(0);
+        res();
+      };
+      img.onerror = err => rej(err);
+      img.src = url;
+    });
   }
 
   /** load image from a remote url */
   loadRemoteImage(url) {
-    const img = new Image();
-    img.onload = () => {
-      this.loadImage(img);
-      this.renderForAWhile(0);
-    };
-    img.src = url;
+    return new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => {
+        this.loadImage(img);
+        this.renderForAWhile(0);
+        res();
+      };
+      img.onerror = err => rej(err);
+      img.src = url;
+    });
   }
 
   /** load an image into an auxiliar canvas for rendering performance */
   loadImage(img) {
+    // abort operations if componente was unmounted
+    if (this.mystate.componentUnmounted) return;
     // determine scale ratio
     let ratio = 1;
     if (img.width > this.props.maxWidth) {
@@ -896,18 +953,22 @@ export default class ImageWithLabels extends Component {
     this.mystate.draggingExistingLabel = false;
     this.mystate.draggingRegion = false;
     this.mystate.draggedRegion = null;
+    this.mystate.draggedRegionPositionDirty = false;
+    this.mystate.selectedRegionStringDirty = false;
+    this.mystate.selectedLabelPositionDirty = false;
+    this.mystate.selectedLabelTextDirty = false;
     this.renderForAWhile();
     this.forceUpdate();
     // notify parent of changes in labels
     if (this.props.labelsChangedCallback) {
-      this.props.labelsChangedCallback(this.exportLabelsToJSON());
+      this.props.labelsChangedCallback([]);
     }
   }
 
   drawRegion(ctx, reg, cvwidth, cvheight) {
     if (reg.type === POLYGON_TYPE) {
       Utils2D.drawPolygon(ctx, reg.points, cvwidth, cvheight);
-    } else { // ELLIPSE_TYPE
+    } else { // CIRCLE_TYPE
       Utils2D.drawEllipse(ctx, reg.x * cvwidth, reg.y * cvheight,
         reg.rx * cvwidth, reg.ry * cvheight);
     }
@@ -916,7 +977,7 @@ export default class ImageWithLabels extends Component {
   /** render the scene onto the canvas */
   renderScene() {
     // don't do anything if labels are hidden
-    if (!this.mystate.showLabels) return;
+    if (!this.mystate.showLabels || this.mystate.componentUnmounted) return;
     if (this.mystate.renderingTimerRunning) {
       requestAnimationFrame(this.renderScene);
       // -------------
@@ -930,8 +991,8 @@ export default class ImageWithLabels extends Component {
 
       /** 2) draw regions */
       // normal regions
-      ctx.fillStyle = GREEN;
-      ctx.strokeStyle = BLACK;
+      ctx.fillStyle = this.props.regionNormalColor;
+      ctx.strokeStyle = this.props.lineNormalColor;
       ctx.lineWidth = 1.2;
       for (const label of this.mystate.labelSet) {
         if (label === this.mystate.selectedLabel) continue;
@@ -945,8 +1006,8 @@ export default class ImageWithLabels extends Component {
       }
       // selected label's regions
       if (this.mystate.selectedLabel) {
-        ctx.fillStyle = YELLOW;
-        ctx.strokeStyle = RED;
+        ctx.fillStyle = this.props.regionHighlightColor;
+        ctx.strokeStyle = this.props.lineHighlightColor;
         for (const reg of this.mystate.selectedLabel.regions) {
           this.drawRegion(ctx, reg, cvwidth, cvheight);
         }
@@ -954,7 +1015,7 @@ export default class ImageWithLabels extends Component {
 
       /** 3) draw lines */
       // normal lines
-      ctx.strokeStyle = BLACK;
+      ctx.strokeStyle = this.props.lineNormalColor;
       for (const label of this.mystate.labelSet) {
         if (label === this.mystate.selectedLabel) continue;
         if (label.minimized) continue;
@@ -972,7 +1033,7 @@ export default class ImageWithLabels extends Component {
       }
       // selected label's lines
       if (this.mystate.selectedLabel) {
-        ctx.strokeStyle = RED;
+        ctx.strokeStyle = this.props.lineHighlightColor;
         const label = this.mystate.selectedLabel;
         for (const reg of label.regions) {
           Utils2D.drawLine(ctx, reg.x * cvwidth, reg.y * cvheight,
@@ -982,8 +1043,8 @@ export default class ImageWithLabels extends Component {
 
       /** 4) draw temporary points (polygon), if any */
       if (this.mystate.draggingFirstTempPoint || this.mystate.draggingNextTempPoint) {
-        ctx.fillStyle = GREEN;
-        ctx.strokeStyle = BLACK;
+        ctx.fillStyle = this.props.regionNormalColor;
+        ctx.strokeStyle = this.props.lineNormalColor;
         ctx.lineWidth = 2;
         // draw temporary lines between points
         const tmpPts = this.mystate.tmpPoints;
@@ -1003,28 +1064,27 @@ export default class ImageWithLabels extends Component {
       if (this.mystate.labelSet.size > 0) {
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
-        ctx.lineWidth = 1.5;
-        ctx.fillStyle = 'rgb(255,255,255)';
-        ctx.strokeStyle = 'rgb(0,0,0)';
+        ctx.lineWidth = 0.8;
+        ctx.fillStyle = this.props.stringNormalColor;
+        ctx.strokeStyle = this.props.lineNormalColor;
         ctx.font = `${REG_STRING_HEIGHT}px sans-serif`;
         for (const label of this.mystate.labelSet) {
           for (const reg of label.regions) {
             const pos = reg.stringPosition;
             if (reg === this.mystate.regionWithSelectedString) {
-              ctx.fillStyle = 'rgb(255,255,0)';
+              ctx.fillStyle = this.props.stringFocusColor;
               ctx.fillText(reg.string, pos.x * canvas.width, pos.y * canvas.height);
               ctx.strokeText(reg.string, pos.x * canvas.width, pos.y * canvas.height);
-              ctx.fillStyle = 'rgb(255,255,255)';
-              continue;
+              ctx.fillStyle = this.props.stringNormalColor;
             } else if (label === this.mystate.selectedLabel) {
-              ctx.fillStyle = 'rgb(255,165,0)';
+              ctx.fillStyle = this.props.stringHighlightColor;
               ctx.fillText(reg.string, pos.x * canvas.width, pos.y * canvas.height);
               ctx.strokeText(reg.string, pos.x * canvas.width, pos.y * canvas.height);
-              ctx.fillStyle = 'rgb(255,255,255)';
-              continue;
+              ctx.fillStyle = this.props.stringNormalColor;
+            } else {
+              ctx.fillText(reg.string, pos.x * canvas.width, pos.y * canvas.height);
+              ctx.strokeText(reg.string, pos.x * canvas.width, pos.y * canvas.height);
             }
-            ctx.fillText(reg.string, pos.x * canvas.width, pos.y * canvas.height);
-            ctx.strokeText(reg.string, pos.x * canvas.width, pos.y * canvas.height);
           }
         }
       }
@@ -1080,10 +1140,6 @@ export default class ImageWithLabels extends Component {
     if (reg) {
       const val = hiddenInput.value;
       reg.string = val;
-      if (!reg.string) {
-        reg.string = this.getNextRegionString();
-        hiddenInput.value = reg.string;
-      }
       reg.stringPosition = this.getRegionStringPosition(reg);
       this.mystate.selectedRegionStringDirty = true;
       this.renderForAWhile();
@@ -1093,8 +1149,10 @@ export default class ImageWithLabels extends Component {
   onHiddenInputKeyDown(e) {
     if (e.keyCode === 13) {
       if (this.mystate.selectedRegionStringDirty) {
-        this.props.labelsChangedCallback(this.exportLabelsToJSON());
         this.mystate.selectedRegionStringDirty = false;
+        const reg = this.mystate.regionWithSelectedString;
+        if (!reg.string) reg.string = this.getNextRegionString();
+        this.props.labelsChangedCallback(this.exportLabelsToJSON());
       }
       this.mystate.regionWithSelectedString = null;
       e.target.blur();
@@ -1220,14 +1278,23 @@ ImageWithLabels.propTypes = {
   minHeight: React.PropTypes.number,
   maxResolutionX: React.PropTypes.number,
   maxResolutionY: React.PropTypes.number,
-  labelsChangedCallback: React.PropTypes.func,
-  labels: React.PropTypes.object,
+  labels: React.PropTypes.array,
   renderLabel: React.PropTypes.func.isRequired,
   showLabels: React.PropTypes.bool,
   mode: React.PropTypes.string.isRequired,
+  labelsChangedCallback: React.PropTypes.func,
   gotFocusCallback: React.PropTypes.func.isRequired,
   lostFocusCallback: React.PropTypes.func.isRequired,
+  errorDetectedCallback: React.PropTypes.func.isRequired,
   circleRadius: React.PropTypes.number,
+  // colors
+  lineHighlightColor: React.PropTypes.string,
+  lineNormalColor: React.PropTypes.string,
+  regionHighlightColor: React.PropTypes.string,
+  regionNormalColor: React.PropTypes.string,
+  stringFocusColor: React.PropTypes.string,
+  stringHighlightColor: React.PropTypes.string,
+  stringNormalColor: React.PropTypes.string,
 };
 
 const styles = {

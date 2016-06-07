@@ -262,7 +262,10 @@ const Utils2D = {
         }
       }
     }
-    return { x: refX, y: refY };
+    const m = points.length >> 1;
+    return {
+      x: (points[m].x + points[m + 1].x) * 0.5,
+      y: (points[m].y + points[m + 1].y) * 0.5 };
   },
 
   isPointInPolygon(x, y, points) {
