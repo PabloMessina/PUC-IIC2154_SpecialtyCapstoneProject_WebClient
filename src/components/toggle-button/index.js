@@ -36,7 +36,7 @@ export default class ToggleButton extends Component {
         style={buttonStyle}
       >
         <IconStack size="2x">
-          <Icon name="circle" stack="2x"/>
+          <Icon name="circle" stack="2x" />
           <Icon name={turnedOn ? turnedOnIcon : turnedOffIcon} stack="1x" style={iconStyle} />
         </IconStack>
       </Button>

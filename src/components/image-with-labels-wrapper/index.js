@@ -3,6 +3,7 @@ import ImageWithLabels from '../image-with-labels/';
 import renderIf from 'render-if';
 import { Button, Dropdown } from 'react-bootstrap';
 import Icon, { IconStack } from 'react-fa';
+import ToggleButton from '../toggle-button/';
 
 export default class ImageWithLabelsWrapper extends Component {
 
@@ -23,14 +24,15 @@ export default class ImageWithLabelsWrapper extends Component {
     this.state = {
       source: props.url ? { url: props.url } : null,
       circleRadius: props.circleRadius,
-    };
-    this.mystate = {
-      componentFocused: false,
+      showLabels: true,
     };
     this.onFileChanged = this.onFileChanged.bind(this);
     this.onGotFocus = this.onGotFocus.bind(this);
     this.onLostFocus = this.onLostFocus.bind(this);
     this.onCircleRadiusChanged = this.onCircleRadiusChanged.bind(this);
+    this.onLabelsChanged = this.onLabelsChanged.bind(this);
+    this.showLabels = this.showLabels.bind(this);
+    this.hideLabels = this.hideLabels.bind(this);
   }
 
   onFileChanged() {
@@ -41,8 +43,25 @@ export default class ImageWithLabelsWrapper extends Component {
   onGotFocus() {
     this.props.blockProps.gotFocusCallback();
   }
+
   onLostFocus() {
     this.props.blockProps.lostFocusCallback();
+  }
+
+  onCircleRadiusChanged(e) {
+    this.setState({ circleRadius: Number(e.target.value) });
+  }
+
+  onLabelsChanged(labels) {
+    this.setState({ labelCount: labels.length });
+  }
+
+  showLabels() {
+    this.setState({ showLabels: true });
+  }
+
+  hideLabels() {
+    this.setState({ showLabels: false });
   }
 
   renderLabel({ label, focusId, ref, key, style, isReadOnly,
@@ -56,7 +75,7 @@ export default class ImageWithLabelsWrapper extends Component {
         readOnly
       />);
     } else {
-      console.log("renderLabel(): label.text = ", label.text);
+      // console.log("renderLabel(): label.text = ", label.text);
       return (
         <div style={style} ref={ref} key={key}>
           <div style={styles.label.innerDiv}>
@@ -66,7 +85,7 @@ export default class ImageWithLabelsWrapper extends Component {
               style={styles.label.input}
               id={focusId}
               defaultValue={label.text}
-              onChange={(e) => onTextChanged(e.target.value)}
+              onChange={onTextChanged}
               onKeyDown={onKeyDown}
             />
           </div>
@@ -75,55 +94,76 @@ export default class ImageWithLabelsWrapper extends Component {
     }
   }
 
-  onCircleRadiusChanged(e) {
-    this.setState({ circleRadius: Number(e.target.value) });
-  }
-
   /** React's render function */
   render() {
     const { readOnly } = this.props.blockProps;
     const circleRadius = this.state.circleRadius;
     return (
       <div>
-        <div style={styles.toolbar}>
-          <Dropdown
-            id="label-dropdown-custom"
-            /*
-            open={this.state.labelDropdownOpen}
-            onToggle={this.onLabelDropDownToggle}
-            ref="labelDropdown"
-            dropup
-            pullRight*/
-          >
-            <Dropdown.Toggle
-              style={styles.toolbarButton}
-              bsRole="toggle"
-              bsStyle="default"
-              bsSize="small"
-              className="dropdown-with-input dropdown-toggle"
-            >
-              <IconStack size="2x">
-                <Icon name="circle" stack="2x" />
-                <Icon name="cog" stack="1x" style={styles.icon} />
-              </IconStack>
-            </Dropdown.Toggle>
-            <Dropdown.Menu className="super-colors">
-              <div>
-                <label>Circle Radius Coef: </label>
-                <input
-                  ref="circleRadiusInput"
-                  type="range" min={1} max={20} step={0.2}
-                  value={circleRadius}
-                  onChange={this.onCircleRadiusChanged}
-                />
-                <span>{circleRadius.toFixed(2)}</span>
-              </div>
-            </Dropdown.Menu>
-          </Dropdown>
-        </div>
         <input ref="fileInput" type="file" onChange={this.onFileChanged}></input>
         {renderIf(this.state.source)(() => (
-          <div >
+          <div style={styles.toolbarWrapper}>
+            <div style={styles.toolbar}>
+              <Dropdown
+                id="label-dropdown-custom"
+              >
+                <Dropdown.Toggle
+                  style={styles.toolbarButton}
+                  bsRole="toggle"
+                  bsStyle="default"
+                  bsSize="small"
+                  className="dropdown-with-input dropdown-toggle"
+                >
+                  <IconStack size="2x">
+                    <Icon name="circle" stack="2x" />
+                    <Icon name="cog" stack="1x" style={styles.icon} />
+                  </IconStack>
+                </Dropdown.Toggle>
+                <Dropdown.Menu className="super-colors">
+                  <div>
+                    <label>Circle Radius: </label>
+                    <input
+                      ref="circleRadiusInput"
+                      type="range" min={1} max={20} step={0.2}
+                      value={circleRadius}
+                      onChange={this.onCircleRadiusChanged}
+                    />
+                    <span>{circleRadius.toFixed(2)}</span>
+                  </div>
+                </Dropdown.Menu>
+              </Dropdown>
+              {this.state.labelCount > 0 ?
+                <ToggleButton
+                  turnedOnIcon="eye"
+                  turnedOffIcon="eye-slash"
+                  turnedOnCallback={this.showLabels}
+                  turnedOffCallback={this.hideLabels}
+                  iconStyle={styles.icon}
+                  buttonStyle={styles.toolbarButton}
+                /> : null}
+              {this.state.labelCount > 0 ?
+                <Button
+                  style={styles.toolbarButton}
+                  onClick={() => this.refs.img.minimizeAllLabels()}
+                  bsSize="small"
+                >
+                  <IconStack size="2x">
+                    <Icon name="circle" stack="2x" />
+                    <Icon name="minus-square" stack="1x" style={styles.icon} />
+                  </IconStack>
+                </Button> : null}
+              {this.state.labelCount > 0 ?
+                <Button
+                  style={styles.toolbarButton}
+                  onClick={() => this.refs.img.maximizeAllLabels()}
+                  bsSize="small"
+                >
+                  <IconStack size="2x">
+                    <Icon name="circle" stack="2x" />
+                    <Icon name="plus-square" stack="1x" style={styles.icon} />
+                  </IconStack>
+                </Button> : null}
+            </div>
             <ImageWithLabels
               ref="img"
               style={styles.imgWithLabels}
@@ -133,6 +173,8 @@ export default class ImageWithLabelsWrapper extends Component {
               circleRadius={circleRadius}
               gotFocusCallback={this.onGotFocus}
               lostFocusCallback={this.onLostFocus}
+              labelsChangedCallback={this.onLabelsChanged}
+              showLabels={this.state.showLabels}
             />
           </div>
         ))}
@@ -148,24 +190,24 @@ ImageWithLabelsWrapper.propTypes = {
 };
 
 const styles = {
-  imgWithLabels: {
-    marginLeft: 100,
+  toolbarWrapper: {
+    position: 'relative',
+  },
+  toolbar: {
+    position: 'absolute',
+    left: '0%',
+    top: '100%',
+    height: '44px',
+  },
+  toolbarButton: {
+    backgroundColor: 'transparent',
+    boxShadow: 'none',
+    padding: 3,
+  },
+  icon: {
+    color: 'white',
   },
   label: {
-    toolbar: {
-      position: 'absolute',
-      left: '0%',
-      bottom: '100%',
-      height: '44px',
-    },
-    toolbarButton: {
-      backgroundColor: 'transparent',
-      boxShadow: 'none',
-      padding: 3,
-    },
-    icon: {
-      color: 'white',
-    },
     innerDiv: {
       position: 'relative',
       backgroundColor: 'white',

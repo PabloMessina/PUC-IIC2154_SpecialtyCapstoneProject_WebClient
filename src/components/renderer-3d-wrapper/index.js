@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import Renderer3D from '../renderer-3d/';
-import ToggleButton from './toggleButton';
+import ToggleButton from '../toggle-button';
 import LabelStyleControl from './labelStyleControl';
 import { Button, Dropdown } from 'react-bootstrap';
 import renderIf from 'render-if';
