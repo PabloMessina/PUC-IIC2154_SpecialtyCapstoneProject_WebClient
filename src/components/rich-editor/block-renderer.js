@@ -29,7 +29,7 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
         component: Renderer3DWrapper,
         editable: false,
         props: {
-          readOnly,
+          mode: readOnly ? 'READONLY' : 'EDITION',
           gotFocusCallback: () => setState({ editorLocked: true }),
           lostFocusCallback: () => setState({ editorLocked: false }),
         },

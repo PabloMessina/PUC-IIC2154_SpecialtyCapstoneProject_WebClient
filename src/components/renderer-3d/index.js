@@ -1,29 +1,39 @@
 import React, { Component } from 'react';
-import THREE from 'n3d-threejs';
+import THREE from 'three';
 import MTLLoader from '../../_3Dlibrary/MTLLoader';
 import OBJLoader from '../../_3Dlibrary/OBJLoader';
 import ThreeUtils from '../../_3Dlibrary/ThreeUtils';
-import _ from 'lodash';
+import isEqual from 'lodash/isEqual';
+import TouchUtils from '../../utils/touch-utils';
 
 // button constants
 const LEFT_BUTTON = 0;
 const RIGHT_BUTTON = 2;
 // default message
 const DEFAULT_LABEL_MESSAGE = 'empty ...';
+const DEFAULT_EVALUATION_LABEL_MESSAGE = 'answer me ..';
 // file extensions
 const OBJ_EXT = '.obj';
 const MTL_EXT = '.mtl';
 
-export default class Renderer3D extends Component {
+const OBJ_SIZE_THRESHOLD = 1024 * 1014 * 7;
+const MTL_SIZE_THRESHOLD = 1024 * 512;
 
-  static get defaultProps() {
-    return {
-      canEdit: true,
-    };
-  }
+const DELETE_ICON_URL = 'http://localhost:3000/img/delete_icon.png';
+const MINIMIZE_ICON_URL = 'http://localhost:3000/img/minimize_icon.png';
+
+const ICON_COEF = 1 / 40;
+const ICON_RES = 256;
+const LABEL_DROP_DIST_COEF = 1 / 7;
+
+export default class Renderer3D extends Component {
 
   constructor(props) {
     super(props);
+
+    this.state = {
+      mode: props.mode,
+    };
 
     this.threeUpdate = this.threeUpdate.bind(this);
     this.threeRender = this.threeRender.bind(this);
@@ -32,18 +42,17 @@ export default class Renderer3D extends Component {
     this.load3DModelFromUrls = this.load3DModelFromUrls.bind(this);
     this.loadMeshGroup = this.loadMeshGroup.bind(this);
     this.handleWheel = this.handleWheel.bind(this);
-    this.handleMouseUp = this.handleMouseUp.bind(this);
-    this.handleMouseDown = this.handleMouseDown.bind(this);
-    this.handleMouseMove = this.handleMouseMove.bind(this);
-    this.handleWindowMouseDown = this.handleWindowMouseDown.bind(this);
+    this.onMouseUp = this.onMouseUp.bind(this);
+    this.onMouseDown = this.onMouseDown.bind(this);
+    this.onMouseMove = this.onMouseMove.bind(this);
+    this.onWindowMouseDown = this.onWindowMouseDown.bind(this);
     this.animateForAWhile = this.animateForAWhile.bind(this);
     this.highlightLabel = this.highlightLabel.bind(this);
     this.unhighlightLabel = this.unhighlightLabel.bind(this);
 
-    this.handleResize = this.handleResize.bind(this);
-    this.handleKeypress = this.handleKeypress.bind(this);
-    this.handleKeydown = this.handleKeydown.bind(this);
-    this.onHiddenTextChanged = this.onHiddenTextChanged.bind(this);
+    this.onResize = this.onResize.bind(this);
+    this.onKeydown = this.onKeydown.bind(this);
+
     this.updateSpritePlaneOrientations =
       this.updateSpritePlaneOrientations.bind(this);
     this.getViewportCoords = this.getViewportCoords.bind(this);
@@ -53,26 +62,46 @@ export default class Renderer3D extends Component {
     this.onXHRCreated = this.onXHRCreated.bind(this);
     this.onXHRDone = this.onXHRDone.bind(this);
     this.selectLabel = this.selectLabel.bind(this);
+    this.loadIconsFromServer = this.loadIconsFromServer.bind(this);
+    this.refreshIconsPositions = this.refreshIconsPositions.bind(this);
+    this.reloadDeleteIcon = this.reloadDeleteIcon.bind(this);
+    this.reloadMinimizeIcon = this.reloadMinimizeIcon.bind(this);
+    this.reloadIcons = this.reloadIcons.bind(this);
+    this.minimizeSelectedLabel = this.minimizeSelectedLabel.bind(this);
+    this.onFileDownloadStarted = this.onFileDownloadStarted.bind(this);
+    this.onHiddenTextChanged = this.onHiddenTextChanged.bind(this);
+    this.checkAndCorrectLabelIds = this.checkAndCorrectLabelIds.bind(this);
+    this.getNextId = this.getNextId.bind(this);
 
-    // API functions
+    /* --- Touch Event Handlers --- */
+    this.onTouchStart = this.onTouchStart.bind(this);
+    this.onTouchMove = this.onTouchMove.bind(this);
+    this.onTouchEnd = this.onTouchEnd.bind(this);
+    this.orbitCamera = this.orbitCamera.bind(this);
+
+    /* --- API FUNCTIONS (to be used by the parent wrapper component) --- */
     this.loadModel = this.loadModel.bind(this);
-    this.hideLabes = this.hideLabes.bind(this);
+    this.hideLabels = this.hideLabels.bind(this);
     this.showLabels = this.showLabels.bind(this);
     this.setNormalLabelStyle = this.setNormalLabelStyle.bind(this);
     this.setHighlightedLabelStyle = this.setHighlightedLabelStyle.bind(this);
     this.removeSelectedLabel = this.removeSelectedLabel.bind(this);
     this.refocusOnModel = this.refocusOnModel.bind(this);
     this.unselectSelectedLabel = this.unselectSelectedLabel.bind(this);
+    this.setSphereRadiusCoef = this.setSphereRadiusCoef.bind(this);
+    this.minimizeAllLabels = this.minimizeAllLabels.bind(this);
+    this.maximizeAllLabels = this.maximizeAllLabels.bind(this);
+    this.gotFocus = this.gotFocus.bind(this);
+    this.lostFocus = this.lostFocus.bind(this);
   }
 
   componentDidMount() {
     // add event listeners
-    window.addEventListener('resize', this.handleResize);
-    window.addEventListener('keypress', this.handleKeypress);
-    window.addEventListener('keydown', this.handleKeydown);
-    window.addEventListener('mouseup', this.handleMouseUp);
-    window.addEventListener('mousemove', this.handleMouseMove);
-    window.addEventListener('mousedown', this.handleWindowMouseDown);
+    window.addEventListener('resize', this.onResize);
+    window.addEventListener('keydown', this.onKeydown);
+    window.addEventListener('mouseup', this.onMouseUp);
+    window.addEventListener('mousemove', this.onMouseMove);
+    window.addEventListener('mousedown', this.onWindowMouseDown);
 
     // reference to the viewport div
     const viewport = this.refs.viewport;
@@ -104,6 +133,10 @@ export default class Renderer3D extends Component {
     const spritePlaneGroup = new THREE.Group();
     const lineGroup = new THREE.Group();
     const sphereGroup = new THREE.Group();
+    const iconSpriteGroup = new THREE.Group();
+    const iconCircleGroup = new THREE.Group();
+    iconCircleGroup.visible = false;
+    spritePlaneGroup.visible = false;
     scene.add(spriteGroup);
     scene.add(spritePlaneGroup);
     scene.add(lineGroup);
@@ -122,6 +155,7 @@ export default class Renderer3D extends Component {
     // that we don't want to expose to the client code
     // into "this.mystate" (that's why mystate instead of state)
     this.mystate = {
+      sphereRadiusCoef: this.props.sphereRadiusCoef,
       renderer,
       scene,
       camera,
@@ -143,9 +177,11 @@ export default class Renderer3D extends Component {
       labels: this.props.labels,
       labelsEnabled: true,
       labelSet: new Set(),
+      id2labelMap: {},
       normalLabelStyle: this.props.normalLabelStyle,
       highlightedLabelStyle: this.props.highlightedLabelStyle,
       canFocusHiddenInput: false,
+      selectedLabelTextDirty: false,
       // draggable label vars
       draggingTempLabel: false,
       tempDraggableLabel: null,
@@ -169,51 +205,170 @@ export default class Renderer3D extends Component {
         reason: '',
       },
       pendingXHRs: new Set(),
+      labelIds: new Set(),
+      componentFocused: false,
+      // touch state data,
+      orbitingCamera_touch: false,
+      orbitingCamera_touch_updatePending: false,
+      draggingCamera_touch: false,
+      draggingCamera_touch_updatePending: false,
+      pinching: false,
+      pinching_updatePending: false,
+      touchCoords1: { x: null, y: null },
+      touchCoords2: { x: null, y: null },
+      // icons
+      deleteImg: null,
+      deleteIconSprite: null,
+      deleteIconCircle: null,
+      minimizeImg: null,
+      minimizeIconSprite: null,
+      minimizeIconCircle: null,
+      iconSpriteGroup,
+      iconCircleGroup,
     };
 
     /** if we are receiving remoteFiles, we load the 3D model
     from the server */
     if (this.props.remoteFiles) {
       const remoteFiles = this.props.remoteFiles;
-      this.props.loadingStartingCallback();
       this.load3DModelFromUrls(remoteFiles)
       .then(() => {
         this.loadLabels(this.props.labels);
         this.props.loadingCompletedCallback();
       })
-      .catch(error => {
-        this.props.loadingErrorCallback(error);
-      });
+      .catch(error => this.props.loadingErrorCallback(error));
     }
+    // load icons
+    this.loadIconsFromServer();
     // run animation
     this.animateForAWhile();
   }
 
-  componentWillReceiveProps(nextProps) {
-    /** check if we are receving new remote files */
-    if (nextProps.remoteFiles &&
-      !_.isEqual(this.props.remoteFiles, nextProps.remoteFiles)) {
-      const remoteFiles = nextProps.remoteFiles;
-      this.props.loadingStartingCallback();
-      this.load3DModelFromUrls(remoteFiles)
-      .then(() => {
-        /** update label styles if they are provided */
-        if (nextProps.highlightedLabelStyle) {
-          this.mystate.highlightedLabelStyle = nextProps.highlightedLabelStyle;
-        }
-        if (nextProps.normalLabelStyle) {
-          this.mystate.normalLabelStyle = nextProps.normalLabelStyle;
-        }
-        /** update labels **/
-        this.loadLabels(nextProps.labels);
-        // notify successful completion
-        this.props.loadingCompletedCallback();
-      })
-      .catch(error => {
-        // notify any errors
-        this.props.loadingErrorCallback(error);
-      });
+  reloadDeleteIcon() {
+    if (this.mystate.deleteIconSprite) {
+      this.mystate.iconSpriteGroup.remove(this.mystate.deleteIconSprite);
+      this.mystate.iconCircleGroup.remove(this.mystate.deleteIconCircle);
     }
+    const iconLength = this.mystate.meshDiameter * ICON_COEF;
+    // reload sprite
+    this.mystate.deleteIconSprite = (this.mystate.deleteImg) ?
+      ThreeUtils.makeImageSprite({  // from loaded image
+        img: this.mystate.deleteImg,
+        resX: ICON_RES, resY: ICON_RES, worldWidth: iconLength, worldHeight: iconLength }) :
+      ThreeUtils.makeDeleteIconSprite({ // manual creation
+        resX: ICON_RES, resY: ICON_RES, worldWidth: iconLength, worldHeight: iconLength });
+    this.mystate.iconSpriteGroup.add(this.mystate.deleteIconSprite);
+    // reload mesh used for collision detection
+    const geo = new THREE.CircleGeometry(iconLength * 0.5, 16);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+    const mesh = new THREE.Mesh(geo, mat);
+    this.mystate.deleteIconCircle = mesh;
+    this.mystate.iconCircleGroup.add(mesh);
+  }
+  reloadMinimizeIcon() {
+    if (this.mystate.minimizeIconSprite) {
+      this.mystate.iconSpriteGroup.remove(this.mystate.minimizeIconSprite);
+      this.mystate.iconCircleGroup.remove(this.mystate.minimizeIconCircle);
+    }
+    const iconLength = this.mystate.meshDiameter * ICON_COEF;
+    // reload sprite
+    this.mystate.minimizeIconSprite = (this.mystate.minimizeImg) ?
+      ThreeUtils.makeImageSprite({  // from loaded image
+        img: this.mystate.minimizeImg,
+        resX: ICON_RES, resY: ICON_RES, worldWidth: iconLength, worldHeight: iconLength }) :
+      ThreeUtils.makeMinimizeIconSprite({ // manual creation
+        resX: ICON_RES, resY: ICON_RES, worldWidth: iconLength, worldHeight: iconLength });
+    this.mystate.iconSpriteGroup.add(this.mystate.minimizeIconSprite);
+    // reload mesh used for collision detection
+    const geo = new THREE.CircleGeometry(iconLength * 0.5, 16);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+    const mesh = new THREE.Mesh(geo, mat);
+    this.mystate.minimizeIconCircle = mesh;
+    this.mystate.iconCircleGroup.add(mesh);
+  }
+
+  reloadIcons() {
+    if (this.state.mode === 'EDITION') this.reloadDeleteIcon();
+    this.reloadMinimizeIcon();
+  }
+
+  loadIconsFromServer() {
+    // delete icon
+    const deleteImg = new Image();
+    deleteImg.onload = () => {
+      this.mystate.deleteImg = deleteImg;
+      if (this.mystate.meshGroup) this.reloadDeleteIcon();
+    };
+    deleteImg.src = DELETE_ICON_URL;
+
+    // minimize icon
+    const minimizeImg = new Image();
+    minimizeImg.onload = () => {
+      this.mystate.minimizeImg = minimizeImg;
+      if (this.mystate.meshGroup) this.reloadMinimizeIcon();
+    };
+    minimizeImg.src = MINIMIZE_ICON_URL;
+  }
+
+
+  componentWillReceiveProps(nextProps) {
+    console.log('====> componentWillReceiveProps()');
+
+    if (this.state.mode === 'EDITION') {
+      /** check if we are receving new remote files */
+      if (nextProps.remoteFiles &&
+        !isEqual(this.props.remoteFiles, nextProps.remoteFiles)) {
+        const remoteFiles = nextProps.remoteFiles;
+        this.props.loadingStartingCallback();
+        this.load3DModelFromUrls(remoteFiles)
+        .then(() => {
+          /** update label styles if they are provided */
+          if (nextProps.highlightedLabelStyle) {
+            this.mystate.highlightedLabelStyle = nextProps.highlightedLabelStyle;
+          }
+          if (nextProps.normalLabelStyle) {
+            this.mystate.normalLabelStyle = nextProps.normalLabelStyle;
+          }
+          /** update labels **/
+          this.loadLabels(nextProps.labels);
+          // notify successful completion
+          this.props.loadingCompletedCallback();
+        })
+        // notify any errors
+        .catch(error => this.props.loadingErrorCallback(error));
+      }
+    } else if (this.state.mode === 'EVALUATION') {
+      /* check if we are receving new label answers */
+      if (nextProps.labelAnswersDirty) this.loadLabelAnswers(nextProps.labelAnswers);
+    }
+  }
+
+  /** refresh labels with the answers received **/
+  loadLabelAnswers(labelAnswers) {
+    // refresh each label that needs to be updated
+    for (const labelAns of labelAnswers) {
+      const label = this.mystate.id2labelMap[labelAns.id];
+      if (!label) {
+        console.log(`WARNING: no label with id = ${labelAns.id} found`);
+        continue;
+      }
+      if (typeof labelAns.text !== 'string') continue;
+      if (label.student_answer !== labelAns.text) {
+        label.student_answer = labelAns.text;
+        if (label === this.mystate.selectedLabel) {
+          this.refs.hiddenTxtInp.value = labelAns.text;
+          this.highlightLabel(label);
+          this.refreshIconsPositions();
+          this.mystate.selectedLabelTextDirty = false;
+        } else if (!label.minimized) {
+          this.unhighlightLabel(label);
+        }
+      }
+    }
+    // notify that we have consumed the labels
+    this.props.labelAnswersConsumedCallback();
+    // refresh scene
+    this.animateForAWhile();
   }
 
   /** Avoid updates altogether (they are not necessary) */
@@ -224,12 +379,11 @@ export default class Renderer3D extends Component {
   componentWillUnmount() {
     console.log("==> Renderer3D::componentWillUnmount()");
     // remove event listeners
-    window.removeEventListener('resize', this.handleResize);
-    window.removeEventListener('keypress', this.handleKeypress);
-    window.removeEventListener('keydown', this.handleKeydown);
-    window.removeEventListener('mouseup', this.handleMouseUp);
-    window.removeEventListener('mousemove', this.handleMouseMove);
-    window.removeEventListener('mousedown', this.handleWindowMouseDown);
+    window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('keydown', this.onKeydown);
+    window.removeEventListener('mouseup', this.onMouseUp);
+    window.removeEventListener('mousemove', this.onMouseMove);
+    window.removeEventListener('mousedown', this.onWindowMouseDown);
     // abort any pending xhr requests
     for (const xhr of this.mystate.pendingXHRs) {
       xhr.abortAndRejectPromise('Fetch interrupted because the 3d renderer has been unmounted');
@@ -244,6 +398,11 @@ export default class Renderer3D extends Component {
     // if no mesh has been set yet, abort updates
     if (this.mystate.meshGroup === null) return;
 
+    /* ============= */
+    /* MOUSE UPDATES */
+    /* ============= */
+
+    /* zoom */
     if (this.mystate.updateCameraZoom) {
       // get viewport's dimensions
       const width = this.refs.viewport.offsetWidth;
@@ -272,76 +431,132 @@ export default class Renderer3D extends Component {
       target.add(shift);
       this.mystate.camera.lookAt(target);
 
+    /* orbit */
     } else if (this.mystate.cameraOrbitUpdatePending) {
-      // get viewport's dimensions
-      const width = this.refs.viewport.offsetWidth;
-      const height = this.refs.viewport.offsetHeight;
-      // convert previous mouse screen coords into world coords
-      const w1 = ThreeUtils.unprojectFromScreenToWorld(
-        this.mystate.mouseLeft1.x,
-        this.mystate.mouseLeft1.y,
-        width, height, this.mystate.camera
-      );
-      // convert current mouse screen coords into world coords
-      const w2 = ThreeUtils.unprojectFromScreenToWorld(
-        this.mystate.mouseLeft2.x,
-        this.mystate.mouseLeft2.y,
-        width, height, this.mystate.camera
-      );
-      // get diff vectors
-      const v01 = (new THREE.Vector3()).subVectors(w1, this.mystate.meshCenter);
-      const v12 = (new THREE.Vector3()).subVectors(w2, w1);
-
-      if (!ThreeUtils.isZero(v01) && !ThreeUtils.isZero(v12)) {
-        // compute axis
-        const axis = (new THREE.Vector3()).crossVectors(v01, v12);
-        axis.normalize();
-
-        // compute angle
-        let xx = (this.mystate.mouseLeft2.x - this.mystate.mouseLeft1.x);
-        xx *= xx;
-        let yy = (this.mystate.mouseLeft2.y - this.mystate.mouseLeft1.y);
-        yy *= yy;
-        const angle = 0.003 + Math.min(0.4, (xx + yy) / 100);
-
-        // set quaternion
-        const quat = new THREE.Quaternion();
-        quat.setFromAxisAngle(axis, angle);
-
-        // rotate camera's position
-        this.mystate.camera.position
-          .sub(this.mystate.meshCenter)
-          .applyQuaternion(quat)
-          .add(this.mystate.meshCenter);
-
-        // rotate camera's target
-        const target = (new THREE.Vector3(0, 0, -1)).applyMatrix4(this.mystate.camera.matrixWorld);
-        target
-          .sub(this.mystate.meshCenter)
-          .applyQuaternion(quat)
-          .add(this.mystate.meshCenter);
-
-        // rotate camera's up
-        const up = (new THREE.Vector3(0, 1, 0)).applyMatrix4(this.mystate.camera.matrixWorld);
-        up.sub(this.mystate.meshCenter)
-        .applyQuaternion(quat)
-        .add(this.mystate.meshCenter)
-        .sub(this.mystate.camera.position);
-
-        // set camera's up and target
-        this.mystate.camera.up.copy(up);
-        this.mystate.camera.lookAt(target);
-
-        // update camera's light's position
-        this.mystate.cameraLight.position.copy(this.mystate.camera.position);
-
-        // update orientation of sprite planes
-        this.updateSpritePlaneOrientations();
-      }
-
+      this.orbitCamera(this.mystate.mouseLeft1, this.mystate.mouseLeft2);
       this.mystate.mouseLeft1.x = this.mystate.mouseLeft2.x;
       this.mystate.mouseLeft1.y = this.mystate.mouseLeft2.y;
       this.mystate.cameraOrbitUpdatePending = false;
+    }
+
+    /* ============= */
+    /* TOUCH UPDATES */
+    /* ============= */
+
+    /* pinching (zoom) */
+    if (this.mystate.pinching_updatePending) {
+      const deltaDist = this.mystate.pinchDist2 - this.mystate.pinchDist1;
+      // get viewport's dimensions
+      const width = this.refs.viewport.offsetWidth;
+      const height = this.refs.viewport.offsetHeight;
+      // get viewport coords of pinch center
+      const center = this.mystate.pinchCenter;
+      const coords = this.getViewportCoords(center.x, center.y);
+      // get mouse's world coords before zoom update
+      const mw1 = ThreeUtils.unprojectFromScreenToWorld(
+        coords.x, coords.y, width, height, this.mystate.camera);
+      // update zoom
+      let minD = Math.min(width, height);
+      minD *= minD;
+      const factor = 1 + deltaDist / minD;
+      let zoom = this.mystate.camera.zoom;
+      zoom *= factor;
+      if (zoom < 0.01) zoom = 0.01;
+      this.mystate.camera.zoom = zoom;
+      this.mystate.camera.updateProjectionMatrix();
+      this.mystate.updateCameraZoom = false;
+      // get mouse's world coords after zoom update
+      const mw2 = ThreeUtils.unprojectFromScreenToWorld(
+        coords.x, coords.y, width, height, this.mystate.camera);
+      // get shift vector to update camera's position, light and target
+      const shift = mw1.sub(mw2);
+      this.mystate.camera.position.add(shift);
+      this.mystate.cameraLight.position.copy(this.mystate.camera.position);
+      const target = (new THREE.Vector3(0, 0, -1)).applyMatrix4(this.mystate.camera.matrixWorld);
+      target.add(shift);
+      this.mystate.camera.lookAt(target);
+
+      this.mystate.pinching_updatePending = false;
+
+    /* orbiting camera */
+    } else if (this.mystate.orbitingCamera_touch_updatePending) {
+      this.orbitCamera(this.mystate.touchCoords1, this.mystate.touchCoords2);
+      this.mystate.touchCoords1.x = this.mystate.touchCoords2.x;
+      this.mystate.touchCoords1.y = this.mystate.touchCoords2.y;
+      this.mystate.orbitingCamera_touch_updatePending = false;
+
+    /* dragging camera */
+    } else if (this.mystate.draggingCamera_touch_updatePending) {
+      const cam = this.mystate.camera;
+      const dx = (this.mystate.touchCoords2.x - this.mystate.touchCoords1.x) * 0.08 / cam.zoom;
+      const dy = (this.mystate.touchCoords2.y - this.mystate.touchCoords1.y) * 0.08 / cam.zoom;
+      cam.position.set(-dx, dy, 0).applyMatrix4(cam.matrixWorld);
+      this.mystate.draggingCamera_touch_updatePending = false;
+    }
+  }
+
+  orbitCamera(coords1, coords2) {
+    // get viewport's dimensions
+    const width = this.refs.viewport.offsetWidth;
+    const height = this.refs.viewport.offsetHeight;
+    // convert previous screen coords into world coords
+    const w1 = ThreeUtils.unprojectFromScreenToWorld(
+      coords1.x, coords1.y, width, height, this.mystate.camera);
+    // convert current screen coords into world coords
+    const w2 = ThreeUtils.unprojectFromScreenToWorld(
+      coords2.x, coords2.y, width, height, this.mystate.camera);
+    // get diff vectors
+    const v01 = (new THREE.Vector3()).subVectors(w1, this.mystate.meshCenter);
+    const v12 = (new THREE.Vector3()).subVectors(w2, w1);
+
+    if (!ThreeUtils.isZero(v01) && !ThreeUtils.isZero(v12)) {
+      // compute axis
+      const axis = (new THREE.Vector3()).crossVectors(v01, v12);
+      axis.normalize();
+
+      // compute angle
+      let xx = (coords2.x - coords1.x);
+      xx *= xx;
+      let yy = (coords2.y - coords1.y);
+      yy *= yy;
+      const angle = 0.003 + Math.min(0.4, (xx + yy) / 100);
+
+      // set quaternion
+      const quat = new THREE.Quaternion();
+      quat.setFromAxisAngle(axis, angle);
+
+      // rotate camera's position
+      this.mystate.camera.position
+        .sub(this.mystate.meshCenter)
+        .applyQuaternion(quat)
+        .add(this.mystate.meshCenter);
+
+      // rotate camera's target
+      const target = (new THREE.Vector3(0, 0, -1)).applyMatrix4(this.mystate.camera.matrixWorld);
+      target
+        .sub(this.mystate.meshCenter)
+        .applyQuaternion(quat)
+        .add(this.mystate.meshCenter);
+
+      // rotate camera's up
+      const up = (new THREE.Vector3(0, 1, 0)).applyMatrix4(this.mystate.camera.matrixWorld);
+      up.sub(this.mystate.meshCenter)
+      .applyQuaternion(quat)
+      .add(this.mystate.meshCenter)
+      .sub(this.mystate.camera.position);
+
+      // set camera's up and target
+      this.mystate.camera.up.copy(up);
+      this.mystate.camera.lookAt(target);
+
+      // update camera's light's position
+      this.mystate.cameraLight.position.copy(this.mystate.camera.position);
+
+      // update orientation of sprite planes
+      this.updateSpritePlaneOrientations();
+
+      // if there is a selected label, refresh icons
+      if (this.mystate.selectedLabel) this.refreshIconsPositions();
     }
   }
 
@@ -378,28 +593,28 @@ export default class Renderer3D extends Component {
         textureUrls[filename] = url;
       }
     }
+    // check mtl url was provided
+    if (mtlUrl === null) return Promise.reject('mtl url not found');
+    // check obj url was provided
+    if (objUrl === null) return Promise.reject('obj url not found');
 
-    if (mtlUrl === null) { // check mtl url was provided
-      return Promise.reject('mtl url not found');
-    }
-    if (objUrl === null) { // check obj url was provided
-      return Promise.reject('obj url not found');
-    }
-
-    const progressCallback = this.props.loadingProgressCallback;
-    progressCallback(`Loading MTL file from ${mtlUrl} ...`, 0, 1);
-
-    return MTLLoader.loadMaterialsFromUrl(mtlUrl, textureUrls, this.mystate.loadingInterrupter)
-    .then((materials) => {
+    this.props.downloadCycleStartedCallback();
+    this.onFileDownloadStarted(mtlUrl);
+    return MTLLoader.loadMaterialsFromUrl(
+      mtlUrl, textureUrls,
+      this.mystate.loadingInterrupter,
+      this.onFileDownloadStarted)
+    .then(({ materials }) => {
       if (this.mystate.loadingInterrupter.stop) {
         throw new Error(this.mystate.loadingInterrupter.reason);
       }
-      progressCallback(`Loading OBJ file from ${objUrl} ...`, 0, 1);
+      this.onFileDownloadStarted(objUrl);
       return OBJLoader.loadObjectsFromUrl(
         objUrl,
         materials,
         (lengthSoFar, totalLength) =>
-          progressCallback(`Loading OBJ file from ${objUrl} ...`, lengthSoFar, totalLength),
+          this.props.loadingProgressCallback(
+            `Loading OBJ file from ${objUrl} ...`, lengthSoFar, totalLength),
         this.onXHRCreated,
         this.onXHRDone,
         this.mystate.loadingInterrupter
@@ -420,6 +635,11 @@ export default class Renderer3D extends Component {
   }
   onXHRDone(xhr) {
     this.mystate.pendingXHRs.delete(xhr);
+    this.props.downloadCycleFinishedCallback();
+    this.props.loadingStartingCallback();
+  }
+  onFileDownloadStarted(url) {
+    this.props.downloadingFileCallback(url);
   }
 
   /**
@@ -453,42 +673,55 @@ export default class Renderer3D extends Component {
         mtlFile = file; // mtl file
       } else {
         // save path to texture image file
-        texturePaths[fname] = window.URL.createObjectURL(file);
+        texturePaths[fname] = URL.createObjectURL(file);
       }
     }
 
     // ---------------------------------
     // parse MTL and OBJ files
     // ---------------------------------
-    if (mtlFile === null) { // check mtl file was provided
-      return Promise.reject('mtl file not found');
+    if (mtlFile === null) return Promise.reject('mtl file not found');
+    if (objFile === null) return Promise.reject('obj file not found');
+    if (mtlFile.size > MTL_SIZE_THRESHOLD) {
+      return Promise.reject(`${mtlFile.name} has ${mtlFile.size}
+        bytes > ${MTL_SIZE_THRESHOLD}. It's too heavy :S`);
     }
-    if (objFile === null) { // check obj file was provided
-      return Promise.reject('obj file not found');
+    if (objFile.size > OBJ_SIZE_THRESHOLD) {
+      return Promise.reject(`${objFile.name} has ${objFile.size}
+bytes > ${OBJ_SIZE_THRESHOLD} bytes. It's too heavy :S. Maybe you should
+reduce the complexity of your mesh by applying mesh simplification on it.`);
     }
 
-    const progressCallback = this.props.loadingProgressCallback;
-    progressCallback(`Loading MTL file ${mtlFile.name} ...`, 0, mtlFile.size);
+    let imagePathsUsed;
+
+    this.props.downloadCycleStartedCallback();
+    this.onFileDownloadStarted(URL.createObjectURL(mtlFile));
     // use MTLLoader to load materials from MTL file
-    return MTLLoader.loadMaterialsFromFile(mtlFile, texturePaths, this.mystate.loadingInterrupter)
-    .then((materials) => {
+    return MTLLoader.loadMaterialsFromFile(
+      mtlFile, texturePaths,
+      this.mystate.loadingInterrupter,
+      this.onFileDownloadStarted)
+    .then(({ materials, texturePathsUsed }) => {
+      imagePathsUsed = texturePathsUsed;
       if (this.mystate.loadingInterrupter.stop) {
         throw new Error(this.mystate.loadingInterrupter.reason);
       }
-      progressCallback(`Loading MTL file ${mtlFile.name} ...`, mtlFile.size, mtlFile.size);
-      // on success, proceed to use the OBJLoader to load the 3D objects
-      // from OBJ file
-      return OBJLoader.loadObjectsFromFile(objFile, materials, (lengthSoFar, totalLength) => {
-        progressCallback(`Loading OBJ file ${objFile.name} ...`, lengthSoFar, totalLength);
-      }, this.mystate.loadingInterrupter);
+      this.props.downloadCycleFinishedCallback();
+      // on success, proceed to use the OBJLoader to load the 3D objects from OBJ file
+      return OBJLoader.loadObjectsFromFile(
+        objFile, materials,
+        (lengthSoFar, totalLength) =>
+          this.props.loadingProgressCallback(
+            `Loading OBJ file ${objFile.name} ...`, lengthSoFar, totalLength),
+        this.mystate.loadingInterrupter);
     })
     .then((meshGroup) => {
       if (this.mystate.loadingInterrupter.stop) {
         throw new Error(this.mystate.loadingInterrupter.reason);
       }
-      // on success, proceed to incorporte the meshes into the scene
-      // and render them
+      // on success, proceed to incorporte the meshes into the scene and render them
       this.loadMeshGroup(meshGroup);
+      this.props.local3DFilesLoadedCallback({ mtlFile, objFile, texturePaths: imagePathsUsed });
     });
   }
 
@@ -512,9 +745,11 @@ export default class Renderer3D extends Component {
       }
       // remove labels
       this.clearAllLabelData();
+      // remove icons
+      this.mystate.scene.remove(this.mystate.iconSpriteGroup);
+      this.mystate.scene.remove(this.mystate.iconCircleGroup);
       // notify parent of changes
       this.props.labelsChangedCallback(this.labelsToJSON());
-      this.props.selectedLabelChangedCallback(this.mystate.selectedLabel);
     }
     // set the new meshGroup
     this.mystate.meshGroup = meshGroup;
@@ -530,10 +765,12 @@ export default class Renderer3D extends Component {
     this.mystate.scene.add(this.mystate.spriteGroup);
     this.mystate.scene.add(this.mystate.spritePlaneGroup);
     this.mystate.labelsEnabled = true;
+    // reload icons
+    this.reloadIcons();
     // run animation cycle to reflect changes on the screen
-    this.animateForAWhile();
+    this.animateForAWhile(0);
     // refocus the camera on the model
-    setTimeout(() => this.refocusOnModel(), 100);
+    setTimeout(() => !this.mystate.loadingInterrupter.stop && this.refocusOnModel(), 100);
   }
 
   /**
@@ -589,11 +826,12 @@ export default class Renderer3D extends Component {
         label.points.forEach((p) => {
           const point = new THREE.Vector3(p.x, p.y, p.z);
           // sphere
-          const radius = this.mystate.meshDiameter / 100;
-          const sphereGeom = new THREE.SphereGeometry(radius, 32, 32);
+          const radius = this.mystate.meshDiameter * this.mystate.sphereRadiusCoef;
+          const sphereGeom = new THREE.SphereGeometry(1, 32, 32);
           const material = new THREE.MeshPhongMaterial({
             color: this.props.normalLabelStyle.sphereColor });
           const sphere = new THREE.Mesh(sphereGeom, material);
+          sphere.scale.set(radius, radius, radius);
           sphere.position.copy(point);
           spheres.add(sphere);
           this.mystate.sphereGroup.add(sphere);
@@ -606,38 +844,67 @@ export default class Renderer3D extends Component {
             color: this.props.normalLabelStyle.lineColor, linewidth: 2 });
           const line = new THREE.Line(lineGeo, lineMat);
           lines.add(line);
-          this.mystate.lineGroup.add(line);
           this.mystate.sphereToLineMap[sphere.uuid] = line;
+          if (this.state.mode !== 'EVALUATION') this.mystate.lineGroup.add(line);
         });
         /** sprite */
-        const sprite = ThreeUtils.makeTextSprite(
-          label.text || DEFAULT_LABEL_MESSAGE,
-          1, this.mystate.meshDiameter, this.mystate.normalLabelStyle// ,
-          // (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
-        );
+        const sprite = ThreeUtils.makeTextSprite({
+          text: label.text || DEFAULT_LABEL_MESSAGE,
+          opacity: 1,
+          worldReferenceSize: this.mystate.meshDiameter,
+          params: this.mystate.normalLabelStyle,
+        });
         sprite.position.set(label.position.x, label.position.y, label.position.z);
-        this.mystate.spriteGroup.add(sprite);
+        if (this.state.mode !== 'EVALUATION') this.mystate.spriteGroup.add(sprite);
         /** sprite plane */
         const spritePlane =
           ThreeUtils.createPlaneFromSprite(sprite, this.mystate.camera);
-        spritePlane.visible = false; // make sure it's invisible
-        this.mystate.spritePlaneGroup.add(spritePlane);
         this.mystate.spritePlaneToLabelMap[spritePlane.uuid] = labelObj;
+        if (this.state.mode !== 'EVALUATION') this.mystate.spritePlaneGroup.add(spritePlane);
         /** set labelObj's fields */
         labelObj.spheres = spheres;
         labelObj.lines = lines;
         labelObj.spritePlane = spritePlane;
         labelObj.sprite = sprite;
         labelObj.text = label.text;
+        labelObj.id = label.id;
+        if (this.state.mode === 'EVALUATION') {
+          labelObj.minimized = true;
+          labelObj.student_answer = '';
+        }
         /** add label to set */
         this.mystate.labelSet.add(labelObj);
       });
     }
+    // correct label ids
+    this.checkAndCorrectLabelIds();
     // notify parent of changes
     this.props.labelsChangedCallback(this.labelsToJSON());
-    this.props.selectedLabelChangedCallback(this.mystate.selectedLabel);
     // refresh screen
     this.animateForAWhile();
+  }
+
+  getNextId() {
+    let i = 0;
+    while (this.mystate.labelIds.has(i)) ++i;
+    this.mystate.labelIds.add(i);
+    return i;
+  }
+
+  checkAndCorrectLabelIds() {
+    const labelIds = this.mystate.labelIds;
+    const labelSet = this.mystate.labelSet;
+    labelIds.clear();
+    this.mystate.id2labelMap = {};
+    for (const label of labelSet) {
+      if (isInt(label.id)) {
+        const id = parseInt(label.id, 10);
+        if (id < 0 || labelIds.has(id)) label.id = null;
+        else labelIds.add(id);
+      }
+    }
+    for (const label of labelSet) if (!isInt(label.id)) label.id = this.getNextId();
+    for (const label of labelSet) this.mystate.id2labelMap[label.id] = label;
   }
 
   // ======================================================
@@ -653,7 +920,6 @@ export default class Renderer3D extends Component {
    * @return {[type]}             [description]
    */
   loadModel(files, labels) {
-    this.props.loadingStartingCallback();
     this.load3DModelFromFiles(files)
     .then(() => {
       this.loadLabels(labels);
@@ -678,6 +944,7 @@ export default class Renderer3D extends Component {
       );
       this.mystate.zoom = this.mystate.camera.zoom; // keep the zoom up to date
       this.updateSpritePlaneOrientations();
+      if (this.mystate.selectedLabel) this.refreshIconsPositions();
       this.animateForAWhile();
     }
   }
@@ -687,7 +954,7 @@ export default class Renderer3D extends Component {
    * The purpose is to ensure that updates and rendering are performed
    * only when it's necessary, and not all the time
    */
-  animateForAWhile(milliseconds = 100) {
+  animateForAWhile(milliseconds = 200) {
     if (this.mystate.updateTimerRunning) return; // already running? ignore
     if (this.mystate.componentUnmounted) return; // unmounted ? ignore
     this.mystate.updateTimerRunning = true;
@@ -724,7 +991,7 @@ export default class Renderer3D extends Component {
     this.mystate.normalLabelStyle = style;
     if (this.mystate.labelSet.size > 0) {
       for (const label of this.mystate.labelSet) {
-        if (label === this.mystate.selectedLabel) continue;
+        if (label === this.mystate.selectedLabel || label.minimized) continue;
         this.unhighlightLabel(label);
       }
       this.animateForAWhile();
@@ -739,11 +1006,21 @@ export default class Renderer3D extends Component {
     this.mystate.highlightedLabelStyle = style;
     if (this.mystate.selectedLabel) {
       this.highlightLabel(this.mystate.selectedLabel);
+      this.refreshIconsPositions();
       this.animateForAWhile();
     }
   }
 
-  handleWindowMouseDown() {
+  setSphereRadiusCoef(coef) {
+    this.mystate.sphereRadiusCoef = coef;
+    if (this.mystate.meshGroup) {
+      const r = coef * this.mystate.meshDiameter;
+      for (const sphere of this.mystate.sphereGroup.children) sphere.scale.set(r, r, r);
+    }
+    this.animateForAWhile();
+  }
+
+  onWindowMouseDown() {
     // update canvasHasFocus
     this.mystate.canvasHasFocus = this.isMouseOverViewport();
   }
@@ -751,10 +1028,10 @@ export default class Renderer3D extends Component {
   /**
    * Handle mouse down events
    */
-  handleMouseDown(event) {
-    console.log("====> handleMouseDown()");
+  onMouseDown(event) {
+    console.log("====> onMouseDown()");
     const viewport = this.refs.viewport;
-    const vpcoords = this.getViewportCoords(event);
+    const vpcoords = this.getViewportCoords(event.clientX, event.clientY);
     const screenX = vpcoords.x;
     const screenY = vpcoords.y;
 
@@ -763,15 +1040,15 @@ export default class Renderer3D extends Component {
         /**
          * Conditions:
          * 	  1) there is 3D Model already loaded
-         *    2) we are not dragging a temporal label (transparent label)
+         *    2) we are not dragging a temporary label (transparent label)
          *
          * What can happen:
          * 	  1) left click on spritePlane
          * 	  	-> selects/highlight the label
          * 	  	-> unselect/unhighlight previously selected label (if any)
-         * 	  	-> starts dragging this label (if canEdit)
+         * 	  	-> starts dragging this label (if in edition mode)
          * 	  2) left click on sphere
-         * 	  	2.1) if the sphere belongs to a highlighted label (and canEdit)
+         * 	  	2.1) if the sphere belongs to a highlighted label (and in edition mode)
          * 	  		-> remove the sphere and the line
          * 	  		if the label runs out of spheres
          * 	  			-> remove the label too
@@ -786,19 +1063,20 @@ export default class Renderer3D extends Component {
         // is to start orbiting the camera
         let shouldOrbit = true;
         if (this.mystate.labelsEnabled) {
-          const splanes = this.mystate.spritePlaneGroup.children;
           // make sprite planes visible for intersection
-          for (let i = 0; i < splanes.length; ++i) splanes[i].visible = true;
+          this.mystate.spritePlaneGroup.visible = true;
+          this.mystate.iconCircleGroup.visible = true;
           // check intersection with sprite planes, spheres and meshes
           const intrs = ThreeUtils.getClosestIntersectedObject(
             screenX, screenY, viewport.offsetWidth, viewport.offsetHeight,
             this.mystate.raycaster, this.mystate.camera,
-            this.mystate.sphereGroup,
-            this.mystate.meshGroup,
-            this.mystate.spritePlaneGroup
+            this.mystate.sphereGroup, this.mystate.meshGroup,
+            this.mystate.spritePlaneGroup,
+            this.mystate.selectedLabel ? this.mystate.iconCircleGroup : null
           );
           // make sprite planes invisible again
-          for (let i = 0; i < splanes.length; ++i) splanes[i].visible = false;
+          this.mystate.spritePlaneGroup.visible = false;
+          this.mystate.iconCircleGroup.visible = false;
 
           if (intrs) {
             const pickedObj = intrs.object;
@@ -810,8 +1088,7 @@ export default class Renderer3D extends Component {
               // select label
               const label = this.mystate.spritePlaneToLabelMap[pickedObj.object.uuid];
               this.selectLabel(label);
-              if (this.props.canEdit) {
-
+              if (this.state.mode === 'EDITION') {
                 /** starts dragging the label */
                 this.mystate.draggingSelectedLabel = true;
                 // plane parameters where dragging will happen
@@ -829,7 +1106,7 @@ export default class Renderer3D extends Component {
               const sphere = pickedObj.object;
               const label = this.mystate.sphereToLabelMap[sphere.uuid];
               // case 2.1) sphere belongs to already selected label
-              if (label === prevLabel && this.props.canEdit) {
+              if (label === prevLabel && this.state.mode === 'EDITION') {
                 // remove line
                 const line = this.mystate.sphereToLineMap[sphere.uuid];
                 this.mystate.lineGroup.remove(line); // from scene
@@ -839,23 +1116,21 @@ export default class Renderer3D extends Component {
                 label.spheres.delete(sphere); // from label
                 delete this.mystate.sphereToLineMap[sphere.uuid]; // from maps
                 delete this.mystate.sphereToLabelMap[sphere.uuid];
-                // ----
                 // if label runs out of spheres, delete label as well
-                if (label.spheres.size === 0) {
-                  this.mystate.spritePlaneGroup.remove(label.spritePlane);
-                  this.mystate.spriteGroup.remove(label.sprite);
-                  this.mystate.selectedLabel = null;
-                  this.mystate.labelSet.delete(label);
-                  // notify change of selected label
-                  this.props.selectedLabelChangedCallback(null);
-                }
-                // notify change of labels
-                this.props.labelsChangedCallback(this.labelsToJSON());
+                if (label.spheres.size === 0) this.removeSelectedLabel();
+                else this.props.labelsChangedCallback(this.labelsToJSON());
 
               // case 2.2) a different label selected
-              } else {
-                this.selectLabel(label);
-              }
+              } else this.selectLabel(label);
+              shouldOrbit = false;
+
+            /* case 3) left click on icon */
+            } else if (pickedGroup === this.mystate.iconCircleGroup) {
+              const circle = pickedObj.object;
+              /* case 3.1) minimize icon */
+              if (circle === this.mystate.minimizeIconCircle) this.minimizeSelectedLabel();
+              /* case 3.2) delete icon */
+              else this.removeSelectedLabel();
               shouldOrbit = false;
             }
           }
@@ -871,7 +1146,7 @@ export default class Renderer3D extends Component {
       }
     } else if (event.button === RIGHT_BUTTON) {
       if (this.mystate.meshGroup !== null && this.mystate.labelsEnabled
-        && this.props.canEdit) {
+        && this.state.mode === 'EDITION') {
         /**
          * Conditions:
          * 	1) there is a 3D Model already loaded
@@ -881,13 +1156,13 @@ export default class Renderer3D extends Component {
          * What can happen:
          *  1) first right click on model:
          *  	an initial sphere is dropped in intersection point,
-         *  	and a temporal, transparent label will start following the mouse cursor
-         *  2) second right click (a temporal label already being dragged)
+         *  	and a temporary, transparent label will start following the mouse cursor
+         *  2) second right click (a temporary label already being dragged)
          *  	2.1) intersection with an already existing label
          *  		the new sphere and line get merged into the existing label
          *  	2.2) no intersection with existing labels
          *  		a new label gets created
-         *  	In both cases the dragging cycle of temporal label finishes
+         *  	In both cases the dragging cycle of temporary label finishes
          **/
 
         // -----------------
@@ -896,21 +1171,21 @@ export default class Renderer3D extends Component {
         this.mystate.mouseClipping.y = (screenY / viewport.offsetHeight) * 2 - 1;
         this.mystate.raycaster.setFromCamera(this.mystate.mouseClipping, this.mystate.camera);
         // --------------------------------------------
-        // intersect against meshes, spheres and sprite planes
-        const splanes = this.mystate.spritePlaneGroup.children;
-        // make sprite planes visible for intersection
-        for (let i = 0; i < splanes.length; ++i) splanes[i].visible = true;
-        // check intersection with sprite planes, spheres and meshes
+        // intersect against meshes, spheres, sprite planes, icons
+        this.mystate.spritePlaneGroup.visible = true;
+        this.mystate.iconCircleGroup.visible = true;
         const intrs = ThreeUtils.getClosestIntersectedObject(
           screenX, screenY, viewport.offsetWidth, viewport.offsetHeight,
           this.mystate.raycaster, this.mystate.camera,
-          this.mystate.sphereGroup, this.mystate.meshGroup, this.mystate.spritePlaneGroup
+          this.mystate.sphereGroup, this.mystate.meshGroup,
+          this.mystate.spritePlaneGroup,
+          this.mystate.selectedLabel ? this.mystate.iconCircleGroup : null
         );
-        // make sprite planes invisible again
-        for (let i = 0; i < splanes.length; ++i) splanes[i].visible = false;
+        this.mystate.spritePlaneGroup.visible = false;
+        this.mystate.iconCircleGroup.visible = false;
 
         // --------------------------------------------
-        // case 2) already dragging a temporal label
+        // case 2) already dragging a temporary label
         if (this.mystate.draggingTempLabel) {
           const dragLabel = this.mystate.tempDraggableLabel;
           // auxiliar pointer
@@ -960,6 +1235,7 @@ export default class Renderer3D extends Component {
               sprite: dragLabel.sprite, // copy sprite
               spheres, // set of spheres
               lines, // set of lines
+              id: this.getNextId(),
             };
             // create matches between elements
             this.mystate.sphereToLabelMap[dragLabel.sphere.uuid] = labelObj;
@@ -974,6 +1250,7 @@ export default class Renderer3D extends Component {
             labelToSelect = labelObj;
             // add new label to set
             this.mystate.labelSet.add(labelObj);
+            this.mystate.id2labelMap[labelObj.id] = labelObj;
           }
           //----------------------------------------
           // Things that happen for both cases 2.1 and 2.2
@@ -981,12 +1258,12 @@ export default class Renderer3D extends Component {
           // select label
           this.selectLabel(labelToSelect);
           // remove dragged elements directly from scene (because they were added
-          // directly into scene for temporal dragging purposes)
+          // directly into scene for temporary dragging purposes)
           this.mystate.scene.remove(dragLabel.sprite);
           this.mystate.scene.remove(dragLabel.sphere);
           this.mystate.scene.remove(dragLabel.line);
           this.mystate.scene.remove(dragLabel.spritePlane);
-          // temporal dragging is over
+          // temporary dragging is over
           this.mystate.tempDraggableLabel = null;
           this.mystate.draggingTempLabel = false;
           // and notify parent of changes in labels
@@ -1004,22 +1281,22 @@ export default class Renderer3D extends Component {
             // -------------
             // get sphere
             const point = intrs.object.point;
-            const radius = this.mystate.meshDiameter / 100;
-            const sphereGeom = new THREE.SphereGeometry(radius, 32, 32);
+            const sphereGeom = new THREE.SphereGeometry(1, 32, 32);
             const material = new THREE.MeshPhongMaterial({
               color: this.props.normalLabelStyle.sphereColor });
             const sphere = new THREE.Mesh(sphereGeom, material);
+            const radius = this.mystate.meshDiameter * this.mystate.sphereRadiusCoef;
+            sphere.scale.set(radius, radius, radius);
             sphere.position.copy(point);
 
             // ---------------------------------------------
-            // get temporal, transparent label
-            const sprite = ThreeUtils.makeTextSprite(
-              DEFAULT_LABEL_MESSAGE,
-              0.5, // opacity
-              this.mystate.meshDiameter, // reference size to scale
-              this.mystate.normalLabelStyle // , // label style
-              // (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
-            );
+            // get temporary, transparent label
+            const sprite = ThreeUtils.makeTextSprite({
+              text: DEFAULT_LABEL_MESSAGE,
+              opacity: 0.5,
+              worldReferenceSize: this.mystate.meshDiameter,
+              params: this.mystate.normalLabelStyle,
+            });
             // get camera's normal pointing forward
             const camForwardN = ThreeUtils.getCameraForwardNormal(this.mystate.camera);
             // get dir towards camera
@@ -1027,7 +1304,7 @@ export default class Renderer3D extends Component {
               .copy(camForwardN)
               .multiplyScalar(-1);
             // get dist
-            const dist = this.mystate.meshDiameter / 5;
+            const dist = this.mystate.meshDiameter * LABEL_DROP_DIST_COEF;
             // position sprite
             sprite.position
               .copy(point)
@@ -1041,7 +1318,7 @@ export default class Renderer3D extends Component {
             // get plane from sprite (for intersection purposes),
             // not the same as the previous one
             const spritePlane = ThreeUtils.createPlaneFromSprite(sprite, this.mystate.camera);
-            spritePlane.visible = false; // should not be visible
+            spritePlane.visible = false; // it should be invisible
 
             // get line connecting the sphere with the label
             const lineGeo = new THREE.Geometry();
@@ -1060,7 +1337,7 @@ export default class Renderer3D extends Component {
             this.mystate.scene.add(sphere);
             this.mystate.scene.add(spritePlane);
 
-            // remember that we are dragging a temporal label
+            // remember that we are dragging a temporary label
             const labelObj = { sprite, spritePlane, sphere, line, text: '' };
             this.mystate.tempDraggableLabel = labelObj;
             this.mystate.draggingTempLabel = true;
@@ -1084,23 +1361,35 @@ export default class Renderer3D extends Component {
   /**
    * [shows label as highlighted]
    */
-  highlightLabel(labelObj) {
-    this.setLabelStyle(labelObj, {
-      text: labelObj.text || DEFAULT_LABEL_MESSAGE,
-      worldReferenceSize: this.mystate.meshDiameter,
-      style: this.mystate.highlightedLabelStyle,
-    });
+  highlightLabel(label) {
+    // set text to display according to mode
+    // debugger
+    let text;
+    if (this.state.mode === 'EVALUATION') {
+      text = label.student_answer || DEFAULT_EVALUATION_LABEL_MESSAGE;
+    } else {
+      text = label.text || DEFAULT_LABEL_MESSAGE;
+    }
+    // set style to label
+    this.setLabelStyle(label, { text, worldReferenceSize: this.mystate.meshDiameter,
+      style: this.mystate.highlightedLabelStyle });
   }
 
   /**
    * [shows label as non-highlighted]
    */
-  unhighlightLabel(labelObj) {
-    this.setLabelStyle(labelObj, {
-      text: labelObj.text || DEFAULT_LABEL_MESSAGE,
-      worldReferenceSize: this.mystate.meshDiameter,
-      style: this.mystate.normalLabelStyle,
-    });
+  unhighlightLabel(label) {
+    // debugger
+    // set text to display according to mode
+    let text;
+    if (this.state.mode === 'EVALUATION') {
+      text = label.student_answer || DEFAULT_EVALUATION_LABEL_MESSAGE;
+    } else {
+      text = label.text || DEFAULT_LABEL_MESSAGE;
+    }
+    // set style to label
+    this.setLabelStyle(label, { text, worldReferenceSize: this.mystate.meshDiameter,
+      style: this.mystate.normalLabelStyle });
   }
 
   /**
@@ -1110,23 +1399,18 @@ export default class Renderer3D extends Component {
   setLabelStyle(labelObj, labelSettings) {
     const labelStyle = labelSettings.style;
     // change spheres color
-    for (const sphere of labelObj.spheres) {
-      sphere.material.color.set(labelStyle.sphereColor);
-    }
+    for (const sphere of labelObj.spheres) sphere.material.color.set(labelStyle.sphereColor);
     // change lines color
-    for (const line of labelObj.lines) {
-      line.material.color.set(labelStyle.lineColor);
-    }
+    for (const line of labelObj.lines) line.material.color.set(labelStyle.lineColor);
     // remove current sprite
     this.mystate.spriteGroup.remove(labelObj.sprite);
     // create a new sprite
-    const newSprite = ThreeUtils.makeTextSprite(
-      labelSettings.text,
-      labelSettings.opacity,
-      labelSettings.worldReferenceSize,
-      labelSettings.style// ,
-      // (ans) => { labelObj.miniCoords = ans.miniCoords; labelObj.delCoords = ans.delCoords; }
-    );
+    const newSprite = ThreeUtils.makeTextSprite({
+      text: labelSettings.text,
+      opacity: labelSettings.opacity,
+      worldReferenceSize: labelSettings.worldReferenceSize,
+      params: labelSettings.style,
+    });
     // copy the same position from the old sprite
     newSprite.position.copy(labelObj.sprite.position);
     // replace with new sprite
@@ -1138,19 +1422,20 @@ export default class Renderer3D extends Component {
     // replace with new spritePlane
     const newSpritePlane =
       ThreeUtils.createPlaneFromSprite(newSprite, this.mystate.camera);
-    newSpritePlane.visible = false; // make sure it's invisible
     this.mystate.spritePlaneGroup.add(newSpritePlane);
     this.mystate.spritePlaneToLabelMap[newSpritePlane.uuid] = labelObj;
     labelObj.spritePlane = newSpritePlane;
   }
 
-  hideLabes() {
+  hideLabels() {
     this.mystate.scene.remove(this.mystate.sphereGroup);
     this.mystate.scene.remove(this.mystate.lineGroup);
     this.mystate.scene.remove(this.mystate.spriteGroup);
     this.mystate.scene.remove(this.mystate.spritePlaneGroup);
+    this.mystate.scene.remove(this.mystate.iconCircleGroup);
+    this.mystate.scene.remove(this.mystate.iconSpriteGroup);
     this.mystate.labelsEnabled = false;
-    this.animateForAWhile();
+    this.animateForAWhile(0);
   }
 
   showLabels() {
@@ -1158,8 +1443,12 @@ export default class Renderer3D extends Component {
     this.mystate.scene.add(this.mystate.lineGroup);
     this.mystate.scene.add(this.mystate.spriteGroup);
     this.mystate.scene.add(this.mystate.spritePlaneGroup);
+    if (this.mystate.selectedLabel) {
+      this.mystate.scene.add(this.mystate.iconCircleGroup);
+      this.mystate.scene.add(this.mystate.iconSpriteGroup);
+    }
     this.mystate.labelsEnabled = true;
-    this.animateForAWhile();
+    this.animateForAWhile(0);
   }
 
   removeSelectedLabel() {
@@ -1185,16 +1474,79 @@ export default class Renderer3D extends Component {
     }
     // remove label
     this.mystate.labelSet.delete(label);
+    delete this.mystate.id2labelMap[label.id];
     this.props.labelsChangedCallback(this.labelsToJSON());
     // check if label was the selectedLabel
     if (label === this.mystate.selectedLabel) {
       this.mystate.selectedLabel = null;
       // interrupt any possible dragging in process
       this.mystate.draggingSelectedLabel = false;
-      this.props.selectedLabelChangedCallback(null);
+      // remove icons from scene
+      this.mystate.scene.remove(this.mystate.iconCircleGroup);
+      this.mystate.scene.remove(this.mystate.iconSpriteGroup);
     }
     // refresh scene
     this.animateForAWhile();
+  }
+
+  minimizeSelectedLabel() {
+    const label = this.mystate.selectedLabel;
+    // unselect selected label
+    this.mystate.selectedLabel = null;
+    this.mystate.canFocusHiddenInput = false;
+    this.unhighlightLabel(label);
+    // hide everything except spheres
+    this.mystate.spriteGroup.remove(label.sprite);
+    this.mystate.spritePlaneGroup.remove(label.spritePlane);
+    for (const line of label.lines) this.mystate.lineGroup.remove(line);
+    this.mystate.scene.remove(this.mystate.iconSpriteGroup);
+    this.mystate.scene.remove(this.mystate.iconCircleGroup);
+    label.minimized = true; // remember it's minimized
+    // reset sphere colors back to normal
+    const style = this.mystate.normalLabelStyle;
+    for (const sphere of label.spheres) sphere.material.color.set(style.sphereColor);
+    // refresh scene
+    this.animateForAWhile(0);
+  }
+
+  minimizeAllLabels() {
+    // special actions for selected label
+    const sl = this.mystate.selectedLabel;
+    if (sl) {
+      // reset sphere colors back to normal
+      const style = this.mystate.normalLabelStyle;
+      for (const sphere of sl.spheres) sphere.material.color.set(style.sphereColor);
+      // unselect selected label
+      this.mystate.selectedLabel = null;
+      this.mystate.canFocusHiddenInput = false;
+      this.unhighlightLabel(sl);
+      // hide icons
+      this.mystate.scene.remove(this.mystate.iconSpriteGroup);
+      this.mystate.scene.remove(this.mystate.iconCircleGroup);
+    }
+    // minimize all labels
+    for (const label of this.mystate.labelSet) {
+      if (label.minimized) continue;
+      label.minimized = true; // remember it's minimized
+      this.mystate.spriteGroup.remove(label.sprite);
+      this.mystate.spritePlaneGroup.remove(label.spritePlane);
+      for (const line of label.lines) this.mystate.lineGroup.remove(line);
+    }
+    // refresh scene
+    this.animateForAWhile(0);
+  }
+
+  maximizeAllLabels() {
+    for (const label of this.mystate.labelSet) {
+      if (label.minimized) {
+        label.minimized = false;
+        this.mystate.spriteGroup.add(label.sprite);
+        this.mystate.spritePlaneGroup.add(label.spritePlane);
+        for (const line of label.lines) this.mystate.lineGroup.add(line);
+      }
+    }
+    // refresh scene
+    this.animateForAWhile(0);
   }
 
   labelsToJSON() {
@@ -1225,13 +1577,13 @@ export default class Renderer3D extends Component {
   /**
    * Handle mouse move events
    */
-  handleMouseMove(event) {
-    this.mystate.mouseViewportCoords = this.getViewportCoords(event);
+  onMouseMove(event) {
+    this.mystate.mouseViewportCoords = this.getViewportCoords(event.clientX, event.clientY);
     const screenX = this.mystate.mouseViewportCoords.x;
     const screenY = this.mystate.mouseViewportCoords.y;
     const viewport = this.refs.viewport;
 
-    // if dragging a temporal label
+    // if dragging a temporary label
     if (this.mystate.draggingTempLabel) {
       // get world coords from screen coords
       const worldPos = ThreeUtils.unprojectFromScreenToWorld(
@@ -1294,6 +1646,8 @@ export default class Renderer3D extends Component {
         // update spritePlane
         selectedLabel.spritePlane.position.copy(intersPoint);
         selectedLabel.spritePlane.quaternion.copy(this.mystate.camera.quaternion);
+        // refresh icons
+        this.refreshIconsPositions();
         this.animateForAWhile();
       }
     }
@@ -1307,12 +1661,12 @@ export default class Renderer3D extends Component {
     }
   }
 
-  getViewportCoords(event) {
+  getViewportCoords(clientX, clientY) {
     const vp = this.refs.viewport;
     const bcr = vp.getBoundingClientRect();
     const ans = {
-      x: event.clientX - bcr.left,
-      y: vp.offsetHeight + bcr.top - event.clientY,
+      x: clientX - bcr.left,
+      y: vp.offsetHeight + bcr.top - clientY,
     };
     return ans;
   }
@@ -1320,7 +1674,7 @@ export default class Renderer3D extends Component {
   /**
    * Handle Mouse Up events
    */
-  handleMouseUp(event) {
+  onMouseUp(event) {
     if (event.button === LEFT_BUTTON) {
       // notify parent of labels changed if we were dragging one
       if (this.mystate.draggingSelectedLabel) {
@@ -1340,7 +1694,7 @@ export default class Renderer3D extends Component {
     return false;
   }
 
-  handleResize() {
+  onResize() {
     if (this.mystate.meshGroup !== null) {
       const viewport = this.refs.viewport;
       const w = viewport.offsetWidth;
@@ -1365,31 +1719,70 @@ export default class Renderer3D extends Component {
     return (mvpc.x >= 0 && mvpc.x <= w && mvpc.y >= 0 && mvpc.y <= h);
   }
 
-  handleKeypress(e) {
-    if (this.props.canEdit && this.mystate.canFocusHiddenInput) {
-      const e2 = new KeyboardEvent('e', e);
-      this.refs.hiddenTxtInp.focus();
-      this.refs.hiddenTxtInp.dispatchEvent(e2);
+  gotFocus() {
+    this.mystate.componentFocused = true;
+  }
+  lostFocus() {
+    this.mystate.componentFocused = false;
+  }
+
+  onKeydown(e) {
+    if (!this.mystate.componentFocused) return;
+    const key = e.keyCode;
+
+    if (this.mystate.meshGroup) {
+      if (key >= 37 && key <= 40) {
+        e.preventDefault();
+        let dist;
+        let shift;
+        const cam = this.mystate.camera;
+        switch (key) {
+          case 37: // key left
+            dist = (cam.right - cam.left) * 0.04 / cam.zoom;
+            shift = new THREE.Vector3(dist, 0, 0)
+            .applyMatrix4(this.mystate.camera.matrixWorld);
+            break;
+          case 38: // key up
+            dist = (cam.top - cam.bottom) * 0.04 / cam.zoom;
+            shift = new THREE.Vector3(0, -dist, 0)
+            .applyMatrix4(this.mystate.camera.matrixWorld);
+            break;
+          case 39: // key right
+            dist = (cam.right - cam.left) * 0.04 / cam.zoom;
+            shift = new THREE.Vector3(-dist, 0, 0)
+            .applyMatrix4(this.mystate.camera.matrixWorld);
+            break;
+          default: // key down
+            dist = (cam.top - cam.bottom) * 0.04 / cam.zoom;
+            shift = new THREE.Vector3(0, dist, 0)
+            .applyMatrix4(this.mystate.camera.matrixWorld);
+            break;
+        }
+        cam.position.copy(shift);
+        this.refs.hiddenTxtInp.blur();
+        this.animateForAWhile();
+        return;
+      }
+    }
+    if (this.state.mode === 'READONLY' || !this.mystate.labelsEnabled) return;
+    if (this.mystate.selectedLabel) {
+      if (key === 13) this.unselectSelectedLabel();
+      else this.refs.hiddenTxtInp.focus();
     }
   }
 
-  handleKeydown(e) {
-    if (this.props.canEdit && this.mystate.canFocusHiddenInput) {
-      const e2 = new KeyboardEvent('e', e);
-      this.refs.hiddenTxtInp.focus();
-      this.refs.hiddenTxtInp.dispatchEvent(e2);
-    }
-  }
-
-  onHiddenTextChanged(event) {
-    event.preventDefault();
+  onHiddenTextChanged() {
+    console.log('===> onHiddenTextChanged()');
+    if (this.state.mode === 'READONLY') return;
     const text = this.refs.hiddenTxtInp.value;
-    const selectedLabel = this.mystate.selectedLabel;
-    if (selectedLabel) {
-      selectedLabel.text = text;
-      this.highlightLabel(selectedLabel);
+    const label = this.mystate.selectedLabel;
+    if (label) {
+      if (this.state.mode === 'EDITION') label.text = text;
+      else label.student_answer = text; // EVALUATION
+      this.highlightLabel(label);
+      this.refreshIconsPositions();
       this.animateForAWhile();
-      this.props.labelsChangedCallback(this.labelsToJSON());
+      this.mystate.selectedLabelTextDirty = true;
     }
   }
 
@@ -1398,25 +1791,210 @@ export default class Renderer3D extends Component {
     if (label) {
       this.unhighlightLabel(label);
       this.mystate.selectedLabel = null;
-      this.animateForAWhile(0);
       this.mystate.canFocusHiddenInput = false;
-      this.props.selectedLabelChangedCallback(null);
+      // remove icons from scene
+      this.mystate.scene.remove(this.mystate.iconSpriteGroup);
+      this.mystate.scene.remove(this.mystate.iconCircleGroup);
+      // refresh scene
+      this.animateForAWhile(0);
+      // if text is dirty, notify parent about it (according to mode)
+      if (this.mystate.selectedLabelTextDirty) {
+        if (this.state.mode === 'EDTION') {
+          this.props.labelsChangedCallback(this.labelsToJSON());
+        } else if (this.state.mode === 'EVALUATION') {
+          this.props.labelChangedCallback({ id: label.id, text: label.student_answer });
+        }
+        this.mystate.selectedLabelTextDirty = false;
+      }
     }
   }
 
   selectLabel(label) {
     const prevLabel = this.mystate.selectedLabel;
     if (label !== prevLabel) {
+      // unhighlight previous label
       if (prevLabel) this.unhighlightLabel(prevLabel);
+      // maximize the label if it was minimized
+      if (label.minimized) {
+        for (const line of label.lines) this.mystate.lineGroup.add(line);
+        label.minimized = false;
+      }
+      // highlight selected label
       this.mystate.selectedLabel = label;
       this.highlightLabel(label);
+      // add icons back to scene and refresh their positions
+      this.mystate.scene.add(this.mystate.iconSpriteGroup);
+      this.mystate.scene.add(this.mystate.iconCircleGroup);
+      this.refreshIconsPositions();
+      // refresh scene
       this.animateForAWhile(0);
-      this.props.selectedLabelChangedCallback(label);
-      setTimeout(() => {
-        this.mystate.canFocusHiddenInput = true;
-        this.refs.hiddenTxtInp.value = label.text;
-      }, 0);
     }
+    // prepare hidden input for writing on it
+    this.mystate.canFocusHiddenInput = true;
+    this.refs.hiddenTxtInp.value =
+      (this.state.mode === 'EDITION') ? label.text : label.student_answer;
+    this.refs.hiddenTxtInp.focus();
+  }
+
+  refreshIconsPositions() {
+    // debugger
+    const label = this.mystate.selectedLabel;
+    const bbox = new THREE.BoundingBoxHelper(label.sprite);
+    bbox.update();
+    const w = bbox.box.max.x - bbox.box.min.x;
+    const h = bbox.box.max.y - bbox.box.min.y;
+    const quat = this.mystate.camera.quaternion;
+    // // update minimize icon's position
+    this.mystate.minimizeIconSprite.position
+      .set(w * 0.5 + h * 0.02, h * 0.6, 0)
+      .applyQuaternion(quat)
+      .add(label.sprite.position);
+    // and circle
+    this.mystate.minimizeIconCircle.position
+      .copy(this.mystate.minimizeIconSprite.position);
+    this.mystate.minimizeIconCircle.quaternion.copy(quat);
+
+    if (this.state.mode === 'EDITION') {
+      // update delete icon's position
+      this.mystate.deleteIconSprite.position
+        .set(w * 0.5 + h * 0.04 + this.mystate.meshDiameter * ICON_COEF, h * 0.6, 0)
+        .applyQuaternion(quat)
+        .add(label.sprite.position);
+      // and circle
+      this.mystate.deleteIconCircle.position
+        .copy(this.mystate.deleteIconSprite.position);
+      this.mystate.deleteIconCircle.quaternion.copy(quat);
+    }
+  }
+
+  onTouchStart(e) {
+    e.preventDefault();
+    const touches = e.touches;
+
+    if (touches.length === 1) {
+      const viewport = this.refs.viewport;
+      const vpcoords = this.getViewportCoords(touches[0].clientX, touches[0].clientY);
+      const screenX = vpcoords.x;
+      const screenY = vpcoords.y;
+      if (this.mystate.labelsEnabled) {
+        // make sprite planes visible for intersection
+        this.mystate.spritePlaneGroup.visible = true;
+        this.mystate.iconCircleGroup.visible = true;
+        // check intersection with sprite planes, spheres and meshes
+        const intrs = ThreeUtils.getClosestIntersectedObject(
+          screenX, screenY, viewport.offsetWidth, viewport.offsetHeight,
+          this.mystate.raycaster, this.mystate.camera,
+          this.mystate.sphereGroup, this.mystate.meshGroup,
+          this.mystate.spritePlaneGroup,
+          this.mystate.selectedLabel ? this.mystate.iconCircleGroup : null
+        );
+        // make sprite planes invisible again
+        this.mystate.spritePlaneGroup.visible = false;
+        this.mystate.iconCircleGroup.visible = false;
+
+        if (intrs) {
+          const pickedObj = intrs.object;
+          const pickedGroup = intrs.group;
+
+          // case 1) sprite plane intersected
+          if (pickedGroup === this.mystate.spritePlaneGroup) {
+            // select label
+            const label = this.mystate.spritePlaneToLabelMap[pickedObj.object.uuid];
+            this.selectLabel(label);
+
+          // case 2) sphere intersected
+          } else if (pickedGroup === this.mystate.sphereGroup) {
+            const sphere = pickedObj.object;
+            const label = this.mystate.sphereToLabelMap[sphere.uuid];
+            this.selectLabel(label);
+
+          /* case 3) minimize icon intersected */
+          } else if (pickedGroup === this.mystate.iconCircleGroup
+            && pickedObj.object === this.mystate.minimizeIconCircle) {
+            this.minimizeSelectedLabel();
+          }
+        }
+      }
+      // initiate a camera orbit around 3D Model
+      this.mystate.orbitingCamera_touch = true;
+      this.mystate.touchCoords1.x = screenX;
+      this.mystate.touchCoords1.y = screenY;
+
+    /* panning -> dragging camera */
+    } else if (touches.length === 2) {
+      const center = TouchUtils.touchesClientCenter(touches);
+      this.mystate.draggingCamera_touch = true;
+      this.mystate.touchCoords1.x = center.x;
+      this.mystate.touchCoords1.y = center.y;
+
+    } else if (touches.length >= 3) {
+      this.mystate.pinchDist1 = TouchUtils.touchesAvgSquareDistanceToCenter(touches);
+      this.mystate.pinching = true;
+    }
+    // refresh canvas
+    this.animateForAWhile();
+    console.log('onTouchStart: ', e);
+    this.refs.debugSpan.textContent = `onTouchStart, count = ${e.touches.length}, ${hammerCount++}`;
+  }
+  onTouchMove(e) {
+    try {
+      e.preventDefault();
+      const touches = e.touches;
+      if (touches.length === 1) {
+        const vpcoords = this.getViewportCoords(touches[0].clientX, touches[0].clientY);
+        const screenX = vpcoords.x;
+        const screenY = vpcoords.y;
+        if (this.mystate.orbitingCamera_touch) {
+          this.mystate.touchCoords2.x = screenX;
+          this.mystate.touchCoords2.y = screenY;
+          this.mystate.orbitingCamera_touch_updatePending = true;
+        } else {
+          this.mystate.orbitingCamera_touch = true;
+          this.mystate.touchCoords1.x = screenX;
+          this.mystate.touchCoords1.y = screenY;
+        }
+        this.mystate.draggingCamera_touch = false;
+        this.mystate.pinching = false;
+        this.refs.debugSpan.textContent = `panning(1 finger), count = ${touches.length}, ${hammerCount++}`;
+      } else if (touches.length === 2) {
+        this.refs.debugSpan.textContent = `panning(2 fingers), count = ${touches.length}, ${hammerCount++}`;
+        const center = TouchUtils.touchesClientCenter(touches);
+        if (this.mystate.draggingCamera_touch) {
+          this.mystate.touchCoords2.x = center.x;
+          this.mystate.touchCoords2.y = center.y;
+          this.mystate.draggingCamera_touch_updatePending = true;
+        } else {
+          this.mystate.draggingCamera_touch = true;
+          this.mystate.touchCoords1.x = center.x;
+          this.mystate.touchCoords1.y = center.y;
+        }
+        this.mystate.orbitingCamera_touch = false;
+        this.mystate.pinching = false;
+      } else if (touches.length >= 3) {
+        const pinchDist = TouchUtils.touchesAvgSquareDistanceToCenter(touches);
+        if (this.mystate.pinching) {
+          this.mystate.pinchDist2 = pinchDist;
+          this.mystate.pinchCenter = TouchUtils.touchesClientCenter(touches);
+          this.mystate.pinching_updatePending = true;
+        } else {
+          this.mystate.pinchDist1 = pinchDist;
+          this.mystate.pinching = true;
+        }
+        this.mystate.orbitingCamera_touch = false;
+        this.mystate.draggingCamera_touch = false;
+        this.refs.debugSpan.textContent = `pinching, count = ${touches.length}, ${hammerCount++}`;
+      }
+      this.animateForAWhile();
+    } catch (err) {
+      this.refs.debugSpan.textContent = `error: ${err.stack}`;
+    }
+  }
+  onTouchEnd(e) {
+    this.mystate.orbitingCamera_touch = false;
+    this.mystate.draggingCamera_touch = false;
+    this.mystate.pinching = false;
+    console.log('onTouchEnd: ', e);
+    this.refs.debugSpan.textContent = `onTouchEnd, count = ${e.touches.length}, ${hammerCount++}`;
   }
 
   render() {
@@ -1424,38 +2002,82 @@ export default class Renderer3D extends Component {
       <div>
         <div
           style={styles.viewport} ref="viewport"
-          onWheel={this.handleWheel} onMouseDown={this.handleMouseDown}
+          onWheel={this.handleWheel}
+          onMouseDown={this.onMouseDown}
           onContextMenu={this.handleContextMenu}
+          onTouchStart={this.onTouchStart}
+          onTouchMove={this.onTouchMove}
+          onTouchEnd={this.onTouchEnd}
         >
         </div>
         <input ref="hiddenTxtInp" onChange={this.onHiddenTextChanged} style={styles.hiddenTxtInp}></input>
+        <textarea ref="debugSpan" style={styles.debugSpan}></textarea>
       </div>
     );
   }
 }
 
+let hammerCount = 0;
+
 Renderer3D.propTypes = {
-  canEdit: React.PropTypes.bool,
+  /* ===========================*/
+  /* 1) props for for ALL modes */
+  /* ===========================*/
+  /* --- props to read from (INPUT) ---- */
+  mode: React.PropTypes.string.isRequired,
   remoteFiles: React.PropTypes.object,
   labels: React.PropTypes.array,
-  labelsChangedCallback: React.PropTypes.func.isRequired,
-  selectedLabelChangedCallback: React.PropTypes.func.isRequired,
+  highlightedLabelStyle: React.PropTypes.object.isRequired,
+  normalLabelStyle: React.PropTypes.object.isRequired,
+  sphereRadiusCoef: React.PropTypes.number.isRequired,
+  /* --- callback props to notify parent about changes (OUTPUT) --- */
   loadingStartingCallback: React.PropTypes.func.isRequired,
   loadingProgressCallback: React.PropTypes.func.isRequired,
   loadingErrorCallback: React.PropTypes.func.isRequired,
   loadingCompletedCallback: React.PropTypes.func.isRequired,
-  highlightedLabelStyle: React.PropTypes.object.isRequired,
-  normalLabelStyle: React.PropTypes.object.isRequired,
+  downloadCycleStartedCallback: React.PropTypes.func.isRequired,
+  downloadCycleFinishedCallback: React.PropTypes.func.isRequired,
+  downloadingFileCallback: React.PropTypes.func.isRequired,
+  /* ===========================*/
+  /* 2) props for EDITION mode  */
+  /* ===========================*/
+  /* --- callback props to notify parent about changes (OUTPUT) --- */
+  labelsChangedCallback: React.PropTypes.func,
+  local3DFilesLoadedCallback: React.PropTypes.func,
+  /* ==============================*/
+  /* 3) props for EVALUATION mode  */
+  /* ==============================*/
+  /* --- props to read from (INPUT) ---- */
+  labelAnswers: React.PropTypes.array,
+  labelAnswersDirty: React.PropTypes.bool,
+  /* --- callback props to notify parent about changes (OUTPUT) --- */
+  labelAnswersConsumedCallback: React.PropTypes.func,
+  labelChangedCallback: React.PropTypes.func,
 };
 
 const styles = {
   viewport: {
     height: '350px',
-    minWidth: '700px',
+  },
+  debugSpan: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    minWidth: '350px',
+    minHeight: '50px',
+    backgroundColor: 'red',
   },
   hiddenTxtInp: {
+    position: 'absolute',
+    overflow: 'hidden',
     width: 0,
     height: 0,
-    marginLeft: -9999,
+    top: '50%',
+    left: '-9999%',
   },
 };
+
+function isInt(value) {
+  let x;
+  return isNaN(value) ? !1 : (x = parseFloat(value), (0 | x) === x);
+}

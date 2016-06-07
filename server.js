@@ -13,7 +13,8 @@ const settings = {
 
 const server = new WebpackDevServer(webpack(config), settings);
 
-server.listen(3000, 'localhost', err => {
+// server.listen(3000, 'localhost', err => {
+server.listen(3000, '0.0.0.0', err => {
   if (err) console.log(err);
   else console.log('Listening at http://localhost:3000/');
 });
