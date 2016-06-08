@@ -42,17 +42,17 @@ export default class Element extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      editing: false,
       text: props.text,
+      editing: !props.text,
     };
     this.onBlur = this.onBlur.bind(this);
     this.onClick = this.onClick.bind(this);
     this.onChange = this.onChange.bind(this);
+    this.onKeyDown = this.onKeyDown.bind(this);
     this.onMouseEnter = this.onMouseEnter.bind(this);
     this.onMouseLeave = this.onMouseLeave.bind(this);
-    this.onDeleteClick = this.onDeleteClick.bind(this);
+    this.onDelete = this.onDelete.bind(this);
     this.changeElement = this.changeElement.bind(this);
-
     this.renderElement = this.renderElement.bind(this);
   }
 
@@ -65,9 +65,10 @@ export default class Element extends Component {
 
   onClick(e) {
     const { canRespond, columnNumber, index, onClickFunc } = this.props;
+    const { editing } = this.state;
     if (!canRespond) return;
     e.stopPropagation();
-    onClickFunc(columnNumber, index);
+    if (!editing) onClickFunc(columnNumber, index);
   }
 
   onMouseEnter() {
@@ -77,36 +78,49 @@ export default class Element extends Component {
   }
 
   onMouseLeave() {
-    const { canRespond } = this.props;
+    const { canRespond, onMouseLeave } = this.props;
     if (!canRespond) return;
-    this.props.onMouseLeave();
+    onMouseLeave();
   }
 
-  onDeleteClick(e) {
-    e.stopPropagation();
+  onDelete() {
     const { canDelete, columnNumber, index, onDelete } = this.props;
-    if (canDelete) onDelete(columnNumber, index);
+    if (canDelete) {
+      onDelete(columnNumber, index);
+    } else {
+      this.setState({
+        editing: false,
+        text: this.props.text,
+      });
+      onDelete(null);
+    }
   }
 
-  changeElement(e) {
-    e.stopPropagation();
+  changeElement() {
     this.props.endElementLink();
-    const canEdit = this.props.canEdit;
-    if (canEdit) this.setState({ editing: !this.state.editing });
+    this.setState({ editing: !this.state.editing });
   }
 
-  onBlur(e) {
+  onBlur() {
     const { onEdit, columnNumber, index } = this.props;
-    onEdit(columnNumber, index, this.state.text);
-    this.changeElement(e);
+    const { text } = this.state;
+    if (text) {
+      onEdit(columnNumber, index, text);
+      this.changeElement();
+    } else {
+      this.onDelete();
+    }
   }
 
   onChange(e) {
     const text = e.target.value;
-    if (text.length === 0) {
-      this.onDeleteClick(e);
-    }
     this.setState({ text });
+  }
+
+  onKeyDown(e) {
+    if (e.key === 'Enter') {
+      this.onBlur(e);
+    }
   }
 
   renderElement() {
@@ -120,7 +134,7 @@ export default class Element extends Component {
             value={text}
             onBlur={this.onBlur}
             onChange={this.onChange}
-            onKeyDown={(e) => { if (e.key === 'Enter') this.onBlur(e); }}
+            onKeyDown={this.onKeyDown}
             autoFocus
           />
         </div>

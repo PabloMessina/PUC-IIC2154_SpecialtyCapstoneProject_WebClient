@@ -2,7 +2,8 @@
 
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { Col, Row, Panel, Button, Glyphicon } from 'react-bootstrap';
+import { Col, Row, Panel, Button, Alert } from 'react-bootstrap';
+import Icon from 'react-fa';
 import renderIf from 'render-if';
 import _ from 'lodash';
 
@@ -39,6 +40,8 @@ class Correlation extends Component {
       dragging: null,
       refresh: true,
       height: 0,
+      showInstructions: !localStorage.hideCorrelationInstructions,
+      showCantDelete: false,
     };
 
     this.onHeights = this.onHeights.bind(this);
@@ -57,6 +60,7 @@ class Correlation extends Component {
     this.renderAddElementButton = this.renderAddElementButton.bind(this);
     this.handleResize = this.handleResize.bind(this);
     this.resetHeights = this.resetHeights.bind(this);
+    this.dismissInstructions = this.dismissInstructions.bind(this);
 
     this.updateElements = true;
     this.resetHeights();
@@ -74,6 +78,7 @@ class Correlation extends Component {
       this.forceUpdate();
     }
   }
+
   componentWillUnmount() {
     window.removeEventListener('resize', this.handleResize);
   }
@@ -193,6 +198,11 @@ class Correlation extends Component {
   }
 
   onDelete(deletingColNum, deletingIndex) {
+    if (deletingColNum === null) {
+      this.setState({ showCantDelete: true });
+      return;
+    }
+
     const { answer, fields, onFieldsAndAnswerChange } = this.props;
 
     const columns = _.cloneDeep(fields.columns);
@@ -314,6 +324,12 @@ class Correlation extends Component {
     return elementCenters;
   }
 
+  dismissInstructions() {
+    this.setState({ showInstructions: false });
+    // TODO: this should be saved in the user database
+    localStorage.hideCorrelationInstructions = true;
+  }
+
   renderElementsColumn(i) {
     const { fields, mode } = this.props;
     const { extraSpace, dragging } = this.state;
@@ -358,7 +374,7 @@ class Correlation extends Component {
             className={pull}
             onClick={() => this.onAddElementClick(i)}
           >
-            <Glyphicon glyph="plus" />
+            <Icon name="plus" />
             <span> Add element</span>
           </Button>
         </Row>
@@ -387,7 +403,8 @@ class Correlation extends Component {
       throw new Error('Invalid column in correlation question!', columns);
     }
 
-    if (this.state.refresh) {
+    const { elementCenters, height, dragging, refresh, showInstructions, showCantDelete } = this.state;
+    if (refresh) {
       // kill child components
       return (
         <div style={styles.fillerDiv(height)} />
@@ -395,7 +412,6 @@ class Correlation extends Component {
     }
 
     const choices = answer ? answer.choices : [];
-    const { elementCenters, height, dragging } = this.state;
 
     const { md, sm, xs } = gridElementsColumns;
     const mdCanvas = 12 - 2 * md;
@@ -439,10 +455,31 @@ class Correlation extends Component {
         </div>
 
         {renderIf(canEdit)(
-          <div style={styles.buttonsDiv}>
-            {this.renderAddElementButton(0)}
-            <Col md={mdCanvas} sm={smCanvas} xs={xsCanvas} />
-            {this.renderAddElementButton(1)}
+          <div>
+            <Row style={styles.buttonsRow}>
+              {this.renderAddElementButton(0)}
+              <Col md={mdCanvas} sm={smCanvas} xs={xsCanvas} />
+              {this.renderAddElementButton(1)}
+            </Row>
+
+            {renderIf(showCantDelete)(
+              <Alert
+                bsStyle="warning"
+                onDismiss={() => this.setState({ showCantDelete: false })}
+              >
+                <p>A column can't have less than two elements.</p>
+              </Alert>
+            )}
+
+            {renderIf(showInstructions)(
+              <Alert
+                bsStyle="info"
+                style={{ backgroundColor: '#aaa' /* "info" is purple! TODO: change theme */}}
+                onDismiss={this.dismissInstructions}
+              >
+                <p>Double click an element to edit. Leave the field blank to delete.</p>
+              </Alert>
+            )}
           </div>
         )}
       </div>
@@ -476,7 +513,8 @@ const styles = {
   fillerDiv(height) {
     return { height: `${height}px` };
   },
-  buttonsDiv: {
+  buttonsRow: {
     marginTop: `${bootstrapCSS.rowMarginBottom}px`,
+    marginBottom: `${bootstrapCSS.rowMarginBottom}px`,
   },
 };
