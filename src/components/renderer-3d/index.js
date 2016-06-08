@@ -2021,7 +2021,7 @@ let hammerCount = 0;
 
 Renderer3D.propTypes = {
   /* ===========================*/
-  /* 1) props for for ALL modes */
+  /* 1) props for ALL modes */
   /* ===========================*/
   /* --- props to read from (INPUT) ---- */
   mode: React.PropTypes.string.isRequired,

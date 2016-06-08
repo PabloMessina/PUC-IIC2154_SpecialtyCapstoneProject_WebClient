@@ -38,7 +38,7 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
         component: ImageWithLabelsWrapper,
         editable: false,
         props: {
-          readOnly,
+          mode: readOnly ? 'READONLY' : 'EDITION',
           gotFocusCallback: () => setState({ editorLocked: true }),
           lostFocusCallback: () => setState({ editorLocked: false }),
         },

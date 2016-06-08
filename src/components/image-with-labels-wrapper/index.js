@@ -11,7 +11,7 @@ export default class ImageWithLabelsWrapper extends Component {
     return {
       url: 'http://www.humpath.com/IMG/jpg_brain_front_cut_01_10.jpg',
       blockProps: {
-        readOnly: false,
+        mode: 'REGIONSONLY',
         gotFocusCallback: () => {},
         lostFocusCallback: () => {},
       },
@@ -26,6 +26,7 @@ export default class ImageWithLabelsWrapper extends Component {
       source: props.url ? { url: props.url } : null,
       circleRadius: props.circleRadius,
       showLabels: true,
+      labelCount: props.labels ? props.labels.length : 0,
     };
     this.onFileChanged = this.onFileChanged.bind(this);
     this.onGotFocus = this.onGotFocus.bind(this);
@@ -66,18 +67,27 @@ export default class ImageWithLabelsWrapper extends Component {
     this.setState({ showLabels: false });
   }
 
-  renderLabel({ label, focusId, ref, key, style, isReadOnly,
-    onTextChanged, onKeyDown, onMinimize, onClose }) {
+  renderLabel(args) {
+    // general args
+    const { isReadOnly, ref, key, label, style } = args;
     if (isReadOnly) {
-      return (<input
-        ref={ref}
-        key={key}
-        style={{ ...styles.input, ...style }}
-        defaultValue={label.text}
-        readOnly
-      />);
+      // readonly args
+      const { onMinimize } = args;
+      return (
+        <div style={style} ref={ref} key={key}>
+          <div style={styles.label.innerDiv}>
+            <a href="#" style={styles.label.minimizeButton} onClick={onMinimize}>-</a>
+            <input
+              style={styles.label.input}
+              defaultValue={label.text}
+              readOnly
+            />
+          </div>
+        </div>
+      );
     } else {
-      // console.log("renderLabel(): label.text = ", label.text);
+      // non readonly args
+      const { focusId, onTextChanged, onKeyDown, onMinimize, onClose } = args;
       return (
         <div style={style} ref={ref} key={key}>
           <div style={styles.label.innerDiv}>
@@ -98,80 +108,19 @@ export default class ImageWithLabelsWrapper extends Component {
 
   /** React's render function */
   render() {
-    const { readOnly } = this.props.blockProps;
+    const { mode } = this.props.blockProps;
     const circleRadius = this.state.circleRadius;
     return (
       <div>
-        <input ref="fileInput" type="file" onChange={this.onFileChanged}></input>
         {renderIf(this.state.source)(() => (
-          <div style={styles.toolbarWrapper}>
-            {this.state.labelCount > 0 ?
-              <div style={styles.toolbar}>
-                <Dropdown
-                  id="label-dropdown-custom"
-                  dropup
-                >
-                  <Dropdown.Toggle
-                    style={styles.toolbarButton}
-                    bsRole="toggle"
-                    bsStyle="default"
-                    bsSize="small"
-                    className="dropdown-with-input dropdown-toggle"
-                  >
-                    <IconStack size="2x">
-                      <Icon name="circle" stack="2x" />
-                      <Icon name="cog" stack="1x" style={styles.icon} />
-                    </IconStack>
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu className="super-colors">
-                    <div>
-                      <label>Circle Radius: </label>
-                      <input
-                        ref="circleRadiusInput"
-                        type="range" min={1} max={20} step={0.2}
-                        value={circleRadius}
-                        onChange={this.onCircleRadiusChanged}
-                      />
-                      <span>{circleRadius.toFixed(2)}</span>
-                    </div>
-                  </Dropdown.Menu>
-                </Dropdown>
-                <ToggleButton
-                  turnedOnIcon="eye"
-                  turnedOffIcon="eye-slash"
-                  turnedOnCallback={this.showLabels}
-                  turnedOffCallback={this.hideLabels}
-                  iconStyle={styles.icon}
-                  buttonStyle={styles.toolbarButton}
-                />
-                <Button
-                  style={styles.toolbarButton}
-                  onClick={() => this.refs.img.minimizeAllLabels()}
-                  bsSize="small"
-                >
-                  <IconStack size="2x">
-                    <Icon name="circle" stack="2x" />
-                    <Icon name="minus-square" stack="1x" style={styles.icon} />
-                  </IconStack>
-                </Button>
-                <Button
-                  style={styles.toolbarButton}
-                  onClick={() => this.refs.img.maximizeAllLabels()}
-                  bsSize="small"
-                >
-                  <IconStack size="2x">
-                    <Icon name="circle" stack="2x" />
-                    <Icon name="plus-square" stack="1x" style={styles.icon} />
-                  </IconStack>
-                </Button>
-              </div> : null}
+          <div>
             <ImageWithLabels
               ref="img"
               style={styles.imgWithLabels}
               source={this.state.source}
               labels={this.props.labels}
               renderLabel={this.renderLabel}
-              mode={readOnly ? 'READONLY' : 'EDITION'}
+              mode={mode}
               circleRadius={circleRadius}
               showLabels={this.state.showLabels}
               gotFocusCallback={this.onGotFocus}
@@ -186,6 +135,73 @@ export default class ImageWithLabelsWrapper extends Component {
               stringHighlightColor="rgb(236,150,13)"
               stringNormalColor="rgb(255,255,255)"
             />
+            <div style={styles.toolbar}>
+              {this.state.labelCount > 0 ?
+                <div style={styles.inlineBlockme}>
+                  {mode === 'EDITION' ?
+                    <Dropdown
+                      id="label-dropdown-custom"
+                      dropup
+                    >
+                      <Dropdown.Toggle
+                        style={styles.toolbarButton}
+                        bsRole="toggle"
+                        bsStyle="default"
+                        bsSize="small"
+                        className="dropdown-with-input dropdown-toggle"
+                      >
+                        <IconStack size="2x">
+                          <Icon name="circle" stack="2x" />
+                          <Icon name="cog" stack="1x" style={styles.icon} />
+                        </IconStack>
+                      </Dropdown.Toggle>
+                      <Dropdown.Menu className="super-colors">
+                        <div>
+                          <label>Circle Radius: </label>
+                          <input
+                            ref="circleRadiusInput"
+                            type="range" min={1} max={20} step={0.2}
+                            value={circleRadius}
+                            onChange={this.onCircleRadiusChanged}
+                          />
+                          <span>{circleRadius.toFixed(2)}</span>
+                        </div>
+                      </Dropdown.Menu>
+                    </Dropdown> : null}
+                  <ToggleButton
+                    turnedOnIcon="eye"
+                    turnedOffIcon="eye-slash"
+                    turnedOnCallback={this.showLabels}
+                    turnedOffCallback={this.hideLabels}
+                    iconStyle={styles.icon}
+                    buttonStyle={styles.toolbarButton}
+                  />
+                  <Button
+                    style={styles.toolbarButton}
+                    onClick={() => this.refs.img.minimizeAllLabels()}
+                    bsSize="small"
+                  >
+                    <IconStack size="2x">
+                      <Icon name="circle" stack="2x" />
+                      <Icon name="minus-square" stack="1x" style={styles.icon} />
+                    </IconStack>
+                  </Button>
+                  <Button
+                    style={styles.toolbarButton}
+                    onClick={() => this.refs.img.maximizeAllLabels()}
+                    bsSize="small"
+                  >
+                    <IconStack size="2x">
+                      <Icon name="circle" stack="2x" />
+                      <Icon name="plus-square" stack="1x" style={styles.icon} />
+                    </IconStack>
+                  </Button>
+                </div> : null}
+              {mode === 'EDITION' ?
+                <input
+                  style={styles.inlineBlockme} ref="fileInput" type="file" onChange={this.onFileChanged}
+                /> : null}
+            </div>
           </div>
         ))}
       </div>
@@ -201,13 +217,10 @@ ImageWithLabelsWrapper.propTypes = {
 };
 
 const styles = {
-  toolbarWrapper: {
-    position: 'relative',
+  inlineBlockme: {
+    display: 'inline-block',
   },
   toolbar: {
-    position: 'absolute',
-    left: '0%',
-    top: '100%',
     height: '44px',
   },
   toolbarButton: {
