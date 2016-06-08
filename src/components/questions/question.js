@@ -1,21 +1,22 @@
-import React, { Component } from 'react';
+import React, { Component, PropTypes } from 'react';
 import { FormGroup } from 'react-bootstrap';
 import renderIf from 'render-if';
 import RichEditor from '../rich-editor';
 
 export const QuestionPropTypes = {
-  style: React.PropTypes.object,
-  question: React.PropTypes.object,
-  fields: React.PropTypes.object,
-  answer: React.PropTypes.any,
-  identifier: React.PropTypes.any,
-  mode: React.PropTypes.string,
-  showType: React.PropTypes.bool,
-  disabled: React.PropTypes.bool,
-  padding: React.PropTypes.number,
-  onAnswerChange: React.PropTypes.func,
-  onFieldsChange: React.PropTypes.func,
-  onBodyChange: React.PropTypes.func,
+  style: PropTypes.object,
+  question: PropTypes.object,
+  fields: PropTypes.object,
+  answer: PropTypes.any,
+  identifier: PropTypes.any,
+  mode: PropTypes.string,
+  showType: PropTypes.bool,
+  disabled: PropTypes.bool,
+  padding: PropTypes.number,
+  onAnswerChange: PropTypes.func,
+  onFieldsChange: PropTypes.func,
+  onFieldsAndAnswerChange: PropTypes.func,
+  onBodyChange: PropTypes.func,
 };
 
 const QTYPE = {

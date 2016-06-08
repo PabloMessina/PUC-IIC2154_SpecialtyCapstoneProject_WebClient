@@ -16,7 +16,7 @@ import app from '../../app';
 const questionService = app.service('/questions');
 const evaluationsQuestionService = app.service('/evaluations-questions');
 
-import { TrueFalse, MultiChoice, TShort } from '../questions';
+import { TrueFalse, MultiChoice, TShort, Correlation } from '../questions';
 import Progress from './progress';
 import CreateQuestionModal from '../create-question/modal';
 import { Colors } from '../../styles';
@@ -32,6 +32,7 @@ function questionFactory(qtype, props) {
     case 'trueFalse': return <TrueFalse {...props} />;
     case 'multiChoice': return <MultiChoice {...props} />;
     case 'tshort': return <TShort {...props} />;
+    case 'correlation': return <Correlation {...props} />;
     default: return null;
   }
 }
@@ -63,6 +64,7 @@ export default class Questions extends Component {
       onEvaluationChange: PropTypes.func,
       onAnswerChange: PropTypes.func,
       onFieldsChange: PropTypes.func,
+      onFieldsAndAnswerChange: PropTypes.func,
       onQuestionRemove: PropTypes.func,
       onQuestionAdd: PropTypes.func,
     };
@@ -124,6 +126,13 @@ export default class Questions extends Component {
   onModalSave(question) {
     if (this.state.creating) {
       const data = { ...question, id: undefined, organizationId: this.props.organization.id };
+
+      if (!question.content) {
+        // TODO: don't use alert? (can't be another modal)
+        alert('Please type a content text');
+        return null;
+      }
+
       return questionService.create(data)
         .then(created => {
           this.setState({ creating: false, editing: false, error: null });
@@ -201,7 +210,7 @@ export default class Questions extends Component {
   }
 
   renderQuestion(props, identifier, userMode) {
-    const { onAnswerChange, onFieldsChange } = this.props;
+    const { onAnswerChange, onFieldsChange, onFieldsAndAnswerChange } = this.props;
     const question = props.question;
     let mode = 'reader';
     switch (userMode) {
@@ -215,6 +224,7 @@ export default class Questions extends Component {
       mode,
       onAnswerChange: answer => onAnswerChange(question, answer),
       onFieldsChange: field => onFieldsChange(question, field),
+      onFieldsAndAnswerChange: (field, answer) => onFieldsAndAnswerChange(question, field, answer),
     });
     return (
       <div key={question.id} style={styles.question}>
@@ -286,7 +296,7 @@ export default class Questions extends Component {
 
         {objects.map((object, i) => (
           <div key={i} style={styles.wrapper}>
-            {this.renderQuestion(object, i + 1)}
+            {this.renderQuestion(object, i + 1, mode)}
             {renderIf(mode === 'instructor')(
               <div style={styles.icons}>
                 <Icon

@@ -120,6 +120,7 @@ class EvaluationCreate extends Component {
     this.onNavigateTo = this.onNavigateTo.bind(this);
     this.onAnswerChange = this.onAnswerChange.bind(this);
     this.onFieldsChange = this.onFieldsChange.bind(this);
+    this.onNavigateTo = this.onNavigateTo.bind(this);
     this.onQuestionAdd = this.onQuestionAdd.bind(this);
     this.onQuestionRemove = this.onQuestionRemove.bind(this);
     // this.onGroupsChange = this.onGroupsChange.bind(this);
@@ -184,12 +185,13 @@ class EvaluationCreate extends Component {
 
   onFieldsChange(id, fields) {
     throw new Error('onFieldsChange: not implemented!');
+
     // if (id) {
-      // console.log('onFieldsChange', id, fields);
-      // const questions = this.state.questions;
-      // const index = this.state.question.findIndex(q => q.id === id);
-      // if (index > -1) questions[index].fields = fields;
-      // this.setState({ questions });
+    //   console.log('onFieldsChange', id, fields);
+    //   const questions = this.state.questions;
+    //   const index = this.state.question.findIndex(q => q.id === id);
+    //   if (index > -1) questions[index].fields = fields;
+    //   this.setState({ questions });
     // }
   }
 

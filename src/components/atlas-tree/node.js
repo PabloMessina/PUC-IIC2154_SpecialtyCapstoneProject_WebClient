@@ -185,4 +185,3 @@ const styles = {
     fontWeight: 'bold',
   },
 };
-
