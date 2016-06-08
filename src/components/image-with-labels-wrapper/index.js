@@ -11,7 +11,7 @@ export default class ImageWithLabelsWrapper extends Component {
     return {
       url: 'http://www.humpath.com/IMG/jpg_brain_front_cut_01_10.jpg',
       blockProps: {
-        mode: 'REGIONSONLY',
+        mode: 'MULTISELECT',
         gotFocusCallback: () => {},
         lostFocusCallback: () => {},
       },
@@ -37,6 +37,15 @@ export default class ImageWithLabelsWrapper extends Component {
     this.hideLabels = this.hideLabels.bind(this);
   }
 
+  componentDidMount() {
+    setInterval(() => {
+      const labels = this.props.labels;
+      const id = labels[Math.floor(Math.random() * labels.length)].id;
+      console.log("sending id selection update!!, id = ", id);
+      this.refs.img.updateSelectedLabels([id]);
+    }, 5000);
+  }
+
   onFileChanged() {
     const file = this.refs.fileInput.files[0];
     if (file) this.setState({ source: { file } });
@@ -55,7 +64,7 @@ export default class ImageWithLabelsWrapper extends Component {
   }
 
   onLabelsChanged(labels) {
-    console.log('labels = ', JSON.stringify(labels, '\t'));
+    console.log('labels = ', JSON.stringify(labels));
     this.setState({ labelCount: labels.length });
   }
 
@@ -123,9 +132,6 @@ export default class ImageWithLabelsWrapper extends Component {
               mode={mode}
               circleRadius={circleRadius}
               showLabels={this.state.showLabels}
-              gotFocusCallback={this.onGotFocus}
-              lostFocusCallback={this.onLostFocus}
-              labelsChangedCallback={this.onLabelsChanged}
               // colors
               lineHighlightColor="rgb(255,0,0)"
               lineNormalColor="rgb(0,0,0)"
@@ -134,6 +140,13 @@ export default class ImageWithLabelsWrapper extends Component {
               stringFocusColor="rgb(255,255,0)"
               stringHighlightColor="rgb(236,150,13)"
               stringNormalColor="rgb(255,255,255)"
+              // EDITION mode callbacks
+              gotFocusCallback={this.onGotFocus}
+              lostFocusCallback={this.onLostFocus}
+              labelsChangedCallback={this.onLabelsChanged}
+              // MULTISELECT mode callbacks
+              labelSelectedCallback={(id) => console.log(`selectd id = ${id}`)}
+              labelUnselectedCallback={(id) => console.log(`selectd id = ${id}`)}
             />
             <div style={styles.toolbar}>
               {this.state.labelCount > 0 ?
