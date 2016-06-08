@@ -123,8 +123,11 @@ function fetching(...names) {
     .catch(error => {
       if (error.name === 'NotAuthenticated') {
         replace({ pathname: '/login', state: { redirection: nextState.location.pathname } });
-      } else {
+      } else if (process.env.NODE_ENV === 'production') {
         replace({ pathname: '/error', state: { error } });
+      } else {
+        // In development mode, do not redirect to error page
+        throw error;
       }
       return next();
     });
