@@ -126,6 +126,7 @@ export default class InstanceEvaluations extends Component {
               <br />
               <div style={styles.richEditorContainer}>
                 <RichEditor
+                  style={styles.richEditor}
                   content={this.state.content}
                   onChange={this.onChangeContent}
                 />
@@ -221,8 +222,6 @@ const styles = {
     backgroundColor: 'rgb(247,247,247)',
   },
   richEditor: {
-    margin: 0,
-    padding: 0,
     fontSize: 15,
   },
   richEditorContainer: {
