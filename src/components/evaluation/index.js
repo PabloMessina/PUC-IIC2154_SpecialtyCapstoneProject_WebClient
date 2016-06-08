@@ -3,7 +3,7 @@ import { Grid, Row, Col, ButtonToolbar, ButtonGroup, Button, Breadcrumb } from '
 import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
 import renderIf from 'render-if';
-import ErrorAlert from '../error-alert';
+import moment from 'moment';
 
 import app, { currentUser } from '../../app';
 const organizationService = app.service('/organizations');
@@ -14,6 +14,8 @@ const questionService = app.service('/questions');
 const evaluationsQuestionService = app.service('/evaluations-questions');
 const answerService = app.service('/answers');
 const attendanceService = app.service('/attendances');
+
+import ErrorAlert from '../error-alert';
 
 const SECTIONS = [{
   name: 'Information',
@@ -384,6 +386,7 @@ class EvaluationCreate extends Component {
     const sections = participant && ['admin', 'write'].includes(participant.permission)
       ? SECTIONS
       : SECTIONS.filter(item => item.name !== 'Results');
+
     return (
       <ButtonGroup justified>
         {sections.map(this.renderSection)}
@@ -392,23 +395,55 @@ class EvaluationCreate extends Component {
   }
 
   renderSection(section, i) {
-    const evaluation = this.state.evaluation;
+    const user = currentUser();
+    const { evaluation, attendances } = this.state;
     const { name, description, path } = section;
     const selected = this.selected;
     const url = `/evaluations/show/${evaluation.id}/${path}`;
+    const participants = this.state.participants;
+    const userId = currentUser().id;
+    const participant = participants.find(p => p.userId === userId);
+    const role = participant && ['admin', 'write'].includes(participant.permission);
+
+    const attendance = attendances
+      .find(att => att.userId === user.id && att.evaluationId === evaluation.id);
+
+    // Right now
+    const now = moment();
+    // In 'ms'
+    const duration = evaluation.duration;
+    // // When the evaluation can be started
+    const startAt = moment(evaluation.startAt);
+    // // When the evaluation finish
+    const finishAt = moment(evaluation.finishAt);
+    // // When the user started
+    const startedAt = moment(attendance.startedAt);
+    // // The user deadline
+    const finishedAt = startedAt.isValid() ? moment.min(finishAt, startedAt.clone().add(duration, 'ms')) : finishAt;
+    // // We are in the valid range
+    const isOpen = now.isBetween(startAt, finishAt);
+    // // We passed our or the global deadline
+    const isOver = now.isAfter(finishedAt);
+    // // We started the evaluation before
+    const isStarted = startedAt.isValid();
+
+    const validation = role || !role && !isOpen || !role && isOpen && isStarted && !isOver;
 
     return (
-      <Button
-        style={styles.tab}
-        key={i}
-        href="#"
-        active={path === selected}
-        bsStyle={this.state.tabStates[i]}
-        onClick={() => this.props.router.push(url)}
-      >
-        <h5 style={styles.tabTitle}>{name}</h5>
-        <small style={styles.tabDescription}>{description}</small>
-      </Button>
+      <ButtonGroup>
+        <Button
+          style={styles.tab}
+          key={i}
+          href="#"
+          active={path === selected}
+          bsStyle={this.state.tabStates[i]}
+          onClick={() => this.props.router.push(url)}
+          disabled={section.name === 'Questions' && !validation}
+        >
+          <h5 style={styles.tabTitle}>{name}</h5>
+          <small style={styles.tabDescription}>{description}</small>
+        </Button>
+      </ButtonGroup>
     );
   }
 
@@ -430,7 +465,7 @@ class EvaluationCreate extends Component {
     const attendance = attendances
       .find(att => att.userId === user.id && att.evaluationId === evaluation.id);
 
-
+    const time = moment(evaluation.finishAt) > moment() && moment(evaluation.startAt) < moment();
     const canEdit = participant && ['admin', 'write'].includes(participant.permission);
 
     return (
@@ -499,7 +534,7 @@ class EvaluationCreate extends Component {
                 <Button bsStyle="danger" onClick={this.onDelete}>Delete</Button>
               </ButtonToolbar>
             )}
-            {renderIf(!canEdit && attendance && !attendance.startedAt)(() =>
+            {renderIf(!canEdit && attendance && !attendance.startedAt && time)(() =>
               <Button bsStyle="primary" onClick={() => this.startEvaluation(attendance)}>Start evaluation</Button>
             )}
           </Col>

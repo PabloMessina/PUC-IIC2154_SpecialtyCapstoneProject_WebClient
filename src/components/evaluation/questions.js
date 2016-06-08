@@ -12,7 +12,7 @@ import {
 import moment from 'moment';
 import Icon from 'react-fa';
 
-import app from '../../app';
+import app, { currentUser } from '../../app';
 const questionService = app.service('/questions');
 const evaluationsQuestionService = app.service('/evaluations-questions');
 
@@ -60,6 +60,7 @@ export default class Questions extends Component {
       evaluation: PropTypes.object,
       questions: PropTypes.array,
       interval: PropTypes.number,
+      attendances: PropTypes.array,
 
       onEvaluationChange: PropTypes.func,
       onAnswerChange: PropTypes.func,
@@ -327,22 +328,52 @@ export default class Questions extends Component {
   }
 
   renderStudent() {
-    const { questions } = this.props;
+    const { questions, attendances } = this.props;
+    const evaluation = this.props.evaluation;
+    const attendance = attendances.find(a => a.userId === currentUser().id);
+    const start = moment.max(attendance.startedAt, moment());
+    const finish = moment.min(evaluation.finishAt, moment(attendance.startedAt).add(evaluation.duration, 'ms'));
     const time = {
       total: questions.length,
       current: Object.keys(this.props.answers).length,
       // TODO: use real values
-      start: '2016-05-20T19:19:27.588Z',
-      finish: '2016-05-20T20:00:47.588Z',
+      start,
+      finish,
     };
+
+    // Right now
+    const now = moment();
+    // In 'ms'
+    const duration = evaluation.duration;
+    // // When the evaluation can be started
+    const startAt = moment(evaluation.startAt);
+    // // When the evaluation finish
+    const finishAt = moment(evaluation.finishAt);
+    // // When the user started
+    const startedAt = moment(attendance.startedAt);
+    // // The user deadline
+    const finishedAt = startedAt.isValid() ? moment.min(finishAt, startedAt.clone().add(duration, 'ms')) : finishAt;
+    // // We are in the valid range
+    const isOpen = now.isBetween(startAt, finishAt);
+    // // We passed our or the global deadline
+    const isOver = now.isAfter(finishedAt);
+    // // We started the evaluation before
+    const isStarted = startedAt.isValid();
+
+    const validation = !isOpen || isOpen && isStarted && !isOver;
+
     return (
       <Row>
-        <Col style={styles.rigth} xs={12} sm={12} md={3}>
-          <Progress {...time} />
-        </Col>
-        <Col style={styles.left} xs={12} sm={12} md={9}>
-          {this.renderEvaluation('student')}
-        </Col>
+        {renderIf(validation)(
+          <div>
+            <Col style={styles.rigth} xs={12} sm={12} md={3}>
+              <Progress {...time} />
+            </Col>
+            <Col style={styles.left} xs={12} sm={12} md={9}>
+              {this.renderEvaluation('student')}
+            </Col>
+          </div>
+      )}
       </Row>
     );
   }

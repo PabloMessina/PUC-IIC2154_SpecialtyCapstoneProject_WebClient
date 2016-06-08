@@ -3,7 +3,7 @@ import {
   Panel,
 } from 'react-bootstrap';
 import moment from 'moment';
-
+import renderIf from 'render-if';
 
 export default class Progress extends Component {
 
@@ -77,32 +77,37 @@ export default class Progress extends Component {
   }
 
   formatDate(date) {
-    return `${moment.utc(date).format('DD MMMM YYYY - hh:mm')}`;
+    return `${moment(date).format('DD MMMM YYYY - HH:mm')}`;
   }
 
   render() {
     const { diff, mode } = this.state;
-    const { start, finish } = this.props;
+    // const { start, finish } = this.props;
     const time = this.format(diff, mode);
-    const timeStart = this.formatDate(start);
-    const timeFinish = this.formatDate(finish);
+    // const timeStart = this.formatDate(start);
+    // const timeFinish = this.formatDate(finish);
     return (
       <Panel style={styles.container}>
-        <div
-          style={styles.header}
-          onClick={() => this.setState({ mode: (this.state.mode + 1) % 3 })}
-        >
-          <h6 style={styles.remaining}>Remaining:</h6>
-          <p style={styles.time}>{time}</p>
-        </div>
-        <div style={styles.row}>
+        {renderIf(diff > 0)(() => (
+          <div
+            style={styles.header}
+            onClick={() => this.setState({ mode: (this.state.mode + 1) % 3 })}
+          >
+            <h6 style={styles.remaining}>Remaining:</h6>
+            <p style={styles.time}>{time}</p>
+          </div>
+        ))}
+        {/*<div style={styles.row}>
           <h6>Start:</h6>
           <span>{timeStart}</span>
         </div>
         <div style={styles.row}>
           <h6>Finish:</h6>
           <span>{timeFinish}</span>
-        </div>
+        </div>*/}
+        {renderIf(diff < 0)(() => (
+          <h6 style={styles.header}>Time is over.</h6>
+        ))}
       </Panel>
     );
   }

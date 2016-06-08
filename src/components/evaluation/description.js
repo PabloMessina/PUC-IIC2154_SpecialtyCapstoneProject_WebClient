@@ -216,7 +216,7 @@ export default class EvaluationDescription extends Component {
             <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
 
               <FormGroup controlId="title">
-                <ControlLabel>Title</ControlLabel>
+                <ControlLabel>Title*</ControlLabel>
                 <FormControl
                   type="text"
                   value={title}
@@ -224,6 +224,7 @@ export default class EvaluationDescription extends Component {
                   label="Title"
                   disabled={disabled}
                   onChange={e => this.onChange('title', e.target.value)}
+                  required
                 />
                 <FormControl.Feedback />
               </FormGroup>
@@ -268,7 +269,7 @@ export default class EvaluationDescription extends Component {
                   title={<span><Icon style={styles.icon} name="clock-o" /> Timeline</span>}
                 >
                   <FormGroup controlId="start">
-                    <ControlLabel>Start at</ControlLabel>
+                    <ControlLabel>Start at*</ControlLabel>
                     <div style={styles.inline}>
                       <FormControl
                         style={{ marginRight: 15 }}
@@ -276,6 +277,7 @@ export default class EvaluationDescription extends Component {
                         value={startDate}
                         onChange={e => this.setState({ startDate: e.target.value })}
                         disabled={disabled}
+                        required
                       />
                       <FormControl
                         style={{ marginLeft: 15 }}
@@ -283,19 +285,21 @@ export default class EvaluationDescription extends Component {
                         value={startTime}
                         onChange={e => this.setState({ startTime: e.target.value })}
                         disabled={disabled}
+                        required
                       />
                     </div>
                     <HelpBlock>The students will be able to open this evaluation at this date and time.</HelpBlock>
                   </FormGroup>
 
                   <FormGroup>
-                    <ControlLabel>Evaluation duration</ControlLabel>
+                    <ControlLabel>Evaluation duration*</ControlLabel>
                     <FormControl
                       type="time"
                       placeholder="1:30"
                       value={durationTime}
                       onChange={e => this.setState({ durationTime: e.target.value })}
                       disabled={disabled}
+                      required
                     />
                     <HelpBlock>
                       Once a student starts his evaluation, he has this time to finish it.
@@ -304,7 +308,7 @@ export default class EvaluationDescription extends Component {
                   </FormGroup>
 
                   <FormGroup controlId="end">
-                    <ControlLabel>Finish at</ControlLabel>
+                    <ControlLabel>Finish at*</ControlLabel>
                     <div style={styles.inline}>
                       <FormControl
                         style={{ marginRight: 15 }}
@@ -312,6 +316,7 @@ export default class EvaluationDescription extends Component {
                         value={finishDate}
                         onChange={e => this.setState({ finishDate: e.target.value })}
                         disabled={disabled}
+                        required
                       />
                       <FormControl
                         style={{ marginLeft: 15 }}
@@ -319,9 +324,11 @@ export default class EvaluationDescription extends Component {
                         value={finishTime}
                         onChange={e => this.setState({ finishTime: e.target.value })}
                         disabled={disabled}
+                        required
                       />
                     </div>
                     <HelpBlock>After this deadline, students will not be able to update their answers.</HelpBlock>
+                    <HelpBlock>(*) This fields are mandatory</HelpBlock>
                   </FormGroup>
                 </Tab>
 
