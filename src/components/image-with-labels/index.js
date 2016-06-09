@@ -153,6 +153,10 @@ export default class ImageWithLabels extends Component {
         this.selectLabel_MultiSelectMode = this.selectLabel_MultiSelectMode.bind(this);
         this.renderScene = this.renderScene_MultiSelectMode.bind(this);
         break;
+      case WRITEANSWER:
+        this.onMouseDown_WriteAnswerMode = this.onMouseDown_WriteAnswerMode.bind(this);
+        this.renderScene = this.renderScene_WriteAnswerMode.bind(this);
+        break;
       default:
         this.props.errorDetectedCallback(`Unexpected mode = ${props.mode}`);
         break;
@@ -172,6 +176,9 @@ export default class ImageWithLabels extends Component {
         break;
       case MULTISELECT:
         window.addEventListener('mousedown', this.onMouseDown_MultiSelectMode);
+        break;
+      case WRITEANSWER:
+        window.addEventListener('mousedown', this.onMouseDown_WriteAnswerMode);
         break;
       default: break;
     }
@@ -239,6 +246,9 @@ export default class ImageWithLabels extends Component {
       case MULTISELECT:
         window.removeEventListener('mousedown', this.onMouseDown_MultiSelectMode);
         break;
+      case WRITEANSWER:
+        window.removeEventListener('mousedown', this.onMouseDown_WriteAnswerMode);
+        break;
       default: break;
     }
     // remember we have been unmounted
@@ -246,16 +256,6 @@ export default class ImageWithLabels extends Component {
   }
 
   onMouseDown_EditionMode(event) {
-    /* if labels are disabled, just make sure to notify that we have lost focus
-    if we haven't done so already, and then return */
-    if (!this.mystate.showLabels) {
-      if (this.mystate.componentFocused) {
-        this.mystate.componentFocused = false;
-        this.props.lostFocusCallback();
-      }
-      return;
-    }
-
     /* get mouse coordinates in canvas space */
     const canvas = this.refs.labelCanvas;
     const canvCoords = Utils2D.getElementMouseCoords(canvas, event);
@@ -649,10 +649,8 @@ export default class ImageWithLabels extends Component {
     if (event.button === LEFT_BUTTON) {
       /** if left click within canvas boundaries and within canvasWrapper's hierarchy */
       if (clickInsideCanvas) {
-        const nccoords = Utils2D.getClippedAndNormalizedCoords(canvCoords, canvas);
         /** a little Hack to simulate GOTO in javascript */
-        let hack = 0;
-        while (hack++ < 1) {
+        do {
           /* case 1) check if click on label  (text input) */
           const label = this.getIntersectedLabel(mouseCanvasX, mouseCanvasY);
           if (label) { this.selectLabel(label); break; }
@@ -662,6 +660,7 @@ export default class ImageWithLabels extends Component {
           if (ans) { this.selectLabel(ans.label); break; }
 
           /* case 3) check if click on region */
+          const nccoords = Utils2D.getClippedAndNormalizedCoords(canvCoords, canvas);
           ans = this.intersectRegions(nccoords.x, nccoords.y);
           if (ans) {
             // select the label
@@ -671,7 +670,7 @@ export default class ImageWithLabels extends Component {
 
           /* default: unselect the selected label */
           this.unselectSelectedLabel();
-        }
+        } while (false);
       } else {
         this.unselectSelectedLabel();
       }
@@ -694,15 +693,59 @@ export default class ImageWithLabels extends Component {
 
     /** left button click inside canvas */
     if (event.button === LEFT_BUTTON && clickInsideCanvas) {
-      const nccoords = Utils2D.getClippedAndNormalizedCoords(canvCoords, canvas);
-      /* check if click on a region's string or a region itself */
-      const ans =
-        this.intersectRegionStrings(mouseCanvasX, mouseCanvasY) ||
-        this.intersectRegions(nccoords.x, nccoords.y);
-      const label = ans ? ans.label : null;
+      let label = null;
+      do {
+        /* case 1) region string intersected */
+        let ans = this.intersectRegionStrings(mouseCanvasX, mouseCanvasY);
+        if (ans) { label = ans.label; break; }
+
+        /* case 2) region intersected */
+        const nccoords = Utils2D.getClippedAndNormalizedCoords(canvCoords, canvas);
+        ans = this.intersectRegions(nccoords.x, nccoords.y);
+        if (ans) { label = ans.label; break; }
+      } while (false);
+
       if (label) {
         if (label.selected) this.unselectLabel_MultiSelectMode(label);
         else this.selectLabel_MultiSelectMode(label);
+      }
+    }
+  }
+
+  onMouseDown_WriteAnswerMode(event) {
+    /* get mouse coordinates in canvas space */
+    const canvas = this.refs.labelCanvas;
+    const canvCoords = Utils2D.getElementMouseCoords(canvas, event);
+    const mouseCanvasX = canvCoords.x;
+    const mouseCanvasY = canvCoords.y;
+
+    /* click within canvas boundaries and within canvasWrapper's hierarchy */
+    const clickInsideCanvas = Utils2D.coordsInRectangle(mouseCanvasX, mouseCanvasY,
+      0, 0, canvas.width, canvas.height) && isAncestorOf(this.refs.canvasWrapper, event.target);
+
+    /** left button click */
+    if (event.button === LEFT_BUTTON) {
+      if (clickInsideCanvas) {
+        /** a little Hack to simulate GOTO in javascript */
+        do {
+          /* case 1) check if click on label  (text input) */
+          const label = this.getIntersectedLabel(mouseCanvasX, mouseCanvasY);
+          if (label) { this.selectLabel(label); break; }
+
+          /* case 2) check if click on a region's string */
+          let ans = this.intersectRegionStrings(mouseCanvasX, mouseCanvasY);
+          if (ans) { this.selectLabel(ans.label); break; }
+
+          /* case 3) check if click on region */
+          const nccoords = Utils2D.getClippedAndNormalizedCoords(canvCoords, canvas);
+          ans = this.intersectRegions(nccoords.x, nccoords.y);
+          if (ans) { this.selectLabel(ans.label); break; }
+
+          /* default: unselect the selected label */
+          this.unselectSelectedLabel();
+        } while (false);
+      } else {
+        this.unselectSelectedLabel();
       }
     }
   }
@@ -720,7 +763,6 @@ export default class ImageWithLabels extends Component {
     this.renderForAWhile(0);
     this.props.labelUnselectedCallback(label.id);
   }
-
 
   unselectSelectedRegionString() {
     const reg = this.mystate.regionWithSelectedString;
@@ -917,7 +959,13 @@ export default class ImageWithLabels extends Component {
         document.getElementById(getLabelFocusId(label.id)).blur();
         // if text has changed, notify the parent of changes
         if (this.mystate.selectedLabelTextDirty) {
-          if (this.props.labelsChangedCallback) this.props.labelsChangedCallback(this.exportLabelsToJSON());
+          this.props.labelsChangedCallback(this.exportLabelsToJSON());
+          this.mystate.selectedLabelTextDirty = false;
+        }
+      } else if (this.mystate.mode === WRITEANSWER) {
+        document.getElementById(getLabelFocusId(label.id)).blur();
+        if (this.mystate.selectedLabelTextDirty) {
+          this.props.labelAnswerChangedCallback({ id: label.id, text: label.text });
           this.mystate.selectedLabelTextDirty = false;
         }
       }
@@ -946,6 +994,8 @@ export default class ImageWithLabels extends Component {
             }
           }
         }, 0);
+      } else if (this.mystate.mode === WRITEANSWER) {
+        setTimeout(() => document.getElementById(getLabelFocusId(label.id)).focus());
       }
     });
   }
@@ -991,7 +1041,8 @@ export default class ImageWithLabels extends Component {
     let rid = 0;
     for (const label of labels) {
       const regions = new Set();
-      const newLabel = { id: label.id, regions, x: label.x, y: label.y, text: label.text };
+      const text = (this.mystate.mode === WRITEANSWER) ? '' : label.text;
+      const newLabel = { id: label.id, regions, x: label.x, y: label.y, text };
       this.mystate.labelSet.add(newLabel);
       this.mystate.id2labelMap[newLabel.id] = newLabel;
       for (const reg of label.regions) {
@@ -1239,6 +1290,27 @@ export default class ImageWithLabels extends Component {
     }
   }
 
+  /** render the scene onto the canvas (WRITEANSWER MODE)*/
+  renderScene_WriteAnswerMode() {
+    if (!this.mystate.showLabels || this.mystate.componentUnmounted ||
+      !this.mystate.renderingTimerRunning) return;
+
+    requestAnimationFrame(this.renderScene);
+    const canvas = this.refs.labelCanvas;
+    const cvwidth = canvas.width;
+    const cvheight = canvas.height;
+    const ctx = canvas.getContext('2d');
+    /* 1) clear label canvas */
+    ctx.clearRect(0, 0, cvwidth, cvheight);
+    /* 2) draw regions */
+    this.drawRegions(ctx, cvwidth, cvheight);
+    /* 3) draw lines */
+    this.drawLines(ctx, cvwidth, cvheight);;
+    /* 4) draw region's strings */
+    this.drawRegionStrings(ctx, cvwidth, cvheight);
+  }
+
+
   drawRegions(ctx, cvwidth, cvheight) {
     // normal regions
     ctx.fillStyle = this.props.regionNormalColor;
@@ -1473,9 +1545,24 @@ export default class ImageWithLabels extends Component {
     for(const id of selectedIds) {
       const label = this.mystate.id2labelMap[id];
       if (label) label.selected = true;
-      else console.log(`WARNING: id = ${id} not found in id2labelMap`);
+      else console.warn(`WARNING: id = ${id} not found in id2labelMap`);
     }
     this.renderForAWhile(0);
+  }
+
+  /* for MULTISELECT mode */
+  updateLabelAnswers(answers) {
+    for (const ans of answers) {
+      const label = this.mystate.id2labelMap[ans.id];
+      if (label) {
+        label.text = ans.text;
+        if (!label.minimized) {
+          const input = document.getElementById(getLabelFocusId(label.id));
+          if (input) input.value = label.text;
+        }
+      }
+      else console.warn(`No label with id = ${id} was found`);
+    }
   }
 
   /** React's render function */
@@ -1487,11 +1574,11 @@ export default class ImageWithLabels extends Component {
           // temporary label
           if (this.mystate.temporaryLabel) {
             dynamicElements.push(this.props.renderLabel({
+              mode: READONLY,
               label: this.mystate.temporaryLabel,
               ref: TEMPORARY_LABEL_REF,
               key: TEMPORARY_LABEL_REF,
               style: { position: 'absolute', opacity: 0.5 },
-              isReadOnly: true,
             }));
           }
           // existing labels
@@ -1499,7 +1586,7 @@ export default class ImageWithLabels extends Component {
             if (label.minimized) continue; // skip if minimized
             dynamicElements.push(
               this.props.renderLabel({
-                isReadOnly: false,
+                mode: EDITION,
                 label,
                 ref: getLabelRef(label.id),
                 key: getLabelRef(label.id),
@@ -1508,6 +1595,25 @@ export default class ImageWithLabels extends Component {
                 onTextChanged: this.onSelectedLabelTextChanged,
                 onKeyDown: this.onSelectedLabelKeyDown,
                 onClose: this.getOnCloseCallback(label),
+                onMinimize: this.getOnMinimizeCallback(label),
+              })
+            );
+          }
+          break;
+        }
+        case WRITEANSWER: {
+          for (const label of this.mystate.labelSet) {
+            if (label.minimized) continue; // skip if minimized
+            dynamicElements.push(
+              this.props.renderLabel({
+                mode: WRITEANSWER,
+                label,
+                ref: getLabelRef(label.id),
+                key: getLabelRef(label.id),
+                focusId: getLabelFocusId(label.id),
+                style: { position: 'absolute' },
+                onTextChanged: this.onSelectedLabelTextChanged,
+                onKeyDown: this.onSelectedLabelKeyDown,
                 onMinimize: this.getOnMinimizeCallback(label),
               })
             );
@@ -1600,13 +1706,20 @@ ImageWithLabels.propTypes = {
   gotFocusCallback: React.PropTypes.func,
   lostFocusCallback: React.PropTypes.func,
 
-  /* ==========================*/
+  /* ==============================*/
   /* 3) props for MULTISELECT mode */
-  /* ==========================*/
+  /* ==============================*/
 
   /* --- callback props to notify parent about changes (OUTPUT) --- */
   labelSelectedCallback: React.PropTypes.func,
   labelUnselectedCallback: React.PropTypes.func,
+
+  /* ==============================*/
+  /* 4) props for WRITEANSWER mode */
+  /* ==============================*/
+
+  /* --- callback props to notify parent about changes (OUTPUT) --- */
+  labelAnswerChangedCallback: React.PropTypes.func,
 };
 
 const styles = {

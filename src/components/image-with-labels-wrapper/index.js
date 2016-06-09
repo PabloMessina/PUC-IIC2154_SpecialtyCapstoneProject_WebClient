@@ -11,7 +11,7 @@ export default class ImageWithLabelsWrapper extends Component {
     return {
       url: 'http://www.humpath.com/IMG/jpg_brain_front_cut_01_10.jpg',
       blockProps: {
-        mode: 'MULTISELECT',
+        mode: 'EDITION',
         gotFocusCallback: () => {},
         lostFocusCallback: () => {},
       },
@@ -35,15 +35,6 @@ export default class ImageWithLabelsWrapper extends Component {
     this.onLabelsChanged = this.onLabelsChanged.bind(this);
     this.showLabels = this.showLabels.bind(this);
     this.hideLabels = this.hideLabels.bind(this);
-  }
-
-  componentDidMount() {
-    setInterval(() => {
-      const labels = this.props.labels;
-      const id = labels[Math.floor(Math.random() * labels.length)].id;
-      console.log("sending id selection update!!, id = ", id);
-      this.refs.img.updateSelectedLabels([id]);
-    }, 5000);
   }
 
   onFileChanged() {
@@ -78,9 +69,9 @@ export default class ImageWithLabelsWrapper extends Component {
 
   renderLabel(args) {
     // general args
-    const { isReadOnly, ref, key, label, style } = args;
-    if (isReadOnly) {
-      // readonly args
+    const { mode, ref, key, label, style } = args;
+    if (mode === 'READONLY') {
+      // readonly mode args
       const { onMinimize } = args;
       return (
         <div style={style} ref={ref} key={key}>
@@ -94,8 +85,8 @@ export default class ImageWithLabelsWrapper extends Component {
           </div>
         </div>
       );
-    } else {
-      // non readonly args
+    } else if (mode === 'EDITION') {
+      // edition mode args
       const { focusId, onTextChanged, onKeyDown, onMinimize, onClose } = args;
       return (
         <div style={style} ref={ref} key={key}>
@@ -112,6 +103,25 @@ export default class ImageWithLabelsWrapper extends Component {
           </div>
         </div>
       );
+    } else if (mode === 'WRITEANSWER') {
+      // writeanswer mode args
+      const { focusId, onTextChanged, onKeyDown, onMinimize } = args;
+      return (
+        <div style={style} ref={ref} key={key}>
+          <div style={styles.label.innerDiv}>
+            <a href="#" style={styles.label.minimizeButton} onClick={onMinimize}>-</a>
+            <input
+              style={styles.label.input}
+              id={focusId}
+              defaultValue={label.text}
+              onChange={onTextChanged}
+              onKeyDown={onKeyDown}
+            />
+          </div>
+        </div>
+      );
+    } else {
+      throw new Error(`Unexpected mode = ${mode}`);
     }
   }
 
@@ -144,9 +154,6 @@ export default class ImageWithLabelsWrapper extends Component {
               gotFocusCallback={this.onGotFocus}
               lostFocusCallback={this.onLostFocus}
               labelsChangedCallback={this.onLabelsChanged}
-              // MULTISELECT mode callbacks
-              labelSelectedCallback={(id) => console.log(`selectd id = ${id}`)}
-              labelUnselectedCallback={(id) => console.log(`selectd id = ${id}`)}
             />
             <div style={styles.toolbar}>
               {this.state.labelCount > 0 ?

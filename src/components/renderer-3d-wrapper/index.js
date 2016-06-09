@@ -14,12 +14,17 @@ const BLUE = '#0000ff';
 const YELLOW = '#00ffff';
 const GREEN = '#00ff00';
 
+// modes
+const EVALUATION = 'EVALUATION';
+const EDITION = 'EDITION';
+const READONLY = 'READONLY';
+
 export default class Renderer3DWrapper extends Component {
 
   static get defaultProps() {
     return {
       blockProps: {
-        mode: 'EDITION',
+        mode: EDITION,
         gotFocusCallback: () => {},
         lostFocusCallback: () => {},
       },
@@ -35,114 +40,7 @@ export default class Renderer3DWrapper extends Component {
         // obj: 'http://localhost:5000/nRBC.obj',
         // images: ['http://localhost:5000/nRBC.jpg'],
       },
-      labels: [
-      	{
-      		"points": [
-      			{
-      				"x": 0.08011267886422502,
-      				"y": 1.7630375099710704,
-      				"z": 0.2855099769166429
-      			},
-      			{
-      				"x": 0.07996274114879043,
-      				"y": 1.7642502742242812,
-      				"z": -0.24056268813839665
-      			}
-      		],
-      		"position": {
-      			"x": -1.2019907948864557,
-      			"y": 2.368970534761047,
-      			"z": -0.06227645813365079
-      		},
-      		"text": "shoulders",
-          "id": 1,
-      	},
-      	{
-      		"points": [
-      			{
-      				"x": 0.03834693213218543,
-      				"y": 1.643665271571109,
-      				"z": -0.9189726189875955
-      			}
-      		],
-      		"position": {
-      			"x": 0.5210503123113313,
-      			"y": 2.325146086504418,
-      			"z": -1.4203780284125997
-      		},
-      		"text": "left hand",
-          "id": 2,
-      	},
-      	{
-      		"points": [
-      			{
-      				"x": 0.05562013466743565,
-      				"y": 1.6404827763992103,
-      				"z": 0.9533487794309679
-      			}
-      		],
-      		"position": {
-      			"x": 0.18885065242216115,
-      			"y": 2.2365201279125415,
-      			"z": 1.2479100379638908
-      		},
-      		"text": "right hand",
-          "id": 3,
-      	},
-      	{
-      		"points": [
-      			{
-      				"x": 0.1636169699651191,
-      				"y": 0.6388932187009857,
-      				"z": -0.07602061097736623
-      			},
-      			{
-      				"x": 0.18297738656877982,
-      				"y": 0.6669522616368795,
-      				"z": 0.12959693525661464
-      			}
-      		],
-      		"position": {
-      			"x": 1.0465285433723466,
-      			"y": 0.5071482887253147,
-      			"z": 0.07387170013075206
-      		},
-      		"text": "knees",
-          "id": 4,
-      	},
-      	{
-      		"points": [
-      			{
-      				"x": -0.38885138245308326,
-      				"y": 1.5720951288809317,
-      				"z": 0.05662421976961696
-      			}
-      		],
-      		"position": {
-      			"x": -1.2029175571224187,
-      			"y": 1.5549022450299006,
-      			"z": -0.011820433183759249
-      		},
-      		"text": "backpack",
-          "id": 5,
-      	},
-      	{
-      		"points": [
-      			{
-      				"x": 0.004955719812194559,
-      				"y": 2.051210552175462,
-      				"z": 0.009528489769337511
-      			}
-      		],
-      		"position": {
-      			"x": 0.5725380247647536,
-      			"y": 2.6584205095426796,
-      			"z": 0.011737539989184143
-      		},
-      		"text": "head",
-          "id": 6,
-      	}
-      ],
+      labels: [{"id":1,"points":[{"x":0.08011267886422502,"y":1.7630375099710704,"z":0.2855099769166429},{"x":0.07996274114879043,"y":1.7642502742242812,"z":-0.24056268813839665}],"position":{"x":-1.2019907948864557,"y":2.368970534761047,"z":-0.06227645813365079},"text":"shoulders"},{"id":2,"points":[{"x":0.03834693213218543,"y":1.643665271571109,"z":-0.9189726189875955}],"position":{"x":0.5210503123113313,"y":2.325146086504418,"z":-1.4203780284125997},"text":"left hand"},{"id":3,"points":[{"x":0.05562013466743565,"y":1.6404827763992103,"z":0.9533487794309679}],"position":{"x":0.18885065242216115,"y":2.2365201279125415,"z":1.2479100379638908},"text":"right hand"},{"id":4,"points":[{"x":0.1636169699651191,"y":0.6388932187009857,"z":-0.07602061097736623},{"x":0.18297738656877982,"y":0.6669522616368795,"z":0.12959693525661464}],"position":{"x":1.0465285433723466,"y":0.5071482887253147,"z":0.07387170013075206},"text":"knees"},{"id":5,"points":[{"x":-0.38885138245308326,"y":1.5720951288809317,"z":0.05662421976961696}],"position":{"x":-1.2029175571224187,"y":1.5549022450299006,"z":-0.011820433183759249},"text":"backpack"},{"id":6,"points":[{"x":0.004955719812194559,"y":2.051210552175462,"z":0.009528489769337511}],"position":{"x":0.5725380247647536,"y":2.6584205095426796,"z":0.011737539989184143},"text":"head"}],
       highlightedLabelStyle: {
         font: 'Georgia',
         fontSize: 120,
@@ -167,11 +65,12 @@ export default class Renderer3DWrapper extends Component {
         cornerRadiusCoef: 0.4,
         worldFontSizeCoef: 1 / 18,
       },
-      labelsChangedCallback: () => console.log('default wrapper::labelsChangedCallback()'),
-      highlightedLabelStyleChangedCallback: (style) => console.log('highstyle = ', style),
-      normalLabelStyleChangedCallback: (style) => console.log('normalstyle = ', style),
-      sphereRadiusCoefChangedCallback: (coef) => console.log('sphere radius coef = ', coef),
-      local3DFilesLoadedCallback: (files) => console.log('local files: ', files),
+      labelsChangedCallback: (labels) => console.log(JSON.stringify(labels)),
+      highlightedLabelStyleChangedCallback: () => {},
+      normalLabelStyleChangedCallback: () => {},
+      sphereRadiusCoefChangedCallback: () => {},
+      local3DFilesLoadedCallback: () => {},
+      labelAnswerChangedCallback: (ans) => console.log(ans),
     };
   }
 
@@ -180,7 +79,7 @@ export default class Renderer3DWrapper extends Component {
     // state used in render
     this.state = {
       mode: props.blockProps.mode,
-      labelCount: 0,
+      labelCount: props.labels ? props.labels.length : 0,
       labelStyleMode: 'normal',
       labelDropdownOpen: false,
       hasLoadedModel: false,
@@ -224,14 +123,24 @@ export default class Renderer3DWrapper extends Component {
     this.onDownloadCycleFinished = this.onDownloadCycleFinished.bind(this);
     this.onDownloadingFile = this.onDownloadingFile.bind(this);
     this.onSphereRadiusCoefChanged = this.onSphereRadiusCoefChanged.bind(this);
-    this.minimizeAllLabels = this.minimizeAllLabels.bind(this);
-    this.maximizeAllLabels = this.maximizeAllLabels.bind(this);
     this.onTouchStart = this.onTouchStart.bind(this);
     this.checkInComponente = this.checkInComponente.bind(this);
+
+    /* =================== */
+    /* EVALUATION MODE API */
+    /* =================== */
+    this.updateLabelAnswers = this.updateLabelAnswers.bind(this);
   }
 
   componentDidMount() {
     window.addEventListener('mousedown', this.onMouseDown);
+    // EVALUATION MODE DEBUGGING
+    // setInterval(() => {
+    //   const labels = this.props.labels;
+    //   const answers = [];
+    //   answers.push({ id: labels[Math.floor(Math.random() * labels.length)].id, text: Math.random().toFixed(8) });
+    //   this.refs.r3d.updateLabelAnswers(answers);
+    // }, 4000);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -264,16 +173,14 @@ export default class Renderer3DWrapper extends Component {
       elem = elem.parentElement;
     }
     if (!inComponent) this.refs.r3d.unselectSelectedLabel();
-    if (this.state.mode === 'EDITION') {
-      if (inComponent && !this.mystate.componentFocused) {
-        this.mystate.componentFocused = true;
-        this.refs.r3d.gotFocus();
-        this.props.blockProps.gotFocusCallback();
-      } else if (!inComponent && this.mystate.componentFocused) {
-        this.mystate.componentFocused = false;
-        this.refs.r3d.lostFocus();
-        this.props.blockProps.lostFocusCallback();
-      }
+    if (inComponent && !this.mystate.componentFocused) {
+      this.mystate.componentFocused = true;
+      this.refs.r3d.gotFocus();
+      if (this.state.mode === EDITION) this.props.blockProps.gotFocusCallback();
+    } else if (!inComponent && this.mystate.componentFocused) {
+      this.mystate.componentFocused = false;
+      this.refs.r3d.lostFocus();
+      if (this.state.mode === EDITION) this.props.blockProps.lostFocusCallback();
     }
   }
 
@@ -421,12 +328,8 @@ export default class Renderer3DWrapper extends Component {
     this.setState({ sphereRadiusCoef: coef });
   }
 
-  minimizeAllLabels() {
-    this.refs.r3d.minimizeAllLabels();
-  }
-
-  maximizeAllLabels() {
-    this.refs.r3d.maximizeAllLabels();
+  updateLabelAnswers(answers) {
+    this.refs.r3d.updateLabelAnswers(answers);
   }
 
   render() {
@@ -441,7 +344,7 @@ export default class Renderer3DWrapper extends Component {
         break;
     }
     const mode = this.state.mode;
-    const isEdition = mode === 'EDITION';
+    const isEdition = mode === EDITION;
 
     return (
       <div ref="root" style={styles.globalDivStyle}>
@@ -471,7 +374,7 @@ export default class Renderer3DWrapper extends Component {
           {this.state.labelCount > 0 ?
             <Button
               style={styles.toolbarButton}
-              onClick={this.minimizeAllLabels} bsSize="small"
+              onClick={() => this.refs.r3d.minimizeAllLabels()} bsSize="small"
             >
               <IconStack size="2x">
                 <Icon name="circle" stack="2x" />
@@ -481,14 +384,14 @@ export default class Renderer3DWrapper extends Component {
           {this.state.labelCount > 0 ?
             <Button
               style={styles.toolbarButton}
-              onClick={this.maximizeAllLabels} bsSize="small"
+              onClick={() => this.refs.r3d.maximizeAllLabels()} bsSize="small"
             >
               <IconStack size="2x">
                 <Icon name="circle" stack="2x" />
                 <Icon name="plus-square" stack="1x" style={styles.icon} />
               </IconStack>
             </Button> : null}
-          {renderIf(isEdition)(() => (
+          {renderIf(isEdition && this.state.labelCount > 0)(() => (
             <Dropdown
               id="label-dropdown-custom"
               open={this.state.labelDropdownOpen}
@@ -566,11 +469,8 @@ export default class Renderer3DWrapper extends Component {
           downloadingFileCallback={this.onDownloadingFile}
           local3DFilesLoadedCallback={this.props.local3DFilesLoadedCallback}
 
-          // props to handle the sending and receving of label answers (in EVALUATION mode)
-          labelAnswers={this.props.labelAnswers}
-          labelAnswersDirty={this.props.labelAnswersDirty}
-          labelAnswersConsumedCallback={this.props.labelAnswersConsumedCallback}
-          labelChangedCallback={this.props.labelChangedCallback}
+          // in EVALUATION mode
+          labelAnswerChangedCallback={this.props.labelAnswerChangedCallback}
         />
         {this.state.loadingModel ?
           <div style={styles.progressDiv}>
@@ -636,12 +536,8 @@ Renderer3DWrapper.propTypes = {
   /* ==============================*/
   /* 3) props for EVALUATION mode  */
   /* ==============================*/
-  /* --- props to read from (INPUT) ---- */
-  labelAnswers: React.PropTypes.object,
-  labelAnswersDirty: React.PropTypes.bool,
   /* --- callback props to notify parent about changes (OUTPUT) --- */
-  labelAnswersConsumedCallback: React.PropTypes.func,
-  labelChangedCallback: React.PropTypes.func,
+  labelAnswerChangedCallback: React.PropTypes.func,
 };
 
 const styles = {

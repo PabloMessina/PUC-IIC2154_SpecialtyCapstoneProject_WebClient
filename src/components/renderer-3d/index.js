@@ -10,8 +10,8 @@ import TouchUtils from '../../utils/touch-utils';
 const LEFT_BUTTON = 0;
 const RIGHT_BUTTON = 2;
 // default message
-const DEFAULT_LABEL_MESSAGE = 'empty ...';
-const DEFAULT_EVALUATION_LABEL_MESSAGE = 'answer me ..';
+const DEFAULT_LABEL_MESSAGE = '...';
+const DEFAULT_EVALUATION_LABEL_MESSAGE = '...';
 // file extensions
 const OBJ_EXT = '.obj';
 const MTL_EXT = '.mtl';
@@ -25,6 +25,11 @@ const MINIMIZE_ICON_URL = 'http://localhost:3000/img/minimize_icon.png';
 const ICON_COEF = 1 / 40;
 const ICON_RES = 256;
 const LABEL_DROP_DIST_COEF = 1 / 7;
+
+// modes
+const EVALUATION = 'EVALUATION';
+const EDITION = 'EDITION';
+const READONLY = 'READONLY';
 
 export default class Renderer3D extends Component {
 
@@ -93,6 +98,9 @@ export default class Renderer3D extends Component {
     this.maximizeAllLabels = this.maximizeAllLabels.bind(this);
     this.gotFocus = this.gotFocus.bind(this);
     this.lostFocus = this.lostFocus.bind(this);
+
+    // EVALUATION mode
+    this.updateLabelAnswers = this.updateLabelAnswers.bind(this);
   }
 
   componentDidMount() {
@@ -288,7 +296,7 @@ export default class Renderer3D extends Component {
   }
 
   reloadIcons() {
-    if (this.state.mode === 'EDITION') this.reloadDeleteIcon();
+    if (this.state.mode === EDITION) this.reloadDeleteIcon();
     this.reloadMinimizeIcon();
   }
 
@@ -314,7 +322,7 @@ export default class Renderer3D extends Component {
   componentWillReceiveProps(nextProps) {
     console.log('====> componentWillReceiveProps()');
 
-    if (this.state.mode === 'EDITION') {
+    if (this.state.mode === EDITION) {
       /** check if we are receving new remote files */
       if (nextProps.remoteFiles &&
         !isEqual(this.props.remoteFiles, nextProps.remoteFiles)) {
@@ -337,19 +345,16 @@ export default class Renderer3D extends Component {
         // notify any errors
         .catch(error => this.props.loadingErrorCallback(error));
       }
-    } else if (this.state.mode === 'EVALUATION') {
-      /* check if we are receving new label answers */
-      if (nextProps.labelAnswersDirty) this.loadLabelAnswers(nextProps.labelAnswers);
     }
   }
 
   /** refresh labels with the answers received **/
-  loadLabelAnswers(labelAnswers) {
+  updateLabelAnswers(labelAnswers) {
     // refresh each label that needs to be updated
     for (const labelAns of labelAnswers) {
       const label = this.mystate.id2labelMap[labelAns.id];
       if (!label) {
-        console.log(`WARNING: no label with id = ${labelAns.id} found`);
+        console.warn(`WARNING: no label with id = ${labelAns.id} found`);
         continue;
       }
       if (typeof labelAns.text !== 'string') continue;
@@ -360,13 +365,11 @@ export default class Renderer3D extends Component {
           this.highlightLabel(label);
           this.refreshIconsPositions();
           this.mystate.selectedLabelTextDirty = false;
-        } else if (!label.minimized) {
+        } else {
           this.unhighlightLabel(label);
         }
       }
     }
-    // notify that we have consumed the labels
-    this.props.labelAnswersConsumedCallback();
     // refresh scene
     this.animateForAWhile();
   }
@@ -743,13 +746,13 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
         const mesh = this.mystate.meshGroup.children[i];
         this.mystate.meshGroup.remove(mesh);
       }
-      // remove labels
-      this.clearAllLabelData();
       // remove icons
       this.mystate.scene.remove(this.mystate.iconSpriteGroup);
       this.mystate.scene.remove(this.mystate.iconCircleGroup);
-      // notify parent of changes
-      this.props.labelsChangedCallback(this.labelsToJSON());
+      // remove labels
+      this.clearAllLabelData();
+      // notify parent of changes in labels
+      if (this.state.mode === EDITION) this.props.labelsChangedCallback(this.labelsToJSON());
     }
     // set the new meshGroup
     this.mystate.meshGroup = meshGroup;
@@ -845,22 +848,23 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
           const line = new THREE.Line(lineGeo, lineMat);
           lines.add(line);
           this.mystate.sphereToLineMap[sphere.uuid] = line;
-          if (this.state.mode !== 'EVALUATION') this.mystate.lineGroup.add(line);
+          if (this.state.mode !== EVALUATION) this.mystate.lineGroup.add(line);
         });
         /** sprite */
+        const text = (this.state.mode === EVALUATION) ? '' : label.text;
         const sprite = ThreeUtils.makeTextSprite({
-          text: label.text || DEFAULT_LABEL_MESSAGE,
+          text: text || DEFAULT_LABEL_MESSAGE,
           opacity: 1,
           worldReferenceSize: this.mystate.meshDiameter,
           params: this.mystate.normalLabelStyle,
         });
         sprite.position.set(label.position.x, label.position.y, label.position.z);
-        if (this.state.mode !== 'EVALUATION') this.mystate.spriteGroup.add(sprite);
+        if (this.state.mode !== EVALUATION) this.mystate.spriteGroup.add(sprite);
         /** sprite plane */
         const spritePlane =
           ThreeUtils.createPlaneFromSprite(sprite, this.mystate.camera);
         this.mystate.spritePlaneToLabelMap[spritePlane.uuid] = labelObj;
-        if (this.state.mode !== 'EVALUATION') this.mystate.spritePlaneGroup.add(spritePlane);
+        if (this.state.mode !== EVALUATION) this.mystate.spritePlaneGroup.add(spritePlane);
         /** set labelObj's fields */
         labelObj.spheres = spheres;
         labelObj.lines = lines;
@@ -868,7 +872,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
         labelObj.sprite = sprite;
         labelObj.text = label.text;
         labelObj.id = label.id;
-        if (this.state.mode === 'EVALUATION') {
+        if (this.state.mode === EVALUATION) {
           labelObj.minimized = true;
           labelObj.student_answer = '';
         }
@@ -878,8 +882,8 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     }
     // correct label ids
     this.checkAndCorrectLabelIds();
-    // notify parent of changes
-    this.props.labelsChangedCallback(this.labelsToJSON());
+    // notify parent of changes in labels
+    if (this.state.mode === EDITION) this.props.labelsChangedCallback(this.labelsToJSON());
     // refresh screen
     this.animateForAWhile();
   }
@@ -1029,7 +1033,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
    * Handle mouse down events
    */
   onMouseDown(event) {
-    console.log("====> onMouseDown()");
+    // console.log("====> onMouseDown()");
     const viewport = this.refs.viewport;
     const vpcoords = this.getViewportCoords(event.clientX, event.clientY);
     const screenX = vpcoords.x;
@@ -1088,7 +1092,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
               // select label
               const label = this.mystate.spritePlaneToLabelMap[pickedObj.object.uuid];
               this.selectLabel(label);
-              if (this.state.mode === 'EDITION') {
+              if (this.state.mode === EDITION) {
                 /** starts dragging the label */
                 this.mystate.draggingSelectedLabel = true;
                 // plane parameters where dragging will happen
@@ -1106,7 +1110,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
               const sphere = pickedObj.object;
               const label = this.mystate.sphereToLabelMap[sphere.uuid];
               // case 2.1) sphere belongs to already selected label
-              if (label === prevLabel && this.state.mode === 'EDITION') {
+              if (label === prevLabel && this.state.mode === EDITION) {
                 // remove line
                 const line = this.mystate.sphereToLineMap[sphere.uuid];
                 this.mystate.lineGroup.remove(line); // from scene
@@ -1146,7 +1150,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       }
     } else if (event.button === RIGHT_BUTTON) {
       if (this.mystate.meshGroup !== null && this.mystate.labelsEnabled
-        && this.state.mode === 'EDITION') {
+        && this.state.mode === EDITION) {
         /**
          * Conditions:
          * 	1) there is a 3D Model already loaded
@@ -1365,7 +1369,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     // set text to display according to mode
     // debugger
     let text;
-    if (this.state.mode === 'EVALUATION') {
+    if (this.state.mode === EVALUATION) {
       text = label.student_answer || DEFAULT_EVALUATION_LABEL_MESSAGE;
     } else {
       text = label.text || DEFAULT_LABEL_MESSAGE;
@@ -1382,7 +1386,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     // debugger
     // set text to display according to mode
     let text;
-    if (this.state.mode === 'EVALUATION') {
+    if (this.state.mode === EVALUATION) {
       text = label.student_answer || DEFAULT_EVALUATION_LABEL_MESSAGE;
     } else {
       text = label.text || DEFAULT_LABEL_MESSAGE;
@@ -1402,8 +1406,6 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     for (const sphere of labelObj.spheres) sphere.material.color.set(labelStyle.sphereColor);
     // change lines color
     for (const line of labelObj.lines) line.material.color.set(labelStyle.lineColor);
-    // remove current sprite
-    this.mystate.spriteGroup.remove(labelObj.sprite);
     // create a new sprite
     const newSprite = ThreeUtils.makeTextSprite({
       text: labelSettings.text,
@@ -1411,20 +1413,22 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       worldReferenceSize: labelSettings.worldReferenceSize,
       params: labelSettings.style,
     });
-    // copy the same position from the old sprite
+    // copy previous position
     newSprite.position.copy(labelObj.sprite.position);
-    // replace with new sprite
-    this.mystate.spriteGroup.add(newSprite);
-    labelObj.sprite = newSprite;
-    // remove old spritePlane
-    this.mystate.spritePlaneGroup.remove(labelObj.spritePlane);
-    delete this.mystate.spritePlaneToLabelMap[labelObj.spritePlane.uuid];
-    // replace with new spritePlane
+    // create new spritePlane
     const newSpritePlane =
       ThreeUtils.createPlaneFromSprite(newSprite, this.mystate.camera);
-    this.mystate.spritePlaneGroup.add(newSpritePlane);
+    // replace old with new
+    if (!labelObj.minimized) {
+      this.mystate.spriteGroup.remove(labelObj.sprite);
+      this.mystate.spritePlaneGroup.remove(labelObj.spritePlane);
+      this.mystate.spritePlaneGroup.add(newSpritePlane);
+      this.mystate.spriteGroup.add(newSprite);
+    }
+    delete this.mystate.spritePlaneToLabelMap[labelObj.spritePlane.uuid];
     this.mystate.spritePlaneToLabelMap[newSpritePlane.uuid] = labelObj;
     labelObj.spritePlane = newSpritePlane;
+    labelObj.sprite = newSprite;
   }
 
   hideLabels() {
@@ -1562,6 +1566,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
         });
       }
       labelsArray.push({
+        id: label.id,
         points,
         position: {
           x: label.sprite.position.x,
@@ -1727,6 +1732,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
   }
 
   onKeydown(e) {
+    // debugger
     if (!this.mystate.componentFocused) return;
     const key = e.keyCode;
 
@@ -1764,7 +1770,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
         return;
       }
     }
-    if (this.state.mode === 'READONLY' || !this.mystate.labelsEnabled) return;
+    if (this.state.mode === READONLY || !this.mystate.labelsEnabled) return;
     if (this.mystate.selectedLabel) {
       if (key === 13) this.unselectSelectedLabel();
       else this.refs.hiddenTxtInp.focus();
@@ -1772,12 +1778,12 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
   }
 
   onHiddenTextChanged() {
-    console.log('===> onHiddenTextChanged()');
-    if (this.state.mode === 'READONLY') return;
+    // console.log('===> onHiddenTextChanged()');
+    if (this.state.mode === READONLY) return;
     const text = this.refs.hiddenTxtInp.value;
     const label = this.mystate.selectedLabel;
     if (label) {
-      if (this.state.mode === 'EDITION') label.text = text;
+      if (this.state.mode === EDITION) label.text = text;
       else label.student_answer = text; // EVALUATION
       this.highlightLabel(label);
       this.refreshIconsPositions();
@@ -1799,10 +1805,10 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       this.animateForAWhile(0);
       // if text is dirty, notify parent about it (according to mode)
       if (this.mystate.selectedLabelTextDirty) {
-        if (this.state.mode === 'EDTION') {
+        if (this.state.mode === EDITION) {
           this.props.labelsChangedCallback(this.labelsToJSON());
-        } else if (this.state.mode === 'EVALUATION') {
-          this.props.labelChangedCallback({ id: label.id, text: label.student_answer });
+        } else if (this.state.mode === EVALUATION) {
+          this.props.labelAnswerChangedCallback({ id: label.id, text: label.student_answer });
         }
         this.mystate.selectedLabelTextDirty = false;
       }
@@ -1812,8 +1818,8 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
   selectLabel(label) {
     const prevLabel = this.mystate.selectedLabel;
     if (label !== prevLabel) {
-      // unhighlight previous label
-      if (prevLabel) this.unhighlightLabel(prevLabel);
+      // unselect previous selected label
+      this.unselectSelectedLabel();
       // maximize the label if it was minimized
       if (label.minimized) {
         for (const line of label.lines) this.mystate.lineGroup.add(line);
@@ -1832,17 +1838,15 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     // prepare hidden input for writing on it
     this.mystate.canFocusHiddenInput = true;
     this.refs.hiddenTxtInp.value =
-      (this.state.mode === 'EDITION') ? label.text : label.student_answer;
+      (this.state.mode === EDITION) ? label.text : label.student_answer;
     this.refs.hiddenTxtInp.focus();
   }
 
   refreshIconsPositions() {
     // debugger
     const label = this.mystate.selectedLabel;
-    const bbox = new THREE.BoundingBoxHelper(label.sprite);
-    bbox.update();
-    const w = bbox.box.max.x - bbox.box.min.x;
-    const h = bbox.box.max.y - bbox.box.min.y;
+    const w = label.sprite.scale.x;
+    const h = label.sprite.scale.y;
     const quat = this.mystate.camera.quaternion;
     // // update minimize icon's position
     this.mystate.minimizeIconSprite.position
@@ -1854,7 +1858,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       .copy(this.mystate.minimizeIconSprite.position);
     this.mystate.minimizeIconCircle.quaternion.copy(quat);
 
-    if (this.state.mode === 'EDITION') {
+    if (this.state.mode === EDITION) {
       // update delete icon's position
       this.mystate.deleteIconSprite.position
         .set(w * 0.5 + h * 0.04 + this.mystate.meshDiameter * ICON_COEF, h * 0.6, 0)
@@ -1933,68 +1937,59 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     }
     // refresh canvas
     this.animateForAWhile();
-    console.log('onTouchStart: ', e);
-    this.refs.debugSpan.textContent = `onTouchStart, count = ${e.touches.length}, ${hammerCount++}`;
   }
+
   onTouchMove(e) {
-    try {
-      e.preventDefault();
-      const touches = e.touches;
-      if (touches.length === 1) {
-        const vpcoords = this.getViewportCoords(touches[0].clientX, touches[0].clientY);
-        const screenX = vpcoords.x;
-        const screenY = vpcoords.y;
-        if (this.mystate.orbitingCamera_touch) {
-          this.mystate.touchCoords2.x = screenX;
-          this.mystate.touchCoords2.y = screenY;
-          this.mystate.orbitingCamera_touch_updatePending = true;
-        } else {
-          this.mystate.orbitingCamera_touch = true;
-          this.mystate.touchCoords1.x = screenX;
-          this.mystate.touchCoords1.y = screenY;
-        }
-        this.mystate.draggingCamera_touch = false;
-        this.mystate.pinching = false;
-        this.refs.debugSpan.textContent = `panning(1 finger), count = ${touches.length}, ${hammerCount++}`;
-      } else if (touches.length === 2) {
-        this.refs.debugSpan.textContent = `panning(2 fingers), count = ${touches.length}, ${hammerCount++}`;
-        const center = TouchUtils.touchesClientCenter(touches);
-        if (this.mystate.draggingCamera_touch) {
-          this.mystate.touchCoords2.x = center.x;
-          this.mystate.touchCoords2.y = center.y;
-          this.mystate.draggingCamera_touch_updatePending = true;
-        } else {
-          this.mystate.draggingCamera_touch = true;
-          this.mystate.touchCoords1.x = center.x;
-          this.mystate.touchCoords1.y = center.y;
-        }
-        this.mystate.orbitingCamera_touch = false;
-        this.mystate.pinching = false;
-      } else if (touches.length >= 3) {
-        const pinchDist = TouchUtils.touchesAvgSquareDistanceToCenter(touches);
-        if (this.mystate.pinching) {
-          this.mystate.pinchDist2 = pinchDist;
-          this.mystate.pinchCenter = TouchUtils.touchesClientCenter(touches);
-          this.mystate.pinching_updatePending = true;
-        } else {
-          this.mystate.pinchDist1 = pinchDist;
-          this.mystate.pinching = true;
-        }
-        this.mystate.orbitingCamera_touch = false;
-        this.mystate.draggingCamera_touch = false;
-        this.refs.debugSpan.textContent = `pinching, count = ${touches.length}, ${hammerCount++}`;
+    e.preventDefault();
+    const touches = e.touches;
+    if (touches.length === 1) {
+      const vpcoords = this.getViewportCoords(touches[0].clientX, touches[0].clientY);
+      const screenX = vpcoords.x;
+      const screenY = vpcoords.y;
+      if (this.mystate.orbitingCamera_touch) {
+        this.mystate.touchCoords2.x = screenX;
+        this.mystate.touchCoords2.y = screenY;
+        this.mystate.orbitingCamera_touch_updatePending = true;
+      } else {
+        this.mystate.orbitingCamera_touch = true;
+        this.mystate.touchCoords1.x = screenX;
+        this.mystate.touchCoords1.y = screenY;
       }
-      this.animateForAWhile();
-    } catch (err) {
-      this.refs.debugSpan.textContent = `error: ${err.stack}`;
+      this.mystate.draggingCamera_touch = false;
+      this.mystate.pinching = false;
+    } else if (touches.length === 2) {
+      const center = TouchUtils.touchesClientCenter(touches);
+      if (this.mystate.draggingCamera_touch) {
+        this.mystate.touchCoords2.x = center.x;
+        this.mystate.touchCoords2.y = center.y;
+        this.mystate.draggingCamera_touch_updatePending = true;
+      } else {
+        this.mystate.draggingCamera_touch = true;
+        this.mystate.touchCoords1.x = center.x;
+        this.mystate.touchCoords1.y = center.y;
+      }
+      this.mystate.orbitingCamera_touch = false;
+      this.mystate.pinching = false;
+    } else if (touches.length >= 3) {
+      const pinchDist = TouchUtils.touchesAvgSquareDistanceToCenter(touches);
+      if (this.mystate.pinching) {
+        this.mystate.pinchDist2 = pinchDist;
+        this.mystate.pinchCenter = TouchUtils.touchesClientCenter(touches);
+        this.mystate.pinching_updatePending = true;
+      } else {
+        this.mystate.pinchDist1 = pinchDist;
+        this.mystate.pinching = true;
+      }
+      this.mystate.orbitingCamera_touch = false;
+      this.mystate.draggingCamera_touch = false;
     }
+    this.animateForAWhile();
   }
-  onTouchEnd(e) {
+
+  onTouchEnd() {
     this.mystate.orbitingCamera_touch = false;
     this.mystate.draggingCamera_touch = false;
     this.mystate.pinching = false;
-    console.log('onTouchEnd: ', e);
-    this.refs.debugSpan.textContent = `onTouchEnd, count = ${e.touches.length}, ${hammerCount++}`;
   }
 
   render() {
@@ -2011,13 +2006,10 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
         >
         </div>
         <input ref="hiddenTxtInp" onChange={this.onHiddenTextChanged} style={styles.hiddenTxtInp}></input>
-        <textarea ref="debugSpan" style={styles.debugSpan}></textarea>
       </div>
     );
   }
 }
-
-let hammerCount = 0;
 
 Renderer3D.propTypes = {
   /* ===========================*/
@@ -2047,25 +2039,13 @@ Renderer3D.propTypes = {
   /* ==============================*/
   /* 3) props for EVALUATION mode  */
   /* ==============================*/
-  /* --- props to read from (INPUT) ---- */
-  labelAnswers: React.PropTypes.array,
-  labelAnswersDirty: React.PropTypes.bool,
   /* --- callback props to notify parent about changes (OUTPUT) --- */
-  labelAnswersConsumedCallback: React.PropTypes.func,
-  labelChangedCallback: React.PropTypes.func,
+  labelAnswerChangedCallback: React.PropTypes.func,
 };
 
 const styles = {
   viewport: {
     height: '350px',
-  },
-  debugSpan: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    minWidth: '350px',
-    minHeight: '50px',
-    backgroundColor: 'red',
   },
   hiddenTxtInp: {
     position: 'absolute',
