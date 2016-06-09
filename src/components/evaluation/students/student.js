@@ -61,7 +61,7 @@ class Student extends Component {
       // // The user deadline
       const finishedAt = startedAt.isValid() ? moment.min(finishAt, startedAt.clone().add(duration, 'ms')) : finishAt;
 
-      const attended = attendance;
+      const { attended } = attendance;
       const time = startedAt ? moment(startedAt).format('dddd, MMMM Do, HH:mm') : null;
       const isOver = now.isAfter(finishedAt);
       console.log(isOver);

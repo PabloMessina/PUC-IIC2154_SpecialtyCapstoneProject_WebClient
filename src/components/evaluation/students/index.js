@@ -275,7 +275,7 @@ class Students extends Component {
 
   renderInstructor() {
     // const all = this.state.students;
-    const attendances = this.props.attendances;
+    const { attendances, evaluation } = this.props;
     // attendances.forEach(attendance => {
     //   attendance.user = all.find(student => student.id === attendance.userId);  // eslint-disable-line
     // });
@@ -325,6 +325,7 @@ class Students extends Component {
               teams={teams}
               updateOrCreateAttendance={this.updateOrCreateAttendance}
               removeFromGroup={this.removeFromGroup}
+              evaluation={evaluation}
             />
           </Col>
           <Col sm={4}>

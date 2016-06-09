@@ -5,7 +5,7 @@ export default class ErrorAlert extends Component {
   static get propTypes() {
     return {
       error: PropTypes.any,
-      onDismiss: PropTypes.func.isRequired,
+      onDismiss: PropTypes.func,
     };
   }
 
@@ -23,6 +23,7 @@ export default class ErrorAlert extends Component {
     );
   }
 }
+
 const styles = {
   alert: {
     margin: 5,
