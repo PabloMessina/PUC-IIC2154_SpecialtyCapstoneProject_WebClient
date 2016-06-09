@@ -37,6 +37,7 @@ class Team extends Component {
     return {
       team: PropTypes.object.isRequired,
       identifier: PropTypes.any.isRequired,
+      evaluation: PropTypes.object.isRequired,
       updateOrCreateAttendance: PropTypes.func,
       strip: PropTypes.bool,
       connectDropTarget: PropTypes.func.isRequired,
@@ -45,7 +46,7 @@ class Team extends Component {
   }
 
   render() {
-    const { identifier, connectDropTarget, isOverAnotherGroup, team, strip } = this.props;
+    const { identifier, evaluation, connectDropTarget, isOverAnotherGroup, team, strip } = this.props;
 
     return (
       <tbody ref={instance => connectDropTarget(findDOMNode(instance))}>
@@ -56,6 +57,7 @@ class Team extends Component {
             identifier={identifier}
             attendance={attendance}
             user={user}
+            evaluation={evaluation}
             highlight={isOverAnotherGroup(team)}
           />
         )}

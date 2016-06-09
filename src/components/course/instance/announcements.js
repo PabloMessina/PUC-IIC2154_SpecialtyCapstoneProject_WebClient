@@ -156,7 +156,7 @@ export default class InstanceEvaluations extends Component {
       <div style={styles.container}>
         <Col xs={12} md={8}>
           {renderIf(announcements.length === 0)(() =>
-            <h4>There is not published announcements</h4>
+            <h4>There are no published announcements</h4>
           )}
           {announcements.map((announcement, index) => {
             const props = {
