@@ -66,26 +66,28 @@ export default class InstanceEvaluations extends Component {
   }
 
   onModalSave() {
-    this.setState({ loading: true });
+    if (window.confirm("Do you really want to proceed?")) {
+      this.setState({ loading: true });
 
-    const announcement = {
-      subject: this.state.subject,
-      content: this.state.content,
-      userId: currentUser().id,
-      instanceId: this.props.instance.id,
-    };
-    return announcementService.create(announcement)
-      .then(() => this.fetchAnnouncements(this.props.instance))
-      .then(() => this.setState({
-        // Restore state for future announcements
-        showModal: false,
-        subject: '',
-        content: null,
-        // Restore other states
-        loading: false,
-        error: null,
-      }))
-      .catch(error => this.setState({ error, loading: false }));
+      const announcement = {
+        subject: this.state.subject,
+        content: this.state.content,
+        userId: currentUser().id,
+        instanceId: this.props.instance.id,
+      };
+      return announcementService.create(announcement)
+        .then(() => this.fetchAnnouncements(this.props.instance))
+        .then(() => this.setState({
+          // Restore state for future announcements
+          showModal: false,
+          subject: '',
+          content: null,
+          // Restore other states
+          loading: false,
+          error: null,
+        }))
+        .catch(error => this.setState({ error, loading: false }));
+    }
   }
 
   fetchAnnouncements(instance) {
