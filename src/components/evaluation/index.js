@@ -420,7 +420,7 @@ class EvaluationCreate extends Component {
       const url = `/evaluations/show/${evaluation.id}/${section.path}`;
 
       let disabled = false;
-      if (attendance && section.name === 'Questions') {
+      if (attendance && section.name === 'Questions' && !canEdit) {
         // In 'ms'
         const duration = evaluation.duration;
         // // When the evaluation can be started
@@ -439,7 +439,7 @@ class EvaluationCreate extends Component {
         const isStarted = startedAt.isValid();
 
         // is disabled if can't edit and has not started yet or did finish
-        disabled = !(canEdit || !canEdit && !isOpen || !canEdit && isOpen && isStarted && !isOver);
+        disabled = (!isOpen || !(isOpen && isStarted && !isOver));
       }
 
       return { ...section, url, active, disabled };
@@ -527,7 +527,7 @@ class EvaluationCreate extends Component {
           <Col style={styles.bar} xsOffset={0} xs={12}>
             <ButtonGroup justified>
               {sections.map(({ name, description, path, url, ...props }, i) =>
-                <Section key={i} onClick={() => this.props.router.push(url)}>
+                <Section key={i} onClick={() => this.props.router.push(url)} {...props}>
                   <h5 style={styles.tabTitle}>{name}</h5>
                   <small style={styles.tabDescription}>{description}</small>
                 </Section>
