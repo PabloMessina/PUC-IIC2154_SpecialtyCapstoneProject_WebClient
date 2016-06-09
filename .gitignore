@@ -3,6 +3,7 @@
 dist
 public/*
 !public/index.html
+!public/favicon.ico
 
 #####=== Node ===#####
 

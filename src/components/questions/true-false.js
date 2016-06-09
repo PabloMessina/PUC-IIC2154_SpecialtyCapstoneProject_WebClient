@@ -19,8 +19,7 @@ class TrueFalse extends Component {
   }
 
   render() {
-    const { question, disabled, onAnswerChange } = this.props;
-    const { answer } = question;
+    const { answer, disabled, onAnswerChange } = this.props;
     const value = answer.value;
 
     const left = {

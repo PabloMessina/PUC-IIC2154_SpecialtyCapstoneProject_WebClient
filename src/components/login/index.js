@@ -4,14 +4,13 @@ import {
   Grid,
   Col,
   Button,
-  Alert,
   FormGroup,
   FormControl,
   ControlLabel,
 } from 'react-bootstrap';
-
+import ErrorAlert from '../error-alert';
+import DocumentTitle from 'react-document-title';
 import { withRouter } from 'react-router';
-import renderIf from 'render-if';
 
 import { login } from '../../app';
 
@@ -88,6 +87,7 @@ class Login extends Component {
   render() {
     return (
       <Grid>
+        <DocumentTitle title="Login" />
         <Col xs={12} xsOffset={0} md={6} mdOffset={3}>
           <Panel>
             <form onSubmit={this.onSubmit}>
@@ -123,19 +123,17 @@ class Login extends Component {
             <br />
 
             {/*
-                Render only if there is an error.
-                Notice '() => (<...>)', this makes makes the closure lazy
-                */}
-                {renderIf(this.state.error)(() =>
-                  <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
-                    <h4>Oh snap! You got an error!</h4>
-                    <p>{this.state.error.message}</p>
-                  </Alert>
-                  )}
+            Render only if there is an error.
+            Notice '() => (<...>)', this makes makes the closure lazy
+            */}
+            <ErrorAlert
+              error={this.state.error}
+              onDismiss={() => this.setState({ error: null })}
+            />
 
-                </Panel>
-              </Col>
-            </Grid>
+          </Panel>
+        </Col>
+      </Grid>
     );
   }
 }

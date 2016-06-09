@@ -12,11 +12,11 @@ import {
 import moment from 'moment';
 import Icon from 'react-fa';
 
-import app from '../../app';
+import app, { currentUser } from '../../app';
 const questionService = app.service('/questions');
 const evaluationsQuestionService = app.service('/evaluations-questions');
 
-import { TrueFalse, MultiChoice, TShort } from '../questions';
+import { TrueFalse, MultiChoice, TShort, Correlation } from '../questions';
 import Progress from './progress';
 import CreateQuestionModal from '../create-question/modal';
 import { Colors } from '../../styles';
@@ -32,6 +32,7 @@ function questionFactory(qtype, props) {
     case 'trueFalse': return <TrueFalse {...props} />;
     case 'multiChoice': return <MultiChoice {...props} />;
     case 'tshort': return <TShort {...props} />;
+    case 'correlation': return <Correlation {...props} />;
     default: return null;
   }
 }
@@ -46,6 +47,12 @@ export default class Questions extends Component {
       tags: PropTypes.array,
       hidden: PropTypes.array,
 
+      // Instructor mode
+      answers: PropTypes.object,
+
+      // Student mode
+      evaluationQuestions: PropTypes.array,
+
       // From parent
       organization: PropTypes.object,
       course: PropTypes.object,
@@ -53,16 +60,12 @@ export default class Questions extends Component {
       evaluation: PropTypes.object,
       questions: PropTypes.array,
       interval: PropTypes.number,
-
-      // Instructor mode
-      answers: PropTypes.object,
-
-      // Student mode
-      evaluationQuestions: PropTypes.array,
+      attendances: PropTypes.array,
 
       onEvaluationChange: PropTypes.func,
       onAnswerChange: PropTypes.func,
       onFieldsChange: PropTypes.func,
+      onFieldsAndAnswerChange: PropTypes.func,
       onQuestionRemove: PropTypes.func,
       onQuestionAdd: PropTypes.func,
     };
@@ -110,7 +113,6 @@ export default class Questions extends Component {
 
     this.onModalClose = this.onModalClose.bind(this);
     this.onModalSave = this.onModalSave.bind(this);
-    this.onEdit = this.onEdit.bind(this);
   }
 
   componentDidMount() {
@@ -125,6 +127,13 @@ export default class Questions extends Component {
   onModalSave(question) {
     if (this.state.creating) {
       const data = { ...question, id: undefined, organizationId: this.props.organization.id };
+
+      if (!question.content) {
+        // TODO: don't use alert? (can't be another modal)
+        alert('Please type a content text');
+        return null;
+      }
+
       return questionService.create(data)
         .then(created => {
           this.setState({ creating: false, editing: false, error: null });
@@ -150,10 +159,6 @@ export default class Questions extends Component {
       .catch(error => this.setState({ error }));
     }
     return null;
-  }
-
-  onEdit(currentQuestion) {
-    this.setState({ editing: true, currentQuestion });
   }
 
   fetchTags() {
@@ -187,9 +192,6 @@ export default class Questions extends Component {
       .map(question => ({
         question,
         qtype: question.qtype,
-        content: question.content,
-        answer: question.answer,
-        fields: question.fields,
         disabled: true,
         // TODO: add gradient
         // style: { height: 200, overflow: 'hidden' },
@@ -208,8 +210,9 @@ export default class Questions extends Component {
     );
   }
 
-  renderQuestion(question, identifier, userMode) {
-    const { onAnswerChange, onFieldsChange } = this.props;
+  renderQuestion(props, identifier, userMode) {
+    const { onAnswerChange, onFieldsChange, onFieldsAndAnswerChange } = this.props;
+    const question = props.question;
     let mode = 'reader';
     switch (userMode) {
       case 'instructor': mode = 'reader'; break;
@@ -217,11 +220,12 @@ export default class Questions extends Component {
       default: mode = 'reader'; break;
     }
     const element = questionFactory(question.qtype, {
-      ...question,
+      ...props,
       identifier,
       mode,
       onAnswerChange: answer => onAnswerChange(question, answer),
       onFieldsChange: field => onFieldsChange(question, field),
+      onFieldsAndAnswerChange: (field, answer) => onFieldsAndAnswerChange(question, field, answer),
     });
     return (
       <div key={question.id} style={styles.question}>
@@ -264,17 +268,24 @@ export default class Questions extends Component {
   }
 
   renderEvaluation(mode) {
-    const { evaluation, questions, answers, onQuestionRemove, evaluationQuestions } = this.props;
+    const {
+      evaluation,
+      questions,
+      answers,
+      onQuestionRemove,
+      evaluationQuestions,
+    } = this.props;
     const objects = questions.map(question => {
       const eq = evaluationQuestions.find(item => item.questionId === question.id);
       const answ = (eq && eq.customAnswer) ? eq.customAnswer : answers[question.id];
       return ({
-        question,
-        answer: answ || (mode === 'instructor' ? question.answer : undefined),
-        fields: (eq && eq.customField) ? eq.customField : question.fields,
-        content: (eq && eq.customContent) ? eq.customContent : question.content,
+        question: {
+          ...question,
+          answer: answ || (mode === 'instructor' ? question.answer : undefined),
+          fields: (eq && eq.customField) ? eq.customField : question.fields,
+          content: (eq && eq.customContent) ? eq.customContent : question.content,
+        },
         disabled: mode === 'instructor',
-        qtype: question.qtype,
       });
     });
     return (
@@ -284,21 +295,21 @@ export default class Questions extends Component {
         </div>
         <p>{evaluation.description || ''}</p>
 
-        {objects.map((question, i) => (
+        {objects.map((object, i) => (
           <div key={i} style={styles.wrapper}>
-            {this.renderQuestion(question, i + 1)}
+            {this.renderQuestion(object, i + 1, mode)}
             {renderIf(mode === 'instructor')(
               <div style={styles.icons}>
                 <Icon
                   size="lg"
                   name="times"
-                  onClick={() => onQuestionRemove(question)}
+                  onClick={() => onQuestionRemove(object.question)}
                 />
                 <Icon
                   size="lg"
                   name="pencil"
                   style={{ marginTop: 10 }}
-                  onClick={() => this.setState({ editing: true, currentQuestion: question })}
+                  onClick={() => this.setState({ editing: true, currentQuestion: object.question })}
                 />
               </div>
             )}
@@ -317,22 +328,52 @@ export default class Questions extends Component {
   }
 
   renderStudent() {
-    const { questions } = this.props;
+    const { questions, attendances } = this.props;
+    const evaluation = this.props.evaluation;
+    const attendance = attendances.find(a => a.userId === currentUser().id);
+    const start = moment.max(attendance.startedAt, moment());
+    const finish = moment.min(evaluation.finishAt, moment(attendance.startedAt).add(evaluation.duration, 'ms'));
     const time = {
       total: questions.length,
       current: Object.keys(this.props.answers).length,
       // TODO: use real values
-      start: '2016-05-20T19:19:27.588Z',
-      finish: '2016-05-20T20:00:47.588Z',
+      start,
+      finish,
     };
+
+    // Right now
+    const now = moment();
+    // In 'ms'
+    const duration = evaluation.duration;
+    // // When the evaluation can be started
+    const startAt = moment(evaluation.startAt);
+    // // When the evaluation finish
+    const finishAt = moment(evaluation.finishAt);
+    // // When the user started
+    const startedAt = moment(attendance.startedAt);
+    // // The user deadline
+    const finishedAt = startedAt.isValid() ? moment.min(finishAt, startedAt.clone().add(duration, 'ms')) : finishAt;
+    // // We are in the valid range
+    const isOpen = now.isBetween(startAt, finishAt);
+    // // We passed our or the global deadline
+    const isOver = now.isAfter(finishedAt);
+    // // We started the evaluation before
+    const isStarted = startedAt.isValid();
+
+    const validation = !isOpen || isOpen && isStarted && !isOver;
+
     return (
       <Row>
-        <Col style={styles.rigth} xs={12} sm={12} md={3}>
-          <Progress {...time} />
-        </Col>
-        <Col style={styles.left} xs={12} sm={12} md={9}>
-          {this.renderEvaluation('student')}
-        </Col>
+        {renderIf(validation)(
+          <div>
+            <Col style={styles.rigth} xs={12} sm={12} md={3}>
+              <Progress {...time} />
+            </Col>
+            <Col style={styles.left} xs={12} sm={12} md={9}>
+              {this.renderEvaluation('student')}
+            </Col>
+          </div>
+      )}
       </Row>
     );
   }

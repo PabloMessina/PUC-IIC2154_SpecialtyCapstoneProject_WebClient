@@ -7,6 +7,7 @@ import {
 } from 'react-bootstrap';
 import { withRouter } from 'react-router';
 import renderIf from 'render-if';
+import DocumentTitle from 'react-document-title';
 
 /**
  * Component life-cycle:
@@ -53,7 +54,7 @@ class Course extends Component {
 
     return (
       <Grid style={styles.container}>
-
+        <DocumentTitle title={course.name} />
         <br />
 
         <Breadcrumb>

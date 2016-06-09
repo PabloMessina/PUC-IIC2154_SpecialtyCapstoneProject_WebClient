@@ -5,6 +5,7 @@ import hooks from 'feathers-hooks';
 import io from 'socket.io-client';
 import socketio from 'feathers-socketio/client';
 import authentication from 'feathers-authentication/client';
+import errors from 'feathers-errors';
 import reactive from 'feathers-reactive';
 import Rx from 'rxjs';
 
@@ -161,7 +162,9 @@ export function auth(options) {
     .catch(err => {
       console.log('Auth error:', err);
       events.authenticated.next(null);
-      throw err;
+      // Strange error
+      if (err.name === 'NotFound') throw new errors.NotAuthenticated();
+      else throw err;
     });
 }
 

@@ -4,12 +4,12 @@ import { Grid,
   Col,
   Panel,
   Button,
-  Alert,
   ControlLabel,
 } from 'react-bootstrap';
 import Icon from 'react-fa';
 import Select from 'react-select';
 import renderIf from 'render-if';
+import ErrorAlert from '../error-alert';
 
 import app from '../../app';
 const questionService = app.service('/questions');
@@ -188,11 +188,10 @@ export default class CourseTab extends Component {
                 </div>
               )}
             </Panel>
-            {renderIf(this.state.error)(() =>
-              <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
-                <p>{this.state.error.message}</p>
-              </Alert>
-            )}
+            <ErrorAlert
+              error={this.state.error}
+              onDismiss={() => this.setState({ error: null })}
+            />
           </Col>
         </Row>
       </Grid>

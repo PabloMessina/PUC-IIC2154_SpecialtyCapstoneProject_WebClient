@@ -4,12 +4,11 @@ import {
   Row,
   Col,
   Panel,
-  Alert,
 } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { withRouter } from 'react-router';
-import renderIf from 'render-if';
-
+import ErrorAlert from '../error-alert';
+import DocumentTitle from 'react-document-title';
 import OrganizationFrom from '../organization-form/';
 
 import app from '../../app';
@@ -50,7 +49,7 @@ class OrganizationCreate extends Component {
   render() {
     return (
       <Grid style={styles.container}>
-
+        <DocumentTitle title="Create organization" />
         <Row>
           <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
             <h2>New Organization</h2>
@@ -69,11 +68,10 @@ class OrganizationCreate extends Component {
 
             <hr />
 
-            {renderIf(this.state.error)(() =>
-              <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
-                <p>{this.state.error.message}</p>
-              </Alert>
-            )}
+            <ErrorAlert
+              error={this.state.error}
+              onDismiss={() => this.setState({ error: null })}
+            />
 
             <OrganizationFrom disabled={this.state.disabled} onSubmit={this.onSubmit} />
 

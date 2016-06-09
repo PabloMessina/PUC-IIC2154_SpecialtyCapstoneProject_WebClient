@@ -64,12 +64,6 @@ const styles = {
     padding: 0,
     fontSize: 15,
     overflow: 'auto',
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-  },
-  editorContainer: {
-    height: 200,
   },
   subject: {
     fontSize: 16,

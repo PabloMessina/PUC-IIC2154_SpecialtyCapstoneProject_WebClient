@@ -133,6 +133,7 @@ export default class MinTemplate extends Component {
       onEvaluationChange: PropTypes.func,
       onAnswerChange: PropTypes.func,
       onFieldsChange: PropTypes.func,
+      onFieldsAndAnswerChange: PropTypes.func,
       onQuestionRemove: PropTypes.func,
       onQuestionAdd: PropTypes.func,
     };

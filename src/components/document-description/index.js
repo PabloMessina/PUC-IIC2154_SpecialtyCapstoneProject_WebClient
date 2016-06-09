@@ -17,6 +17,7 @@ import { withRouter } from 'react-router';
 import moment from 'moment';
 import Select from 'react-select';
 import renderIf from 'render-if';
+import DocumentTitle from 'react-document-title';
 
 import app, { currentUser } from '../../app';
 import { Colors } from '../../styles';
@@ -347,6 +348,7 @@ class DocumentDescription extends Component {
     image = image || 'http://sightlinemediaentertainment.com/wp-content/uploads/2015/09/placeholder-cover.jpg';
     return (
       <Grid>
+        <DocumentTitle title={this.state.title} />
         <Col md={9}>
           <Panel style={styles.panel}>
             <Row className="show-grid">

@@ -11,6 +11,7 @@ class TeamList extends Component {
   static get propTypes() {
     return {
       teams: PropTypes.array.isRequired,
+      evaluation: PropTypes.object.isRequired,
       removeFromGroup: PropTypes.func.isRequired,
       updateOrCreateAttendance: PropTypes.func.isRequired,
 
@@ -21,7 +22,7 @@ class TeamList extends Component {
   }
 
   render() {
-    const { connectDropTarget, isOver, isUnselected, teams } = this.props;
+    const { connectDropTarget, isOver, isUnselected, teams, evaluation } = this.props;
     const style = { ...styles.panel };
     if (isOver) {
       if (isUnselected()) {
@@ -54,6 +55,7 @@ class TeamList extends Component {
               strip={i % 2 === 0}
               identifier={i + 1}
               team={team}
+              evaluation={evaluation}
               updateOrCreateAttendance={this.props.updateOrCreateAttendance}
             />
           )}

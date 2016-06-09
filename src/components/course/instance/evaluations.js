@@ -118,45 +118,40 @@ class InstanceEvaluations extends Component {
       .filter(e => canEdit || e.published);
 
     const sections = {
-      soon: [],
-      future: [],
+      inProgress: [],
+      upcoming: [],
       done: [],
     };
 
     // sorted quizes
-    evaluations.forEach((evaluation) => {
-      // after a week is in in 'soon' heather
-      if (moment(evaluation.startAt).isAfter(moment().add(7, 'd'))) {
-        sections.future.push(evaluation);
-
-      // before soon and after now is in 'ready' heather
-      } else if
-        (moment(evaluation.startAt).isBefore(moment().add(7, 'd')) || moment(evaluation.startAt).isAfter(moment())) {
-        sections.soon.push(evaluation);
-
-      // enden before now is in 'done' heather
-      } else if (moment(evaluation.finishAt).isBefore(moment())) {
+    const now = moment();
+    evaluations.forEach(evaluation => {
+      if (moment(evaluation.finishAt) < now) {
         sections.done.push(evaluation);
+      } else if (moment(evaluation.startAt) < now) {
+        sections.inProgress.push(evaluation);
+      } else {
+        sections.upcoming.push(evaluation);
       }
     });
 
     return (
       <div style={styles.container}>
         <Col xs={12} md={8}>
-          <h4 style={styles.title}>Coming Soon</h4>
-          {sections.soon.map(this.renderRow)}
-          {renderIf(sections.soon.length === 0)(() => (
+          <h4 style={styles.title}>In Progress</h4>
+          {sections.inProgress.map(this.renderRow)}
+          {renderIf(sections.inProgress.length === 0)(() => (
             <div>
-              <p>There are no evaluations coming soon</p>
+              <p>There are no evaluations in progress</p>
               <hr />
             </div>
           ))}
 
-          <h4 style={styles.title}>Future Quizzes</h4>
-          {sections.future.map(this.renderRow)}
-          {renderIf(sections.future.length === 0)(() => (
+          <h4 style={styles.title}>Upcoming Quizzes</h4>
+          {sections.upcoming.map(this.renderRow)}
+          {renderIf(sections.upcoming.length === 0)(() => (
             <div>
-              <p>There are no future evaluations</p>
+              <p>There are no upcoming evaluations</p>
               <hr />
             </div>
           ))}

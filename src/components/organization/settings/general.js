@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-import { Row, Col, Alert } from 'react-bootstrap';
-import renderIf from 'render-if';
+import { Row, Col } from 'react-bootstrap';
+import ErrorAlert from '../../error-alert';
 
 import OrganizationFrom from '../../organization-form/';
 
@@ -39,11 +39,10 @@ export default class OrganizationSettingsGeneral extends Component {
       <div style={styles.container}>
         <Row>
           <Col xs={12}>
-            {renderIf(this.state.error)(() =>
-              <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
-                <p>{this.state.error.message}</p>
-              </Alert>
-            )}
+            <ErrorAlert
+              error={this.state.error}
+              onDismiss={() => this.setState({ error: null })}
+            />
 
             <OrganizationFrom
               organization={organization}

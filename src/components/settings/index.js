@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Col, Grid, ListGroup, ListGroupItem } from 'react-bootstrap';
 import { withRouter } from 'react-router';
+import DocumentTitle from 'react-document-title';
 // import renderIf from 'render-if';
 
 /**
@@ -38,6 +39,7 @@ class Settings extends Component {
   render() {
     return (
       <Grid style={styles.container}>
+        <DocumentTitle title="Settings" />
         <Col sm={6} md={3}>
           <h1></h1>
           <ListGroup>

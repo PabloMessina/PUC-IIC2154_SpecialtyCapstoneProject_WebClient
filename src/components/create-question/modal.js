@@ -43,7 +43,7 @@ export default class CreateQuestionModal extends Component {
   render() {
     const { question, edit, ...props } = this.props;
     return (
-      <Modal {...props} onHide={this.onHide}>
+      <Modal {...props} onHide={this.onHide} bsSize="large">
         <Modal.Header closeButton>
           <Modal.Title id="question-modal">{edit ? 'Edit question' : 'Create question'}</Modal.Title>
         </Modal.Header>

@@ -4,7 +4,6 @@ import {
   Grid,
   Row,
   Col,
-  Alert,
   Button,
   FormGroup,
   FormControl,
@@ -13,6 +12,8 @@ import {
 } from 'react-bootstrap';
 import { withRouter } from 'react-router';
 import renderIf from 'render-if';
+import ErrorAlert from '../error-alert';
+import DocumentTitle from 'react-document-title';
 
 import { login, join } from '../../app';
 
@@ -112,6 +113,7 @@ class SignUp extends Component {
   render() {
     return (
       <Grid style={styles.container}>
+        <DocumentTitle title="Sign up" />
         <Row>
           <Col xs={12}>
             <h1>
@@ -172,12 +174,10 @@ class SignUp extends Component {
                 </Button>
               </form>
 
-              {renderIf(this.state.error)(() =>
-                <Alert bsStyle="danger" onDismiss={() => this.setState({ error: null })}>
-                  <h4>Oh snap! You got an error!</h4>
-                  <p>{this.state.error.message}</p>
-                </Alert>
-              )}
+              <ErrorAlert
+                error={this.state.error}
+                onDismiss={() => this.setState({ error: null })}
+              />
 
             </Panel>
           </Col>

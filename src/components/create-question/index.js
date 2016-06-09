@@ -11,12 +11,13 @@ import renderIf from 'render-if';
 import app from '../../app';
 const questionService = app.service('/questions');
 
-import { TrueFalse, MultiChoice, TShort } from '../questions';
+import { TrueFalse, MultiChoice, TShort, Correlation } from '../questions';
 
 const QUESTION_TYPES = {
   multiChoice: 'Multi choice',
   tshort: 'Short text',
   trueFalse: 'True - False',
+  correlation: 'Correlation',
 };
 
 const EMPTY_QUESTION = {
@@ -31,6 +32,7 @@ function questionFactory(qtype, props) {
     case 'trueFalse': return <TrueFalse {...props} />;
     case 'multiChoice': return <MultiChoice {...props} />;
     case 'tshort': return <TShort {...props} />;
+    case 'correlation': return <Correlation {...props} />;
     default: return null;
   }
 }
@@ -104,6 +106,8 @@ export default class CreateQuestion extends Component {
       showType: false,
       onAnswerChange: answer => this.setState({ question: { ...this.state.question, answer } }),
       onFieldsChange: fields => this.setState({ question: { ...this.state.question, fields } }),
+      onFieldsAndAnswerChange: (fields, answer) =>
+        this.setState({ question: { ...this.state.question, fields, answer } }),
       onBodyChange: content => this.setState({ question: { ...this.state.question, content } }),
     });
     return (

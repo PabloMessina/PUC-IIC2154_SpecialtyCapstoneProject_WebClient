@@ -30,11 +30,12 @@ class Student extends Component {
       simple: PropTypes.bool,
       connectDragSource: PropTypes.func,
       isDragging: PropTypes.bool,
+      evaluation: PropTypes.object,
     };
   }
 
   render() {
-    const { connectDragSource, simple, user, identifier, attendance, highlight, ...props } = this.props;
+    const { connectDragSource, simple, user, identifier, evaluation, attendance, highlight, ...props } = this.props;
     const name = user ? user.name : 'Problem loading user info';
 
     const properties = {
@@ -51,15 +52,25 @@ class Student extends Component {
         </tr>
       );
     } else {
-      const { startedAt, finished, attended } = attendance;
-      const time = startedAt ? moment(startedAt).format('dddd, MMMM Do, HH:mm') : null;
+      const now = moment();
+      const duration = evaluation.duration;
+      // // When the evaluation finish
+      const finishAt = moment(evaluation.finishAt);
+      // // When the user started
+      const startedAt = moment(attendance.startedAt);
+      // // The user deadline
+      const finishedAt = startedAt.isValid() ? moment.min(finishAt, startedAt.clone().add(duration, 'ms')) : finishAt;
 
+      const { attended } = attendance;
+      const time = startedAt ? moment(startedAt).format('dddd, MMMM Do, HH:mm') : null;
+      const isOver = now.isAfter(finishedAt);
+      console.log(isOver);
       return (
         <tr {...properties}>
           <td>{identifier}</td>
           <td>{name}</td>
           <td>{time || 'Not yet'}</td>
-          <td>{finished ? 'Yes' : 'No'}</td>
+          <td>{isOver ? 'Yes' : 'No'}</td>
           <td>{attended}</td>
         </tr>
       );

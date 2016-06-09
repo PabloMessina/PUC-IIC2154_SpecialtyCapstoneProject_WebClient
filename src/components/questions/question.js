@@ -1,22 +1,22 @@
-import React, { Component } from 'react';
+import React, { Component, PropTypes } from 'react';
 import { FormGroup } from 'react-bootstrap';
 import renderIf from 'render-if';
 import RichEditor from '../rich-editor';
 
 export const QuestionPropTypes = {
-  style: React.PropTypes.object,
-  question: React.PropTypes.object,
-  content: React.PropTypes.object,
-  fields: React.PropTypes.object,
-  answer: React.PropTypes.any,
-  identifier: React.PropTypes.any,
-  mode: React.PropTypes.string,
-  showType: React.PropTypes.bool,
-  disabled: React.PropTypes.bool,
-  padding: React.PropTypes.number,
-  onAnswerChange: React.PropTypes.func,
-  onFieldsChange: React.PropTypes.func,
-  onBodyChange: React.PropTypes.func,
+  style: PropTypes.object,
+  question: PropTypes.object,
+  fields: PropTypes.object,
+  answer: PropTypes.any,
+  identifier: PropTypes.any,
+  mode: PropTypes.string,
+  showType: PropTypes.bool,
+  disabled: PropTypes.bool,
+  padding: PropTypes.number,
+  onAnswerChange: PropTypes.func,
+  onFieldsChange: PropTypes.func,
+  onFieldsAndAnswerChange: PropTypes.func,
+  onBodyChange: PropTypes.func,
 };
 
 const QTYPE = {
@@ -48,9 +48,6 @@ export default function compose(ComposedComponent) {
 
     render() {
       const {
-        content,
-        answer,
-        fields,
         question,
         mode,
         identifier,
@@ -60,11 +57,10 @@ export default function compose(ComposedComponent) {
         onBodyChange,
         ...props,
       } = this.props;
-      const customQuestion = {
-        ...question,
-        answer: answer || question.answer,
-        content: content || question.content,
-        fields: fields || question.fields,
+      const customProps = {
+        ...props,
+        answer: question.answer,
+        fields: question.fields,
       };
       const pad = { paddingLeft: padding, paddingRight: padding };
       // Convert to array
@@ -91,7 +87,7 @@ export default function compose(ComposedComponent) {
               <FormGroup controlId="description" style={styles.description}>
                 <RichEditor
                   style={styles.richEditor}
-                  content={customQuestion.content}
+                  content={question.content}
                   onChange={onBodyChange}
                 />
                 {/* <FormControl
@@ -108,7 +104,7 @@ export default function compose(ComposedComponent) {
                   <RichEditor
                     key={i}
                     style={styles.richText}
-                    content={customQuestion.content}
+                    content={question.content}
                     onChange={onBodyChange}
                     readOnly
                   />
@@ -119,7 +115,7 @@ export default function compose(ComposedComponent) {
 
             {/* Render specific content */}
             <div style={{ ...pad, ...styles.component }}>
-              <ComposedComponent {...props} question={customQuestion} mode={mode} />
+              <ComposedComponent {...customProps} question={question} mode={mode} />
             </div>
 
           </div>

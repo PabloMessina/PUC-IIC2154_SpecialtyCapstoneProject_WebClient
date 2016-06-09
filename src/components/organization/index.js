@@ -3,7 +3,7 @@ import { Grid, Tabs, Tab, Row, Col, Image } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
-
+import DocumentTitle from 'react-document-title';
 import app, { currentUser } from '../../app';
 const membershipService = app.service('/memberships');
 
@@ -117,6 +117,7 @@ class Organization extends Component {
     const logo = 'https://coursera-university-assets.s3.amazonaws.com/89/d0ddf06ad611e4b53d95ff03ce5aa7/360px.png';
     return (
       <Grid style={styles.container} fluid>
+        <DocumentTitle title={name} />
         <Row style={styles.header}>
           <Col xs={12}>
             <Grid style={styles.content}>

@@ -1,11 +1,14 @@
+/* eslint react/prop-types:0 */
+
 import React, { Component } from 'react';
 import { Grid, Row, Col, ButtonToolbar, ButtonGroup, Button, Breadcrumb } from 'react-bootstrap';
 import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
+import DocumentTitle from 'react-document-title';
 import renderIf from 'render-if';
+import moment from 'moment';
 
 import app, { currentUser } from '../../app';
-const organizationService = app.service('/organizations');
 const courseService = app.service('/courses');
 const participantService = app.service('/participants');
 const evaluationService = app.service('/evaluations');
@@ -13,6 +16,8 @@ const questionService = app.service('/questions');
 const evaluationsQuestionService = app.service('/evaluations-questions');
 const answerService = app.service('/answers');
 const attendanceService = app.service('/attendances');
+
+import ErrorAlert from '../error-alert';
 
 const SECTIONS = [{
   name: 'Information',
@@ -41,22 +46,44 @@ const MODES = {
   student: 'student',
 };
 
+const Section = ({ active, disabled, children, onClick, ...props }) => (
+  <ButtonGroup {...props}>
+    <Button
+      style={styles.tab}
+      href="#"
+      active={active}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {children}
+    </Button>
+  </ButtonGroup>
+);
+
 class EvaluationCreate extends Component {
 
   static get propTypes() {
     return {
       // Main object
       evaluation: React.PropTypes.object,
+
       // Defaults
-      evaluationQuestions: React.PropTypes.array,
       questions: React.PropTypes.array,
       attendances: React.PropTypes.array,
+
+      // Instructor mode
+      evaluationQuestions: React.PropTypes.array,
+      // Student mode
       answers: React.PropTypes.object,
+
       // React Router
       router: React.PropTypes.object,
       params: React.PropTypes.object,
       children: React.PropTypes.any,
       location: React.PropTypes.any,
+
+      // groups: React.PropTypes.array,
+      // attendance: React.PropTypes.object,
     };
   }
 
@@ -71,46 +98,53 @@ class EvaluationCreate extends Component {
 
   constructor(props) {
     super(props);
+    const user = currentUser();
+    const evaluation = props.params.evaluation;
+    const questions = evaluation.questions || props.questions;
+    const attendances = evaluation.attendances || props.attendances;
+    const participants = [];
+
     this.state = {
       // Current evaluation
-      evaluation: props.params.evaluation,
+      evaluation,
+      participants,
+      questions,
+      attendances,
 
-      participants: [],
-      attendances: props.params.evaluation.attendances || props.attendances,
-      questions: props.params.evaluation.questions || props.questions,
+      // Current user
+      participant: participants.find(p => p.userId === user.id),
+      attendance: attendances.find(att => att.userId === user.id && att.evaluationId === evaluation.id),
 
-      // Student mode
+      // Students mode
       answers: props.answers,
-
       // Instructor mode
-      evaluationQuestions: props.params.evaluation.evaluationQuestions || props.evaluationQuestions,
+      evaluationQuestions: evaluation.evaluationQuestions || props.evaluationQuestions,
 
       // Other
       organization: null,
       course: null,
-      instance: props.params.evaluation.instance,
+      instance: evaluation.instance,
       syncing: false,
       tabStates: Array(SECTIONS.length).fill('default'),
-    };
 
-    // console.log(JSON.stringify(this.state.evaluation, null, 4));
-    this.renderSection = this.renderSection.bind(this);
-    this.renderSections = this.renderSections.bind(this);
+      // attendance: props.attendance,
+    };
 
     this.findOrCreateAnswer = this.findOrCreateAnswer.bind(this);
     this.startEvaluation = this.startEvaluation.bind(this);
 
     this.observe = this.observe.bind(this);
+    this.observeAnswers = this.observeAnswers.bind(this);
     this.observeEvaluation = this.observeEvaluation.bind(this);
     this.observeEvaluationQuestions = this.observeEvaluationQuestions.bind(this);
     this.observeQuestions = this.observeQuestions.bind(this);
-    this.observeAnswers = this.observeAnswers.bind(this);
 
     this.onPublish = this.onPublish.bind(this);
     this.onDelete = this.onDelete.bind(this);
     this.onNavigateTo = this.onNavigateTo.bind(this);
     this.onAnswerChange = this.onAnswerChange.bind(this);
     this.onFieldsChange = this.onFieldsChange.bind(this);
+    this.onNavigateTo = this.onNavigateTo.bind(this);
     this.onQuestionAdd = this.onQuestionAdd.bind(this);
     this.onQuestionRemove = this.onQuestionRemove.bind(this);
   }
@@ -118,10 +152,8 @@ class EvaluationCreate extends Component {
   componentDidMount() {
     const { evaluation } = this.state;
 
-    this.fetchCourse(evaluation.instance.courseId)
-      .then(course => this.fetchOrganization(course.organizationId));
-
-    this.fetchParticipants(evaluation.instanceId);
+    this.fetchParticipants(evaluation.instance);
+    this.fetchCourse(evaluation.instance.courseId);
 
     this.observe(evaluation);
   }
@@ -171,14 +203,8 @@ class EvaluationCreate extends Component {
     // this.setState({ answers: { ...this.state.answers, [id]: answer }, questions });
   }
 
-  onFieldsChange(id, fields) {
-    if (id) {
-      // console.log('onFieldsChange', id, fields);
-      // const questions = this.state.questions;
-      // const index = this.state.question.findIndex(q => q.id === id);
-      // if (index > -1) questions[index].fields = fields;
-      // this.setState({ questions });
-    }
+  onFieldsChange() {
+    throw new Error('onFieldsChange: not implemented!');
   }
 
   onQuestionAdd(question) {
@@ -208,6 +234,8 @@ class EvaluationCreate extends Component {
   }
 
   observe(evl) {
+    const user = currentUser();
+
     this.evaluationObserver = this.observeEvaluation(evl).subscribe(evaluation => {
       // console.debug('evaluation', evaluation);
       if (evaluation) this.setState({ evaluation });
@@ -218,16 +246,18 @@ class EvaluationCreate extends Component {
       // const userId = currentUser().id;
       // const attendance = attendances.find(a => a.userId === userId);
       // this.setState({ attendances, attendance });
-      this.setState({ attendances });
+      this.setState({
+        attendances,
+        attendance: attendances.find(att => att.userId === user.id && att.evaluationId === evl.id),
+      });
 
       this.evalQuestionObserver = this.observeEvaluationQuestions(evl).subscribe(evaluationQuestions => {
         // console.debug('evaluationQuestions$', evaluationQuestions);
         this.setState({ evaluationQuestions });
         const ids = evaluationQuestions.map(eq => (eq.questionId));
 
-        const userId = currentUser().id;
         const attendance = attendances
-          .find(att => att.userId === userId && att.evaluationId === evl.id);
+          .find(att => att.userId === user.id && att.evaluationId === evl.id);
 
         if (attendance) {
           this.answerObserver = this.observeAnswers(evl, attendance, ids).subscribe(objects => {
@@ -282,17 +312,11 @@ class EvaluationCreate extends Component {
   }
 
   findOrCreateAnswer(question, answer) {
-    const user = currentUser();
-    const participant = this.state.participants.find(p => p.userId === user.id);
+    const { evaluation, attendance, participant } = this.state;
     const mode = ['admin', 'write'].includes(participant.permission) ? MODES.instructor : MODES.student;
-
-    const { evaluation, attendances } = this.state;
 
     // If we are a student
     if (mode === MODES.student) {
-      const attendance = attendances
-        .find(att => att.userId === user.id && att.evaluationId === evaluation.id);
-
       const query = {
         teamId: attendance.teamId,
         questionId: question.id || question,
@@ -320,34 +344,35 @@ class EvaluationCreate extends Component {
     return null;
   }
 
-  fetchCourse(courseId) {
-    return courseService.get(courseId)
+  fetchCourse(crs) {
+    const query = {
+      id: crs.id || crs,
+      $populate: 'organization',
+    };
+    return courseService.find({ query })
+      .then(result => result.data[0])
       .then(course => {
-        this.setState({ course, error: null });
+        this.setState({ course, organization: course.organization, error: null });
         return course;
       })
       .catch(error => this.setState({ error }));
   }
 
-  fetchParticipants(instanceId) {
+  fetchParticipants(instance) {
     const query = {
-      instanceId,
+      instanceId: instance.id || instance,
       $populate: ['user'],
     };
     return participantService.find({ query })
       .then(result => result.data)
       .then(participants => {
-        this.setState({ participants, error: null });
+        const user = currentUser();
+        this.setState({
+          participants,
+          participant: participants.find(p => p.userId === user.id),
+          error: null,
+        });
         return participants;
-      })
-      .catch(error => this.setState({ error }));
-  }
-
-  fetchOrganization(organizationId) {
-    return organizationService.get(organizationId)
-      .then(organization => {
-        this.setState({ organization, error: null });
-        return organization;
       })
       .catch(error => this.setState({ error }));
   }
@@ -366,38 +391,6 @@ class EvaluationCreate extends Component {
     return selected;
   }
 
-  renderSections(participant) {
-    const sections = participant && ['admin', 'write'].includes(participant.permission)
-      ? SECTIONS
-      : SECTIONS.filter(item => item.name !== 'Results');
-    return (
-      <ButtonGroup justified>
-        {sections.map(this.renderSection)}
-      </ButtonGroup>
-    );
-  }
-
-  renderSection(section, i) {
-    const evaluation = this.state.evaluation;
-    const { name, description, path } = section;
-    const selected = this.selected;
-    const url = `/evaluations/show/${evaluation.id}/${path}`;
-
-    return (
-      <Button
-        style={styles.tab}
-        key={i}
-        href="#"
-        active={path === selected}
-        bsStyle={this.state.tabStates[i]}
-        onClick={() => this.props.router.push(url)}
-      >
-        <h5 style={styles.tabTitle}>{name}</h5>
-        <small style={styles.tabDescription}>{description}</small>
-      </Button>
-    );
-  }
-
   render() {
     const {
       answers,
@@ -409,18 +402,52 @@ class EvaluationCreate extends Component {
       questions,
       evaluationQuestions,
       participants,
+      participant,
+      attendance,
     } = this.state;
 
-    const user = currentUser();
-    const participant = participants.find(p => p.userId === user.id);
-    const attendance = attendances
-      .find(att => att.userId === user.id && att.evaluationId === evaluation.id);
-
-
+    const now = moment();
+    const time = moment(evaluation.finishAt) > now && moment(evaluation.startAt) < now;
     const canEdit = participant && ['admin', 'write'].includes(participant.permission);
+    const selected = this.selected;
+
+    const sections = SECTIONS.filter(section => {
+      // Remove Results
+      if (!canEdit && section.name === 'Results') return false;
+      return true;
+    }).map(section => {
+      const active = selected === section.path;
+      const url = `/evaluations/show/${evaluation.id}/${section.path}`;
+
+      let disabled = false;
+      if (attendance && section.name === 'Questions' && !canEdit) {
+        // In 'ms'
+        const duration = evaluation.duration;
+        // // When the evaluation can be started
+        const startAt = moment(evaluation.startAt);
+        // // When the evaluation finish
+        const finishAt = moment(evaluation.finishAt);
+        // // When the user started
+        const startedAt = moment(attendance.startedAt);
+        // // The user deadline
+        const finishedAt = startedAt.isValid() ? moment.min(finishAt, startedAt.clone().add(duration, 'ms')) : finishAt;
+        // // We are in the valid range
+        const isOpen = now.isBetween(startAt, finishAt);
+        // // We passed our or the global deadline
+        const isOver = now.isAfter(finishedAt);
+        // // We started the evaluation before
+        const isStarted = startedAt.isValid();
+
+        // is disabled if can't edit and has not started yet or did finish
+        disabled = (!isOpen || !(isOpen && isStarted && !isOver));
+      }
+
+      return { ...section, url, active, disabled };
+    });
 
     return (
       <Grid style={styles.container}>
+        <DocumentTitle title={evaluation.title} />
         <Breadcrumb>
           <Breadcrumb.Item>
             Organizations
@@ -485,16 +512,27 @@ class EvaluationCreate extends Component {
                 <Button bsStyle="danger" onClick={this.onDelete}>Delete</Button>
               </ButtonToolbar>
             )}
-            {renderIf(!canEdit && attendance && !attendance.startedAt)(() =>
+            {renderIf(!canEdit && attendance && !attendance.startedAt && time)(() =>
               <Button bsStyle="primary" onClick={() => this.startEvaluation(attendance)}>Start evaluation</Button>
             )}
           </Col>
         </Row>
 
+        <ErrorAlert
+          error={this.state.error}
+          onDismiss={() => this.setState({ error: null })}
+        />
 
         <Row>
           <Col style={styles.bar} xsOffset={0} xs={12}>
-            {this.renderSections(participant)}
+            <ButtonGroup justified>
+              {sections.map(({ name, description, path, url, ...props }, i) =>
+                <Section key={i} onClick={() => this.props.router.push(url)} {...props}>
+                  <h5 style={styles.tabTitle}>{name}</h5>
+                  <small style={styles.tabDescription}>{description}</small>
+                </Section>
+              )}
+            </ButtonGroup>
           </Col>
         </Row>
         <hr />

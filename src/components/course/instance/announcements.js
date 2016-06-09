@@ -126,6 +126,7 @@ export default class InstanceEvaluations extends Component {
               <br />
               <div style={styles.richEditorContainer}>
                 <RichEditor
+                  style={styles.richEditor}
                   content={this.state.content}
                   onChange={this.onChangeContent}
                 />
@@ -155,7 +156,7 @@ export default class InstanceEvaluations extends Component {
       <div style={styles.container}>
         <Col xs={12} md={8}>
           {renderIf(announcements.length === 0)(() =>
-            <h4>There is not published announcements</h4>
+            <h4>There are no published announcements</h4>
           )}
           {announcements.map((announcement, index) => {
             const props = {
@@ -221,8 +222,6 @@ const styles = {
     backgroundColor: 'rgb(247,247,247)',
   },
   richEditor: {
-    margin: 0,
-    padding: 0,
     fontSize: 15,
   },
   richEditorContainer: {

@@ -50,8 +50,29 @@ body {
   }
 }
 
-.teamHover {
-  background-color: aqua;
+
+// TODO: in the future, move to component styles (https://developer.mozilla.org/en-US/docs/Web/CSS/cursor#Browser_compatibility)
+.cursorGrab {
+  cursor: grab;
+  cursor: -moz-grab;
+  cursor: -webkit-grab;
+}
+.cursorGrabbing {
+  cursor: grabbing;
+  cursor: -moz-grabbing;
+  cursor: -webkit-grabbing;
+}
+.cursorClick {
+  cursor: pointer;
+}
+
+
+.correlationElement > div {
+  padding: 5px;
+  background-color: #f5f5f5;
+}
+.correlationElementHover:hover {
+  text-shadow: 0 0 6px yellow;
 }
 
 // Editor blocks

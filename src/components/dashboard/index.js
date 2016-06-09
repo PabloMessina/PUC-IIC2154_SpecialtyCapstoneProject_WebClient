@@ -4,6 +4,7 @@ import Icon from 'react-fa';
 import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
 import renderIf from 'render-if';
+import DocumentTitle from 'react-document-title';
 
 import { currentUser } from '../../app';
 
@@ -53,6 +54,7 @@ class Dashboard extends Component {
 
     return (
       <Grid style={styles.container}>
+        <DocumentTitle title="Dashboard" />
         <Row>
           <Col xsHidden sm={2}>
             <Image style={{ padding: 20 }} src="http://placehold.it/400x400" responsive circle />

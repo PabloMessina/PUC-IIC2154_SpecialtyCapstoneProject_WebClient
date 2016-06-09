@@ -1,6 +1,7 @@
 import React, { PropTypes, Component } from 'react';
 import { Navbar, Nav, NavItem, NavDropdown, MenuItem, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { withRouter } from 'react-router';
+import { LinkContainer } from 'react-router-bootstrap';
 import { Pulse } from 'better-react-spinkit';
 import renderIf from 'render-if';
 import Icon from 'react-fa';
@@ -107,12 +108,12 @@ class NavigationBar extends Component {
           <Navbar.Text eventKey={0}>
             {connection}
           </Navbar.Text>
-          <NavItem eventKey={1} href="#" onClick={() => this.props.router.push('/login')}>
-            Login
-          </NavItem>
-          <NavItem eventKey={2} href="#" onClick={() => this.props.router.push('/signup')}>
-            Sign Up
-          </NavItem>
+          <LinkContainer to="/login">
+            <NavItem eventKey={1}>Login</NavItem>
+          </LinkContainer>
+          <LinkContainer to="/signup">
+            <NavItem eventKey={1}>Sign Up</NavItem>
+          </LinkContainer>
         </Nav>
       );
     }
@@ -154,9 +155,9 @@ class NavigationBar extends Component {
       <Navbar style={styles.navbar} {...props}>
 
         <Navbar.Header>
-          <Navbar.Brand>
-            <a href="#" onClick={() => this.props.router.push('/')}>{title}</a>
-          </Navbar.Brand>
+          <LinkContainer to="/" style={{ cursor: 'pointer' }}>
+            <Navbar.Brand eventKey={1}>{title}</Navbar.Brand>
+          </LinkContainer>
           <Navbar.Toggle />
         </Navbar.Header>
 
