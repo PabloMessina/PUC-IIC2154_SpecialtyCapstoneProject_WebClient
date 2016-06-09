@@ -4,6 +4,7 @@ import AtlasSection from '../atlas-section';
 import AtlasTree from '../atlas-tree';
 import app from '../../app';
 import isEmpty from 'lodash/isEmpty';
+import DocumentTitle from 'react-document-title';
 
 const sectionService = app.service('/sections');
 const versionService = app.service('/versions');
@@ -16,7 +17,6 @@ export default class AtlasBook extends Component {
       readOnly: React.PropTypes.bool,
     };
   }
-
   static get defaultProps() {
     return {
       readOnly: false,
@@ -239,6 +239,7 @@ export default class AtlasBook extends Component {
     const section = this.currentSection();
     return (
       <div style={styles.container}>
+        <DocumentTitle title={this.props.params.atlas.title} />
         <AtlasTree
           tree={this.state.tree}
           title={this.props.params.atlas.title}

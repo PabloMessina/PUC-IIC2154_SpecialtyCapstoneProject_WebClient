@@ -41,6 +41,7 @@
     "react-chartjs": "git+https://github.com/jhudson8/react-chartjs.git#chartjs-v2",
     "react-dnd": "^2.1.4",
     "react-dnd-html5-backend": "^2.1.2",
+    "react-document-title": "^2.0.1",
     "react-dom": "^15.0.2",
     "react-easy-transition": "0.0.5",
     "react-fa": "^4.0.1",

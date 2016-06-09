@@ -6,6 +6,7 @@ import Select from 'react-select';
 import { Colors } from '../../styles';
 import app from '../../app';
 const atlasesService = app.service('/atlases');
+import DocumentTitle from 'react-document-title';
 
 export default class DocumentList extends Component {
 
@@ -68,6 +69,7 @@ export default class DocumentList extends Component {
     // Still need to fix the onSubmit Function of the Form
     return (
       <Grid style={styles.container}>
+        <DocumentTitle title="Atlases" />
         <Row style={styles.search}>
           <Form
             style={styles.form}

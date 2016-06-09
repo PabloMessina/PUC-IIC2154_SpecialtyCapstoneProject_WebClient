@@ -9,7 +9,7 @@ import {
   ControlLabel,
 } from 'react-bootstrap';
 import ErrorAlert from '../error-alert';
-
+import DocumentTitle from 'react-document-title';
 import { withRouter } from 'react-router';
 
 import { login } from '../../app';
@@ -87,6 +87,7 @@ class Login extends Component {
   render() {
     return (
       <Grid>
+        <DocumentTitle title="Login" />
         <Col xs={12} xsOffset={0} md={6} mdOffset={3}>
           <Panel>
             <form onSubmit={this.onSubmit}>

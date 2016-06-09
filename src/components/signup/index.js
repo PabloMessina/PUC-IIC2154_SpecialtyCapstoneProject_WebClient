@@ -13,6 +13,7 @@ import {
 import { withRouter } from 'react-router';
 import renderIf from 'render-if';
 import ErrorAlert from '../error-alert';
+import DocumentTitle from 'react-document-title';
 
 import { login, join } from '../../app';
 
@@ -112,6 +113,7 @@ class SignUp extends Component {
   render() {
     return (
       <Grid style={styles.container}>
+        <DocumentTitle title="Sign up" />
         <Row>
           <Col xs={12}>
             <h1>

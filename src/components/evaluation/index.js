@@ -4,11 +4,11 @@ import React, { Component } from 'react';
 import { Grid, Row, Col, ButtonToolbar, ButtonGroup, Button, Breadcrumb } from 'react-bootstrap';
 import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
+import DocumentTitle from 'react-document-title';
 import renderIf from 'render-if';
 import moment from 'moment';
 
 import app, { currentUser } from '../../app';
-const organizationService = app.service('/organizations');
 const courseService = app.service('/courses');
 const participantService = app.service('/participants');
 const evaluationService = app.service('/evaluations');
@@ -447,6 +447,7 @@ class EvaluationCreate extends Component {
 
     return (
       <Grid style={styles.container}>
+        <DocumentTitle title={evaluation.title} />
         <Breadcrumb>
           <Breadcrumb.Item>
             Organizations

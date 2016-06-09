@@ -2,11 +2,11 @@ import React, { Component } from 'react';
 import { Grid, Row, Col, Image, Nav, NavItem, ListGroup, ListGroupItem, Panel } from 'react-bootstrap';
 import Icon from 'react-fa';
 import moment from 'moment';
+import DocumentTitle from 'react-document-title';
 
 import app, { currentUser } from '../../app';
 const participantService = app.service('/participants');
 const instanceService = app.service('/instances');
-
 export default class UserProfile extends Component {
 
   constructor(props) {
@@ -43,6 +43,7 @@ export default class UserProfile extends Component {
     const creation = moment(currentUser().createdAt);
     return (
       <Grid style={styles.container}>
+        <DocumentTitle title={currentUser().name} />
         <Row className="show-grid">
           <Col xsHidden sm={3}>
             <Image src="http://placehold.it/220x229" circle thumbnail responsive />

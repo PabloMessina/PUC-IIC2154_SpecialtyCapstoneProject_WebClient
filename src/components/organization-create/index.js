@@ -8,7 +8,7 @@ import {
 import Icon from 'react-fa';
 import { withRouter } from 'react-router';
 import ErrorAlert from '../error-alert';
-
+import DocumentTitle from 'react-document-title';
 import OrganizationFrom from '../organization-form/';
 
 import app from '../../app';
@@ -49,7 +49,7 @@ class OrganizationCreate extends Component {
   render() {
     return (
       <Grid style={styles.container}>
-
+        <DocumentTitle title="Create organization" />
         <Row>
           <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
             <h2>New Organization</h2>
