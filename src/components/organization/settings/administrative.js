@@ -25,10 +25,12 @@ class OrganizationSettingsAdministrative extends Component {
   }
 
   onPress() {
-    const organization = this.props.organization;
-    return organizationService.remove(organization.id)
-      .then(() => this.props.router.push('/'))
-      .catch(error => this.setState({ error }));
+    if(window.confirm("Do you really want to delete this organization?")){
+      const organization = this.props.organization;
+      return organizationService.remove(organization.id)
+        .then(() => this.props.router.push('/'))
+        .catch(error => this.setState({ error }));
+    }
   }
 
   render() {

@@ -186,11 +186,13 @@ class EvaluationCreate extends Component {
   }
 
   onDelete() {
+    if(window.confirm("Do you really want to delete this test?")){
     const { course, instance, evaluation } = this.state;
     const url = `/courses/show/${course.id}/instances/show/${instance.id}/evaluations`;
     return evaluationService.remove(evaluation.id)
       .then(() => this.props.router.push(url))
       .catch(error => this.setState({ error }));
+    }
   }
 
   onAnswerChange(question, answer) {
