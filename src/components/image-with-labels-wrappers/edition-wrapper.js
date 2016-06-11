@@ -50,10 +50,12 @@ export default class ImageWithLabelsEditionWrapper extends Component {
   }
 
   onGotFocus() {
+    console.log("=====> onGotFocus()");
     this.props.blockProps.gotFocusCallback();
   }
 
   onLostFocus() {
+    console.log("=====> onLostFocus()");
     this.props.blockProps.lostFocusCallback();
   }
 

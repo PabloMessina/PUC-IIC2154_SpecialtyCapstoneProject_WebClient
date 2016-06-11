@@ -35,6 +35,9 @@ const REGIONSONLY = 'REGIONSONLY';
 const MULTISELECT = 'MULTISELECT';
 const WRITEANSWER = 'WRITEANSWER';
 
+// componente id
+let componentId = 0;
+
 export default class ImageWithLabels extends Component {
 
   static get defaultProps() {
@@ -65,6 +68,8 @@ export default class ImageWithLabels extends Component {
     super(props);
 
     this.mystate = {
+      // define an id for this component
+      componentId: componentId++,
       // copy mode
       mode: props.mode,
       // variables for rendering
@@ -905,7 +910,7 @@ export default class ImageWithLabels extends Component {
    * that the child div does not overflow the canvas
    */
   refreshLabelPosition(label) {
-    const labelDiv = this.refs[getLabelRef(label.id)];
+    const labelDiv = this.refs[getLabelRef(label.id, this.mystate.componentId)];
     const canvas = this.refs.labelCanvas;
     const w = labelDiv.offsetWidth;
     const h = labelDiv.offsetHeight;
@@ -964,7 +969,7 @@ export default class ImageWithLabels extends Component {
     // debugger
     for (const label of this.mystate.labelSet) {
       if (label.minimized) continue;
-      if (Utils2D.coordsInElement(x, y, this.refs[getLabelRef(label.id)])) {
+      if (Utils2D.coordsInElement(x, y, this.refs[getLabelRef(label.id, this.mystate.componentId)])) {
         return label;
       }
     }
@@ -980,13 +985,13 @@ export default class ImageWithLabels extends Component {
           this.props.labelsChangedCallback(this.exportLabelsToJSON());
           this.mystate.selectedLabelTextDirty = false;
         }
-        document.getElementById(getLabelFocusId(label.id)).blur();
+        document.getElementById(getLabelFocusId(label.id, this.mystate.componentId)).blur();
       } else if (this.mystate.mode === WRITEANSWER) {
         if (this.mystate.selectedLabelTextDirty) {
           this.props.labelAnswerChangedCallback({ id: label.id, text: label.text });
           this.mystate.selectedLabelTextDirty = false;
         }
-        document.getElementById(getLabelFocusId(label.id)).blur();
+        document.getElementById(getLabelFocusId(label.id, this.mystate.componentId)).blur();
       }
       this.mystate.selectedLabel = null;
       this.renderForAWhile(0);
@@ -1005,19 +1010,19 @@ export default class ImageWithLabels extends Component {
     this.renderForAWhile(0);
     this.forceUpdate(() => {
       this.refreshLabelPosition(label);
-      if (this.mystate.mode === EDITION) {
+      const mode = this.mystate.mode;
+      if (mode === EDITION || mode === WRITEANSWER) {
         setTimeout(() => {
-          const elem = document.getElementById(getLabelFocusId(label.id));
+          const id = getLabelFocusId(label.id, this.mystate.componentId);
+          const elem = document.getElementById(id);
           elem.focus();
-          if (selectText) {
+          if (mode === EDITION && selectText) {
             if (typeof elem.select === 'function') elem.select();
             else if (typeof elem.setSelectionRange === 'function') {
               elem.setSelectionRange(0, elem.value.length);
             }
           }
         }, 0);
-      } else if (this.mystate.mode === WRITEANSWER) {
-        setTimeout(() => document.getElementById(getLabelFocusId(label.id)).focus());
       }
     });
   }
@@ -1593,7 +1598,8 @@ export default class ImageWithLabels extends Component {
       if (label) {
         label.text = ans.text;
         if (!label.minimized) {
-          const input = document.getElementById(getLabelFocusId(label.id));
+          const id = getLabelFocusId(label.id, this.mystate.componentId);
+          const input = document.getElementById(id);
           if (input) input.value = label.text;
         }
       }
@@ -1619,12 +1625,13 @@ export default class ImageWithLabels extends Component {
           // existing labels
           for (const label of this.mystate.labelSet) {
             if (label.minimized) continue; // skip if minimized
+            const ref = getLabelRef(label.id, this.mystate.componentId);
             dynamicElements.push(
               this.props.renderLabel({
                 label,
-                ref: getLabelRef(label.id),
-                key: getLabelRef(label.id),
-                focusId: getLabelFocusId(label.id),
+                ref,
+                key: ref,
+                focusId: getLabelFocusId(label.id, this.mystate.componentId),
                 style: { position: 'absolute' },
                 onTextChanged: this.onSelectedLabelTextChanged,
                 onKeyDown: this.onSelectedLabelKeyDown,
@@ -1639,13 +1646,13 @@ export default class ImageWithLabels extends Component {
         case WRITEANSWER: {
           for (const label of this.mystate.labelSet) {
             if (label.minimized) continue; // skip if minimized
+            const ref = getLabelRef(label.id, this.mystate.componentId);
             dynamicElements.push(
               this.props.renderLabel({
                 mode: WRITEANSWER,
                 label,
-                ref: getLabelRef(label.id),
-                key: getLabelRef(label.id),
-                focusId: getLabelFocusId(label.id),
+                ref, key: ref,
+                focusId: getLabelFocusId(label.id, this.mystate.componentId),
                 style: { position: 'absolute' },
                 onTextChanged: this.onSelectedLabelTextChanged,
                 onKeyDown: this.onSelectedLabelKeyDown,
@@ -1660,12 +1667,12 @@ export default class ImageWithLabels extends Component {
           // existing labels
           for (const label of this.mystate.labelSet) {
             if (label.minimized) continue; // skip if minimized
+            const ref = getLabelRef(label.id, this.mystate.componentId);
             dynamicElements.push(
               this.props.renderLabel({
                 mode: READONLY,
                 label,
-                ref: getLabelRef(label.id),
-                key: getLabelRef(label.id),
+                ref, key: ref,
                 style: { position: 'absolute' },
                 onMinimize: this.getOnMinimizeCallback(label),
               })
@@ -1784,12 +1791,12 @@ const styles = {
   },
 };
 
-function getLabelRef(id) {
-  return `_label${id}`;
+function getLabelRef(labelId, compId) {
+  return `_img${compId}_lb${labelId}`;
 }
 
-function getLabelFocusId(id) {
-  return `_label${id}_focus`;
+function getLabelFocusId(labelId, compId) {
+  return `_img${compId}_lb${labelId}_fcs`;
 }
 
 function isAncestorOf(ancestor, elem) {
