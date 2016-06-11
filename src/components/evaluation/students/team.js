@@ -50,13 +50,13 @@ class Team extends Component {
 
     return (
       <tbody ref={instance => connectDropTarget(findDOMNode(instance))}>
-        {team.users.map(({ user, ...attendance }, i) =>
+        {team.users.map((attendance, i) =>
           <Student
             className={strip ? 'active' : undefined}
             key={i}
             identifier={identifier}
             attendance={attendance}
-            user={user}
+            user={attendance.user}
             evaluation={evaluation}
             highlight={isOverAnotherGroup(team)}
           />

@@ -251,11 +251,6 @@ class Students extends Component {
                 const time = startedAt ? moment(startedAt).format('dddd, MMMM Do, HH:mm') : null;
                 const isOver = now.isAfter(finishedAt);
 
-                console.log('now', now);
-                console.log('finishAt', finishAt);
-                console.log('finishedAt', finishedAt);
-                console.log('isOver', isOver);
-
                 return (
                   <tr key={i}>
                     <td>{i + 1}</td>

@@ -1,9 +1,23 @@
+/* eslint no-nested-ternary: 0 */
+
 import React, { PropTypes, Component } from 'react';
+import { ButtonToolbar, Button, ButtonGroup } from 'react-bootstrap';
 import moment from 'moment';
 import { DragSource } from 'react-dnd';
 import { findDOMNode } from 'react-dom';
 
+import app from '../../../app';
+const attendanceService = app.service('/attendances');
+
 import { Colors } from '../../../styles';
+
+const translateAttendance = (value) => {
+  switch (value) {
+    case -1: return 'Absent';
+    case 1: return 'Attended';
+    default: return 'Unknown';
+  }
+};
 
 const studentSource = {
   beginDrag(props) {
@@ -32,6 +46,13 @@ class Student extends Component {
       isDragging: PropTypes.bool,
       evaluation: PropTypes.object,
     };
+  }
+
+  onAttendanceChange(value) {
+    const { attendance } = this.props;
+    // Reset to 'Unknown' if it's selected twice
+    const attended = attendance.attended !== value ? value : 0;
+    return attendanceService.patch(attendance.id, { attended });
   }
 
   render() {
@@ -64,14 +85,32 @@ class Student extends Component {
       const { attended } = attendance;
       const time = startedAt ? moment(startedAt).format('dddd, MMMM Do, HH:mm') : null;
       const isOver = now.isAfter(finishedAt);
-      console.log(isOver);
+
+      const getStyle = (value) => {
+        const active = attended === value;
+        return {
+          active,
+          bsStyle: active ? (value === 1 ? 'primary' : 'danger') : 'default',
+        };
+      };
+
       return (
         <tr {...properties}>
           <td>{identifier}</td>
           <td>{name}</td>
           <td>{time || 'Not yet'}</td>
           <td>{isOver ? 'Yes' : 'No'}</td>
-          <td>{attended}</td>
+          <td>
+            <ButtonToolbar>
+              <ButtonGroup bsSize="xsmall">
+                {[-1, 1].map(value =>
+                  <Button {...getStyle(value)} onClick={() => this.onAttendanceChange(value)}>
+                    {translateAttendance(value)}
+                  </Button>
+                )}
+              </ButtonGroup>
+            </ButtonToolbar>
+          </td>
         </tr>
       );
     }
