@@ -103,11 +103,14 @@ class SignUp extends Component {
     // Create account
     return join(options)
       // Login with credentials
-      .then(() => login(options))
+      .then(() => login({
+        email: this.state.email,
+        password: this.state.password,
+      }))
       // Go to root
       .then(() => this.props.router.push('/'))
       // Show and error if present
-      .catch(err => this.setState({ error: err }));
+      .catch(error => this.setState({ error }));
   }
 
   render() {

@@ -145,11 +145,16 @@ export function login(options) {
  * @return {Promise}
  */
 export function join(options) {
-  return app.service('users').create({ type: 'local', ...options }).catch(err => {
-    console.log(`User creation error for ${options.email}`);
-    console.log(err);
-    throw err;
-  });
+  return app.service('/users').create({ type: 'local', ...options })
+    .then(user => {
+      console.log('Created user with email:', user.email);
+      return user;
+    })
+    .catch(err => {
+      console.log(`User creation error for ${options.email}`);
+      console.log(err);
+      throw err;
+    });
 }
 
 /**
