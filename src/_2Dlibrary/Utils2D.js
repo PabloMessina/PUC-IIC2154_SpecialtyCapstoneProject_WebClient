@@ -126,22 +126,22 @@ const Utils2D = {
   },
 
   /** draw an ellipse */
-  drawEllipse: (ctx, x, y, rx, ry) => {
+  drawEllipse: (ctx, x, y, rx, ry, nofill) => {
     ctx.beginPath();
     ctx.ellipse(x, y, rx, ry, 0, 0, 2 * Math.PI);
-    ctx.fill();
+    if (!nofill) ctx.fill();
     ctx.stroke();
   },
 
   /** draw a polygon */
-  drawPolygon: (ctx, points, scaleX, scaleY) => {
+  drawPolygon: (ctx, points, scaleX, scaleY, nofill) => {
     ctx.beginPath();
     ctx.moveTo(points[0].x * scaleX, points[0].y * scaleY);
     for (let i = 1; i < points.length; ++i) {
       ctx.lineTo(points[i].x * scaleX, points[i].y * scaleY);
     }
     ctx.closePath();
-    ctx.fill('evenodd');
+    if (!nofill) ctx.fill('evenodd');
     ctx.stroke();
   },
 

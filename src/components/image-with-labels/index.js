@@ -61,6 +61,7 @@ export default class ImageWithLabels extends Component {
       stringFocusColor: 'rgb(255,255,0)',
       stringHighlightColor: 'rgb(236,150,13)',
       stringNormalColor: 'rgb(255,255,255)',
+      selectedLabelIds: [],
     };
   }
 
@@ -134,8 +135,9 @@ export default class ImageWithLabels extends Component {
     this.drawRegionStrings = this.drawRegionStrings.bind(this);
     this.drawDeleteIcons = this.drawDeleteIcons.bind(this);
     this.drawTemporaryPolygon = this.drawTemporaryPolygon.bind(this);
+    this.startRegionAnimationForLabel = this.startRegionAnimationForLabel.bind(this);
 
-    // set event handlers bindings according to mode
+    // specific settings for each mode
     switch (props.mode) {
       case EDITION:
         this.onMouseDown_EditionMode = this.onMouseDown_EditionMode.bind(this);
@@ -147,7 +149,6 @@ export default class ImageWithLabels extends Component {
         this.renderScene = this.renderScene_RegionsOnlyMode.bind(this);
         break;
       case READONLY:
-        this.onMouseDown_ReadOnlyMode = this.onMouseDown_ReadOnlyMode.bind(this);
         this.renderScene = this.renderScene_ReadOnlyMode.bind(this);
         break;
       case MULTISELECT:
@@ -175,7 +176,6 @@ export default class ImageWithLabels extends Component {
         window.addEventListener('mouseup', this.onMouseUp_EditionMode);
         break;
       case READONLY:
-        window.addEventListener('mousedown', this.onMouseDown_ReadOnlyMode);
         break;
       case MULTISELECT:
         window.addEventListener('mousedown', this.onMouseDown_MultiSelectMode);
@@ -190,7 +190,8 @@ export default class ImageWithLabels extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (this.mystate.mode === EDITION) {
+    const mode = this.mystate.mode;
+    if (mode === EDITION) {
       /* check if a new source was provided */
       if (nextProps.source && !isEqual(this.props.source, nextProps.source)) {
         this.loadImageAndLabels(nextProps.source, nextProps.labels);
@@ -212,13 +213,12 @@ export default class ImageWithLabels extends Component {
     }
 
     /* check if showLabels has changed */
-    if (nextProps.showLabels !== this.props.showLabels) {
+    if (mode !== READONLY && nextProps.showLabels !== this.props.showLabels) {
       if (nextProps.showLabels) {
         setTimeout(() => {
           this.mystate.showLabels = true;
           this.renderForAWhile(0);
-          if (this.mystate.mode !== REGIONSONLY &&
-            this.mystate.mode !== MULTISELECT) this.forceUpdate(this.refreshAllLabelsPositions);
+          if (mode !== REGIONSONLY && mode !== MULTISELECT) this.forceUpdate(this.refreshAllLabelsPositions);
         }, 0);
       } else {
         this.mystate.showLabels = false;
@@ -227,18 +227,65 @@ export default class ImageWithLabels extends Component {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         /* if in edition mode, notify parent that we lost focus */
-        if (this.mystate.mode === EDITION && this.mystate.componentFocused) {
+        if (mode === EDITION && this.mystate.componentFocused) {
           this.mystate.componentFocused = false;
           this.props.lostFocusCallback();
         }
       }
     }
 
-    if (this.mystate.mode !== EDITION) {
-      if (nextProps.showRegionStrings !== this.props.showRegionStrings) {
-        this.renderForAWhile(0);
-      }
+    if (mode !== EDITION && nextProps.showRegionStrings !== this.props.showRegionStrings) {
+      this.renderForAWhile(0);
     }
+
+    if (mode === READONLY && !isEqual(nextProps.selectedLabelIds, this.props.selectedLabelIds)) {
+      // debugger
+      const prevIds = this.props.selectedLabelIds;
+      const currIds = nextProps.selectedLabelIds;
+      const selected = currIds.filter(id => prevIds.indexOf(id) < 0);
+      const unselected = prevIds.filter(id => currIds.indexOf(id) < 0);
+      unselected.forEach(id => {
+        const label = this.mystate.id2labelMap[id];
+        if (label) {
+          label.visible = false;
+          if (label.animationRunning) {
+            label.animationRunning = false;
+            clearInterval(label.animationId);
+          }
+          this.renderForAWhile();
+        } else console.warn('WARNING: id = ', id, ' not found in id2labelMap');
+      });
+      selected.forEach(id => {
+        const label = this.mystate.id2labelMap[id];
+        if (label) this.startRegionAnimationForLabel(label);
+        else console.warn('WARNING: id = ', id, ' not found in id2labelMap');
+      });
+    }
+  }
+
+  startRegionAnimationForLabel(label) {
+    if (label.animationRunning) return;
+    const makeVisible = () => { label.visible = true; this.renderForAWhile(); };
+    const makeInvisible = () => { label.visible = false; this.renderForAWhile(); };
+    label.visible = true;
+    label.animationRunning = true;
+    let count = 0;
+    makeVisible();
+    label.animationId = setInterval(() => {
+      if (this.mystate.componentUnmounted) {
+        clearInterval(label.animationId);
+        label.animationRunning = false;
+        return;
+      }
+      if (count === 4 || !label.animationRunning) {
+        clearInterval(label.animationId)
+        label.animationRunning = false;
+        makeVisible();
+        return;
+      }
+      if (count++ % 2 === 0) makeInvisible();
+      else makeVisible();
+    }, 310);
   }
 
   componentWillUnmount() {
@@ -250,7 +297,6 @@ export default class ImageWithLabels extends Component {
         window.removeEventListener('mouseup', this.onMouseUp_EditionMode);
         break;
       case READONLY:
-        window.removeEventListener('mousedown', this.onMouseDown_ReadOnlyMode);
         break;
       case MULTISELECT:
         window.removeEventListener('mousedown', this.onMouseDown_MultiSelectMode);
@@ -643,55 +689,6 @@ export default class ImageWithLabels extends Component {
     }
   }
 
-  onMouseDown_ReadOnlyMode(event) {
-    /* if labels hidden, don't do anything */
-    if (!this.mystate.showLabels) return;
-
-    /* get mouse coordinates in canvas space */
-    const canvas = this.refs.labelCanvas;
-    const canvCoords = Utils2D.getElementMouseCoords(canvas, event);
-    const mouseCanvasX = canvCoords.x;
-    const mouseCanvasY = canvCoords.y;
-
-    /* click within canvas boundaries and within canvasWrapper's hierarchy */
-    const clickInsideCanvas = Utils2D.coordsInRectangle(mouseCanvasX, mouseCanvasY,
-      0, 0, canvas.width, canvas.height) && isAncestorOf(this.refs.canvasWrapper, event.target);
-
-    /** left button click */
-    if (event.button === LEFT_BUTTON) {
-      /** if left click within canvas boundaries and within canvasWrapper's hierarchy */
-      if (clickInsideCanvas) {
-        /** a little Hack to simulate GOTO in javascript */
-        do {
-          /* case 1) check if click on label  (text input) */
-          const label = this.getIntersectedLabel(mouseCanvasX, mouseCanvasY);
-          if (label) { this.selectLabel(label); break; }
-
-          /* case 2) check if click on a region's string */
-          let ans;
-          if (this.props.showRegionStrings) {
-            ans = this.intersectRegionStrings(mouseCanvasX, mouseCanvasY);
-            if (ans) { this.selectLabel(ans.label); break; }
-          }
-
-          /* case 3) check if click on region */
-          const nccoords = Utils2D.getClippedAndNormalizedCoords(canvCoords, canvas);
-          ans = this.intersectRegions(nccoords.x, nccoords.y);
-          if (ans) {
-            // select the label
-            this.selectLabel(ans.label);
-            break;
-          }
-
-          /* default: unselect the selected label */
-          this.unselectSelectedLabel();
-        } while (false);
-      } else {
-        this.unselectSelectedLabel();
-      }
-    }
-  }
-
   onMouseDown_MultiSelectMode(event) {
     /* if labels hidden, don't do anything */
     if (!this.mystate.showLabels) return;
@@ -1063,12 +1060,13 @@ export default class ImageWithLabels extends Component {
    */
   loadLabels(labels) {
     if (!labels) return;
+    const mode = this.mystate.mode;
     const canvas = this.refs.labelCanvas;
     let lid = 0;
     let rid = 0;
     for (const label of labels) {
       const regions = new Set();
-      const text = (this.mystate.mode === WRITEANSWER) ? '' : label.text;
+      const text = (mode === WRITEANSWER) ? '' : label.text;
       const newLabel = { id: label.id, regions, x: label.x, y: label.y, text };
       this.mystate.labelSet.add(newLabel);
       this.mystate.id2labelMap[newLabel.id] = newLabel;
@@ -1087,8 +1085,8 @@ export default class ImageWithLabels extends Component {
     this.mystate.labelId = lid + 1;
     this.mystate.regionId = rid + 1;
     this.renderForAWhile(0);
-    if (this.mystate.mode !== REGIONSONLY &&
-      this.mystate.mode !== MULTISELECT) this.forceUpdate(this.refreshAllLabelsPositions);
+    if (mode !== REGIONSONLY && mode !== MULTISELECT
+      && mode !== READONLY) this.forceUpdate(this.refreshAllLabelsPositions);
   }
 
   /* load image from local file */
@@ -1232,12 +1230,28 @@ export default class ImageWithLabels extends Component {
     const ctx = canvas.getContext('2d');
     /* 1) clear label canvas */
     ctx.clearRect(0, 0, cvwidth, cvheight);
-    /* 2) draw regions */
-    this.drawRegions(ctx, cvwidth, cvheight);
-    /* 3) draw lines */
-    this.drawLines(ctx, cvwidth, cvheight);
-    /* 4) draw region's strings */
-    if (this.props.showRegionStrings) this.drawRegionStrings(ctx, cvwidth, cvheight);
+    /* 2) draw selected regions */
+    ctx.lineWidth = 1.2;
+    ctx.fillStyle = this.props.regionHighlightColor;
+    ctx.strokeStyle = this.props.lineHighlightColor;
+    for (const label of this.mystate.labelSet) {
+      if (!label.visible) continue;
+      label.regions.forEach(reg => drawRegion(ctx, reg, cvwidth, cvheight, !this.props.fillRegions));
+    }
+    /* 3) draw region's strings */
+    if (this.props.showRegionStrings) {
+      ctx.fillStyle = this.props.stringHighlightColor;
+      ctx.strokeStyle = this.props.lineHighlightColor;
+      ctx.font = `${REG_STRING_HEIGHT}px sans-serif`;
+      for (const label of this.mystate.labelSet) {
+        if (!label.visible) continue;
+        for (const reg of label.regions) {
+          const pos = reg.stringPosition;
+          ctx.fillText(reg.string, pos.x * cvwidth, pos.y * cvheight);
+          ctx.strokeText(reg.string, pos.x * cvwidth, pos.y * cvheight);
+        }
+      }
+    }
   }
 
   /** render the scene onto the canvas (REGIONSONLY MODE)*/
@@ -1663,23 +1677,6 @@ export default class ImageWithLabels extends Component {
           }
           break;
         }
-        case READONLY: {
-          // existing labels
-          for (const label of this.mystate.labelSet) {
-            if (label.minimized) continue; // skip if minimized
-            const ref = getLabelRef(label.id, this.mystate.componentId);
-            dynamicElements.push(
-              this.props.renderLabel({
-                mode: READONLY,
-                label,
-                ref, key: ref,
-                style: { position: 'absolute' },
-                onMinimize: this.getOnMinimizeCallback(label),
-              })
-            );
-          }
-          break;
-        }
         default: break;
       }
     }
@@ -1741,7 +1738,6 @@ ImageWithLabels.propTypes = {
   /* 2) props for EDITION mode only */
   /* ===============================*/
 
-  /* --- callback props to notify parent about changes (OUTPUT) --- */
   labelsChangedCallback: React.PropTypes.func,
   gotFocusCallback: React.PropTypes.func,
   lostFocusCallback: React.PropTypes.func,
@@ -1750,7 +1746,6 @@ ImageWithLabels.propTypes = {
   /* 3) props for MULTISELECT mode only */
   /* ===================================*/
 
-  /* --- callback props to notify parent about changes (OUTPUT) --- */
   labelSelectedCallback: React.PropTypes.func,
   labelUnselectedCallback: React.PropTypes.func,
 
@@ -1758,11 +1753,17 @@ ImageWithLabels.propTypes = {
   /* 4) props for WRITEANSWER mode only */
   /* ===================================*/
 
-  /* --- callback props to notify parent about changes (OUTPUT) --- */
   labelAnswerChangedCallback: React.PropTypes.func,
 
+  /* ===================================*/
+  /* 5) props for READONLY mode only */
+  /* ===================================*/
+
+  selectedLabelIds: React.PropTypes.array,
+  fillRegions: React.PropTypes.bool,
+
   /* =============================================*/
-  /* 5) props for multiple modes at the same time */
+  /* 6) props for multiple modes at the same time */
   /* =============================================*/
 
   /* EDITION & WRITEANSWER */
@@ -1808,11 +1809,11 @@ function isAncestorOf(ancestor, elem) {
   return false;
 }
 
-function drawRegion(ctx, reg, cvwidth, cvheight) {
+function drawRegion(ctx, reg, cvwidth, cvheight, nofill) {
   if (reg.type === POLYGON_TYPE) {
-    Utils2D.drawPolygon(ctx, reg.points, cvwidth, cvheight);
+    Utils2D.drawPolygon(ctx, reg.points, cvwidth, cvheight, nofill);
   } else { // CIRCLE_TYPE
     Utils2D.drawEllipse(ctx, reg.x * cvwidth, reg.y * cvheight,
-      reg.rx * cvwidth, reg.ry * cvheight);
+      reg.rx * cvwidth, reg.ry * cvheight, nofill);
   }
 }
