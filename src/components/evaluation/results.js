@@ -145,12 +145,10 @@ export default class MinTemplate extends Component {
       answers: [],
     };
     this.observeAnswers = this.observeAnswers.bind(this);
-    this.fetchAnswer = this.fetchAnswer.bind(this);
     this.renderRow = this.renderRow.bind(this);
   }
 
   componentDidMount() {
-    // this.fetchAnswer(this.props.evaluation);
     this.answerObserver = this.observeAnswers(this.props.evaluation).subscribe(answers => this.setState({ answers }));
   }
 
@@ -164,18 +162,6 @@ export default class MinTemplate extends Component {
     };
     return answerService.find({ query }).map(result => result.data);
   }
-
-  fetchAnswer(evaluation) {
-    const query = {
-      evaluationId: evaluation.id || evaluation,
-      // $populate: ['question'],
-    };
-    return answerService.find({ query })
-      .then(result => result.data)
-      .then(answers => this.setState({ answers, error: null }))
-      .catch(error => this.setState({ error }));
-  }
-
 
   renderRow(question, index) {
     const element = questionFactory(question.qtype, {
