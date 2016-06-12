@@ -8,6 +8,7 @@ import {
   Panel,
   Col,
   Row,
+  Modal,
 } from 'react-bootstrap';
 import moment from 'moment';
 import Icon from 'react-fa';
@@ -104,6 +105,8 @@ export default class Questions extends Component {
       currentQuestion: undefined,
       // common error
       error: null,
+      // when the test is over
+      isOver: false,
     };
 
     this.renderQuestion = this.renderQuestion.bind(this);
@@ -113,6 +116,7 @@ export default class Questions extends Component {
 
     this.onModalClose = this.onModalClose.bind(this);
     this.onModalSave = this.onModalSave.bind(this);
+    this.onTimeout = this.onTimeout.bind(this);
   }
 
   componentDidMount() {
@@ -159,6 +163,10 @@ export default class Questions extends Component {
       .catch(error => this.setState({ error }));
     }
     return null;
+  }
+
+  onTimeout() {
+    this.setState({ isOver: true });
   }
 
   fetchTags() {
@@ -337,6 +345,7 @@ export default class Questions extends Component {
       total: questions.length,
       current: Object.keys(this.props.answers).length,
       // TODO: use real values
+      onTimeout: this.onTimeout,
       start,
       finish,
     };
@@ -345,35 +354,36 @@ export default class Questions extends Component {
     const now = moment();
     // In 'ms'
     const duration = evaluation.duration;
-    // // When the evaluation can be started
-    const startAt = moment(evaluation.startAt);
     // // When the evaluation finish
     const finishAt = moment(evaluation.finishAt);
     // // When the user started
     const startedAt = moment(attendance.startedAt);
     // // The user deadline
     const finishedAt = startedAt.isValid() ? moment.min(finishAt, startedAt.clone().add(duration, 'ms')) : finishAt;
-    // // We are in the valid range
-    const isOpen = now.isBetween(startAt, finishAt);
     // // We passed our or the global deadline
     const isOver = now.isAfter(finishedAt);
     // // We started the evaluation before
     const isStarted = startedAt.isValid();
 
-    const validation = !isOpen || isOpen && isStarted && !isOver;
-
+    const validation = isStarted && !isOver;
     return (
       <Row>
-        {renderIf(validation)(
+        <Col style={styles.rigth} xs={12} sm={12} md={3}>
+          <Progress {...time} />
+        </Col>
+        {validation ?
           <div>
-            <Col style={styles.rigth} xs={12} sm={12} md={3}>
-              <Progress {...time} />
-            </Col>
             <Col style={styles.left} xs={12} sm={12} md={9}>
               {this.renderEvaluation('student')}
             </Col>
           </div>
-      )}
+          :
+          <div>
+            <Col>
+              <h3 style={{ display: 'flex', justifyContent: 'center' }}>Evaluation is not longer available</h3>
+            </Col>
+          </div>
+      }
       </Row>
     );
   }

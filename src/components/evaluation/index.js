@@ -186,13 +186,14 @@ class EvaluationCreate extends Component {
   }
 
   onDelete() {
-    if(window.confirm("Do you really want to delete this test?")){
-    const { course, instance, evaluation } = this.state;
-    const url = `/courses/show/${course.id}/instances/show/${instance.id}/evaluations`;
-    return evaluationService.remove(evaluation.id)
-      .then(() => this.props.router.push(url))
-      .catch(error => this.setState({ error }));
+    if (window.confirm('Do you really want to delete this test?')) {
+      const { course, instance, evaluation } = this.state;
+      const url = `/courses/show/${course.id}/instances/show/${instance.id}/evaluations`;
+      return evaluationService.remove(evaluation.id)
+        .then(() => this.props.router.push(url))
+        .catch(error => this.setState({ error }));
     }
+    return true;
   }
 
   onAnswerChange(question, answer) {
@@ -422,28 +423,26 @@ class EvaluationCreate extends Component {
       const url = `/evaluations/show/${evaluation.id}/${section.path}`;
 
       let disabled = false;
+      // In 'ms'
+      const duration = evaluation.duration;
+      // // When the evaluation can be started
+      const startAt = moment(evaluation.startAt);
+      // // When the evaluation finish
+      const finishAt = moment(evaluation.finishAt);
+      // // When the user started
+      const startedAt = moment(attendance.startedAt);
+      // // The user deadline
+      const finishedAt = startedAt.isValid() ? moment.min(finishAt, startedAt.clone().add(duration, 'ms')) : finishAt;
+      // // We are in the valid range
+      const isOpen = now.isBetween(startAt, finishAt);
+      // // We passed our or the global deadline
+      const isOver = now.isAfter(finishedAt);
+      // // We started the evaluation before
+      const isStarted = startedAt.isValid();
       if (attendance && section.name === 'Questions' && !canEdit) {
-        // In 'ms'
-        const duration = evaluation.duration;
-        // // When the evaluation can be started
-        const startAt = moment(evaluation.startAt);
-        // // When the evaluation finish
-        const finishAt = moment(evaluation.finishAt);
-        // // When the user started
-        const startedAt = moment(attendance.startedAt);
-        // // The user deadline
-        const finishedAt = startedAt.isValid() ? moment.min(finishAt, startedAt.clone().add(duration, 'ms')) : finishAt;
-        // // We are in the valid range
-        const isOpen = now.isBetween(startAt, finishAt);
-        // // We passed our or the global deadline
-        const isOver = now.isAfter(finishedAt);
-        // // We started the evaluation before
-        const isStarted = startedAt.isValid();
-
         // is disabled if can't edit and has not started yet or did finish
         disabled = (!isOpen || !(isOpen && isStarted && !isOver));
       }
-
       return { ...section, url, active, disabled };
     });
 
@@ -524,7 +523,6 @@ class EvaluationCreate extends Component {
           error={this.state.error}
           onDismiss={() => this.setState({ error: null })}
         />
-
         <Row>
           <Col style={styles.bar} xsOffset={0} xs={12}>
             <ButtonGroup justified>
