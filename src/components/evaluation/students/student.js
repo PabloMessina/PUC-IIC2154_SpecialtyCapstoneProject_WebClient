@@ -36,7 +36,7 @@ class Student extends Component {
 
   static get propTypes() {
     return {
-      user: PropTypes.any.isRequired,
+      user: PropTypes.any,
       identifier: PropTypes.any,
       attendance: PropTypes.any,
       highlight: PropTypes.bool,
@@ -103,8 +103,8 @@ class Student extends Component {
           <td>
             <ButtonToolbar>
               <ButtonGroup bsSize="xsmall">
-                {[-1, 1].map(value =>
-                  <Button {...getStyle(value)} onClick={() => this.onAttendanceChange(value)}>
+                {[-1, 1].map((value, i) =>
+                  <Button key={i} {...getStyle(value)} onClick={() => this.onAttendanceChange(value)}>
                     {translateAttendance(value)}
                   </Button>
                 )}

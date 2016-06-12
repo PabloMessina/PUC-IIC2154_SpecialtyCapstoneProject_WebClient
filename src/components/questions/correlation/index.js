@@ -10,6 +10,7 @@ import _ from 'lodash';
 import compose, { QuestionPropTypes } from '../question';
 import Canvas from './canvas';
 import ElementsColumn from './elements-column';
+import Coordinates from './coordinates';
 
 
 class Correlation extends Component {
@@ -36,7 +37,7 @@ class Correlation extends Component {
     super(props);
 
     this.state = {
-      extraSpace: [],
+      extraRowSpace: [],
       dragging: null,
       refresh: true,
       height: 0,
@@ -44,24 +45,7 @@ class Correlation extends Component {
       showCantDelete: false,
     };
 
-    this.onHeights = this.onHeights.bind(this);
-    this.makeElementsLined = this.makeElementsLined.bind(this);
-    this.onElementClick = this.onElementClick.bind(this);
-    this.onMouseMove = this.onMouseMove.bind(this);
-    this.onElementMouseEnter = this.onElementMouseEnter.bind(this);
-    this.onElementMouseLeave = this.onElementMouseLeave.bind(this);
-    this.endElementLink = this.endElementLink.bind(this);
-    this.setDraggingIndexIf = this.setDraggingIndexIf.bind(this);
-    this.linkElements = this.linkElements.bind(this);
-    this.onEdit = this.onEdit.bind(this);
-    this.onDelete = this.onDelete.bind(this);
-    this.onAddElementClick = this.onAddElementClick.bind(this);
-    this.renderElementsColumn = this.renderElementsColumn.bind(this);
-    this.renderAddElementButton = this.renderAddElementButton.bind(this);
-    this.handleResize = this.handleResize.bind(this);
-    this.resetHeights = this.resetHeights.bind(this);
-    this.dismissInstructions = this.dismissInstructions.bind(this);
-
+    this.coordinates = new Coordinates(bootstrapCSS.rowMarginBottom);
     this.updateElements = true;
     this.resetHeights();
   }
@@ -89,12 +73,12 @@ class Correlation extends Component {
     }
   }
 
-  resetHeights() {
+  resetHeights = () => {
     this.heightCols = [{}, {}];
     this.totalHeightsReceived = 0;
   }
 
-  handleResize() {
+  handleResize = () => {
     this.resetHeights();
     this.setState({ refresh: true });
   }
@@ -114,7 +98,7 @@ class Correlation extends Component {
     this.updateElements = _.isEqual(this.state.dragging, nextState.dragging);
   }
 
-  onElementClick(sourceColumn, sourceIndex) {
+  onElementClick = (sourceColumn, sourceIndex) => {
     const { dragging } = this.state;
     if (dragging) {
       const { targetIndex } = dragging;
@@ -137,11 +121,11 @@ class Correlation extends Component {
     }
   }
 
-  endElementLink() {
+  endElementLink = () => {
     this.setState({ dragging: null });
   }
 
-  onMouseMove(e) {
+  onMouseMove = (e) => {
     this.setState({
       dragging: {
         ...this.state.dragging,
@@ -151,17 +135,17 @@ class Correlation extends Component {
     });
   }
 
-  onElementMouseEnter(column, index) {
+  onElementMouseEnter = (column, index) => {
     const { dragging } = this.state;
     this.setDraggingIndexIf(dragging && dragging.sourceColumn !== column, index);
   }
 
-  onElementMouseLeave() {
+  onElementMouseLeave = () => {
     const { dragging } = this.state;
     this.setDraggingIndexIf(dragging, null);
   }
 
-  setDraggingIndexIf(condition, index) {
+  setDraggingIndexIf = (condition, index) => {
     if (condition) {
       this.setState({
         dragging: {
@@ -173,7 +157,7 @@ class Correlation extends Component {
   }
 
 
-  linkElements(newChoice) {
+  linkElements = (newChoice) => {
     const { answer, onAnswerChange } = this.props;
     const choices = [...answer.choices];
     const index = choices.findIndex(choice => _.isEqual(choice, newChoice));
@@ -189,7 +173,7 @@ class Correlation extends Component {
   }
 
 
-  onEdit(columnNumber, index, name) {
+  onEdit = (columnNumber, index, name) => {
     const { fields, onFieldsChange } = this.props;
     const columns = _.cloneDeep(fields.columns);
     columns[columnNumber][index] = name;
@@ -197,7 +181,7 @@ class Correlation extends Component {
     onFieldsChange({ columns });
   }
 
-  onDelete(deletingColNum, deletingIndex) {
+  onDelete = (deletingColNum, deletingIndex) => {
     if (deletingColNum === null) {
       this.setState({ showCantDelete: true });
       return;
@@ -228,7 +212,7 @@ class Correlation extends Component {
     onFieldsAndAnswerChange({ columns }, { choices });
   }
 
-  onAddElementClick(columnNumber) {
+  onAddElementClick = (columnNumber) => {
     const newName = undefined;
     const { fields, onFieldsChange } = this.props;
     const columns = _.cloneDeep(fields.columns);
@@ -236,103 +220,29 @@ class Correlation extends Component {
     onFieldsChange({ columns });
   }
 
-
-  onHeights(columnNumber, heights) {
+  onHeights = (columnNumber, heights) => {
     const heightCol = this.heightCols[columnNumber];
     heightCol.first = heights[0];
-    heightCol.originalFirst = heights[0];
     heightCol.last = heights[heights.length - 1];
-    heightCol.originalLast = heights[heights.length - 1];
     heightCol.others = heights.slice(1, heights.length - 1);
     this.totalHeightsReceived++;
 
     if (this.totalHeightsReceived === 2) {
-      const { columns } = this.props.fields;
-      let extraSpace = [{}, {}];
-
-      extraSpace = this.makeElementsLined(extraSpace, 'first', 'top');
-      extraSpace = this.makeElementsLined(extraSpace, 'last', 'bottom');
-      this.heightCols[0].total = this.totalHeight(this.heightCols[0]);
-      this.heightCols[1].total = this.totalHeight(this.heightCols[1]);
-
-      const { indexSmall, indexLarge } = this.getIndexes(this.heightCols, 'total');
-      extraSpace[indexLarge].row = 0;
-      const remainingSpace = this.heightCols[indexLarge].total - this.heightCols[indexSmall].total;
-      extraSpace[indexSmall].row = remainingSpace / (columns[indexSmall].length - 1);
-
-      const elementCenters = this.calculateElementCenters(this.heightCols, extraSpace);
-      const height =
-        Math.max(this.heightCols[0].total, this.heightCols[1].total) +
-        bootstrapCSS.rowMarginBottom;
-
-      this.setState({ extraSpace, elementCenters, height });
+      const { extraRowSpace, elementCenters, height } =
+        this.coordinates.onAllHeights(this.heightCols);
+      this.setState({ extraRowSpace, elementCenters, height });
     }
   }
 
-  totalHeight(heightCol) {
-    return heightCol.originalFirst +
-      heightCol.others.reduce((a, b) => a + b, 0) +
-      bootstrapCSS.rowMarginBottom * ((heightCol.others.length - 1) + 2) +
-      heightCol.originalLast;
-  }
-
-  /**
-   * Gets { indexSmall, indexLarge } according to which this.heightCols."property" is larger
-   */
-  getIndexes(heightCols, property) {
-    if (heightCols[0][property] > heightCols[1][property]) {
-      return {
-        indexSmall: 1,
-        indexLarge: 0,
-      };
-    } else {
-      return {
-        indexSmall: 0,
-        indexLarge: 1,
-      };
-    }
-  }
-
-  makeElementsLined(extraSpaceOriginal, element, cssMargin) {
-    const extraSpace = [...extraSpaceOriginal];
-    const { indexSmall, indexLarge } = this.getIndexes(element);
-    extraSpace[indexLarge][cssMargin] = 0;
-    const add = (this.heightCols[indexLarge][element] - this.heightCols[indexSmall][element]) / 2;
-    extraSpace[indexSmall][cssMargin] = Math.max(0, add);
-    this.heightCols[indexSmall][element] += add;
-    return extraSpace;
-  }
-
-  calculateElementCenters(heightCols, extraSpace) {
-    const elementCenters = [];
-    for (let i = 0; i < 2; i++) {
-      const centers = [];
-      const { originalFirst, others, originalLast } = heightCols[i];
-      const { top, row } = extraSpace[i];
-
-      centers.push(top + originalFirst / 2);
-      let offset = top + originalFirst + bootstrapCSS.rowMarginBottom + row;
-
-      const remaining = [...others, originalLast];
-      remaining.forEach(h => {
-        centers.push(offset + h / 2);
-        offset += h + bootstrapCSS.rowMarginBottom + row;
-      });
-
-      elementCenters.push(centers);
-    }
-    return elementCenters;
-  }
-
-  dismissInstructions() {
+  dismissInstructions = () => {
     this.setState({ showInstructions: false });
     // TODO: this should be saved in the user database
     localStorage.hideCorrelationInstructions = true;
   }
 
-  renderElementsColumn(i) {
+  renderElementsColumn = (i) => {
     const { fields, mode } = this.props;
-    const { extraSpace, dragging } = this.state;
+    const { extraRowSpace, dragging } = this.state;
     const { columns } = fields;
     const { md, sm, xs } = gridElementsColumns;
     const cursorClick = dragging && dragging.sourceColumn !== i;
@@ -344,7 +254,7 @@ class Correlation extends Component {
       <ElementsColumn
         columnNumber={i}
         elements={columns[i]}
-        extraSpace={extraSpace[i]}
+        extraRowSpace={extraRowSpace[i]}
         cursorClick={cursorClick}
         canEdit={canEdit}
         canRespond={canRespond}
@@ -362,7 +272,7 @@ class Correlation extends Component {
     );
   }
 
-  renderAddElementButton(i) {
+  renderAddElementButton = (i) => {
     const { md, sm, xs } = gridElementsColumns;
     const pull = i === 0 ? 'pull-right' : 'pull-left';
 
@@ -407,7 +317,7 @@ class Correlation extends Component {
     if (refresh) {
       // kill child components
       return (
-        <div style={styles.fillerDiv(height)} />
+        <div style={{ height }} />
       );
     }
 
@@ -451,7 +361,7 @@ class Correlation extends Component {
             {this.renderElementsColumn(1)}
           </div>
           {/* A div with fixed height, to fill the question modal */}
-          <div style={styles.fillerDiv(height)} />
+          <div style={{ height }} />
         </div>
 
         {renderIf(canEdit)(
@@ -496,10 +406,9 @@ const gridElementsColumns = {
   xs: 4,
 };
 
-// Should match bootstraps CSS
+// Should match bootstrap's CSS
 const bootstrapCSS = {
   rowMarginBottom: 23,
-  columnPaddingTotal: 15 * 2,
 };
 
 const styles = {
@@ -510,11 +419,8 @@ const styles = {
     width: '100%',
     position: 'absolute',
   },
-  fillerDiv(height) {
-    return { height: `${height}px` };
-  },
   buttonsRow: {
-    marginTop: `${bootstrapCSS.rowMarginBottom}px`,
-    marginBottom: `${bootstrapCSS.rowMarginBottom}px`,
+    marginTop: bootstrapCSS.rowMarginBottom,
+    marginBottom: bootstrapCSS.rowMarginBottom,
   },
 };
