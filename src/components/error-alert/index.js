@@ -22,7 +22,7 @@ export default class ErrorAlert extends Component {
 
       return (
         <Alert bsStyle="danger" onDismiss={onDismiss} style={styles.alert}>
-          <h4>Oh snap! You got an error!</h4>
+          {/* <h4>Oh snap! You got an error!</h4> */}
           <p>{error.message}</p>
         </Alert>
       );
