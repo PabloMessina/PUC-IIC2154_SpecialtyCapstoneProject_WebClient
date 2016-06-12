@@ -198,10 +198,6 @@ class EvaluationCreate extends Component {
 
   onAnswerChange(question, answer) {
     if (question && question.id) {
-      const { questions } = this.state;
-      const indexQ = questions.findIndex((q) => q.id === question.id);
-      questions[indexQ].answer = answer;
-      this.setState({ answers: { ...this.state.answers, [question.id]: answer }, questions });
       return this.findOrCreateAnswer(question, answer);
     }
     return null;
@@ -318,6 +314,9 @@ class EvaluationCreate extends Component {
   findOrCreateAnswer(question, answer) {
     const { evaluation, attendance, participant } = this.state;
     const mode = ['admin', 'write'].includes(participant.permission) ? MODES.instructor : MODES.student;
+
+    // Set it locally
+    this.setState({ answers: { ...this.state.answers, [question.id]: answer } });
 
     // If we are a student
     if (mode === MODES.student) {
