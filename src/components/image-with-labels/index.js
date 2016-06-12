@@ -42,18 +42,13 @@ export default class ImageWithLabels extends Component {
 
   static get defaultProps() {
     return {
+      mode: EDITION,
       maxWidth: 500,
       maxHeight: 400,
       maxResolutionX: 600,
       maxResolutionY: 800,
-      labelsChangedCallback: (labels) => console.log(labels),
-      gotFocusCallback: () => console.log('gotFocusCallback()'),
-      lostFocusCallback: () => console.log('lostFocusCallback()'),
-      errorDetectedCallback: err => { alert(err); console.log(err); },
       showLabels: true,
-      mode: EDITION,
       circleRadius: 4,
-      // colors
       lineHighlightColor: 'rgb(255,0,0)',
       lineNormalColor: 'rgb(0,0,0)',
       regionHighlightColor: 'rgba(255,255,0,0.2)',
@@ -62,6 +57,7 @@ export default class ImageWithLabels extends Component {
       stringHighlightColor: 'rgb(236,150,13)',
       stringNormalColor: 'rgb(255,255,255)',
       selectedLabelIds: [],
+      errorDetectedCallback: err => { alert(err); console.log(err); },
     };
   }
 
@@ -239,11 +235,12 @@ export default class ImageWithLabels extends Component {
     }
 
     if (mode === READONLY && !isEqual(nextProps.selectedLabelIds, this.props.selectedLabelIds)) {
-      // debugger
+      // determine labels that were selected and labels that were unselected
       const prevIds = this.props.selectedLabelIds;
       const currIds = nextProps.selectedLabelIds;
       const selected = currIds.filter(id => prevIds.indexOf(id) < 0);
       const unselected = prevIds.filter(id => currIds.indexOf(id) < 0);
+      // for labels that got unselected, make them invisible and stop their animations (if any)
       unselected.forEach(id => {
         const label = this.mystate.id2labelMap[id];
         if (label) {
@@ -255,6 +252,7 @@ export default class ImageWithLabels extends Component {
           this.renderForAWhile();
         } else console.warn('WARNING: id = ', id, ' not found in id2labelMap');
       });
+      // for labels that got selected, start their animations
       selected.forEach(id => {
         const label = this.mystate.id2labelMap[id];
         if (label) this.startRegionAnimationForLabel(label);
@@ -263,6 +261,10 @@ export default class ImageWithLabels extends Component {
     }
   }
 
+  /**
+   * makes the label's regions switch between visible and invisible
+   * a couple times before staying definitely visible
+   */
   startRegionAnimationForLabel(label) {
     if (label.animationRunning) return;
     const makeVisible = () => { label.visible = true; this.renderForAWhile(); };

@@ -39,13 +39,14 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
   }
 
   componentDidMount() {
+    /** for testing, simulate someone selecting labels randomly */
     setInterval(() => {
       const labels = this.props.labels;
       const ids = new Set();
-      let count = Math.floor(Math.random() * labels.length) + 1;
+      let count = Math.floor(Math.random() * (labels.length + 1));
       while (count-- > 0) ids.add(labels[Math.floor(Math.random() * labels.length)].id);
       const array = Array.from(ids);
-      console.log("---> ", array);
+      console.log("---> ids = ", array);
       this.setState({ selectedLabelIds: array });
     }, 6000);
   }
