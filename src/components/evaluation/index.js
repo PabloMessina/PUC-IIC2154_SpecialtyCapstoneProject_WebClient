@@ -197,13 +197,14 @@ class EvaluationCreate extends Component {
   }
 
   onAnswerChange(question, answer) {
+    const { questions } = this.state;
+    const indexQ = questions.findIndex((q) => q.id === question.id);
+    questions[indexQ].answer = answer;
+    this.setState({ answers: { ...this.state.answers, [question.id]: answer }, questions });
     if (question && question.id) {
       return this.findOrCreateAnswer(question, answer);
     }
     return null;
-    // const indexQ = questions.findIndex((q) => q.id === id);
-    // questions[indexQ].answer = answer;
-    // this.setState({ answers: { ...this.state.answers, [id]: answer }, questions });
   }
 
   onFieldsChange() {
