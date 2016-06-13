@@ -162,7 +162,7 @@ export default class InstanceEvaluations extends Component {
 
     return (
       <div style={styles.container}>
-        <Col xs={12} md={8}>
+        <Col xs={12} md={8} style={{ marginBottom: 25 }}>
           {renderIf(announcements.length === 0)(() =>
             <h4>There are no published announcements</h4>
           )}
