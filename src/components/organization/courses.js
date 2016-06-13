@@ -54,6 +54,8 @@ class CourseTab extends Component {
     const { courses } = this.state;
     const { membership } = this.props;
 
+    const canEdit = membership && ['admin', 'write'].includes(membership.permission);
+
     return (
       <Grid style={styles.container}>
 
@@ -64,7 +66,7 @@ class CourseTab extends Component {
           <Panel>
             <h4>Courses</h4>
             <p>Each course is a group of students and teachers working together.</p>
-            {renderIf(['admin', 'write'].includes(membership.permission))(() =>
+            {renderIf(canEdit)(() =>
               <div>
                 <hr />
                 <p>Want to share knowledge?</p>
