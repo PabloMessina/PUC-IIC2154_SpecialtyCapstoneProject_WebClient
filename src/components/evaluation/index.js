@@ -341,6 +341,7 @@ class EvaluationCreate extends Component {
 
     // Set it locally
     this.setState({ answers: { ...this.state.answers, [question.id]: answer } });
+    let previous = this.state.answers[question.id];
 
     // If we are a student
     if (mode === MODES.student) {
@@ -354,6 +355,7 @@ class EvaluationCreate extends Component {
       return answerService.find({ query })
         .then(result => result.data[0])
         .then(old => {
+          previous = old;
           if (old) return answerService.patch(old.id, { ...old, answer });
           return answerService.create({
             teamId: attendance.teamId,
@@ -362,11 +364,14 @@ class EvaluationCreate extends Component {
             answer,
           });
         })
-        // .then(changed => {
-        //   this.setState({ answers: { ...this.state.answers, [changed.questionId]: changed.answer } });
-        //   return changed;
-        // })
-        .catch(error => this.setState({ error }));
+        .then(() => this.setState({ error: null }))
+        .catch(error => {
+          // Restore previous answer value
+          this.setState({
+            error,
+            answers: { ...this.state.answers, [question.id]: previous || undefined },
+          });
+        });
     }
     return null;
   }
@@ -431,6 +436,7 @@ class EvaluationCreate extends Component {
       participants,
       participant,
       attendance,
+      error,
     } = this.state;
 
     const now = moment();
@@ -549,7 +555,7 @@ class EvaluationCreate extends Component {
         </Row>
 
         <ErrorAlert
-          error={this.state.error}
+          error={error}
           onDismiss={() => this.setState({ error: null })}
         />
         <Row>
