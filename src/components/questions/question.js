@@ -59,8 +59,9 @@ export default function compose(ComposedComponent) {
       } = this.props;
       const customProps = {
         ...props,
-        answer: question.answer,
-        fields: question.fields,
+        // Set to undefined (if it's null) so the components can use defaultProps with this
+        answer: question.answer || undefined,
+        fields: question.fields || undefined,
       };
       const pad = { paddingLeft: padding, paddingRight: padding };
       // Convert to array
