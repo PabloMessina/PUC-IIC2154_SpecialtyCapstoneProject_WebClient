@@ -1,7 +1,17 @@
 /* eslint react/prop-types:0 */
 
 import React, { Component } from 'react';
-import { Grid, Row, Col, ButtonToolbar, ButtonGroup, Button, Breadcrumb } from 'react-bootstrap';
+import {
+  Grid,
+  Row,
+  Col,
+  ButtonToolbar,
+  ButtonGroup,
+  Button,
+  Breadcrumb,
+  Tooltip,
+  OverlayTrigger,
+} from 'react-bootstrap';
 import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
 import DocumentTitle from 'react-document-title';
@@ -46,19 +56,33 @@ const MODES = {
   student: 'student',
 };
 
-const Section = ({ active, disabled, children, onClick, ...props }) => (
-  <ButtonGroup {...props}>
-    <Button
-      style={styles.tab}
-      href="#"
-      active={active}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {children}
-    </Button>
-  </ButtonGroup>
-);
+const Section = ({ active, disabled, children, onClick, tooltip, ...props }) => {
+  const element = (
+    <ButtonGroup {...props}>
+      <Button
+        style={styles.tab}
+        href="#"
+        active={active}
+        onClick={onClick}
+        disabled={disabled}
+      >
+        {children}
+      </Button>
+    </ButtonGroup>
+  );
+
+  if (tooltip) {
+    return (
+      <OverlayTrigger
+        placement="bottom"
+        overlay={<Tooltip id="question-tooltip">{tooltip}</Tooltip>}
+      >
+        {element}
+      </OverlayTrigger>
+    );
+  } else return element;
+};
+
 
 class EvaluationCreate extends Component {
 
@@ -423,6 +447,7 @@ class EvaluationCreate extends Component {
       const url = `/evaluations/show/${evaluation.id}/${section.path}`;
 
       let disabled = false;
+      let tooltip = null;
       if (attendance && section.name === 'Questions' && !canEdit) {
         // In 'ms'
         const duration = evaluation.duration;
@@ -442,8 +467,12 @@ class EvaluationCreate extends Component {
         const isStarted = startedAt.isValid();
         // is disabled if can't edit and has not started yet or did finish
         disabled = (!isOpen || !(isOpen && isStarted && !isOver));
+
+        if (isOver) tooltip = 'Evaluation is over';
+        else if (isOpen && !isStarted) tooltip = 'You must start the evaluation first';
+        else if (!isOpen) tooltip = `You must wait till ${startAt} to start`;
       }
-      return { ...section, url, active, disabled };
+      return { ...section, url, active, disabled, tooltip };
     });
 
     return (
