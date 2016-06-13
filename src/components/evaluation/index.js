@@ -470,7 +470,7 @@ class EvaluationCreate extends Component {
 
         if (isOver) tooltip = 'Evaluation is over';
         else if (isOpen && !isStarted) tooltip = 'You must start the evaluation first';
-        else if (!isOpen) tooltip = `You must wait till ${startAt} to start`;
+        else if (!isOpen) tooltip = `You must wait till ${startAt.format('MMMM Do, h:mm:ss')} to start`;
       }
       return { ...section, url, active, disabled, tooltip };
     });

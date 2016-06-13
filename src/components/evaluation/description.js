@@ -77,6 +77,7 @@ function parseToMoment(date, time) {
     day: sd.get('day'),
     hour: st.get('hour'),
     minute: st.get('minute'),
+    second: 0,
   });
 }
 
