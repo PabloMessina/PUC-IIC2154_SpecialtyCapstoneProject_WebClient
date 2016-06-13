@@ -172,7 +172,7 @@ export default class Element extends Component {
           cursorStyle = '';
         }
       } else {
-        cursorStyle = 'cursorGrab';
+        cursorStyle = 'cursorClick';
       }
     } else {
       cursorStyle = '';

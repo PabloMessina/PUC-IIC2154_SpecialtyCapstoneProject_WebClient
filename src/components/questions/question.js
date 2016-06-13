@@ -119,6 +119,12 @@ export default function compose(ComposedComponent) {
               <ComposedComponent {...customProps} question={question} mode={mode} />
             </div>
 
+            {renderIf(ComposedComponent.instructions)(() =>
+              <div style={styles.instructions}>
+                <ComposedComponent.instructions />
+              </div>
+            )}
+
           </div>
         </div>
       );
@@ -143,6 +149,9 @@ const styles = {
   },
   component: {
 
+  },
+  instructions: {
+    paddingLeft: 20,
   },
   qtype: {
     color: 'gray',

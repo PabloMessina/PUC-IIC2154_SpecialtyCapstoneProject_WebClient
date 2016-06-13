@@ -33,6 +33,16 @@ class Correlation extends Component {
     };
   }
 
+  static instructions({ style, ...props }) {
+    return (
+      <p style={{ color: 'grey', ...style }} {...props}>
+        <strong>Click an element from the left column</strong> and then <strong>click another element
+        from the rigth column</strong> to create a correlation.
+        Do it again to delete the correlation.
+      </p>
+    );
+  }
+
   constructor(props) {
     super(props);
 
