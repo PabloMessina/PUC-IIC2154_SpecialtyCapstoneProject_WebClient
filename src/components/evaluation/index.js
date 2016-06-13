@@ -45,10 +45,10 @@ const SECTIONS = [{
   name: 'Results',
   description: 'Answers and results',
   path: 'results',
-}, {
-  name: 'Recorrection',
-  description: 'Problems reported',
-  path: 'recorrection',
+// }, {
+//   name: 'Recorrection',
+//   description: 'Problems reported',
+//   path: 'recorrection',
 }];
 
 const MODES = {
