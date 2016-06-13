@@ -190,7 +190,10 @@ export default class MinTemplate extends Component {
   }
 
   render() {
-    const questions = this.props.questions.filter(q => q.answer);
+    const questions = this.props.questions.filter(q => {
+      if (!q.answer) console.log('Question has no answer:', q); // eslint-disable-line
+      return q.answer;
+    });
 
     return (
       <div style={styles.container}>
