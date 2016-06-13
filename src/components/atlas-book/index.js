@@ -199,7 +199,6 @@ export default class AtlasBook extends Component {
         // Get sections tree
         return treeService.get(version.id)
         .then(tree => {
-          console.log(tree)
           this.setState({
             tree,
             versionId: version.id,
