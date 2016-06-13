@@ -372,7 +372,7 @@ export default class Questions extends Component {
           </div>
           :
           <div>
-            <Col>
+            <Col xs={12} sm={12} md={9}>
               <h3 style={{ display: 'flex', justifyContent: 'center' }}>Evaluation is not longer available</h3>
             </Col>
           </div>
