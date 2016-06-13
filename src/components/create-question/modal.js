@@ -37,11 +37,12 @@ export default class CreateQuestionModal extends Component {
 
   onSave() {
     const question = this.refs.creator.getQuestion();
-    if (!question.content) return this.setState({ error: new Error('Question is missing content.') });
+    const { content, fields, answer, qtype } = question;
+    if (!content) return this.setState({ error: new Error('Question is missing content.') });
 
-    if (!question.fields) return this.setState({ error: new Error('Question is missing content.') });
+    if (!fields && (qtype === 'multiChoice' || qtype === 'correlation')) return this.setState({ error: new Error('Question is missing fields.') });
 
-    if (!question.answer) return this.setState({ error: new Error('Question is missing content.') });
+    if (!answer) return this.setState({ error: new Error('Question is missing an answer.') });
 
     this.setState({ error: null });
     return this.props.onSave(question);
