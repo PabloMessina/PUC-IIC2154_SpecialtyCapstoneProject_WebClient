@@ -44,7 +44,7 @@ import Rx from 'rxjs';
  /**
   * Setup Web API endpoint
   */
-const host = 'https://karp.ing.puc.cl/';
+const host = 'http://karp.ing.puc.cl/';
 const socket = io(host, {
   // transports: ['websocket'],
   // forceNew: true,

@@ -120,7 +120,7 @@ export default class CourseTab extends Component {
     const permissions = {};
     ROLES.forEach(({ value, label }) => (permissions[value] = label));
 
-    const canEdit = ['admin', 'write'].includes(membership.permission);
+    const canEdit = membership && ['admin', 'write'].includes(membership.permission);
 
     return (
       <Grid style={styles.container}>

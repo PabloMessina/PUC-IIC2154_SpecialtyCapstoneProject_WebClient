@@ -234,7 +234,7 @@ class Students extends Component {
               </tr>
             </thead>
             <tbody>
-              {attendances.map(({ startedAt, finished, attended, ...attendance }, i) => {
+              {attendances.map((attendance, i) => {
                 const name = attendance.user ? attendance.user.name : 'Problem loading user info';
 
                 const now = moment();
@@ -242,13 +242,13 @@ class Students extends Component {
                 // // When the evaluation finish
                 const finishAt = moment(evaluation.finishAt);
                 // // When the user started
-                const startedAt2 = moment(attendance.startedAt);
+                const startedAt = moment(attendance.startedAt);
                 // // The user deadline
-                const finishedAt = startedAt2.isValid() ?
-                  moment.min(finishAt, startedAt2.clone().add(duration, 'ms'))
+                const finishedAt = startedAt.isValid() ?
+                  moment.min(finishAt, startedAt.clone().add(duration, 'ms'))
                   : finishAt;
 
-                const time = startedAt ? moment(startedAt).format('dddd, MMMM Do, HH:mm') : null;
+                const time = startedAt.isValid() ? moment(startedAt).format('dddd, MMMM Do, HH:mm') : null;
                 const isOver = now.isAfter(finishedAt);
 
                 return (
@@ -257,7 +257,7 @@ class Students extends Component {
                     <td>{name}</td>
                     <td>{time || 'Not yet'}</td>
                     <td>{isOver ? 'Yes' : 'No'}</td>
-                    <td>{translateAttendance(attended)}</td>
+                    <td>{translateAttendance(attendance.attended)}</td>
                   </tr>
                 );
               })}

@@ -77,6 +77,7 @@ function parseToMoment(date, time) {
     day: sd.get('day'),
     hour: st.get('hour'),
     minute: st.get('minute'),
+    second: 0,
   });
 }
 
@@ -510,11 +511,13 @@ export default class EvaluationDescription extends Component {
 
             <Col xsOffset={0} xs={12} sm={3}>
               <Panel>
-                <h4>Evaluation settings</h4>
-                <p>Make sure to setup the evaluation with the correct parameters</p>
-                <hr />
+                <h4>{canEdit ? 'Evaluation settings' : 'Evaluation'}</h4>
+                <p>{canEdit
+                    ? 'Make sure to setup the evaluation with the correct parameters'
+                    : 'All the information about your evaluation is here. See the upper bar to navigate to the questions.'}</p>
                 {renderIf(canEdit)(() =>
                   <div>
+                    <hr />
                     <Button block disabled={status === STATUS.SAVING} bsStyle="primary" type="submit">
                       {(() => {
                         switch (status) {

@@ -1,7 +1,17 @@
 /* eslint react/prop-types:0 */
 
 import React, { Component } from 'react';
-import { Grid, Row, Col, ButtonToolbar, ButtonGroup, Button, Breadcrumb } from 'react-bootstrap';
+import {
+  Grid,
+  Row,
+  Col,
+  ButtonToolbar,
+  ButtonGroup,
+  Button,
+  Breadcrumb,
+  Tooltip,
+  OverlayTrigger,
+} from 'react-bootstrap';
 import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
 import DocumentTitle from 'react-document-title';
@@ -35,10 +45,10 @@ const SECTIONS = [{
   name: 'Results',
   description: 'Answers and results',
   path: 'results',
-}, {
-  name: 'Recorrection',
-  description: 'Problems reported',
-  path: 'recorrection',
+// }, {
+//   name: 'Recorrection',
+//   description: 'Problems reported',
+//   path: 'recorrection',
 }];
 
 const MODES = {
@@ -46,19 +56,33 @@ const MODES = {
   student: 'student',
 };
 
-const Section = ({ active, disabled, children, onClick, ...props }) => (
-  <ButtonGroup {...props}>
-    <Button
-      style={styles.tab}
-      href="#"
-      active={active}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {children}
-    </Button>
-  </ButtonGroup>
-);
+const Section = ({ active, disabled, children, onClick, tooltip, ...props }) => {
+  const element = (
+    <ButtonGroup {...props}>
+      <Button
+        style={styles.tab}
+        href="#"
+        active={active}
+        onClick={onClick}
+        disabled={disabled}
+      >
+        {children}
+      </Button>
+    </ButtonGroup>
+  );
+
+  if (tooltip) {
+    return (
+      <OverlayTrigger
+        placement="bottom"
+        overlay={<Tooltip id="question-tooltip">{tooltip}</Tooltip>}
+      >
+        {element}
+      </OverlayTrigger>
+    );
+  } else return element;
+};
+
 
 class EvaluationCreate extends Component {
 
@@ -319,6 +343,10 @@ class EvaluationCreate extends Component {
     const { evaluation, attendance, participant } = this.state;
     const mode = ['admin', 'write'].includes(participant.permission) ? MODES.instructor : MODES.student;
 
+    // Set it locally
+    this.setState({ answers: { ...this.state.answers, [question.id]: answer } });
+    let previous = this.state.answers[question.id];
+
     // If we are a student
     if (mode === MODES.student) {
       const query = {
@@ -331,6 +359,7 @@ class EvaluationCreate extends Component {
       return answerService.find({ query })
         .then(result => result.data[0])
         .then(old => {
+          previous = old;
           if (old) return answerService.patch(old.id, { ...old, answer });
           return answerService.create({
             teamId: attendance.teamId,
@@ -339,11 +368,14 @@ class EvaluationCreate extends Component {
             answer,
           });
         })
-        // .then(changed => {
-        //   this.setState({ answers: { ...this.state.answers, [changed.questionId]: changed.answer } });
-        //   return changed;
-        // })
-        .catch(error => this.setState({ error }));
+        .then(() => this.setState({ error: null }))
+        .catch(error => {
+          // Restore previous answer value
+          this.setState({
+            error,
+            answers: { ...this.state.answers, [question.id]: previous || undefined },
+          });
+        });
     }
     return null;
   }
@@ -408,6 +440,7 @@ class EvaluationCreate extends Component {
       participants,
       participant,
       attendance,
+      error,
     } = this.state;
 
     const now = moment();
@@ -424,6 +457,7 @@ class EvaluationCreate extends Component {
       const url = `/evaluations/show/${evaluation.id}/${section.path}`;
 
       let disabled = false;
+      let tooltip = null;
       if (attendance && section.name === 'Questions' && !canEdit) {
         // In 'ms'
         const duration = evaluation.duration;
@@ -443,8 +477,12 @@ class EvaluationCreate extends Component {
         const isStarted = startedAt.isValid();
         // is disabled if can't edit and has not started yet or did finish
         disabled = (!isOpen || !(isOpen && isStarted && !isOver));
+
+        if (isOver) tooltip = 'Evaluation is over';
+        else if (isOpen && !isStarted) tooltip = 'You must start the evaluation first';
+        else if (!isOpen) tooltip = `You must wait till ${startAt.format('MMMM Do, h:mm:ss')} to start`;
       }
-      return { ...section, url, active, disabled };
+      return { ...section, url, active, disabled, tooltip };
     });
 
     return (
@@ -521,7 +559,7 @@ class EvaluationCreate extends Component {
         </Row>
 
         <ErrorAlert
-          error={this.state.error}
+          error={error}
           onDismiss={() => this.setState({ error: null })}
         />
         <Row>

@@ -8,7 +8,6 @@ import {
   Panel,
   Col,
   Row,
-  Modal,
 } from 'react-bootstrap';
 import moment from 'moment';
 import Icon from 'react-fa';
@@ -131,12 +130,6 @@ export default class Questions extends Component {
   onModalSave(question) {
     if (this.state.creating) {
       const data = { ...question, id: undefined, organizationId: this.props.organization.id };
-
-      if (!question.content) {
-        // TODO: don't use alert? (can't be another modal)
-        alert('Please type a content text');
-        return null;
-      }
 
       return questionService.create(data)
         .then(created => {
@@ -317,7 +310,7 @@ export default class Questions extends Component {
                   size="lg"
                   name="pencil"
                   style={{ marginTop: 10 }}
-                  onClick={() => this.setState({ editing: true, currentQuestion: object.question })}
+                  onClick={() => this.setState({ editing: true, creating: false, currentQuestion: object.question })}
                 />
               </div>
             )}
@@ -379,7 +372,7 @@ export default class Questions extends Component {
           </div>
           :
           <div>
-            <Col>
+            <Col xs={12} sm={12} md={9}>
               <h3 style={{ display: 'flex', justifyContent: 'center' }}>Evaluation is not longer available</h3>
             </Col>
           </div>
@@ -405,7 +398,7 @@ export default class Questions extends Component {
               style={styles.custom}
               block
               bsStyle="primary"
-              onClick={() => this.setState({ creating: true, currentQuestion: undefined })}
+              onClick={() => this.setState({ creating: true, editing: false, currentQuestion: undefined })}
             >
               <h5 style={{ color: 'white' }}>Add custom question</h5>
             </Button>

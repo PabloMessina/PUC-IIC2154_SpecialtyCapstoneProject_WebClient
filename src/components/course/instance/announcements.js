@@ -12,6 +12,7 @@ import renderIf from 'render-if';
 
 import RichEditor from '../../rich-editor';
 import Announcement from '../../announcement';
+import ErrorAlert from '../../error-alert/';
 
 import app, { currentUser } from '../../../app';
 const announcementService = app.service('/announcements');
@@ -58,7 +59,7 @@ export default class InstanceEvaluations extends Component {
   }
 
   onModalClose(/* question */) {
-    this.setState({ showModal: false });
+    this.setState({ showModal: false, subject: '', content: null, error: null });
   }
 
   onChangeContent(content) {
@@ -66,28 +67,29 @@ export default class InstanceEvaluations extends Component {
   }
 
   onModalSave() {
-    if (window.confirm("Do you really want to proceed?")) {
-      this.setState({ loading: true });
+    this.setState({ loading: true });
 
-      const announcement = {
-        subject: this.state.subject,
-        content: this.state.content,
-        userId: currentUser().id,
-        instanceId: this.props.instance.id,
-      };
-      return announcementService.create(announcement)
-        .then(() => this.fetchAnnouncements(this.props.instance))
-        .then(() => this.setState({
-          // Restore state for future announcements
-          showModal: false,
-          subject: '',
-          content: null,
-          // Restore other states
-          loading: false,
-          error: null,
-        }))
-        .catch(error => this.setState({ error, loading: false }));
-    }
+    if (!this.state.content) return this.setState({ error: new Error('Announcement is missing content.') });
+    if (!this.state.subject) return this.setState({ error: new Error('Announcement is missing subject.') });
+
+    const announcement = {
+      subject: this.state.subject,
+      content: this.state.content,
+      userId: currentUser().id,
+      instanceId: this.props.instance.id,
+    };
+    return announcementService.create(announcement)
+      .then(() => this.fetchAnnouncements(this.props.instance))
+      .then(() => this.setState({
+        // Restore state for future announcements
+        showModal: false,
+        subject: '',
+        content: null,
+        // Restore other states
+        loading: false,
+        error: null,
+      }))
+      .catch(error => this.setState({ error, loading: false }));
   }
 
   fetchAnnouncements(instance) {
@@ -115,6 +117,10 @@ export default class InstanceEvaluations extends Component {
           <Modal.Title>Create announcement</Modal.Title>
         </Modal.Header>
         <Modal.Body style={styles.modalBody}>
+          <ErrorAlert
+            error={this.state.error}
+            onDismiss={() => this.setState({ error: null })}
+          />
           <form>
             <FormGroup>
               <FormControl
@@ -156,7 +162,7 @@ export default class InstanceEvaluations extends Component {
 
     return (
       <div style={styles.container}>
-        <Col xs={12} md={8}>
+        <Col xs={12} md={8} style={{ marginBottom: 25 }}>
           {renderIf(announcements.length === 0)(() =>
             <h4>There are no published announcements</h4>
           )}

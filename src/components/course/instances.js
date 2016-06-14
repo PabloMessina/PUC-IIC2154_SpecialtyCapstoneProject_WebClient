@@ -130,7 +130,7 @@ class CourseInstances extends Component {
   render() {
     const { membership, participants } = this.state;
     const { organization, course } = this.props;
-    const canEdit = ['admin', 'write'].includes(membership.permission);
+    const canEdit = membership && ['admin', 'write'].includes(membership.permission);
 
     const instances = this.props.instances
       .filter(ins => canEdit || participants.findIndex(p => p.instanceId === ins.id) > -1);
