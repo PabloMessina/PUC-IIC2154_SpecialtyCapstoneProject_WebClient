@@ -18,7 +18,7 @@ class TShort extends Component {
   }
 
   static get defaultProps() {
-    return { answer: { options: [] }, interval: 700 };
+    return { answer: { options: [] }, interval: 3000 };
   }
 
   constructor(props) {
