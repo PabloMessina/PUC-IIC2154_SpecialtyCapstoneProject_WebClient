@@ -7,7 +7,7 @@ import app from '../../app';
 // const SUPPORTED_FILES = {
   // image: ['jpg'],
 // };
-const URL = 'http://localhost:3001/api/v1/storage/store/'
+const URL = 'http://localhost:3001/api/v1/storage/'
 export default class FileModal extends Component {
   static get propTypes() {
     return {
@@ -31,7 +31,6 @@ export default class FileModal extends Component {
 
   onSuccess(file, { fileNames }) {
     this.props.onSuccess(URL + fileNames[0]);
-    //this.props.onSuccess('https://lh6.ggpht.com/8R2VbnmJNqIHQZDB9gJ5FgnYlFcUO1c14BRQT2yahNKIDo1AXryjqX2waWt2cU-GPw=w300');
     this.setState({ progress: 0 });
     this.props.onHide();
   }
@@ -59,7 +58,7 @@ export default class FileModal extends Component {
             ref={(dropzone) => { this.dropzone = dropzone; }}
             djsConfig={djsConfig}
             eventHandlers={eventHandlers}
-            config={{ postUrl: URL }}
+            config={{ postUrl: URL + 'store/' }}
           />
           {renderIf(progress && progress > 0)(() => (
             <ProgressBar
