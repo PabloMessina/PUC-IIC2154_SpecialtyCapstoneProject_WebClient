@@ -96,6 +96,7 @@ export default class RichEditor extends Component {
   }
 
   closeFileModal() {
+    //this.focus();
     this.setState({ showFileModal: false, fileModalProps: {} });
   }
 

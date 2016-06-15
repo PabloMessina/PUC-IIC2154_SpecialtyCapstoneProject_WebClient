@@ -29,20 +29,22 @@ export default class FileModal extends Component {
     this.onSuccess = this.onSuccess.bind(this);
   }
 
+  onSuccess(file, { fileNames }) {
+    this.props.onSuccess(URL + fileNames[0]);
+    //this.props.onSuccess('https://lh6.ggpht.com/8R2VbnmJNqIHQZDB9gJ5FgnYlFcUO1c14BRQT2yahNKIDo1AXryjqX2waWt2cU-GPw=w300');
+    this.setState({ progress: 0 });
+    this.props.onHide();
+  }
+
   updateProgress(file, progress) {
     this.setState({ progress });
   }
 
-  onSuccess(file, { fileNames }) {
-    this.props.onSuccess({ uri: URL + fileNames[0] });
-    this.setState({ progress: 0 });
-  }
-
   render() {
-    const { show, multiple } = this.props;
+    const { show, multiple, onHide } = this.props;
     const { progress } = this.state;
     const djsConfig = {
-      //addRemoveLinks: true,
+      // addRemoveLinks: true,
     };
 
     const eventHandlers = {
@@ -51,7 +53,7 @@ export default class FileModal extends Component {
     };
 
     return (
-      <Modal show={show} onHide={this.props.onHide}>
+      <Modal show={show} onHide={onHide}>
         <Modal.Body>
           <DropzoneComponent
             ref={(dropzone) => { this.dropzone = dropzone; }}

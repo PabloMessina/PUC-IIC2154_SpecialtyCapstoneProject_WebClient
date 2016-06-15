@@ -38,18 +38,20 @@ export default class BlockControls extends Component {
   }
 
   addMedia(type) {
+    const editorState = this.props.editorState;
     const onSuccess = (src) => {
       const entityKey = Entity.create(type, 'IMMUTABLE', { src });
 
+      console.log(src)
       // Here the media is inserted
-      AtomicBlockUtils.insertAtomicBlock(
-        this.props.editorState,
+      this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
+        editorState,
         entityKey,
         ' '
-      );
+      ));
     };
 
-    this.props.onShowFileModal({ type, onSuccess });
+    this.props.onShowFileModal({ type, multiple: false, onSuccess });
   }
 
   addLatex() {
@@ -59,11 +61,11 @@ export default class BlockControls extends Component {
       { content: 'Click\\ me...' }
     );
 
-    return AtomicBlockUtils.insertAtomicBlock(
+    this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
       this.props.editorState,
       entityKey,
       ' '
-    );
+    ));
   }
 
   add3D() {
@@ -73,11 +75,11 @@ export default class BlockControls extends Component {
       { src: ' ' }
     );
 
-    return AtomicBlockUtils.insertAtomicBlock(
+    this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
       this.props.editorState,
       entityKey,
       ' '
-    );
+    ));
   }
 
   add2D() {
@@ -87,34 +89,32 @@ export default class BlockControls extends Component {
       { src: ' ' }
     );
 
-    return AtomicBlockUtils.insertAtomicBlock(
+    this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
       this.props.editorState,
       entityKey,
       ' '
-    );
+    ));
   }
 
   onBlockToggle(type) {
-    let state;
     switch (type) {
       case 'audio':
       case 'image':
       case 'video':
-        state = this.addMedia(type);
+        this.addMedia(type);
         break;
       case 'latex':
-        state = this.addLatex();
+        this.addLatex();
         break;
       case 'model':
-        state = this.add3D();
+        this.add3D();
         break;
       case 'imageWithLabels':
-        state = this.add2D();
+        this.add2D();
         break;
       default:
-        state = RichUtils.toggleBlockType(this.props.editorState, type);
+        this.props.onChange(RichUtils.toggleBlockType(this.props.editorState, type));
     }
-    this.props.onChange(state);
   }
 
   render() {
