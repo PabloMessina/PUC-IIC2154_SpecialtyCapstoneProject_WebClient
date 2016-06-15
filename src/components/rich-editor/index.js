@@ -6,7 +6,6 @@ import {
   EditorState,
   RichUtils,
 } from 'draft-js';
-import isEmpty from 'lodash/isEmpty';
 import isEqual from 'lodash/isEqual';
 import styleMap from './inline-styles';
 import blockStyleFn from './block-styles';
@@ -16,6 +15,7 @@ import MultiDecorator from 'draftjs-multidecorators';
 import PrismDecorator from './prismDecorator';
 import Toolbar from './components/toolbar';
 import renderIf from 'render-if';
+import FileModal from '../file-modal';
 import { createBlockRenderer } from './block-renderer';
 
 const decorator = new MultiDecorator([
@@ -32,6 +32,7 @@ export default class RichEditor extends Component {
       contentKey: PropTypes.any,
       readOnly: PropTypes.bool,
       onChange: PropTypes.func,
+      onScroll: PropTypes.func,
     };
   }
 
@@ -44,6 +45,7 @@ export default class RichEditor extends Component {
         ? EditorState.push(EditorState.createEmpty(decorator), convertFromRaw(props.content))
         : EditorState.createEmpty(decorator),
       editorLocked: false,
+      showFileModal: false,
     };
 
     this.blockRenderer = createBlockRenderer(
@@ -63,6 +65,8 @@ export default class RichEditor extends Component {
     this.onChange = this.onChange.bind(this);
 
     this.handleKeyCommand = this.handleKeyCommand.bind(this);
+    this.showFileModal = this.showFileModal.bind(this);
+    this.closeFileModal = this.closeFileModal.bind(this);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -79,12 +83,22 @@ export default class RichEditor extends Component {
   }
 
   onChange(editorState) {
+    if (!editorState) return;
     this.setState({ editorState });
     if (this.props.onChange) {
       this.rawContent = convertToRaw(editorState.getCurrentContent());
       this.props.onChange(this.rawContent, editorState);
     }
   }
+
+  showFileModal(props) {
+    this.setState({ showFileModal: true, fileModalProps: props });
+  }
+
+  closeFileModal() {
+    this.setState({ showFileModal: false, fileModalProps: {} });
+  }
+
 
   handleKeyCommand(command) {
     const { editorState } = this.state;
@@ -98,13 +112,18 @@ export default class RichEditor extends Component {
 
   render() {
     const { style, readOnly, onScroll } = this.props;
-    const { editorState, editorLocked } = this.state;
+    const { editorState, editorLocked, showFileModal, fileModalProps } = this.state;
+
+    if (!editorState) return null;
+
     return (
       <div style={styles.container}>
 
         {renderIf(!readOnly)(() => (
           <div style={styles.controls}>
             <BlockControls
+              onShowFileModal={this.showFileModal}
+              onCloseFileModal={this.closeFileModal}
               editorState={editorState}
               onChange={editorLocked ? () => {} : this.onChange}
             />
@@ -133,6 +152,11 @@ export default class RichEditor extends Component {
             onChange={this.onChange}
           />
         </div>
+        <FileModal
+          show={showFileModal}
+          onHide={this.closeFileModal}
+          {...fileModalProps}
+        />
       </div>
     );
   }

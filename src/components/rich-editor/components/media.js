@@ -5,9 +5,12 @@ export const Audio = (props) => (
   <audio controls src={props.blockProps.src} style={styles.media} />
 );
 
-export const Image = (props) => (
-  <img src={props.blockProps.src} style={styles.media} />
-);
+export const Image = (props) => {
+  console.log(props)
+  return (
+    <img src={props.blockProps.src} style={styles.media} />
+  );
+};
 
 export const Video = (props) => (
   <video controls src={props.blockProps.src} style={styles.media} />

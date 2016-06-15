@@ -22,6 +22,15 @@ const BLOCK_TYPES = [
 ];
 
 export default class BlockControls extends Component {
+  static get propTypes() {
+    return {
+      onShowFileModal: React.PropTypes.func.isRequired,
+      onCloseFileModal: React.PropTypes.func.isRequired,
+      editorState: React.PropTypes.object,
+      onChange: React.PropTypes.func.isRequired,
+    };
+  }
+
   constructor(props) {
     super(props);
     this.addMedia = this.addMedia.bind(this);
@@ -29,18 +38,18 @@ export default class BlockControls extends Component {
   }
 
   addMedia(type) {
-    const src = window.prompt('Enter a URL');
-    if (!src) {
-      return null;
-    }
+    const onSuccess = (src) => {
+      const entityKey = Entity.create(type, 'IMMUTABLE', { src });
 
-    const entityKey = Entity.create(type, 'IMMUTABLE', { src });
+      // Here the media is inserted
+      AtomicBlockUtils.insertAtomicBlock(
+        this.props.editorState,
+        entityKey,
+        ' '
+      );
+    };
 
-    return AtomicBlockUtils.insertAtomicBlock(
-      this.props.editorState,
-      entityKey,
-      ' '
-    );
+    this.props.onShowFileModal({ type, onSuccess });
   }
 
   addLatex() {
