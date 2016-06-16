@@ -42,7 +42,6 @@ export default class BlockControls extends Component {
     const onSuccess = (src) => {
       const entityKey = Entity.create(type, 'IMMUTABLE', { src });
 
-      console.log(src)
       // Here the media is inserted
       this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
         editorState,
@@ -69,31 +68,37 @@ export default class BlockControls extends Component {
   }
 
   add3D() {
-    const entityKey = Entity.create(
-      'model',
-      'IMMUTABLE',
-      { src: ' ' }
-    );
+    const editorState = this.props.editorState;
+    const type = 'model';
+    const onSuccess = (src) => {
+      const entityKey = Entity.create(type, 'IMMUTABLE', { src });
 
-    this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
-      this.props.editorState,
-      entityKey,
-      ' '
-    ));
+      // Here the media is inserted
+      this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
+        editorState,
+        entityKey,
+        ' '
+      ));
+    };
+
+    this.props.onShowFileModal({ type, multiple: true, onSuccess });
   }
 
   add2D() {
-    const entityKey = Entity.create(
-      'imageWithLabels',
-      'IMMUTABLE',
-      { src: ' ' }
-    );
+    const type = 'imageWithLabels';
+    const editorState = this.props.editorState;
+    const onSuccess = (src) => {
+      const entityKey = Entity.create(type, 'IMMUTABLE', { src });
 
-    this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
-      this.props.editorState,
-      entityKey,
-      ' '
-    ));
+      // Here the media is inserted
+      this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
+        editorState,
+        entityKey,
+        ' '
+      ));
+    };
+
+    this.props.onShowFileModal({ type, multiple: true, onSuccess });
   }
 
   onBlockToggle(type) {
