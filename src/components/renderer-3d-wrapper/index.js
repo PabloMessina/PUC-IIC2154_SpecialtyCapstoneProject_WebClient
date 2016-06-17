@@ -5,7 +5,6 @@ import LabelStyleControl from './labelStyleControl';
 import { Button, Dropdown } from 'react-bootstrap';
 import renderIf from 'render-if';
 import Icon, { IconStack } from 'react-fa';
-import isEqual from 'lodash/isEqual';
 
 const LIGHT_BLUE = '#9fdef7';
 const BLACK = '#000000';
