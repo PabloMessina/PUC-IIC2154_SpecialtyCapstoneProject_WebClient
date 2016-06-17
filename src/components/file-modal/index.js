@@ -3,6 +3,7 @@ import DropzoneComponent from 'react-dropzone-component/lib/react-dropzone';
 import { Modal, ProgressBar, Button } from 'react-bootstrap';
 import renderIf from 'render-if';
 import app from '../../app';
+import update from 'react-addons-update';
 
 // const SUPPORTED_FILES = {
   // image: ['jpg'],
@@ -22,6 +23,7 @@ export default class FileModal extends Component {
 
 
     this.state = {
+      files: [],
       progress: 0,
       uploaded: false,
       uploading: false,
@@ -35,23 +37,28 @@ export default class FileModal extends Component {
     this.onClick = this.onClick.bind(this);
     this.onUpload = this.onUpload.bind(this);
     this.onAddFile = this.onAddFile.bind(this);
+    this.onFinishUpload = this.onFinishUpload.bind(this);
   }
 
   onSuccess(files, { fileNames }) {
+    // We need the url and the extension of the file
     const fileDescriptors = fileNames.map((name, i) => {
       const fileExtension = /(?:\.([^.]+))?$/.exec(files[i].name)[1];
       return { url: `${URL}${name}`, type: fileExtension };
     });
-    this.setState({ files: fileDescriptors, uploading: false, uploaded: true });
+    this.setState({ files: update(this.state.files, { $push: fileDescriptors }) });
   }
 
   onHide() {
     const { files } = this.state;
     const { onSuccess } = this.props;
+    // this.dropzone.options.autoProcessQueue = false;
     this.setState({
+      files: [],
       uploading: false,
       uploaded: false,
     }, () => {
+      if (files.length === 0) return;
       this.props.onHide(() => {
         onSuccess(files);
       });
@@ -60,8 +67,13 @@ export default class FileModal extends Component {
 
   onUpload() {
     this.setState({ uploading: true }, () => {
+      // this.dropzone.options.autoProcessQueue = true;
       this.dropzone.processQueue();
     });
+  }
+
+  onFinishUpload() {
+    this.setState({ uploading: false, uploaded: true });
   }
 
   onOk() {
@@ -81,13 +93,16 @@ export default class FileModal extends Component {
   }
 
   render() {
-    const { show, multiple } = this.props;
+    const { show, multiple, acceptedFiles, maxFiles } = this.props;
     const { progress, canUpload, uploading, uploaded } = this.state;
 
     const djsConfig = {
       createImageThumbnails: false,
-      autoProcessQueue: false,
+      autoProcessQueue: uploading,
       uploadMultiple: true,
+      acceptedFiles,
+      maxFiles: maxFiles || null,
+      // accept: (file) => console.log(file),
       // addRemoveLinks: true,
     };
 
@@ -102,6 +117,7 @@ export default class FileModal extends Component {
       init: (dropzone) => { this.dropzone = dropzone; },
       successmultiple: this.onSuccess,
       addedfile: this.onAddFile,
+      queuecomplete: this.onFinishUpload,
     };
 
     const buttonText = uploaded ? 'Ok' : 'Upload';

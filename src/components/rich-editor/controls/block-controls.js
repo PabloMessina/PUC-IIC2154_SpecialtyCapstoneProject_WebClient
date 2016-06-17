@@ -51,7 +51,7 @@ export default class BlockControls extends Component {
       });
       this.props.onChange(editorState);
     };
-    this.props.onShowFileModal({ type, multiple: true, onSuccess });
+    this.props.onShowFileModal({ type, multiple: true, acceptedFiles: `${type}/*`, onSuccess });
   }
 
   addLatex() {
@@ -84,15 +84,21 @@ export default class BlockControls extends Component {
       ));
     };
 
-    this.props.onShowFileModal({ type: 'model', multiple: true, onSuccess });
+    this.props.onShowFileModal({
+      type: 'model',
+      multiple: true,
+      acceptedFiles: '.mtl,.obj',
+      maxFiles: 2,
+      onSuccess,
+    });
   }
 
   add2D() {
     const type = 'imageWithLabels';
     const onSuccess = (files) => {
       let editorState = this.props.editorState;
-      files.forEach((src) => {
-        const entityKey = Entity.create(type, 'IMMUTABLE', { src });
+      files.forEach(({ url }) => {
+        const entityKey = Entity.create(type, 'IMMUTABLE', { src: url });
 
         // Here the media is inserted
         editorState = AtomicBlockUtils.insertAtomicBlock(
@@ -103,7 +109,7 @@ export default class BlockControls extends Component {
       });
       this.props.onChange(editorState);
     };
-    this.props.onShowFileModal({ type, multiple: true, onSuccess });
+    this.props.onShowFileModal({ type, multiple: true, acceptedFiles: 'image/*', onSuccess });
   }
 
   onBlockToggle(type) {
