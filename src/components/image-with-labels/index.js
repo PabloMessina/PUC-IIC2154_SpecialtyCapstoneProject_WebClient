@@ -188,10 +188,6 @@ export default class ImageWithLabels extends Component {
   componentWillReceiveProps(nextProps) {
     const mode = this.mystate.mode;
     if (mode === EDITION) {
-      /* check if a new source was provided */
-      if (nextProps.source && !isEqual(this.props.source, nextProps.source)) {
-        this.loadImageAndLabels(nextProps.source, nextProps.labels);
-      }
       /* check if a new circle radius was provided */
       if (nextProps.circleRadius !== this.props.circleRadius) {
         // update radius of all ellipses
@@ -1788,6 +1784,7 @@ const styles = {
   hiddenInput: {
     position: 'absolute',
     left: -9999,
+    top: '50%',
   },
   opaqueDiv: {
     opacity: 0.5,
