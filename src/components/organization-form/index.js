@@ -118,8 +118,6 @@ export default class OrganizationForm extends Component {
           <HelpBlock>Optional</HelpBlock>
         </FormGroup>
 
-        <hr />
-
         <FormGroup controlId="subscription">
           <ControlLabel>Suscription Plan</ControlLabel>
           <FormControl
@@ -131,8 +129,6 @@ export default class OrganizationForm extends Component {
             {SUBSCRIPTION.map((sub, i) => <option key={i} value={sub.value}>{sub.name}</option>)}
           </FormControl>
         </FormGroup>
-
-        <hr />
 
         <Button bsStyle="primary" type="submit" disabled={disabled}>
           {this.props.action}

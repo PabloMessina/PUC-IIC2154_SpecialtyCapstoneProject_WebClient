@@ -16,8 +16,7 @@ export default class Element extends Component {
       text: PropTypes.string,
       columnNumber: PropTypes.number.isRequired,
       onHeightComputed: PropTypes.func,
-      extraSpace: PropTypes.object,
-      first: PropTypes.bool,
+      extraRowSpace: PropTypes.number,
       last: PropTypes.bool,
       globalDragging: PropTypes.bool,
       cursorClick: PropTypes.bool,
@@ -119,7 +118,7 @@ export default class Element extends Component {
 
   onKeyDown(e) {
     if (e.key === 'Enter') {
-      this.onBlur(e);
+      this.onBlur();
     }
   }
 
@@ -150,8 +149,7 @@ export default class Element extends Component {
   render() {
     const {
       text,
-      extraSpace,
-      first,
+      extraRowSpace,
       last,
       globalDragging,
       cursorClick,
@@ -159,15 +157,8 @@ export default class Element extends Component {
     } = this.props;
 
     const rowStyle = {};
-    if (extraSpace) {
-      if (!last) {
-        rowStyle.marginBottom = extraSpace.row;
-        if (first) {
-          rowStyle.marginTop = extraSpace.top;
-        }
-      } else {
-        rowStyle.marginBottom = extraSpace.bottom;
-      }
+    if (extraRowSpace && !last) {
+      rowStyle.marginBottom = extraRowSpace;
     }
 
     const hoverStyle = canRespond ? 'correlationElementHover' : '';
@@ -181,7 +172,7 @@ export default class Element extends Component {
           cursorStyle = '';
         }
       } else {
-        cursorStyle = 'cursorGrab';
+        cursorStyle = 'cursorClick';
       }
     } else {
       cursorStyle = '';

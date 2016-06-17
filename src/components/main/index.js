@@ -4,7 +4,7 @@ import React, { Component } from 'react';
 // import { Grid } from 'react-bootstrap';
 import Icon from 'react-fa';
 
-import { currentUser, events } from '../../app';
+import app, { currentUser, events } from '../../app';
 import NavigationBar from '../navigation-bar';
 
 
@@ -22,6 +22,7 @@ export default class Main extends Component {
     super(props);
     this.state = {
       connected: false,
+      transport: null,
       error: null,
     };
     this.observers = [];
@@ -30,8 +31,9 @@ export default class Main extends Component {
   componentDidMount() {
     this.observers = [
       this.connectionObserver = events.connected.subscribe(() => {
-        console.log('Connected');
-        this.setState({ connected: true });
+        const transport = app.io.io.engine.transport.name;
+        console.log('Connected with', transport);
+        this.setState({ transport, connected: true });
       }),
       this.disconnectionObserver = events.disconnected.subscribe(() => {
         console.log('Disconnected');
@@ -47,7 +49,7 @@ export default class Main extends Component {
   render() {
     const { route, ...props } = this.props;
     const { title } = route;
-    const { connected } = this.state;
+    const { connected, transport } = this.state;
     const user = currentUser();
 
     return (
@@ -62,7 +64,7 @@ export default class Main extends Component {
         <footer className="footer">
           <div className="container">
             <p className="text-muted" style={styles.footer}>
-              From team5.js with <Icon name="heart" />
+              <small>{transport}</small> | From team5.js with <Icon name="heart" />
             </p>
           </div>
         </footer>
