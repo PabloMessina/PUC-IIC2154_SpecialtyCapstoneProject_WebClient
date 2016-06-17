@@ -95,9 +95,12 @@ export default class RichEditor extends Component {
     this.setState({ showFileModal: true, fileModalProps: props });
   }
 
-  closeFileModal() {
-    //this.focus();
-    this.setState({ showFileModal: false, fileModalProps: {} });
+  closeFileModal(processFiles) {
+    // this.focus();
+    this.setState({ showFileModal: false, fileModalProps: {} }, () => {
+      this.focus();
+      processFiles();
+    });
   }
 
 

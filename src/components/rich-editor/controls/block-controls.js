@@ -38,19 +38,20 @@ export default class BlockControls extends Component {
   }
 
   addMedia(type) {
-    const editorState = this.props.editorState;
-    const onSuccess = (src) => {
-      const entityKey = Entity.create(type, 'IMMUTABLE', { src });
-
-      // Here the media is inserted
-      this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
-        editorState,
-        entityKey,
-        ' '
-      ));
+    const onSuccess = (files) => {
+      let editorState = this.props.editorState;
+      files.forEach(({ url }) => {
+        const entityKey = Entity.create(type, 'IMMUTABLE', { src: url });
+        // Here the media is inserted
+        editorState = AtomicBlockUtils.insertAtomicBlock(
+          editorState,
+          entityKey,
+          ' '
+        );
+      });
+      this.props.onChange(editorState);
     };
-
-    this.props.onShowFileModal({ type, multiple: false, onSuccess });
+    this.props.onShowFileModal({ type, multiple: true, onSuccess });
   }
 
   addLatex() {
@@ -69,10 +70,12 @@ export default class BlockControls extends Component {
 
   add3D() {
     const editorState = this.props.editorState;
-    const type = 'model';
-    const onSuccess = (src) => {
-      const entityKey = Entity.create(type, 'IMMUTABLE', { src });
-
+    const onSuccess = (files) => {
+      const remoteFiles = {};
+      files.forEach(({ url, type }) => {
+        remoteFiles[type] = url;
+      });
+      const entityKey = Entity.create('model', 'IMMUTABLE', { remoteFiles });
       // Here the media is inserted
       this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
         editorState,
@@ -81,23 +84,25 @@ export default class BlockControls extends Component {
       ));
     };
 
-    this.props.onShowFileModal({ type, multiple: true, onSuccess });
+    this.props.onShowFileModal({ type: 'model', multiple: true, onSuccess });
   }
 
   add2D() {
     const type = 'imageWithLabels';
-    const editorState = this.props.editorState;
-    const onSuccess = (src) => {
-      const entityKey = Entity.create(type, 'IMMUTABLE', { src });
+    const onSuccess = (files) => {
+      let editorState = this.props.editorState;
+      files.forEach((src) => {
+        const entityKey = Entity.create(type, 'IMMUTABLE', { src });
 
-      // Here the media is inserted
-      this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
-        editorState,
-        entityKey,
-        ' '
-      ));
+        // Here the media is inserted
+        editorState = AtomicBlockUtils.insertAtomicBlock(
+          editorState,
+          entityKey,
+          ' '
+        );
+      });
+      this.props.onChange(editorState);
     };
-
     this.props.onShowFileModal({ type, multiple: true, onSuccess });
   }
 

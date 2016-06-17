@@ -176,7 +176,6 @@ export default class Renderer3DWrapper extends Component {
       showingLabels: true,
       loadingModel: false,
       labels: props.labels,
-      remoteFiles: props.remoteFiles,
       normalLabelStyle: props.normalLabelStyle,
       highlightedLabelStyle: props.highlightedLabelStyle,
     };
@@ -385,7 +384,7 @@ export default class Renderer3DWrapper extends Component {
 
   render() {
     // check label style to use
-    const { readOnly } = this.props.blockProps;
+    const { readOnly, remoteFiles } = this.props.blockProps;
     let labelStyle;
     switch (this.state.labelStyleMode) {
       case 'normal':
@@ -481,7 +480,7 @@ export default class Renderer3DWrapper extends Component {
         <Renderer3D
           ref="r3d"
           canEdit={!readOnly}
-          remoteFiles={this.props.remoteFiles}
+          remoteFiles={remoteFiles}
           labels={this.state.labels}
           normalLabelStyle={this.state.normalLabelStyle}
           highlightedLabelStyle={this.state.highlightedLabelStyle}

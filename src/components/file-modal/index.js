@@ -23,70 +23,108 @@ export default class FileModal extends Component {
 
     this.state = {
       progress: 0,
+      uploaded: false,
+      uploading: false,
+      canUpload: true,
     };
 
-    this.updateProgress = this.updateProgress.bind(this);
+    // this.updateProgress = this.updateProgress.bind(this);
     this.onSuccess = this.onSuccess.bind(this);
     this.onHide = this.onHide.bind(this);
+    this.onOk = this.onOk.bind(this);
+    this.onClick = this.onClick.bind(this);
+    this.onUpload = this.onUpload.bind(this);
+    this.onAddFile = this.onAddFile.bind(this);
   }
 
-  onSuccess(file, { fileNames }) {
-    this.props.onSuccess(URL + fileNames[0]);
-    this.setState({ progress: 0 });
-  }
-
-  updateProgress(file, progress) {
-    this.setState({ progress });
+  onSuccess(files, { fileNames }) {
+    const fileDescriptors = fileNames.map((name, i) => {
+      const fileExtension = /(?:\.([^.]+))?$/.exec(files[i].name)[1];
+      return { url: `${URL}${name}`, type: fileExtension };
+    });
+    this.setState({ files: fileDescriptors, uploading: false, uploaded: true });
   }
 
   onHide() {
-    this.setState({ progress: 0 }, () => {
-      this.props.onHide();
+    const { files } = this.state;
+    const { onSuccess } = this.props;
+    this.setState({
+      uploading: false,
+      uploaded: false,
+    }, () => {
+      this.props.onHide(() => {
+        onSuccess(files);
+      });
     });
+  }
+
+  onUpload() {
+    this.setState({ uploading: true }, () => {
+      this.dropzone.processQueue();
+    });
+  }
+
+  onOk() {
+    this.onHide();
+  }
+
+  onClick() {
+    const { uploaded } = this.state;
+    if (uploaded) {
+      this.onOk();
+    } else {
+      this.onUpload();
+    }
+  }
+
+  onAddFile() {
   }
 
   render() {
     const { show, multiple } = this.props;
-    const { progress } = this.state;
+    const { progress, canUpload, uploading, uploaded } = this.state;
+
     const djsConfig = {
-      createImageThumbnails: true,
+      createImageThumbnails: false,
+      autoProcessQueue: false,
+      uploadMultiple: true,
       // addRemoveLinks: true,
     };
 
-    const eventHandlers = {
-      uploadprogress: this.updateProgress,
-      success: this.onSuccess,
+    const config = {
+      postUrl: URL + 'store/',
     };
 
-    const buttonDisabled = progress < 100;
+    // const success = multiple? 'successmultiple' : 'success';
+
+    const eventHandlers = {
+      // uploadprogress: this.updateProgress,
+      init: (dropzone) => { this.dropzone = dropzone; },
+      successmultiple: this.onSuccess,
+      addedfile: this.onAddFile,
+    };
+
+    const buttonText = uploaded ? 'Ok' : 'Upload';
+
     return (
       <Modal show={show} onHide={this.onHide}>
         <Modal.Body>
           <DropzoneComponent
-            ref={(dropzone) => { this.dropzone = dropzone; }}
             djsConfig={djsConfig}
             eventHandlers={eventHandlers}
-            config={{ postUrl: URL + 'store/' }}
+            config={config}
           />
         </Modal.Body>
         <Modal.Footer>
-          {renderIf(progress && progress > 0)(() => (
-            <ProgressBar
-              now={progress}
-              label={`${progress}%`}
-            />
-          ))}
-
           <Button
-            disabled={buttonDisabled}
+            disabled={uploading || !canUpload}
             bsStyle="success"
-            onClick={this.onHide}
+            onClick={this.onClick}
           >
-            Ok
+            {buttonText}
           </Button>
         </Modal.Footer>
       </Modal>
     );
   }
-
 }
