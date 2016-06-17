@@ -1,5 +1,5 @@
 import Renderer3DWrapper from '../renderer-3d-wrapper';
-import ImageWithLabelsWrapper from '../image-with-labels-wrapper';
+import ImageWithLabelsEditionWrapper from '../image-with-labels-wrappers/edition-wrapper';
 import Latex from './components/latex';
 import { Image, Audio, Video } from './components/media';
 import { removeTeXBlock } from './modifiers/tex-modifiers';
@@ -29,16 +29,16 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
         component: Renderer3DWrapper,
         editable: false,
         props: {
-          readOnly,
+          mode: readOnly ? 'READONLY' : 'EDITION',
           gotFocusCallback: () => setState({ editorLocked: true }),
           lostFocusCallback: () => setState({ editorLocked: false }),
         },
       },
       imageWithLabels: {
-        component: ImageWithLabelsWrapper,
+        component: ImageWithLabelsEditionWrapper,
         editable: false,
         props: {
-          readOnly,
+          // mode: readOnly ? 'READONLY' : 'EDITION',
           gotFocusCallback: () => setState({ editorLocked: true }),
           lostFocusCallback: () => setState({ editorLocked: false }),
         },

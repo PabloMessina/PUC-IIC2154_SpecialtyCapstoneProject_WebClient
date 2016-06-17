@@ -126,22 +126,47 @@ const Utils2D = {
   },
 
   /** draw an ellipse */
-  drawEllipse: (ctx, x, y, rx, ry) => {
+  drawEllipse: (ctx, x, y, rx, ry, nofill) => {
     ctx.beginPath();
     ctx.ellipse(x, y, rx, ry, 0, 0, 2 * Math.PI);
-    ctx.fill();
+    if (!nofill) ctx.fill();
     ctx.stroke();
   },
 
   /** draw a polygon */
-  drawPolygon: (ctx, points, scaleX, scaleY) => {
+  drawPolygon: (ctx, points, scaleX, scaleY, nofill) => {
     ctx.beginPath();
     ctx.moveTo(points[0].x * scaleX, points[0].y * scaleY);
     for (let i = 1; i < points.length; ++i) {
       ctx.lineTo(points[i].x * scaleX, points[i].y * scaleY);
     }
     ctx.closePath();
-    ctx.fill('evenodd');
+    if (!nofill) ctx.fill('evenodd');
+    ctx.stroke();
+  },
+
+  /** draw a polygon */
+  drawDeleteIcon: (ctx, x, y, width, height) => {
+    // draw ellipse
+    const blw = (width + height) * 0.02;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 0.5 * (width - blw), 0.5 * (height - blw), 0, 0, 2 * Math.PI);
+    ctx.fillStyle = 'red';
+    ctx.fill();
+    ctx.lineWidth = blw;
+    ctx.strokeStyle = 'black';
+    ctx.stroke();
+    // draw an X symbol
+    ctx.lineWidth = (width + height) * 0.075;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'white';
+    ctx.beginPath();
+    ctx.moveTo(x - 0.2 * width, y - 0.2 * height);
+    ctx.lineTo(x + 0.2 * width, y + 0.2 * height);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x + 0.2 * width, y - 0.2 * height);
+    ctx.lineTo(x - 0.2 * width, y + 0.2 * height);
     ctx.stroke();
   },
 
@@ -237,7 +262,10 @@ const Utils2D = {
         }
       }
     }
-    return { x: refX, y: refY };
+    const m = points.length >> 1;
+    return {
+      x: (points[m].x + points[m + 1].x) * 0.5,
+      y: (points[m].y + points[m + 1].y) * 0.5 };
   },
 
   isPointInPolygon(x, y, points) {

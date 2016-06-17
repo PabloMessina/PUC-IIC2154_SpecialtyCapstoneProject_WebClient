@@ -1,4 +1,4 @@
-import THREE from 'n3d-threejs';
+import THREE from 'three';
 
 /**
  * An object to parse and retrieve the material list from
@@ -11,7 +11,7 @@ const MTLLoader = {
    * @texturePaths : a dictionary that maps texture names to their paths
    * @interrupter: an object with properties to check for interruptions
    */
-  loadMaterialsFromFile: (mtlFile, texturePaths, interrupter) => {
+  loadMaterialsFromFile: (mtlFile, texturePaths, interrupter, onFileDownloadStarted) => {
     // first check for interruptions
     if (interrupter.stop) return Promise.reject(interrupter.reason);
 
@@ -23,7 +23,7 @@ const MTLLoader = {
       fr.onload = () => {
         // auxiliar variables and data structures
         const text = fr.result; // file's text
-        parseMtlText(text, texturePaths, resolve, reject, interrupter);
+        parseMtlText(text, texturePaths, resolve, reject, interrupter, onFileDownloadStarted);
       };
 
       // set error function
@@ -33,19 +33,20 @@ const MTLLoader = {
 
       // read the file as plain text
       fr.readAsText(mtlFile);
-    })
+    });
   },
 
-  loadMaterialsFromUrl: (mtlUrl, textureUrls, interrupter) => (
-    fetch(mtlUrl, { method: 'GET', mode: 'cors' })
+  loadMaterialsFromUrl: (mtlUrl, textureUrls, interrupter, onFileDownloadStarted) => {
+    onFileDownloadStarted(mtlUrl);
+    return fetch(mtlUrl, { method: 'GET', mode: 'cors' })
     .then(response => response.text())
     .then(text => (new Promise((resolve, reject) => {
-      parseMtlText(text, textureUrls, resolve, reject, interrupter);
-    })))
-  ),
+      parseMtlText(text, textureUrls, resolve, reject, interrupter, onFileDownloadStarted);
+    })));
+  },
 };
 
-function parseMtlText(mtlText, texturePaths, resolve, reject, interrupter) {
+function parseMtlText(mtlText, texturePaths, resolve, reject, interrupter, onFileDownloadStarted) {
   if (interrupter.stop) {
     reject(interrupter.reason);
     return;
@@ -59,9 +60,8 @@ function parseMtlText(mtlText, texturePaths, resolve, reject, interrupter) {
   const promiseList = [];
   const textureMap = {};
   const auxList = [];
+  const texturePathsUsed = [];
   let params = null;
-
-  //debugger;
 
   // parse each line
   for (let i = 0; i < lines.length; ++i) {
@@ -175,7 +175,6 @@ function parseMtlText(mtlText, texturePaths, resolve, reject, interrupter) {
   if (promiseList.length > 0) {
     Promise.all(promiseList)
     .then(() => { // success
-      //debugger;
       // set the textures
       for (let i = 0; i < auxList.length; i += 3) {
         const _params = auxList[i];
@@ -185,13 +184,13 @@ function parseMtlText(mtlText, texturePaths, resolve, reject, interrupter) {
       }
       // generate materials and resolve
       paramsList.forEach((p) => { materials[p.name] = new THREE.MeshPhongMaterial(p); });
-      resolve(materials);
+      resolve({ materials, texturePathsUsed });
     })
     .catch(err => reject(err));
   } else { // no promises (nobody is using textures)
     // generate materials and resolve
     paramsList.forEach((p) => { materials[p.name] = new THREE.MeshPhongMaterial(p); });
-    resolve(materials);
+    resolve({ materials, texturePathsUsed });
   }
 
   /**
@@ -218,9 +217,11 @@ function parseMtlText(mtlText, texturePaths, resolve, reject, interrupter) {
       }
       // promise wrapping a TextureLoader's load call
       const p = new Promise((res, rej) => {
+        onFileDownloadStarted(path);
         loader.load(
           path, (texture) => {
             textureMap[textureName] = texture;
+            texturePathsUsed.push(path);
             res();
           },
           null, (err) => {
