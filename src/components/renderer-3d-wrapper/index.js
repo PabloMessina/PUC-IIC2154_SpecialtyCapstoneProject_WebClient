@@ -29,16 +29,20 @@ export default class Renderer3DWrapper extends Component {
         lostFocusCallback: () => {},
       },
       sphereRadiusCoef: 1 / 200,
-      remoteFiles: {
-        mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
-        obj: 'https://lopezjuri.com/videos/nRBC.obj',
-        images: ['https://lopezjuri.com/videos/M_10___Default1.jpg'],
-        // mtl: 'https://lopezjuri.com/videos/Heart.mtl',
-        // obj: 'https://lopezjuri.com/videos/Heart.obj',
-        // images: [],
-        // mtl: 'http://localhost:5000/nRBC.mtl',
-        // obj: 'http://localhost:5000/nRBC.obj',
-        // images: ['http://localhost:5000/nRBC.jpg'],
+      source: {
+        remoteFiles: {
+          mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
+          obj: 'https://lopezjuri.com/videos/nRBC.obj',
+          images: ['https://lopezjuri.com/videos/M_10___Default1.jpg'],
+          // mtl: 'https://lopezjuri.com/videos/Heart.mtl',
+          // obj: 'https://lopezjuri.com/videos/Heart.obj',
+          // images: [],
+          // mtl: 'http://localhost:5000/nRBC.mtl',
+          // obj: 'http://localhost:5000/nRBC.obj',
+          // images: ['http://localhost:5000/nRBC.jpg'],
+        },
+        // localFiles: [mtl, obj, image1, image2, ... ]
+        // },
       },
       labels: [{"id":1,"points":[{"x":0.08011267886422502,"y":1.7630375099710704,"z":0.2855099769166429},{"x":0.07996274114879043,"y":1.7642502742242812,"z":-0.24056268813839665}],"position":{"x":-1.2019907948864557,"y":2.368970534761047,"z":-0.06227645813365079},"text":"shoulders"},{"id":2,"points":[{"x":0.03834693213218543,"y":1.643665271571109,"z":-0.9189726189875955}],"position":{"x":0.5210503123113313,"y":2.325146086504418,"z":-1.4203780284125997},"text":"left hand"},{"id":3,"points":[{"x":0.05562013466743565,"y":1.6404827763992103,"z":0.9533487794309679}],"position":{"x":0.18885065242216115,"y":2.2365201279125415,"z":1.2479100379638908},"text":"right hand"},{"id":4,"points":[{"x":0.1636169699651191,"y":0.6388932187009857,"z":-0.07602061097736623},{"x":0.18297738656877982,"y":0.6669522616368795,"z":0.12959693525661464}],"position":{"x":1.0465285433723466,"y":0.5071482887253147,"z":0.07387170013075206},"text":"knees"},{"id":5,"points":[{"x":-0.38885138245308326,"y":1.5720951288809317,"z":0.05662421976961696}],"position":{"x":-1.2029175571224187,"y":1.5549022450299006,"z":-0.011820433183759249},"text":"backpack"},{"id":6,"points":[{"x":0.004955719812194559,"y":2.051210552175462,"z":0.009528489769337511}],"position":{"x":0.5725380247647536,"y":2.6584205095426796,"z":0.011737539989184143},"text":"head"}],
       highlightedLabelStyle: {
@@ -79,7 +83,7 @@ export default class Renderer3DWrapper extends Component {
     // state used in render
     this.state = {
       mode: props.blockProps.mode,
-      labelCount: props.labels ? props.labels.length : 0,
+      labelCount: props.labels.length,
       labelStyleMode: 'normal',
       labelDropdownOpen: false,
       hasLoadedModel: false,
@@ -87,15 +91,13 @@ export default class Renderer3DWrapper extends Component {
       loadingModel: false,
       downloading: false,
       downloadMessage: '',
-      labels: props.labels,
-      remoteFiles: props.remoteFiles,
       normalLabelStyle: props.normalLabelStyle,
       highlightedLabelStyle: props.highlightedLabelStyle,
       sphereRadiusCoef: props.sphereRadiusCoef,
       labelStyleControlShowAllOptions: false,
     };
     // state not used in render
-    this.mystate = {
+    this._ = {
       labelDropdownX: null,
       labelDropdownY: null,
       lastClickedElem: null,
@@ -103,7 +105,6 @@ export default class Renderer3DWrapper extends Component {
       componentFocused: false,
     };
 
-    this.onFilesChanged = this.onFilesChanged.bind(this);
     this.refocusOnModel = this.refocusOnModel.bind(this);
     this.showLabels = this.showLabels.bind(this);
     this.hideLabels = this.hideLabels.bind(this);
@@ -117,8 +118,7 @@ export default class Renderer3DWrapper extends Component {
     this.onLoadingProgress = this.onLoadingProgress.bind(this);
     this.onLoadingError = this.onLoadingError.bind(this);
     this.onMouseDown = this.onMouseDown.bind(this);
-    this.onLabelStyleControlCheckboxChanged =
-      this.onLabelStyleControlCheckboxChanged.bind(this);
+    this.onLabelStyleControlCheckboxChanged = this.onLabelStyleControlCheckboxChanged.bind(this);
     this.onDownloadCycleStarted = this.onDownloadCycleStarted.bind(this);
     this.onDownloadCycleFinished = this.onDownloadCycleFinished.bind(this);
     this.onDownloadingFile = this.onDownloadingFile.bind(this);
@@ -134,34 +134,20 @@ export default class Renderer3DWrapper extends Component {
 
   componentDidMount() {
     window.addEventListener('mousedown', this.onMouseDown);
-    // EVALUATION MODE DEBUGGING
-    // setInterval(() => {
-    //   const labels = this.props.labels;
-    //   const answers = [];
-    //   answers.push({ id: labels[Math.floor(Math.random() * labels.length)].id, text: Math.random().toFixed(8) });
-    //   this.refs.r3d.updateLabelAnswers(answers);
-    // }, 4000);
-  }
-
-  componentWillReceiveProps(nextProps) {
-    if (!isEqual(this.props.labels, nextProps.labels) &&
-      !isEqual(nextProps.labels, this.state.labels)) {
-      this.setState({ labels: nextProps.labels });
-    }
   }
 
   componentWillUnmount() {
     window.removeEventListener('mousedown', this.onMouseDown);
-    this.mystate.componentUnmounted = true;
+    this._.componentUnmounted = true;
   }
 
   onMouseDown(e) {
-    this.mystate.lastClickedElem = e.target;
+    this._.lastClickedElem = e.target;
     this.checkInComponente(e.target);
   }
 
   onTouchStart(e) {
-    this.mystate.lastClickedElem = e.target;
+    this._.lastClickedElem = e.target;
     this.checkInComponente(e.target)
   }
 
@@ -173,30 +159,24 @@ export default class Renderer3DWrapper extends Component {
       elem = elem.parentElement;
     }
     if (!inComponent) this.refs.r3d.unselectSelectedLabel();
-    if (inComponent && !this.mystate.componentFocused) {
-      this.mystate.componentFocused = true;
+    if (inComponent && !this._.componentFocused) {
+      this._.componentFocused = true;
       this.refs.r3d.gotFocus();
       if (this.state.mode === EDITION) this.props.blockProps.gotFocusCallback();
-    } else if (!inComponent && this.mystate.componentFocused) {
-      this.mystate.componentFocused = false;
+    } else if (!inComponent && this._.componentFocused) {
+      this._.componentFocused = false;
       this.refs.r3d.lostFocus();
       if (this.state.mode === EDITION) this.props.blockProps.lostFocusCallback();
     }
   }
 
-  onLabelCountChanged(newCount) {
-    this.setState({
-      labelount: newCount,
-    });
-  }
-
   onLabelsChanged(labels) {
     // console.log("===> onLabelsChanged(): labels = ", JSON.stringify(labels, null, '\t'));
-    if (labels.length === 0 && this.mystate.labelWithFocus) {
-      this.mystate.labelWithFocus = false;
+    if (labels.length === 0 && this._.labelWithFocus) {
+      this._.labelWithFocus = false;
       this.props.blockProps.lostFocusCallback();
     }
-    if (!this.mystate.componentUnmounted) {
+    if (!this._.componentUnmounted) {
       this.props.labelsChangedCallback(labels);
       this.setState({
         labelCount: labels ? labels.length : 0,
@@ -232,7 +212,7 @@ export default class Renderer3DWrapper extends Component {
 
   onLabelDropDownToggle(open) {
     if (!open) {
-      let elem = this.mystate.lastClickedElem;
+      let elem = this._.lastClickedElem;
       while (elem) {
         if (elem === this.refs.labelSettingsDiv) return;
         elem = elem.parentElement;
@@ -241,13 +221,8 @@ export default class Renderer3DWrapper extends Component {
     this.setState({ labelDropdownOpen: open });
   }
 
-  onFilesChanged() {
-    const files = this.refs.filesInput.files;
-    this.refs.r3d.loadModel(files, null);
-  }
-
   onLoadingStarting() {
-    if (this.mystate.componentUnmounted) return;
+    if (this._.componentUnmounted) return;
     this.setState({
       loadingModel: true,
       progressPercentage: 0,
@@ -256,22 +231,22 @@ export default class Renderer3DWrapper extends Component {
   }
 
   onDownloadCycleStarted() {
-    if (this.mystate.componentUnmounted) return;
+    if (this._.componentUnmounted) return;
     this.setState({ downloading: true });
   }
 
   onDownloadCycleFinished() {
-    if (this.mystate.componentUnmounted) return;
+    if (this._.componentUnmounted) return;
     this.setState({ downloading: false });
   }
 
   onDownloadingFile(path) {
-    if (this.mystate.componentUnmounted) return;
+    if (this._.componentUnmounted) return;
     this.setState({ downloadMessage: `fetching file: ${path}` });
   }
 
   onLoadingProgress(message, lengthSoFar, totalLength) {
-    if (this.mystate.componentUnmounted) return;
+    if (this._.componentUnmounted) return;
     const percentage = (lengthSoFar / totalLength * 100).toFixed(2);
     this.setState({
       progressPercentage: percentage,
@@ -280,7 +255,7 @@ export default class Renderer3DWrapper extends Component {
   }
 
   onLoadingCompleted() {
-    if (this.mystate.componentUnmounted) return;
+    if (this._.componentUnmounted) return;
     this.setState({
       hasLoadedModel: true,
       loadingModel: false,
@@ -291,7 +266,7 @@ export default class Renderer3DWrapper extends Component {
   onLoadingError(error) {
     console.log(error);
     alert(error);
-    if (!this.mystate.componentUnmounted) {
+    if (!this._.componentUnmounted) {
       this.setState({
         loadingModel: false,
         downloading: false,
@@ -348,9 +323,6 @@ export default class Renderer3DWrapper extends Component {
 
     return (
       <div ref="root" style={styles.globalDivStyle}>
-        {isEdition ?
-          <input style={styles.filesInput} ref="filesInput" type="file" onChange={this.onFilesChanged} multiple></input>
-        : null}
         <div style={styles.toolbar}>
           <Button
             style={styles.toolbarButton}
@@ -454,8 +426,8 @@ export default class Renderer3DWrapper extends Component {
         <Renderer3D
           ref="r3d"
           mode={mode}
-          remoteFiles={this.props.remoteFiles}
-          labels={this.state.labels}
+          source={this.props.source}
+          labels={this.props.labels}
           normalLabelStyle={this.state.normalLabelStyle}
           highlightedLabelStyle={this.state.highlightedLabelStyle}
           sphereRadiusCoef={this.state.sphereRadiusCoef}
@@ -516,7 +488,7 @@ Renderer3DWrapper.propTypes = {
   /* ===========================*/
   /* --- props to read from (INPUT) ---- */
   mode: React.PropTypes.string,
-  remoteFiles: React.PropTypes.object,
+  source: React.PropTypes.object.isRequired,
   labels: React.PropTypes.array,
   highlightedLabelStyle: React.PropTypes.object,
   normalLabelStyle: React.PropTypes.object,
