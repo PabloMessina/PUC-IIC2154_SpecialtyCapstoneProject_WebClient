@@ -3,7 +3,6 @@ import THREE from 'three';
 import MTLLoader from '../../_3Dlibrary/MTLLoader';
 import OBJLoader from '../../_3Dlibrary/OBJLoader';
 import ThreeUtils from '../../_3Dlibrary/ThreeUtils';
-import isEqual from 'lodash/isEqual';
 import TouchUtils from '../../utils/touch-utils';
 
 // button constants
