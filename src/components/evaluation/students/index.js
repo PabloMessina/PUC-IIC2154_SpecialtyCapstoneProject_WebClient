@@ -2,7 +2,6 @@ import React, { PropTypes, Component } from 'react';
 import { Row, Col, Button, Form, FormControl, Panel, Table } from 'react-bootstrap';
 import moment from 'moment';
 import crypto from 'crypto';
-import Map from '../../localization';
 import { DragDropContext } from 'react-dnd';
 import HTML5Backend from 'react-dnd-html5-backend';
 
@@ -12,6 +11,7 @@ const instanceService = app.service('/instances');
 
 import TeamList from './team-list';
 import UnselectedList from './unselected-list.js';
+import Map from '../../localization';
 
 const MODES = {
   instructor: 'instructor',
@@ -336,7 +336,7 @@ class Students extends Component {
               <h4>Localization of Students</h4>
               <p>Here you can see the location of your students</p>
               <div>
-                <Map evaluation={this.props.evaluation} />
+                <Map evaluation={evaluation} attendances={attendances} />
               </div>
             </Panel>
           </Col>

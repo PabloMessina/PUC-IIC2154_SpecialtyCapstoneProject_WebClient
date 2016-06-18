@@ -265,6 +265,19 @@ class EvaluationCreate extends Component {
     this.props.router.push(url);
   }
 
+  getLocation(options) {
+    // Convert to promise
+    return new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, options);
+    }).then(position => ({
+      type: 'Point',
+      coordinates: [
+        position.coords.latitude,
+        position.coords.longitude,
+      ],
+    }));
+  }
+
   observe(evl) {
     const user = currentUser();
 
@@ -417,47 +430,15 @@ class EvaluationCreate extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  startEvaluation(attendance) {
+  async startEvaluation(attendance) {
     if (attendance) {
-      return attendanceService.patch(attendance.id, { startedAt: new Date() });
+      // Any date is ignored, because the server takes it's own time
+      const patched = await attendanceService.patch(attendance.id, { startedAt: new Date() });
+      const url = `/evaluations/show/${attendance.evaluationId}/questions`;
+      this.props.router.push(url);
+      return patched;
     } else {
-      return Promise.reject(new Error('Attendance not found'));
-    }
-  }
-
-  getLocation(position) {
-    const user = currentUser();
-    const attendance = this.state.attendances
-      .find(att => att.userId === user.id && att.evaluationId === this.state.evaluation.id);
-    const location = {
-      type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'Point',
-            coordinates: [
-              position.coords.latitude,
-              position.coords.longitude,
-            ],
-          },
-        },
-      ],
-    };
-    if (attendance) {
-      return attendanceService.patch(attendance.id, { location });
-    } else {
-      return Promise.reject(new Error('Attendance not found'));
-    }
-  }
-
-  startEvaluation(attendance) {
-    navigator.geolocation.getCurrentPosition(this.getLocation);
-    if (attendance) {
-      return attendanceService.patch(attendance.id, { startedAt: new Date(), location });
-    } else {
-      return Promise.reject(new Error('Attendance not found'));
+      return new Error('Attendance not found');
     }
   }
 

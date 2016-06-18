@@ -1,11 +1,12 @@
 import React, { PropTypes, Component } from 'react';
 
 import { default as canUseDOM } from 'can-use-dom';
-import { default as _ } from 'lodash';
+import throttle from 'lodash/throttle';
 
 import { GoogleMapLoader, GoogleMap, Circle, Marker } from 'react-google-maps';
 import { triggerEvent } from 'react-google-maps/lib/utils';
 import { Button } from 'react-bootstrap';
+
 import app from '../../app';
 const attendanceService = app.service('/attendances');
 
@@ -20,7 +21,8 @@ export default class GettingStarted extends Component {
   static get propTypes() {
     return {
       // participants: PropTypes.array.isRequired,
-      evaluation: PropTypes.object,
+      evaluation: PropTypes.object.isRequired,
+      attendances: PropTypes.array.isRequired,
     };
   }
 
@@ -34,7 +36,7 @@ export default class GettingStarted extends Component {
       outOfRange: [],
       loading: false,
     };
-    this.handleWindowResize = _.throttle(this.handleWindowResize, 500);
+    this.handleWindowResize = throttle(this.handleWindowResize, 500);
     this.getLocation = this.getLocation.bind(this);
     this.startSearch = this.startSearch.bind(this);
   }
@@ -58,28 +60,19 @@ export default class GettingStarted extends Component {
     const lng = position.coords.longitude;
     this.setState({ lat, lng });
     triggerEvent(this.googleMapComponent, 'center_changed');
-    const query = {
-      evaluationId: this.props.evaluation.id,
-    };
-    attendanceService.find({ query }).then(results => {
-      const studentLocations = results.data.map(element => {
-        if (element.location) {
-          if (element.location.features) {
-            const latitude = element.location.features[0].geometry.coordinates[0];
-            const longitude = element.location.features[0].geometry.coordinates[1];
-            const name = element.user.name;
-            return { latitude, longitude, name };
-          } else {
-            const unidentified = [];
-            unidentified.push(element.user.name);
-            this.setState({ unidentified });
-          }
-        }
-        return null;
-      });
-      this.setState({ studentLocations });
-      this.setState({ loading: false });
+
+    const unidentified = [];
+    const studentLocations = [];
+    this.props.attendances.forEach(element => {
+      const name = element.user.name;
+      if (element.location && element.location.coordinates && element.location.coordinates.length > 0) {
+        const [latitude, longitude] = element.location.coordinates;
+        studentLocations.push({ latitude, longitude, name });
+      } else {
+        unidentified.push({ name });
+      }
     });
+    this.setState({ unidentified, studentLocations, loading: false });
   }
 
   startSearch() {
@@ -98,8 +91,8 @@ export default class GettingStarted extends Component {
           key={i}
           position={{
             lat: element.latitude,
-            lng: element.longitude }
-          }
+            lng: element.longitude,
+          }}
           title={element.name}
         />
       );
@@ -108,10 +101,11 @@ export default class GettingStarted extends Component {
   }
 
   render() {
+    const { studentLocations, unidentified, loading } = this.state;
     return (
       <div>
-        <Button onClick={() => this.startSearch}>
-          {this.state.loading ? 'Loading' : 'Get Locations'}
+        <Button onClick={this.startSearch} disabled={loading}>
+          {loading ? 'Loading' : 'Get Locations'}
         </Button>
         <hr />
         <GoogleMapLoader
@@ -143,12 +137,12 @@ export default class GettingStarted extends Component {
                   strokeWeight: 1,
                 }}
               />
-              {this.state.studentLocations.map((element, i) => this.renderMarker(element, i))}
+              {studentLocations.map((element, i) => this.renderMarker(element, i))}
             </GoogleMap>
           }
         />
         <hr />
-        <p><strong>Unidentified: </strong>{this.state.unidentified}</p>
+        <p><strong>Unidentified: </strong>{unidentified.map(u => u.name).join(', ')}</p>
         <p><strong>Out of Test Range: </strong>{this.state.outOfRange}</p>
         <p><strong>Hint:</strong> Place the mouse on a marker to see the name of the stundent.</p>
       </div>
