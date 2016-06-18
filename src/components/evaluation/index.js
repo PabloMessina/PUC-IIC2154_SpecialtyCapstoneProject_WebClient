@@ -16,6 +16,7 @@ import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
 import DocumentTitle from 'react-document-title';
 import renderIf from 'render-if';
+import ErrorAlert from '../error-alert';
 import moment from 'moment';
 
 import app, { currentUser } from '../../app';
@@ -27,7 +28,6 @@ const evaluationsQuestionService = app.service('/evaluations-questions');
 const answerService = app.service('/answers');
 const attendanceService = app.service('/attendances');
 
-import ErrorAlert from '../error-alert';
 
 const SECTIONS = [{
   name: 'Information',
@@ -62,6 +62,7 @@ const Section = ({ active, disabled, children, onClick, tooltip, ...props }) => 
       <Button
         style={styles.tab}
         href="#"
+        bsStyle={active ? 'primary' : 'default'}
         active={active}
         onClick={onClick}
         disabled={disabled}
