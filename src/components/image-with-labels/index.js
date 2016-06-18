@@ -100,6 +100,7 @@ export default class ImageWithLabels extends Component {
       componentFocused: false,
       componentUnmounted: false,
       showLabels: props.showLabels,
+      sourceLoaded: false,
     };
 
     this.renderForAWhile = this.renderForAWhile.bind(this);
@@ -142,6 +143,7 @@ export default class ImageWithLabels extends Component {
         this.onMouseMove_EditionMode = this.onMouseMove_EditionMode.bind(this);
         this.onMouseUp_EditionMode = this.onMouseUp_EditionMode.bind(this);
         this.renderScene = this.renderScene_EditionMode.bind(this);
+        this.notifyLabelsChanged = this.notifyLabelsChanged.bind(this);
         break;
       case REGIONSONLY:
         this.renderScene = this.renderScene_RegionsOnlyMode.bind(this);
@@ -160,8 +162,7 @@ export default class ImageWithLabels extends Component {
         this.renderScene = this.renderScene_WriteAnswerMode.bind(this);
         break;
       default:
-        this.props.errorDetectedCallback(`Unexpected mode = ${props.mode}`);
-        break;
+        throw new Error(`Unexpected mode = ${props.mode}`);
     }
   }
 
@@ -188,8 +189,17 @@ export default class ImageWithLabels extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    const mode = this._.mode;
-    if (mode === EDITION) {
+    const { mode } = this._;
+    if (mode === EDITION && this._.sourceLoaded) {
+      /* check if different labels were provided */
+      if (!isEqual(this._.lastLabelsJSONScreenshot, nextProps.labels)) {
+        console.log('---> lastLabelsJSONScreenshot');
+        console.log(JSON.stringify(this._.lastLabelsJSONScreenshot));
+        console.log('---> nextProps.labels');
+        console.log(JSON.stringify(nextProps.labels));
+        this.removeAllLabels();
+        this.loadLabels(nextProps.labels);
+      }
       /* check if a new circle radius was provided */
       if (nextProps.circleRadius !== this.props.circleRadius) {
         // update radius of all ellipses
@@ -368,7 +378,7 @@ export default class ImageWithLabels extends Component {
             this.selectLabel(newLabel, true);
           }
           // notify parent of changes in labels
-          this.props.labelsChangedCallback(this.exportLabelsToJSON());
+          this.notifyLabelsChanged();
 
         /** case 2) dragging a temporary point */
         } else if (this._.draggingNextTempPoint) {
@@ -467,7 +477,7 @@ export default class ImageWithLabels extends Component {
               else {
                 this.renderForAWhile(0);
                 this.forceUpdate();
-                this.props.labelsChangedCallback(this.exportLabelsToJSON());
+                this.notifyLabelsChanged();
               }
               break;
             }
@@ -623,9 +633,7 @@ export default class ImageWithLabels extends Component {
       this._.draggedLabel = null;
       // notify parent of changes in labels (if label's position has changed)
       if (this._.selectedLabelPositionDirty) {
-        if (this.props.labelsChangedCallback) {
-          this.props.labelsChangedCallback(this.exportLabelsToJSON());
-        }
+        this.notifyLabelsChanged();
         this._.selectedLabelPositionDirty = false;
       }
     } else if (this._.draggingFirstTempPoint) {
@@ -683,7 +691,7 @@ export default class ImageWithLabels extends Component {
       this._.draggingRegion = false;
       this._.draggedRegion = null;
       if (this._.draggedRegionPositionDirty) {
-        this.props.labelsChangedCallback(this.exportLabelsToJSON());
+        this.notifyLabelsChanged();
         this._.draggedRegionPositionDirty = false;
       }
     }
@@ -789,7 +797,7 @@ export default class ImageWithLabels extends Component {
       this._.regionWithSelectedString = null;
       this.refs.hiddenInput.blur();
       if (this._.selectedRegionStringDirty) {
-        this.props.labelsChangedCallback(this.exportLabelsToJSON());
+        this.notifyLabelsChanged();
         this._.selectedRegionStringDirty = false;
       }
     }
@@ -979,7 +987,7 @@ export default class ImageWithLabels extends Component {
     if (label) {
       if (this._.mode === EDITION) {
         if (this._.selectedLabelTextDirty) {
-          this.props.labelsChangedCallback(this.exportLabelsToJSON());
+          this.notifyLabelsChanged();
           this._.selectedLabelTextDirty = false;
         }
         document.getElementById(getLabelFocusId(label.id, this._.componentId)).blur();
@@ -1033,9 +1041,7 @@ export default class ImageWithLabels extends Component {
     this.renderForAWhile(0);
     this.forceUpdate();
     // notify parent of changes in labels
-    if (this.props.labelsChangedCallback) {
-      this.props.labelsChangedCallback(this.exportLabelsToJSON());
-    }
+    this.notifyLabelsChanged();
   }
 
   exportLabelsToJSON() {
@@ -1059,12 +1065,17 @@ export default class ImageWithLabels extends Component {
    * and all previous labels were removed
    */
   loadLabels(labels) {
+    console.log('===> loadLabels()');
     if (!labels) return;
+    // update last JSON screenshot with new input
+    const labelsCopy = cloneDeep(labels);
+    this._.lastLabelsJSONScreenshot = labelsCopy;
+
     const mode = this._.mode;
     const canvas = this.refs.labelCanvas;
     let lid = 0;
     let rid = 0;
-    for (const label of labels) {
+    for (const label of labelsCopy) {
       const regions = new Set();
       const text = (mode === WRITEANSWER) ? '' : label.text;
       const newLabel = { id: label.id, regions, x: label.x, y: label.y, text };
@@ -1097,7 +1108,6 @@ export default class ImageWithLabels extends Component {
       img.onload = () => {
         this.loadImage(img);
         URL.revokeObjectURL(url);
-        this.renderForAWhile(0);
         res();
       };
       img.onerror = err => rej(err);
@@ -1111,7 +1121,6 @@ export default class ImageWithLabels extends Component {
       const img = new Image();
       img.onload = () => {
         this.loadImage(img);
-        this.renderForAWhile(0);
         res();
       };
       img.onerror = err => rej(err);
@@ -1156,6 +1165,9 @@ export default class ImageWithLabels extends Component {
     this._.backgroundImg = img;
     // clear all previous labels
     this.removeAllLabels();
+    // refresh GUI
+    this.renderForAWhile(0);
+    this.forceUpdate();
   }
 
   /* load image from source (file or url) and then load labels */
@@ -1166,7 +1178,10 @@ export default class ImageWithLabels extends Component {
       else if (source.url) sourcePromise = this.loadRemoteImage(source.url);
       if (sourcePromise) {
         sourcePromise
-          .then(() => this.loadLabels(labels))
+          .then(() => {
+            this._.sourceLoaded = true;
+            this.loadLabels(labels);
+          })
           .catch(err => this.props.errorDetectedCallback(err));
       } else this.props.errorDetectedCallback('No file or url found in source');
     }
@@ -1188,10 +1203,6 @@ export default class ImageWithLabels extends Component {
     this._.selectedRegionStringDirty = false;
     this._.selectedLabelPositionDirty = false;
     this._.selectedLabelTextDirty = false;
-    this.renderForAWhile();
-    this.forceUpdate();
-    // notify parent of changes in labels
-    this.props.labelsChangedCallback([]);
   }
 
   /** render the scene onto the canvas (EDITION MODE)*/
@@ -1492,7 +1503,7 @@ export default class ImageWithLabels extends Component {
 
   onSelectedLabelBlur() {
     if (this._.selectedLabelTextDirty) {
-      if (this._.mode === EDITION) this.props.labelsChangedCallback(this.exportLabelsToJSON());
+      if (this._.mode === EDITION) this.notifyLabelsChanged();
       else if (this._.mode === WRITEANSWER) {
         const label = this._.selectedLabel;
         this.props.labelAnswerChangedCallback({ id: label.id, text: label.text });
@@ -1532,7 +1543,7 @@ export default class ImageWithLabels extends Component {
         this._.selectedRegionStringDirty = false;
         const reg = this._.regionWithSelectedString;
         if (!reg.string) reg.string = this.getNextRegionString();
-        this.props.labelsChangedCallback(this.exportLabelsToJSON());
+        this.notifyLabelsChanged();
       }
       this._.regionWithSelectedString = null;
       e.target.blur();
@@ -1573,6 +1584,12 @@ export default class ImageWithLabels extends Component {
     }
     // default
     reg.deleteIconPosition = { x: reg.x , y: reg.y };
+  }
+
+  notifyLabelsChanged() {
+    const json = this.exportLabelsToJSON();
+    this._.lastLabelsJSONScreenshot = json;
+    this.props.labelsChangedCallback(json);
   }
 
   /* =============== */
@@ -1709,7 +1726,7 @@ ImageWithLabels.propTypes = {
   // style for root div
   style: React.PropTypes.object,
   // props to load an image with its labels
-  source: React.PropTypes.object, // { file } or { url }
+  source: React.PropTypes.object.isRequired, // { file } or { url }
   labels: React.PropTypes.array, // json array
   circleRadius: React.PropTypes.number, // float
   // dimension ranges for image's width and height

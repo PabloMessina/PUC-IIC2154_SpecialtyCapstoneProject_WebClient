@@ -32,6 +32,15 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
           mode: readOnly ? 'READONLY' : 'EDITION',
           gotFocusCallback: () => setState({ editorLocked: true }),
           lostFocusCallback: () => setState({ editorLocked: false }),
+          onMetadataChanged: () => console.log('===> metadata changed'),
+          source: {
+            remoteFiles: {
+              mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
+              obj: 'https://lopezjuri.com/videos/nRBC.obj',
+              images: ['https://lopezjuri.com/videos/M_10___Default1.jpg'],
+            },
+          },
+          metadata: { },
         },
       },
       imageWithLabels: {
@@ -39,8 +48,11 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
         editable: false,
         props: {
           // mode: readOnly ? 'READONLY' : 'EDITION',
+          source: { url: 'http://www.humpath.com/IMG/jpg_brain_front_cut_01_10.jpg' },
+          metadata: {},
           gotFocusCallback: () => setState({ editorLocked: true }),
           lostFocusCallback: () => setState({ editorLocked: false }),
+          onMetadataChanged: () => console.log('onMetadataChanged()'),
         },
       },
       // 3d-video: { component: 3DVideo, editable: false },
