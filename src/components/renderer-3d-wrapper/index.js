@@ -5,6 +5,7 @@ import LabelStyleControl from './labelStyleControl';
 import { Button, Dropdown } from 'react-bootstrap';
 import renderIf from 'render-if';
 import Icon, { IconStack } from 'react-fa';
+import clone from 'lodash/clone';
 
 const LIGHT_BLUE = '#9fdef7';
 const BLACK = '#000000';
@@ -19,6 +20,36 @@ const MODES = {
   EDITION: 'EDITION',
   READONLY: 'READONLY',
 };
+
+const defaultHighlightedLabelStyle = {
+  font: 'Georgia',
+  fontSize: 120,
+  borderThickness: 5,
+  borderColor: BLACK,
+  backgroundColor: LIGHT_BLUE,
+  foregroundColor: BLUE,
+  sphereColor: YELLOW,
+  lineColor: YELLOW,
+  cornerRadiusCoef: 0.4,
+  worldFontSizeCoef: 1 / 18,
+};
+
+const defaultNormalLabelStyle = {
+  font: 'Georgia',
+  fontSize: 150,
+  borderThickness: 5,
+  borderColor: BLACK,
+  backgroundColor: WHITE,
+  foregroundColor: BLACK,
+  sphereColor: GREEN,
+  lineColor: BLACK,
+  cornerRadiusCoef: 0.4,
+  worldFontSizeCoef: 1 / 18,
+};
+
+const defaultSphereRadiusCoef = 1 / 200;
+
+const defaultLabels = [];
 
 export default class Renderer3DWrapper extends Component {
 
@@ -57,31 +88,9 @@ export default class Renderer3DWrapper extends Component {
             "z":-0.011820433183759249},"text":"backpack"},{"id":6,"points":[{"x":0.004955719812194559,
             "y":2.051210552175462,"z":0.009528489769337511}],"position":{"x":0.5725380247647536,
             "y":2.6584205095426796,"z":0.011737539989184143},"text":"head"}]`),
-          highlightedLabelStyle: {
-            font: 'Georgia',
-            fontSize: 120,
-            borderThickness: 5,
-            borderColor: BLACK,
-            backgroundColor: LIGHT_BLUE,
-            foregroundColor: BLUE,
-            sphereColor: YELLOW,
-            lineColor: YELLOW,
-            cornerRadiusCoef: 0.4,
-            worldFontSizeCoef: 1 / 18,
-          },
-          normalLabelStyle: {
-            font: 'Georgia',
-            fontSize: 150,
-            borderThickness: 5,
-            borderColor: BLACK,
-            backgroundColor: WHITE,
-            foregroundColor: BLACK,
-            sphereColor: GREEN,
-            lineColor: BLACK,
-            cornerRadiusCoef: 0.4,
-            worldFontSizeCoef: 1 / 18,
-          },
-          sphereRadiusCoef: 1 / 200,
+          highlightedLabelStyle: defaultHighlightedLabelStyle,
+          normalLabelStyle: defaultNormalLabelStyle,
+          sphereRadiusCoef: defaultSphereRadiusCoef,
         },
         gotFocusCallback: () => {},
         lostFocusCallback: () => {},
@@ -100,7 +109,6 @@ export default class Renderer3DWrapper extends Component {
     this.state = {
       mode,
       metadata,
-      labelCount: metadata.labels ? metadata.labels.length : 0,
       labelStyleMode: 'normal',
       labelDropdownOpen: false,
       hasLoadedModel: false,
@@ -148,6 +156,10 @@ export default class Renderer3DWrapper extends Component {
     window.addEventListener('mousedown', this.onMouseDown);
   }
 
+  componentWillReceiveProps(nextProps) {
+    this.setState({ metadata: nextProps.blockProps.metadata });
+  }
+
   componentWillUnmount() {
     window.removeEventListener('mousedown', this.onMouseDown);
     this._.componentUnmounted = true;
@@ -164,7 +176,6 @@ export default class Renderer3DWrapper extends Component {
   }
 
   onLabelsChanged(labels) {
-    // debugger
     console.log('====> onLabelsChanged()');
     // console.log(JSON.stringify(labels));
     // if we run out of labels, no need to keep holding focus
@@ -184,8 +195,8 @@ export default class Renderer3DWrapper extends Component {
     console.log('====> onLabelStyleChanged()');
     const { metadata, labelStyleMode } = this.state;
     // update state and notify parent
-    if (labelStyleMode === 'normal') metadata.normalLabelStyle = newLabelStyle;
-    else metadata.highlightedLabelStyle = newLabelStyle;
+    if (labelStyleMode === 'normal') metadata.normalLabelStyle = clone(newLabelStyle);
+    else metadata.highlightedLabelStyle = clone(newLabelStyle);
     this.setState({ metadata }, () => this.props.blockProps.onMetadataChanged(metadata));
   }
 
@@ -323,22 +334,26 @@ export default class Renderer3DWrapper extends Component {
     const { source } = this.props.blockProps;
     // extract from state
     const { metadata, mode, labelStyleMode } = this.state;
+    // set defaults
+    const normalLabelStyle = metadata.normalLabelStyle || defaultNormalLabelStyle;
+    const highlightedLabelStyle = metadata.highlightedLabelStyle || defaultHighlightedLabelStyle;
+    const labels = metadata.labels || defaultLabels;
+    const sphereRadiusCoef = metadata.sphereRadiusCoef || defaultSphereRadiusCoef;
 
     // check label style to use
     let labelStyle;
     switch (labelStyleMode) {
       case 'normal':
-        labelStyle = metadata.normalLabelStyle;
+        labelStyle = normalLabelStyle;
         break;
       default: // highlighted
-        labelStyle = metadata.highlightedLabelStyle;
+        labelStyle = highlightedLabelStyle;
         break;
     }
     // check if it is edition
     const isEdition = mode === MODES.EDITION;
     // check if it has labels
-    const labelCount = metadata.labels ? metadata.labels.length : 0;
-    const hasLabels = labelCount > 0;
+    const hasLabels = labels.length > 0;
 
     return (
       <div ref="root" style={styles.globalDivStyle}>
@@ -411,9 +426,9 @@ export default class Renderer3DWrapper extends Component {
                   <label> SphereRadiusCoef: </label><br />
                   <input
                     type="range" min={0.001} max={0.03} step={0.0005} style={styles.rangeInput}
-                    value={metadata.sphereRadiusCoef} onChange={this.onSphereRadiusCoefChanged}
+                    value={sphereRadiusCoef} onChange={this.onSphereRadiusCoefChanged}
                   />
-                  <span>{metadata.sphereRadiusCoef.toFixed(5)}</span>
+                  <span>{sphereRadiusCoef.toFixed(5)}</span>
                   <div style={styles.flexme}>
                     <label style={styles.normalLabel}><input
                       type="radio" name="labelType" value="normal"
@@ -449,10 +464,10 @@ export default class Renderer3DWrapper extends Component {
           ref="r3d"
           mode={mode}
           source={source}
-          labels={metadata.labels}
-          normalLabelStyle={metadata.normalLabelStyle}
-          highlightedLabelStyle={metadata.highlightedLabelStyle}
-          sphereRadiusCoef={metadata.sphereRadiusCoef}
+          labels={labels}
+          normalLabelStyle={normalLabelStyle}
+          highlightedLabelStyle={highlightedLabelStyle}
+          sphereRadiusCoef={sphereRadiusCoef}
           labelsChangedCallback={this.onLabelsChanged}
           loadingStartingCallback={this.onLoadingStarting}
           loadingProgressCallback={this.onLoadingProgress}

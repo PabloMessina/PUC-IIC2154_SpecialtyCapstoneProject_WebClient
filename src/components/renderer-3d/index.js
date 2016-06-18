@@ -5,6 +5,7 @@ import OBJLoader from '../../_3Dlibrary/OBJLoader';
 import ThreeUtils from '../../_3Dlibrary/ThreeUtils';
 import TouchUtils from '../../utils/touch-utils';
 import isEqual from 'lodash/isEqual';
+import cloneDeep from 'lodash/cloneDeep';
 import clone from 'lodash/clone';
 
 // button constants
@@ -190,7 +191,7 @@ export default class Renderer3D extends Component {
       highlightedLabelStyle: clone(this.props.highlightedLabelStyle),
       canFocusHiddenInput: false,
       selectedLabelTextDirty: false,
-      lastLabelJSONScreenshot: null,
+      lastLabelsJSONScreenshot: null,
       // draggable label vars
       draggingTempLabel: false,
       tempDraggableLabel: null,
@@ -362,7 +363,12 @@ export default class Renderer3D extends Component {
     console.log("===> renderer-3d:::componentWillReceiveProps()");
     if (this._.mode === EDITION && this._.meshGroup) {
       /* check for changes in labels */
-      if (!isEqual(this._.lastLabelJSONScreenshot, nextProps.labels)) {
+      // debugger
+      if (!isEqual(this._.lastLabelsJSONScreenshot, nextProps.labels)) {
+        console.log('nextProps.labels');
+        console.log(JSON.stringify(nextProps.labels));
+        console.log('lastLabelsJSONScreenshot');
+        console.log(JSON.stringify(this._.lastLabelsJSONScreenshot));
         this._.highlightedLabelStyle = nextProps.highlightedLabelStyle;
         this._.normalLabelStyle = nextProps.normalLabelStyle;
         this.loadLabels(nextProps.labels);
@@ -758,9 +764,6 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
         const mesh = this._.meshGroup.children[i];
         this._.meshGroup.remove(mesh);
       }
-      // remove icons
-      this._.scene.remove(this._.iconSpriteGroup);
-      this._.scene.remove(this._.iconCircleGroup);
       // remove labels
       this.clearAllLabelData();
       // notify parent of changes in labels
@@ -812,6 +815,9 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       const sphere = this._.sphereGroup.children[i];
       this._.sphereGroup.remove(sphere);
     }
+    // clear icons
+    this._.scene.remove(this._.iconSpriteGroup);
+    this._.scene.remove(this._.iconCircleGroup);
     // clear other structures
     this._.labelSet.clear();
     this._.spritePlaneToLabelMap = {};
@@ -830,8 +836,25 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     console.log('===> loadLabels()');
     // remove all existing labels
     this.clearAllLabelData();
+    // update last screen
+    this._.lastLabelsJSONScreenshot = labels ? cloneDeep(labels) : [];
+
+    /* stop all dragging related interactivity */
+    if (this._.draggingTempLabel) {
+      const dragLabel = this._.tempDraggableLabel;
+      // remove dragged elements from scene
+      this._.scene.remove(dragLabel.sprite);
+      this._.scene.remove(dragLabel.sphere);
+      this._.scene.remove(dragLabel.line);
+      this._.scene.remove(dragLabel.spritePlane);
+      // temporary dragging is over
+      this._.tempDraggableLabel = null;
+      this._.draggingTempLabel = false;
+    }
+    this._.selectedLabelPositionDirty = false;
+    this._.draggingSelectedLabel = false;
+
     // load new labels
-    this._.labels = labels;
     if (labels) {
       labels.forEach((label) => {
         /** new label object */
@@ -1023,7 +1046,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
 
   onLabelsChanged() {
     const json = this.labelsToJSON();
-    this._.lastLabelJSONScreenshot = json;
+    this._.lastLabelsJSONScreenshot = json;
     this.props.labelsChangedCallback(json);
   }
 
@@ -1691,7 +1714,6 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
         this.onLabelsChanged();
       }
       this._.selectedLabelPositionDirty = false;
-      this._.draggingSelectedLabel = false;
       this._.orbitingCamera = false;
       this._.cameraOrbitUpdatePending = false;
       this._.draggingSelectedLabel = false;

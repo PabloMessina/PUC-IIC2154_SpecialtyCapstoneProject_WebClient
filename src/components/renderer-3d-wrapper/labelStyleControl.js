@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import renderIf from 'render-if';
-import isEqual from 'lodash/isEqual';
+import clone from 'lodash/clone';
 
 const fonts = [
   'Georgia', 'serif', 'Times New Roman', 'Arial', 'Helvetica', 'sans-serif',
@@ -14,7 +14,7 @@ export default class LabelStyleControl extends Component {
 
   constructor(props) {
     super(props);
-    this.state = { labelStyle: props.labelStyle };
+    this.state = { labelStyle: clone(props.labelStyle) };
     this.onBackgroundColorChanged = this.onBackgroundColorChanged.bind(this);
     this.onBorderColorChanged = this.onBorderColorChanged.bind(this);
     this.onBorderThicknessChanged = this.onBorderThicknessChanged.bind(this);
@@ -29,9 +29,7 @@ export default class LabelStyleControl extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (!isEqual(this.state.labelStyle, nextProps.labelStyle)) {
-      this.setState({ labelStyle: nextProps.labelStyle });
-    }
+    this.setState({ labelStyle: clone(nextProps.labelStyle) });
   }
 
   onBackgroundColorChanged(e) {
@@ -65,7 +63,7 @@ export default class LabelStyleControl extends Component {
     this.updateLabelStyle('worldFontSizeCoef', Number(e.target.value));
   }
   updateLabelStyle(attribute, value) {
-    const labelStyle = this.state.labelStyle;
+    const { labelStyle } = this.state;
     labelStyle[attribute] = value;
     this.setState({ labelStyle });
     this.props.labelStyleChangedCallback(labelStyle);
