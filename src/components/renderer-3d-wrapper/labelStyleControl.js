@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import renderIf from 'render-if';
+import isEqual from 'lodash/isEqual';
 
 const fonts = [
   'Georgia', 'serif', 'Times New Roman', 'Arial', 'Helvetica', 'sans-serif',
@@ -28,7 +29,9 @@ export default class LabelStyleControl extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    this.setState({ labelStyle: nextProps.labelStyle });
+    if (!isEqual(this.state.labelStyle, nextProps.labelStyle)) {
+      this.setState({ labelStyle: nextProps.labelStyle });
+    }
   }
 
   onBackgroundColorChanged(e) {
@@ -64,22 +67,23 @@ export default class LabelStyleControl extends Component {
   updateLabelStyle(attribute, value) {
     const labelStyle = this.state.labelStyle;
     labelStyle[attribute] = value;
-    this.props.labelStyleChangedCallback(labelStyle);
     this.setState({ labelStyle });
+    this.props.labelStyleChangedCallback(labelStyle);
   }
 
   render() {
-    const labelStyle = this.state.labelStyle;
-    const font = labelStyle.font;
-    const fontSize = labelStyle.fontSize;
-    const foregroundColor = labelStyle.foregroundColor;
-    const backgroundColor = labelStyle.backgroundColor;
-    const borderColor = labelStyle.borderColor;
-    const lineColor = labelStyle.lineColor;
-    const sphereColor = labelStyle.sphereColor;
-    const borderThickness = labelStyle.borderThickness;
-    const cornerRadiusCoef = labelStyle.cornerRadiusCoef;
-    const worldFontSizeCoef = labelStyle.worldFontSizeCoef;
+    const {
+      font,
+      fontSize,
+      foregroundColor,
+      backgroundColor,
+      borderColor,
+      lineColor,
+      sphereColor,
+      borderThickness,
+      cornerRadiusCoef,
+      worldFontSizeCoef,
+    } = this.state.labelStyle;
 
     return (
       <div id="labelstylecontrol-root" style={styles.root}>
@@ -155,6 +159,7 @@ export default class LabelStyleControl extends Component {
           <span>{cornerRadiusCoef.toFixed(2)}</span>
           <br />
         </div>))}
+        {/* style to make the scrollbar always visible */}
         <style
           dangerouslySetInnerHTML={{
             __html:
