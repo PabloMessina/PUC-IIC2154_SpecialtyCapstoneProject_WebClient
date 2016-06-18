@@ -46,8 +46,9 @@ import Rx from 'rxjs';
   */
 const host = 'http://karp.ing.puc.cl/';
 const socket = io(host, {
-  // transports: ['websocket'],
+  transports: ['websocket', 'polling'],
   // forceNew: true,
+  timeout: 7000, // default: 5000
 });
 
 const KEYS = {
@@ -72,7 +73,7 @@ app.configure(authentication({
 
 
 /**
- * Hot Observables, all of the saves the last emited value
+ * Hot Observables, all of them saves the last emited value
  * @type {Object}
  */
 export const events = {
