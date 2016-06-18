@@ -45,10 +45,10 @@ const SECTIONS = [{
   name: 'Results',
   description: 'Answers and results',
   path: 'results',
-// }, {
-//   name: 'Recorrection',
-//   description: 'Problems reported',
-//   path: 'recorrection',
+}, {
+  name: 'Recorrection',
+  description: 'Problems reported',
+  path: 'recorrection',
 }];
 
 const MODES = {
@@ -151,8 +151,7 @@ class EvaluationCreate extends Component {
       instance: evaluation.instance,
       syncing: false,
       tabStates: Array(SECTIONS.length).fill('default'),
-
-      // attendance: props.attendance,
+      location: {},
     };
 
     this.findOrCreateAnswer = this.findOrCreateAnswer.bind(this);
@@ -172,6 +171,10 @@ class EvaluationCreate extends Component {
     this.onNavigateTo = this.onNavigateTo.bind(this);
     this.onQuestionAdd = this.onQuestionAdd.bind(this);
     this.onQuestionRemove = this.onQuestionRemove.bind(this);
+    // this.onGroupsChange = this.onGroupsChange.bind(this);
+    // this.onAttendantsChange = this.onAttendantsChange.bind(this);
+
+    this.getLocation = this.getLocation.bind(this);
   }
 
   componentDidMount() {
@@ -417,6 +420,42 @@ class EvaluationCreate extends Component {
   startEvaluation(attendance) {
     if (attendance) {
       return attendanceService.patch(attendance.id, { startedAt: new Date() });
+    } else {
+      return Promise.reject(new Error('Attendance not found'));
+    }
+  }
+
+  getLocation(position) {
+    const user = currentUser();
+    const attendance = this.state.attendances
+      .find(att => att.userId === user.id && att.evaluationId === this.state.evaluation.id);
+    const location = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'Point',
+            coordinates: [
+              position.coords.latitude,
+              position.coords.longitude,
+            ],
+          },
+        },
+      ],
+    };
+    if (attendance) {
+      return attendanceService.patch(attendance.id, { location });
+    } else {
+      return Promise.reject(new Error('Attendance not found'));
+    }
+  }
+
+  startEvaluation(attendance) {
+    navigator.geolocation.getCurrentPosition(this.getLocation);
+    if (attendance) {
+      return attendanceService.patch(attendance.id, { startedAt: new Date(), location });
     } else {
       return Promise.reject(new Error('Attendance not found'));
     }

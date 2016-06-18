@@ -2,7 +2,7 @@ import React, { PropTypes, Component } from 'react';
 import { Row, Col, Button, Form, FormControl, Panel, Table } from 'react-bootstrap';
 import moment from 'moment';
 import crypto from 'crypto';
-
+import Map from '../../localization';
 import { DragDropContext } from 'react-dnd';
 import HTML5Backend from 'react-dnd-html5-backend';
 
@@ -332,6 +332,13 @@ class Students extends Component {
               unselected={unselected}
               removeFromGroup={this.removeFromGroup}
             />
+            <Panel>
+              <h4>Localization of Students</h4>
+              <p>Here you can see the location of your students</p>
+              <div>
+                <Map evaluation={this.props.evaluation} />
+              </div>
+            </Panel>
           </Col>
         </Row>
       </div>

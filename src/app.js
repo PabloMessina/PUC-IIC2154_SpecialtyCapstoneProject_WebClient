@@ -175,6 +175,20 @@ export function auth(options) {
 }
 
 /**
+ * Use local saved credentials to auth with server
+ * @return {Promise} Resolves to User object
+ */
+export function auth(options) {
+  return app.authenticate(options)
+    .then(saveCredentials)
+    .catch(err => {
+      console.log('Auth error:', err);
+      events.authenticated.next(null);
+      throw err;
+    });
+}
+
+/**
  * Logout and delete credentials
  * @return {Promise}
  */

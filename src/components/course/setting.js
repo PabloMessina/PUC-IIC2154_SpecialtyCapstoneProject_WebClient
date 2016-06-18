@@ -33,17 +33,19 @@ class MinTemplate extends Component {
   }
 
   onDeleteInstance(instance) {
-    if (window.confirm("Do you really want to delete this course instance?")) {
+    if (window.confirm('Do you really want to delete this course instance?')) {
       return instanceService.remove(instance.id)
         .then(() => this.fetchInstances());
     }
+    return Promise.reject('User did cancel.');
   }
 
   onDeleteCourse() {
-    if (window.confirm("Do you really want to delete the entire course? ")) {
+    if (window.confirm('Do you really want to delete the entire course?')) {
       return courseService.remove(this.props.course.id)
         .then(() => this.props.router.push(`/organizations/show/${this.props.course.organizationId}/courses`));
     }
+    return Promise.reject('User did cancel.');
   }
 
   fetchInstances() {
