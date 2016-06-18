@@ -14,75 +14,93 @@ const YELLOW = '#00ffff';
 const GREEN = '#00ff00';
 
 // modes
-const EVALUATION = 'EVALUATION';
-const EDITION = 'EDITION';
-const READONLY = 'READONLY';
+const MODES = {
+  EVALUATION: 'EVALUATION',
+  EDITION: 'EDITION',
+  READONLY: 'READONLY',
+};
 
 export default class Renderer3DWrapper extends Component {
 
   static get defaultProps() {
     return {
       blockProps: {
-        mode: EDITION,
+        mode: MODES.EDITION,
+        source: {
+          remoteFiles: {
+            mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
+            obj: 'https://lopezjuri.com/videos/nRBC.obj',
+            images: ['https://lopezjuri.com/videos/M_10___Default1.jpg'],
+            // mtl: 'https://lopezjuri.com/videos/Heart.mtl',
+            // obj: 'https://lopezjuri.com/videos/Heart.obj',
+            // images: [],
+            // mtl: 'http://localhost:5000/nRBC.mtl',
+            // obj: 'http://localhost:5000/nRBC.obj',
+            // images: ['http://localhost:5000/nRBC.jpg'],
+          },
+          // localFiles: [mtl, obj, image1, image2, ... ]
+          // },
+        },
+        metadata: {
+          labels: JSON.parse(`[{"id":1,"points":[{"x":0.08011267886422502,"y":1.7630375099710704,
+            "z":0.2855099769166429},{"x":0.07996274114879043,"y":1.7642502742242812,"z":-0.24056268813839665}],
+            "position":{"x":-1.2019907948864557,"y":2.368970534761047,"z":-0.06227645813365079},
+            "text":"shoulders"},{"id":2,"points":[{"x":0.03834693213218543,"y":1.643665271571109,
+            "z":-0.9189726189875955}],"position":{"x":0.5210503123113313,"y":2.325146086504418,"z":-1.4203780284125997},
+            "text":"left hand"},{"id":3,"points":[{"x":0.05562013466743565,"y":1.6404827763992103,
+            "z":0.9533487794309679}],"position":{"x":0.18885065242216115,"y":2.2365201279125415,"z":1.2479100379638908},
+            "text":"right hand"},{"id":4,"points":[{"x":0.1636169699651191,"y":0.6388932187009857,
+            "z":-0.07602061097736623}, {"x":0.18297738656877982,"y":0.6669522616368795,"z":0.12959693525661464}],
+            "position":{"x":1.0465285433723466, "y":0.5071482887253147,"z":0.07387170013075206},"text":"knees"},
+            {"id":5,"points":[{"x":-0.38885138245308326, "y":1.5720951288809317,"z":0.05662421976961696}],
+            "position":{"x":-1.2029175571224187,"y":1.5549022450299006,
+            "z":-0.011820433183759249},"text":"backpack"},{"id":6,"points":[{"x":0.004955719812194559,
+            "y":2.051210552175462,"z":0.009528489769337511}],"position":{"x":0.5725380247647536,
+            "y":2.6584205095426796,"z":0.011737539989184143},"text":"head"}]`),
+          highlightedLabelStyle: {
+            font: 'Georgia',
+            fontSize: 120,
+            borderThickness: 5,
+            borderColor: BLACK,
+            backgroundColor: LIGHT_BLUE,
+            foregroundColor: BLUE,
+            sphereColor: YELLOW,
+            lineColor: YELLOW,
+            cornerRadiusCoef: 0.4,
+            worldFontSizeCoef: 1 / 18,
+          },
+          normalLabelStyle: {
+            font: 'Georgia',
+            fontSize: 150,
+            borderThickness: 5,
+            borderColor: BLACK,
+            backgroundColor: WHITE,
+            foregroundColor: BLACK,
+            sphereColor: GREEN,
+            lineColor: BLACK,
+            cornerRadiusCoef: 0.4,
+            worldFontSizeCoef: 1 / 18,
+          },
+          sphereRadiusCoef: 1 / 200,
+        },
         gotFocusCallback: () => {},
         lostFocusCallback: () => {},
+        onMetadataChanged: () => console.log('===> metadata changed'),
+
+        // EDITION mode only
+        onLabelAnswerChanged: (ans) => console.log(ans),
       },
-      sphereRadiusCoef: 1 / 200,
-      source: {
-        remoteFiles: {
-          mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
-          obj: 'https://lopezjuri.com/videos/nRBC.obj',
-          images: ['https://lopezjuri.com/videos/M_10___Default1.jpg'],
-          // mtl: 'https://lopezjuri.com/videos/Heart.mtl',
-          // obj: 'https://lopezjuri.com/videos/Heart.obj',
-          // images: [],
-          // mtl: 'http://localhost:5000/nRBC.mtl',
-          // obj: 'http://localhost:5000/nRBC.obj',
-          // images: ['http://localhost:5000/nRBC.jpg'],
-        },
-        // localFiles: [mtl, obj, image1, image2, ... ]
-        // },
-      },
-      labels: [{"id":1,"points":[{"x":0.08011267886422502,"y":1.7630375099710704,"z":0.2855099769166429},{"x":0.07996274114879043,"y":1.7642502742242812,"z":-0.24056268813839665}],"position":{"x":-1.2019907948864557,"y":2.368970534761047,"z":-0.06227645813365079},"text":"shoulders"},{"id":2,"points":[{"x":0.03834693213218543,"y":1.643665271571109,"z":-0.9189726189875955}],"position":{"x":0.5210503123113313,"y":2.325146086504418,"z":-1.4203780284125997},"text":"left hand"},{"id":3,"points":[{"x":0.05562013466743565,"y":1.6404827763992103,"z":0.9533487794309679}],"position":{"x":0.18885065242216115,"y":2.2365201279125415,"z":1.2479100379638908},"text":"right hand"},{"id":4,"points":[{"x":0.1636169699651191,"y":0.6388932187009857,"z":-0.07602061097736623},{"x":0.18297738656877982,"y":0.6669522616368795,"z":0.12959693525661464}],"position":{"x":1.0465285433723466,"y":0.5071482887253147,"z":0.07387170013075206},"text":"knees"},{"id":5,"points":[{"x":-0.38885138245308326,"y":1.5720951288809317,"z":0.05662421976961696}],"position":{"x":-1.2029175571224187,"y":1.5549022450299006,"z":-0.011820433183759249},"text":"backpack"},{"id":6,"points":[{"x":0.004955719812194559,"y":2.051210552175462,"z":0.009528489769337511}],"position":{"x":0.5725380247647536,"y":2.6584205095426796,"z":0.011737539989184143},"text":"head"}],
-      highlightedLabelStyle: {
-        font: 'Georgia',
-        fontSize: 120,
-        borderThickness: 5,
-        borderColor: BLACK,
-        backgroundColor: LIGHT_BLUE,
-        foregroundColor: BLUE,
-        sphereColor: YELLOW,
-        lineColor: YELLOW,
-        cornerRadiusCoef: 0.4,
-        worldFontSizeCoef: 1 / 18,
-      },
-      normalLabelStyle: {
-        font: 'Georgia',
-        fontSize: 150,
-        borderThickness: 5,
-        borderColor: BLACK,
-        backgroundColor: WHITE,
-        foregroundColor: BLACK,
-        sphereColor: GREEN,
-        lineColor: BLACK,
-        cornerRadiusCoef: 0.4,
-        worldFontSizeCoef: 1 / 18,
-      },
-      labelsChangedCallback: (labels) => console.log(JSON.stringify(labels)),
-      highlightedLabelStyleChangedCallback: () => {},
-      normalLabelStyleChangedCallback: () => {},
-      sphereRadiusCoefChangedCallback: () => {},
-      local3DFilesLoadedCallback: () => {},
-      labelAnswerChangedCallback: (ans) => console.log(ans),
     };
   }
 
   constructor(props) {
     super(props);
+    const { mode, metadata } = this.props.blockProps;
     // state used in render
     this.state = {
-      mode: props.blockProps.mode,
-      labelCount: props.labels.length,
+      mode,
+      metadata,
+      labelCount: metadata.labels ? metadata.labels.length : 0,
       labelStyleMode: 'normal',
       labelDropdownOpen: false,
       hasLoadedModel: false,
@@ -90,15 +108,10 @@ export default class Renderer3DWrapper extends Component {
       loadingModel: false,
       downloading: false,
       downloadMessage: '',
-      normalLabelStyle: props.normalLabelStyle,
-      highlightedLabelStyle: props.highlightedLabelStyle,
-      sphereRadiusCoef: props.sphereRadiusCoef,
       labelStyleControlShowAllOptions: false,
     };
     // state not used in render
     this._ = {
-      labelDropdownX: null,
-      labelDropdownY: null,
       lastClickedElem: null,
       componentUnmounted: false,
       componentFocused: false,
@@ -147,56 +160,33 @@ export default class Renderer3DWrapper extends Component {
 
   onTouchStart(e) {
     this._.lastClickedElem = e.target;
-    this.checkInComponente(e.target)
-  }
-
-  checkInComponente(element) {
-    let inComponent = false;
-    let elem = element;
-    while (elem) {
-      if (elem === this.refs.root) { inComponent = true; break; }
-      elem = elem.parentElement;
-    }
-    if (!inComponent) this.refs.r3d.unselectSelectedLabel();
-    if (inComponent && !this._.componentFocused) {
-      this._.componentFocused = true;
-      this.refs.r3d.gotFocus();
-      if (this.state.mode === EDITION) this.props.blockProps.gotFocusCallback();
-    } else if (!inComponent && this._.componentFocused) {
-      this._.componentFocused = false;
-      this.refs.r3d.lostFocus();
-      if (this.state.mode === EDITION) this.props.blockProps.lostFocusCallback();
-    }
+    this.checkInComponente(e.target);
   }
 
   onLabelsChanged(labels) {
-    // console.log("===> onLabelsChanged(): labels = ", JSON.stringify(labels, null, '\t'));
+    // debugger
+    console.log('====> onLabelsChanged()');
+    // console.log(JSON.stringify(labels));
+    // if we run out of labels, no need to keep holding focus
     if (labels.length === 0 && this._.labelWithFocus) {
       this._.labelWithFocus = false;
       this.props.blockProps.lostFocusCallback();
     }
     if (!this._.componentUnmounted) {
-      this.props.labelsChangedCallback(labels);
-      this.setState({
-        labelCount: labels ? labels.length : 0,
-        labels,
-      });
+      // update state  and notify parent
+      const { metadata } = this.state;
+      metadata.labels = labels;
+      this.setState({ metadata }, () => this.props.blockProps.onMetadataChanged(metadata));
     }
   }
 
   onLabelStyleChanged(newLabelStyle) {
-    switch (this.state.labelStyleMode) {
-      case 'normal':
-        this.setState({ normalLabelStyle: newLabelStyle });
-        this.refs.r3d.setNormalLabelStyle(newLabelStyle);
-        this.props.normalLabelStyleChangedCallback(newLabelStyle);
-        break;
-      default: // highlighted
-        this.setState({ highlightedLabelStyle: newLabelStyle });
-        this.refs.r3d.setHighlightedLabelStyle(newLabelStyle);
-        this.props.highlightedLabelStyleChangedCallback(newLabelStyle);
-        break;
-    }
+    console.log('====> onLabelStyleChanged()');
+    const { metadata, labelStyleMode } = this.state;
+    // update state and notify parent
+    if (labelStyleMode === 'normal') metadata.normalLabelStyle = newLabelStyle;
+    else metadata.highlightedLabelStyle = newLabelStyle;
+    this.setState({ metadata }, () => this.props.blockProps.onMetadataChanged(metadata));
   }
 
   onLabelRadioBtnChanged() {
@@ -273,6 +263,20 @@ export default class Renderer3DWrapper extends Component {
     }
   }
 
+  onLabelStyleControlCheckboxChanged() {
+    this.setState({ labelStyleControlShowAllOptions: this.refs.labelStyleControlCheckbox.checked });
+  }
+
+  /* handle change on sphere radius coef */
+  onSphereRadiusCoefChanged(e) {
+    console.log('====> onSphereRadiusCoefChanged()');
+    const coef = Number(e.target.value);
+    const { metadata } = this.state;
+    // update state and notify parent
+    metadata.sphereRadiusCoef = coef;
+    this.setState({ metadata }, () => this.props.blockProps.onMetadataChanged(metadata));
+  }
+
   showLabels() {
     this.refs.r3d.showLabels();
     this.setState({ showingLabels: true });
@@ -291,15 +295,23 @@ export default class Renderer3DWrapper extends Component {
     this.refs.r3d.removeSelectedLabel();
   }
 
-  onLabelStyleControlCheckboxChanged() {
-    this.setState({ labelStyleControlShowAllOptions: this.refs.labelStyleControlCheckbox.checked });
-  }
-
-  onSphereRadiusCoefChanged(e) {
-    const coef = Number(e.target.value);
-    this.refs.r3d.setSphereRadiusCoef(coef);
-    this.props.sphereRadiusCoefChangedCallback(coef);
-    this.setState({ sphereRadiusCoef: coef });
+  checkInComponente(element) {
+    let inComponent = false;
+    let elem = element;
+    while (elem) {
+      if (elem === this.refs.root) { inComponent = true; break; }
+      elem = elem.parentElement;
+    }
+    if (!inComponent) this.refs.r3d.unselectSelectedLabel();
+    if (inComponent && !this._.componentFocused) {
+      this._.componentFocused = true;
+      this.refs.r3d.gotFocus();
+      if (this.state.mode === MODES.EDITION) this.props.blockProps.gotFocusCallback();
+    } else if (!inComponent && this._.componentFocused) {
+      this._.componentFocused = false;
+      this.refs.r3d.lostFocus();
+      if (this.state.mode === MODES.EDITION) this.props.blockProps.lostFocusCallback();
+    }
   }
 
   updateLabelAnswers(answers) {
@@ -307,18 +319,26 @@ export default class Renderer3DWrapper extends Component {
   }
 
   render() {
+    // extract from props
+    const { source } = this.props.blockProps;
+    // extract from state
+    const { metadata, mode, labelStyleMode } = this.state;
+
     // check label style to use
     let labelStyle;
-    switch (this.state.labelStyleMode) {
+    switch (labelStyleMode) {
       case 'normal':
-        labelStyle = this.state.normalLabelStyle;
+        labelStyle = metadata.normalLabelStyle;
         break;
       default: // highlighted
-        labelStyle = this.state.highlightedLabelStyle;
+        labelStyle = metadata.highlightedLabelStyle;
         break;
     }
-    const mode = this.state.mode;
-    const isEdition = mode === EDITION;
+    // check if it is edition
+    const isEdition = mode === MODES.EDITION;
+    // check if it has labels
+    const labelCount = metadata.labels ? metadata.labels.length : 0;
+    const hasLabels = labelCount > 0;
 
     return (
       <div ref="root" style={styles.globalDivStyle}>
@@ -333,7 +353,7 @@ export default class Renderer3DWrapper extends Component {
               <Icon name="compass" stack="1x" style={styles.icon} />
             </IconStack>
           </Button>
-          {this.state.labelCount > 0 ?
+          {renderIf(hasLabels)(() => (
             <ToggleButton
               turnedOnIcon="eye"
               turnedOffIcon="eye-slash"
@@ -341,8 +361,9 @@ export default class Renderer3DWrapper extends Component {
               turnedOffCallback={this.hideLabels}
               iconStyle={styles.icon}
               buttonStyle={styles.toolbarButton}
-            /> : null}
-          {this.state.labelCount > 0 ?
+            />
+          ))}
+          {renderIf(hasLabels)(() => (
             <Button
               style={styles.toolbarButton}
               onClick={() => this.refs.r3d.minimizeAllLabels()} bsSize="small"
@@ -351,8 +372,9 @@ export default class Renderer3DWrapper extends Component {
                 <Icon name="circle" stack="2x" />
                 <Icon name="minus-square" stack="1x" style={styles.icon} />
               </IconStack>
-            </Button> : null}
-          {this.state.labelCount > 0 ?
+            </Button>
+          ))}
+          {renderIf(hasLabels)(() => (
             <Button
               style={styles.toolbarButton}
               onClick={() => this.refs.r3d.maximizeAllLabels()} bsSize="small"
@@ -361,8 +383,9 @@ export default class Renderer3DWrapper extends Component {
                 <Icon name="circle" stack="2x" />
                 <Icon name="plus-square" stack="1x" style={styles.icon} />
               </IconStack>
-            </Button> : null}
-          {renderIf(isEdition && this.state.labelCount > 0)(() => (
+            </Button>
+          ))}
+          {renderIf(hasLabels && isEdition)(() => (
             <Dropdown
               id="label-dropdown-custom"
               open={this.state.labelDropdownOpen}
@@ -388,9 +411,9 @@ export default class Renderer3DWrapper extends Component {
                   <label> SphereRadiusCoef: </label><br />
                   <input
                     type="range" min={0.001} max={0.03} step={0.0005} style={styles.rangeInput}
-                    value={this.state.sphereRadiusCoef} onChange={this.onSphereRadiusCoefChanged}
+                    value={metadata.sphereRadiusCoef} onChange={this.onSphereRadiusCoefChanged}
                   />
-                  <span>{this.state.sphereRadiusCoef.toFixed(5)}</span>
+                  <span>{metadata.sphereRadiusCoef.toFixed(5)}</span>
                   <div style={styles.flexme}>
                     <label style={styles.normalLabel}><input
                       type="radio" name="labelType" value="normal"
@@ -425,11 +448,11 @@ export default class Renderer3DWrapper extends Component {
         <Renderer3D
           ref="r3d"
           mode={mode}
-          source={this.props.source}
-          labels={this.props.labels}
-          normalLabelStyle={this.state.normalLabelStyle}
-          highlightedLabelStyle={this.state.highlightedLabelStyle}
-          sphereRadiusCoef={this.state.sphereRadiusCoef}
+          source={source}
+          labels={metadata.labels}
+          normalLabelStyle={metadata.normalLabelStyle}
+          highlightedLabelStyle={metadata.highlightedLabelStyle}
+          sphereRadiusCoef={metadata.sphereRadiusCoef}
           labelsChangedCallback={this.onLabelsChanged}
           loadingStartingCallback={this.onLoadingStarting}
           loadingProgressCallback={this.onLoadingProgress}
@@ -438,10 +461,9 @@ export default class Renderer3DWrapper extends Component {
           downloadCycleStartedCallback={this.onDownloadCycleStarted}
           downloadCycleFinishedCallback={this.onDownloadCycleFinished}
           downloadingFileCallback={this.onDownloadingFile}
-          local3DFilesLoadedCallback={this.props.local3DFilesLoadedCallback}
 
           // in EVALUATION mode
-          labelAnswerChangedCallback={this.props.labelAnswerChangedCallback}
+          labelAnswerChangedCallback={this.props.blockProps.onLabelAnswerChanged}
         />
         {this.state.loadingModel ?
           <div style={styles.progressDiv}>
@@ -482,33 +504,7 @@ export default class Renderer3DWrapper extends Component {
 }
 
 Renderer3DWrapper.propTypes = {
-  /* ===========================*/
-  /* 1) props for for ALL modes */
-  /* ===========================*/
-  /* --- props to read from (INPUT) ---- */
-  mode: React.PropTypes.string,
-  source: React.PropTypes.object.isRequired,
-  labels: React.PropTypes.array,
-  highlightedLabelStyle: React.PropTypes.object,
-  normalLabelStyle: React.PropTypes.object,
-  sphereRadiusCoef: React.PropTypes.number,
-  /* ===========================*/
-  /* 2) props for EDITION mode  */
-  /* ===========================*/
-  /* --- callback props to notify parent about changes (OUTPUT) --- */
-  labelsChangedCallback: React.PropTypes.func,
-  highlightedLabelStyleChangedCallback: React.PropTypes.func,
-  normalLabelStyleChangedCallback: React.PropTypes.func,
-  sphereRadiusCoefChangedCallback: React.PropTypes.func,
-  local3DFilesLoadedCallback: React.PropTypes.func,
-  // vicho's prop
-  //   it has: mode, gotFocusCallback, lostFocusCallback
-  blockProps: React.PropTypes.object,
-  /* ==============================*/
-  /* 3) props for EVALUATION mode  */
-  /* ==============================*/
-  /* --- callback props to notify parent about changes (OUTPUT) --- */
-  labelAnswerChangedCallback: React.PropTypes.func,
+  blockProps: React.PropTypes.object.isRequired,
 };
 
 const styles = {

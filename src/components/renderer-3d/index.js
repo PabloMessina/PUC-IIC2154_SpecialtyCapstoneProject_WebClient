@@ -4,6 +4,8 @@ import MTLLoader from '../../_3Dlibrary/MTLLoader';
 import OBJLoader from '../../_3Dlibrary/OBJLoader';
 import ThreeUtils from '../../_3Dlibrary/ThreeUtils';
 import TouchUtils from '../../utils/touch-utils';
+import isEqual from 'lodash/isEqual';
+import clone from 'lodash/clone';
 
 // button constants
 const LEFT_BUTTON = 0;
@@ -31,6 +33,12 @@ const EDITION = 'EDITION';
 const READONLY = 'READONLY';
 
 export default class Renderer3D extends Component {
+
+  static get defaultProps() {
+    return {
+      filesActuallyUsedCallback: (files) => console.log('files used: ', files),
+    };
+  }
 
   constructor(props) {
     super(props);
@@ -178,10 +186,11 @@ export default class Renderer3D extends Component {
       labelsEnabled: true,
       labelSet: new Set(),
       id2labelMap: {},
-      normalLabelStyle: this.props.normalLabelStyle,
-      highlightedLabelStyle: this.props.highlightedLabelStyle,
+      normalLabelStyle: clone(this.props.normalLabelStyle),
+      highlightedLabelStyle: clone(this.props.highlightedLabelStyle),
       canFocusHiddenInput: false,
       selectedLabelTextDirty: false,
+      lastLabelJSONScreenshot: null,
       // draggable label vars
       draggingTempLabel: false,
       tempDraggableLabel: null,
@@ -228,7 +237,7 @@ export default class Renderer3D extends Component {
     };
 
     /* load source, it must be either remoteFiles (JSON object with urls) or
-     localFiles (an array of File objects, e.g: [objFiles, mtlFiles, imgFile1, imgFile2, ... ]) */
+     localFiles (an array of File objects, e.g: [objFile, mtlFile, imgFile1, imgFile2, ... ]) */
     const source = this.props.source;
     const labels = this.props.labels;
     // remote files
@@ -349,13 +358,38 @@ export default class Renderer3D extends Component {
     this.animateForAWhile();
   }
 
-  /** Avoid updates altogether (they are not necessary) */
+  componentWillReceiveProps(nextProps) {
+    console.log("===> renderer-3d:::componentWillReceiveProps()");
+    if (this._.mode === EDITION && this._.meshGroup) {
+      /* check for changes in labels */
+      if (!isEqual(this._.lastLabelJSONScreenshot, nextProps.labels)) {
+        this._.highlightedLabelStyle = nextProps.highlightedLabelStyle;
+        this._.normalLabelStyle = nextProps.normalLabelStyle;
+        this.loadLabels(nextProps.labels);
+      } else {
+        /* check for changes in highlightedLabelStyle */
+        if (!isEqual(this._.highlightedLabelStyle, nextProps.highlightedLabelStyle)) {
+          this.setHighlightedLabelStyle(nextProps.highlightedLabelStyle);
+        }
+        /* check for changes in normalLabelStyle */
+        if (!isEqual(this._.normalLabelStyle, nextProps.normalLabelStyle)) {
+          this.setNormalLabelStyle(nextProps.normalLabelStyle);
+        }
+      }
+      /* check for changes in SphereRadiusCoef */
+      if (this.props.sphereRadiusCoef !== nextProps.sphereRadiusCoef &&
+        this._.sphereRadiusCoef !== nextProps.sphereRadiusCoef) {
+        this.setSphereRadiusCoef(nextProps.sphereRadiusCoef);
+      }
+    }
+  }
+
+  /** avoid updates altogether (they are not necessary) */
   shouldComponentUpdate() {
     return false;
   }
 
   componentWillUnmount() {
-    console.log("==> Renderer3D::componentWillUnmount()");
     // remove event listeners
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('keydown', this.onKeydown);
@@ -633,6 +667,7 @@ export default class Renderer3D extends Component {
     let objFile = null;
     let mtlFile = null;
     const texturePaths = {};
+    const textureFiles = {};
 
     // ------------------------------------------------
     // iterate through files and select them according
@@ -650,7 +685,8 @@ export default class Renderer3D extends Component {
         .toLowerCase() === MTL_EXT) {
         mtlFile = file; // mtl file
       } else {
-        // save path to texture image file
+        // map filename to file and path
+        textureFiles[fname] = file;
         texturePaths[fname] = URL.createObjectURL(file);
       }
     }
@@ -670,7 +706,7 @@ bytes > ${OBJ_SIZE_THRESHOLD} bytes. It's too heavy :S. Maybe you should
 reduce the complexity of your mesh by applying mesh simplification on it.`);
     }
 
-    let imagePathsUsed;
+    let textureFilesUsed;
 
     this.props.downloadCycleStartedCallback();
     this.onFileDownloadStarted(URL.createObjectURL(mtlFile));
@@ -679,8 +715,9 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       mtlFile, texturePaths,
       this._.loadingInterrupter,
       this.onFileDownloadStarted)
-    .then(({ materials, texturePathsUsed }) => {
-      imagePathsUsed = texturePathsUsed;
+    .then(({ materials, textureNamesUsed }) => {
+      // collect files actually used
+      textureFilesUsed = textureNamesUsed.map(name => textureFiles[name]);
       if (this._.loadingInterrupter.stop) {
         throw new Error(this._.loadingInterrupter.reason);
       }
@@ -697,9 +734,9 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       if (this._.loadingInterrupter.stop) {
         throw new Error(this._.loadingInterrupter.reason);
       }
-      // on success, proceed to incorporte the meshes into the scene and render them
+      // load the meshes into the scene and render them
       this.loadMeshGroup(meshGroup);
-      this.props.local3DFilesLoadedCallback({ mtlFile, objFile, texturePaths: imagePathsUsed });
+      this.props.filesActuallyUsedCallback({ obj: objFile, mtl: mtlFile, images: textureFilesUsed });
     });
   }
 
@@ -727,7 +764,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       // remove labels
       this.clearAllLabelData();
       // notify parent of changes in labels
-      if (this._.mode === EDITION) this.props.labelsChangedCallback(this.labelsToJSON());
+      if (this._.mode === EDITION) this.onLabelsChanged();
     }
     // set the new meshGroup
     this._.meshGroup = meshGroup;
@@ -786,10 +823,11 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
   }
 
   /**
-   * [Receives an array of labels in JSON format, and then loads them
-   * as 3D labels that show up on the screen]
+   * Receives an array of labels in JSON format, and then loads them
+   * as 3D labels that show up on the screen
    */
   loadLabels(labels) {
+    console.log('===> loadLabels()');
     // remove all existing labels
     this.clearAllLabelData();
     // load new labels
@@ -857,8 +895,6 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     }
     // correct label ids
     this.checkAndCorrectLabelIds();
-    // notify parent of changes in labels
-    if (this._.mode === EDITION) this.props.labelsChangedCallback(this.labelsToJSON());
     // refresh screen
     this.animateForAWhile();
   }
@@ -950,7 +986,8 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
    * refreshes the scene]
    */
   setNormalLabelStyle(style) {
-    this._.normalLabelStyle = style;
+    console.log('====> setNormalLabelStyle()');
+    this._.normalLabelStyle = clone(style);
     if (this._.labelSet.size > 0) {
       for (const label of this._.labelSet) {
         if (label === this._.selectedLabel || label.minimized) continue;
@@ -965,7 +1002,8 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
    * refreshes the scene]
    */
   setHighlightedLabelStyle(style) {
-    this._.highlightedLabelStyle = style;
+    console.log('====> setHighlightedLabelStyle()');
+    this._.highlightedLabelStyle = clone(style);
     if (this._.selectedLabel) {
       this.highlightLabel(this._.selectedLabel);
       this.refreshIconsPositions();
@@ -974,12 +1012,19 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
   }
 
   setSphereRadiusCoef(coef) {
+    console.log('====> setSphereRadiusCoef()');
     this._.sphereRadiusCoef = coef;
     if (this._.meshGroup) {
       const r = coef * this._.meshDiameter;
       for (const sphere of this._.sphereGroup.children) sphere.scale.set(r, r, r);
     }
     this.animateForAWhile();
+  }
+
+  onLabelsChanged() {
+    const json = this.labelsToJSON();
+    this._.lastLabelJSONScreenshot = json;
+    this.props.labelsChangedCallback(json);
   }
 
   onWindowMouseDown() {
@@ -1080,7 +1125,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
                 delete this._.sphereToLabelMap[sphere.uuid];
                 // if label runs out of spheres, delete label as well
                 if (label.spheres.size === 0) this.removeSelectedLabel();
-                else this.props.labelsChangedCallback(this.labelsToJSON());
+                else this.onLabelsChanged();
 
               // case 2.2) a different label selected
               } else this.selectLabel(label);
@@ -1229,7 +1274,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
           this._.tempDraggableLabel = null;
           this._.draggingTempLabel = false;
           // and notify parent of changes in labels
-          this.props.labelsChangedCallback(this.labelsToJSON());
+          this.onLabelsChanged();
           // refresh scene
           this.animateForAWhile();
 
@@ -1437,7 +1482,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     // remove label
     this._.labelSet.delete(label);
     delete this._.id2labelMap[label.id];
-    this.props.labelsChangedCallback(this.labelsToJSON());
+    this.onLabelsChanged();
     // check if label was the selectedLabel
     if (label === this._.selectedLabel) {
       this._.selectedLabel = null;
@@ -1609,6 +1654,8 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
         // update spritePlane
         selectedLabel.spritePlane.position.copy(intersPoint);
         selectedLabel.spritePlane.quaternion.copy(this._.camera.quaternion);
+        // remember position is dirty
+        this._.selectedLabelPositionDirty = true;
         // refresh icons
         this.refreshIconsPositions();
         this.animateForAWhile();
@@ -1640,9 +1687,11 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
   onMouseUp(event) {
     if (event.button === LEFT_BUTTON) {
       // notify parent of labels changed if we were dragging one
-      if (this._.draggingSelectedLabel) {
-        this.props.labelsChangedCallback(this.labelsToJSON());
+      if (this._.selectedLabelPositionDirty) {
+        this.onLabelsChanged();
       }
+      this._.selectedLabelPositionDirty = false;
+      this._.draggingSelectedLabel = false;
       this._.orbitingCamera = false;
       this._.cameraOrbitUpdatePending = false;
       this._.draggingSelectedLabel = false;
@@ -1764,7 +1813,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       // if text is dirty, notify parent about it (according to mode)
       if (this._.selectedLabelTextDirty) {
         if (this._.mode === EDITION) {
-          this.props.labelsChangedCallback(this.labelsToJSON());
+          this.onLabelsChanged();
         } else if (this._.mode === EVALUATION) {
           this.props.labelAnswerChangedCallback({ id: label.id, text: label.student_answer });
         }
@@ -1993,7 +2042,7 @@ Renderer3D.propTypes = {
   /* ===========================*/
   /* --- callback props to notify parent about changes (OUTPUT) --- */
   labelsChangedCallback: React.PropTypes.func,
-  local3DFilesLoadedCallback: React.PropTypes.func,
+  filesActuallyUsedCallback: React.PropTypes.func,
   /* ==============================*/
   /* 3) props for EVALUATION mode  */
   /* ==============================*/
