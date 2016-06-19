@@ -1084,6 +1084,19 @@ export default class ImageWithLabels extends Component {
     }
     this._.labelId = lid + 1;
     this._.regionId = rid + 1;
+
+    if (mode === READONLY) {
+      /* make sure to make visible labels that are selected */
+      const { selectedLabelIds } = this.props;
+      if (selectedLabelIds) {
+        selectedLabelIds.forEach(id => {
+          const label = this._.id2labelMap[id];
+          if (label) label.visible = true;
+          else console.warn('WARNING: id = ', id, ' not found in id2labelMap');
+        });
+      }
+    }
+
     this.renderForAWhile(0);
     if (mode !== REGIONSONLY && mode !== MULTISELECT
       && mode !== READONLY) this.forceUpdate(this.refreshAllLabelsPositions);
