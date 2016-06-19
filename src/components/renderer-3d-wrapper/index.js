@@ -108,7 +108,7 @@ export default class Renderer3DWrapper extends Component {
     // state used in render
     this.state = {
       mode,
-      metadata,
+      metadata: metadata || {},
       labelStyleMode: 'normal',
       labelDropdownOpen: false,
       hasLoadedModel: false,
@@ -157,7 +157,8 @@ export default class Renderer3DWrapper extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    this.setState({ metadata: nextProps.blockProps.metadata });
+    const { metadata } = nextProps.blockProps;
+    if (metadata) this.setState({ metadata });
   }
 
   componentWillUnmount() {
@@ -185,7 +186,7 @@ export default class Renderer3DWrapper extends Component {
     }
     if (!this._.componentUnmounted) {
       // update state  and notify parent
-      const { metadata } = this.state;
+      const metadata = { ...this.state.metadata };
       metadata.labels = labels;
       this.setState({ metadata }, () => this.props.blockProps.onMetadataChanged(metadata));
     }
@@ -193,7 +194,8 @@ export default class Renderer3DWrapper extends Component {
 
   onLabelStyleChanged(newLabelStyle) {
     console.log('====> onLabelStyleChanged()');
-    const { metadata, labelStyleMode } = this.state;
+    const { labelStyleMode } = this.state;
+    const metadata = { ...this.state.metadata };
     // update state and notify parent
     if (labelStyleMode === 'normal') metadata.normalLabelStyle = clone(newLabelStyle);
     else metadata.highlightedLabelStyle = clone(newLabelStyle);
@@ -282,7 +284,7 @@ export default class Renderer3DWrapper extends Component {
   onSphereRadiusCoefChanged(e) {
     console.log('====> onSphereRadiusCoefChanged()');
     const coef = Number(e.target.value);
-    const { metadata } = this.state;
+    const metadata = { ...this.state.metadata };
     // update state and notify parent
     metadata.sphereRadiusCoef = coef;
     this.setState({ metadata }, () => this.props.blockProps.onMetadataChanged(metadata));

@@ -51,7 +51,7 @@ export default class ImageWithLabelsEditionWrapper extends Component {
 
     const { metadata } = props.blockProps;
     this.state = {
-      metadata,
+      metadata: metadata || {},
       showLabels: true,
     };
     this.onCircleRadiusChanged = this.onCircleRadiusChanged.bind(this);
@@ -60,13 +60,13 @@ export default class ImageWithLabelsEditionWrapper extends Component {
 
   componentWillReceiveProps(nextProps) {
     const { metadata } = nextProps.blockProps;
-    this.setState({ metadata });
+    if (metadata) this.setState({ metadata });
   }
 
   onCircleRadiusChanged(e) {
     console.log('=====> 2d-edition-wrapper: onCircleRadiusChanged()');
     const cr = Number(e.target.value);
-    const { metadata } = this.state;
+    const metadata = { ...this.state.metadata };
     metadata.circleRadius = cr;
     // update state and notify parent
     this.setState({ metadata }, () => this.props.blockProps.onMetadataChanged(metadata));
@@ -74,7 +74,7 @@ export default class ImageWithLabelsEditionWrapper extends Component {
 
   onLabelsChanged(labels) {
     console.log('=====> 2d-edition-wrapper: onLabelsChanged()');
-    const { metadata } = this.state;
+    const metadata = { ...this.state.metadata };
     metadata.labels = labels;
     // update state and notify parent
     this.setState({ metadata }, () => this.props.blockProps.onMetadataChanged(metadata));

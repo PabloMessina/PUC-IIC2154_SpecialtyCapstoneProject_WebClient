@@ -34,6 +34,7 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
           lostFocusCallback: () => setState({ editorLocked: false }),
           onMetadataChanged: (metadata) => {
             Entity.mergeData(entityKey, { metadata });
+            updateEditor();
           },
         },
       },
@@ -46,6 +47,7 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
           lostFocusCallback: () => setState({ editorLocked: false }),
           onMetadataChanged: (metadata) => {
             Entity.mergeData(entityKey, { metadata });
+            updateEditor();
           },
         },
       },
