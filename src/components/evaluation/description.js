@@ -62,10 +62,23 @@ function parseEvaluation({ startAt, finishAt, duration }) {
   return {
     startDate: start.format(FORMATS.DATE),
     startTime: start.format(FORMATS.TIME),
-    finishDate: finish ? finish.format(FORMATS.DATE) : '',
-    finishTime: finish ? finish.format(FORMATS.TIME) : '',
+    finishDate: finish.format(FORMATS.DATE),
+    finishTime: finish.format(FORMATS.TIME),
     durationTime: durationTime.length >= '00:00'.length ? durationTime : `0${durationTime}`,
   };
+}
+
+function parseToMoment(date, time) {
+  const sd = moment(date, FORMATS.DATE);
+  const st = moment(time, FORMATS.TIME);
+  return moment(new Date()).set({
+    year: sd.get('year'),
+    month: sd.get('month'),
+    day: sd.get('day'),
+    hour: st.get('hour'),
+    minute: st.get('minute'),
+    second: 0,
+  });
 }
 
 export default class EvaluationDescription extends Component {
@@ -94,6 +107,15 @@ export default class EvaluationDescription extends Component {
     this.onChange = this.onChange.bind(this);
     this.fetchOtherEvaluations = this.fetchOtherEvaluations.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
+
+    this.setDurationTime = this.setDurationTime.bind(this);
+    this.setStartDate = this.setStartDate.bind(this);
+    this.setStartTime = this.setStartTime.bind(this);
+    this.setFinishDate = this.setFinishDate.bind(this);
+    this.setFinishTime = this.setFinishTime.bind(this);
+    this.setFinish = this.setFinish.bind(this);
+    this.setStart = this.setStart.bind(this);
+    this.setDuration = this.setDuration.bind(this);
   }
 
   componentDidMount() {
@@ -111,39 +133,14 @@ export default class EvaluationDescription extends Component {
     this.setState({ evaluation });
   }
 
-  // onDateChange(field, original, value, fields, format) {
-  //   const input = moment(value, format);
-  //   const date = input.isValid() ? input : moment(new Date());
-  //
-  //   const keys = {};
-  //   fields.forEach(key => (keys[key] = date.get(key)));
-  //
-  //   const final = (original || moment()).set(keys);
-  //   this.onChange(field, final.format());
-  // }
-
   onSubmit(e) {
     e.preventDefault();
     this.setState({ status: STATUS.SAVING });
 
-    const startDate = moment(this.state.startDate, FORMATS.DATE);
-    const startTime = moment(this.state.startTime, FORMATS.TIME);
-    const startAt = moment(this.state.evaluation.startAt || new Date()).set({
-      year: startDate.get('year'),
-      month: startDate.get('month'),
-      day: startDate.get('day'),
-      hour: startTime.get('hour'),
-      minute: startTime.get('minute'),
-    });
-    const finishDate = moment(this.state.finishDate, FORMATS.DATE);
-    const finishTime = moment(this.state.finishTime, FORMATS.TIME);
-    const finishAt = moment(this.state.evaluation.finishAt || new Date()).set({
-      year: finishDate.get('year'),
-      month: finishDate.get('month'),
-      day: finishDate.get('day'),
-      hour: finishTime.get('hour'),
-      minute: finishTime.get('minute'),
-    });
+    const { startDate, startTime, finishDate, finishTime } = this.state;
+
+    const startAt = parseToMoment(startDate, startTime);
+    const finishAt = parseToMoment(finishDate, finishTime);
 
     const durationTime = moment(this.state.durationTime, FORMATS.TIME);
     const duration = (durationTime.get('hour') * 3600 + durationTime.get('minute') * 60) * 1000;
@@ -154,6 +151,83 @@ export default class EvaluationDescription extends Component {
         this.setState({ evaluation, error: null, status: STATUS.SAVED });
       })
       .catch(error => this.setState({ error, status: STATUS.NONE }));
+  }
+
+  setDurationTime(e) {
+    const durationTime = e.target.value;
+    this.setState({ durationTime });
+    this.setDuration(durationTime);
+  }
+
+  setStartDate(e) {
+    const startTime = this.state.startTime;
+    const startDate = e.target.value;
+    this.setState({ startDate });
+    this.setStart(startDate, startTime);
+  }
+  setStartTime(e) {
+    const startTime = e.target.value;
+    const startDate = this.state.startDate;
+    this.setState({ startTime });
+    this.setStart(startDate, startTime);
+  }
+
+  setFinishDate(e) {
+    const finishTime = this.state.finishTime;
+    const finishDate = e.target.value;
+    this.setState({ finishDate });
+    this.setFinish(finishDate, finishTime);
+  }
+  setFinishTime(e) {
+    const finishTime = e.target.value;
+    const finishDate = this.state.finishDate;
+    this.setState({ finishTime });
+    this.setFinish(finishDate, finishTime);
+  }
+
+  setFinish(finishDate, finishTime) {
+    const { startDate, startTime, durationTime } = this.state;
+    const startAt = parseToMoment(startDate, startTime);
+    const finishAt = parseToMoment(finishDate, finishTime);
+    const maxDuration = finishAt.diff(startAt);
+    const msDuration = moment.duration(durationTime).asMilliseconds();
+    const duration = Math.floor(
+        moment.duration(maxDuration || 0).asHours())
+      + moment.utc(maxDuration || 0).format(':mm');
+
+    if (maxDuration < msDuration) {
+      const newDurationTime = duration.length >= '00:00'.length ? duration : `0${duration}`;
+      this.setState({ durationTime: newDurationTime });
+    }
+  }
+
+  setDuration(durationTime) {
+    const { startDate, startTime, finishDate, finishTime } = this.state;
+    const startAt = parseToMoment(startDate, startTime);
+    const finishAt = parseToMoment(finishDate, finishTime);
+
+    const maxDuration = finishAt.diff(startAt);
+    const duration = moment.duration(durationTime).asMilliseconds();
+    if (maxDuration < duration) {
+      const newFinishAt = startAt.add(duration);
+      this.setState({ finishDate: newFinishAt.format(FORMATS.DATE), finishTime: newFinishAt.format(FORMATS.TIME) });
+    }
+  }
+
+  setStart(startDate, startTime) {
+    const { finishDate, finishTime, durationTime } = this.state;
+    const startAt = parseToMoment(startDate, startTime);
+    const finishAt = parseToMoment(finishDate, finishTime);
+    const maxDuration = finishAt.diff(startAt);
+    const msDuration = moment.duration(durationTime).asMilliseconds();
+    const duration = Math.floor(
+        moment.duration(maxDuration || 0).asHours())
+      + moment.utc(maxDuration || 0).format(':mm');
+
+    if (maxDuration < msDuration) {
+      const newDurationTime = duration.length >= '00:00'.length ? duration : `0${duration}`;
+      this.setState({ durationTime: newDurationTime });
+    }
   }
 
   discountMessage(discount) {
@@ -275,7 +349,7 @@ export default class EvaluationDescription extends Component {
                         style={{ marginRight: 15 }}
                         type="date"
                         value={startDate}
-                        onChange={e => this.setState({ startDate: e.target.value })}
+                        onChange={this.setStartDate}
                         disabled={disabled}
                         required
                       />
@@ -283,7 +357,7 @@ export default class EvaluationDescription extends Component {
                         style={{ marginLeft: 15 }}
                         type="time"
                         value={startTime}
-                        onChange={e => this.setState({ startTime: e.target.value })}
+                        onChange={this.setStartTime}
                         disabled={disabled}
                         required
                       />
@@ -297,7 +371,7 @@ export default class EvaluationDescription extends Component {
                       type="time"
                       placeholder="1:30"
                       value={durationTime}
-                      onChange={e => this.setState({ durationTime: e.target.value })}
+                      onChange={this.setDurationTime}
                       disabled={disabled}
                       required
                     />
@@ -314,7 +388,7 @@ export default class EvaluationDescription extends Component {
                         style={{ marginRight: 15 }}
                         type="date"
                         value={finishDate}
-                        onChange={e => this.setState({ finishDate: e.target.value })}
+                        onChange={this.setFinishDate}
                         disabled={disabled}
                         required
                       />
@@ -322,7 +396,7 @@ export default class EvaluationDescription extends Component {
                         style={{ marginLeft: 15 }}
                         type="time"
                         value={finishTime}
-                        onChange={e => this.setState({ finishTime: e.target.value })}
+                        onChange={this.setFinishTime}
                         disabled={disabled}
                         required
                       />
@@ -437,11 +511,13 @@ export default class EvaluationDescription extends Component {
 
             <Col xsOffset={0} xs={12} sm={3}>
               <Panel>
-                <h4>Evaluation settings</h4>
-                <p>Make sure to setup the evaluation with the correct parameters</p>
-                <hr />
+                <h4>{canEdit ? 'Evaluation settings' : 'Evaluation'}</h4>
+                <p>{canEdit
+                    ? 'Make sure to setup the evaluation with the correct parameters'
+                    : 'All the information about your evaluation is here. See the upper bar to navigate to the questions.'}</p>
                 {renderIf(canEdit)(() =>
                   <div>
+                    <hr />
                     <Button block disabled={status === STATUS.SAVING} bsStyle="primary" type="submit">
                       {(() => {
                         switch (status) {

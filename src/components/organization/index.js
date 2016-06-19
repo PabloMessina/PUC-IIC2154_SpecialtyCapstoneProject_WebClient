@@ -93,7 +93,7 @@ class Organization extends Component {
       <span><Icon style={styles.icon} name={icon} /> {name}</span>
     );
 
-    const tabs = membership.permission === 'admin'
+    const tabs = membership && membership.permission === 'admin'
       ? TABS
       : TABS.filter(t => !['settings', 'questions'].includes(t.path));
 

@@ -10,7 +10,7 @@ export default class ElementsColumn extends Component {
     return {
       columnNumber: PropTypes.number.isRequired,
       elements: PropTypes.array.isRequired,
-      extraSpace: PropTypes.object,
+      extraRowSpace: PropTypes.number,
       globalDragging: PropTypes.bool,
       cursorClick: PropTypes.bool,
       canEdit: PropTypes.bool,
@@ -58,7 +58,7 @@ export default class ElementsColumn extends Component {
     const {
       elements,
       columnNumber,
-      extraSpace,
+      extraRowSpace,
       globalDragging,
       cursorClick,
       canEdit,
@@ -88,8 +88,7 @@ export default class ElementsColumn extends Component {
             text={element}
             columnNumber={columnNumber}
             onHeightComputed={height => this.onHeightComputed(i, height)}
-            extraSpace={extraSpace}
-            first={i === 0}
+            extraRowSpace={extraRowSpace}
             last={i === elements.length - 1}
             globalDragging={globalDragging}
             cursorClick={cursorClick}

@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import update from 'react-addons-update';
 import AtlasSection from '../atlas-section';
 import AtlasTree from '../atlas-tree';
-import app from '../../app';
+import app, { currentUser } from '../../app';
 import isEmpty from 'lodash/isEmpty';
 import DocumentTitle from 'react-document-title';
 
@@ -31,7 +31,6 @@ export default class AtlasBook extends Component {
       sectionIndex: 0, // Select the first root section
       versionId: '',
     };
-
 
     // Wether it should send a request to the
     // server to patch the current section.
@@ -161,6 +160,7 @@ export default class AtlasBook extends Component {
    * @returns {undefined}
    */
   onChangeContent(content) {
+    if (!this.state.tree) return;
     // Create a new object from current section and change content
     const section = { ...this.currentSection(), content };
     // Replace section in tree
@@ -235,15 +235,18 @@ export default class AtlasBook extends Component {
 
 
   render() {
-    const { readOnly } = this.props;
+    const atlas = this.props.params.atlas;
+    const { tree, versionId } = this.state;
+    const readOnly = currentUser().id !== atlas.responsableId;
+
     const section = this.currentSection();
     return (
       <div style={styles.container}>
-        <DocumentTitle title={this.props.params.atlas.title} />
+        <DocumentTitle title={atlas.title} />
         <AtlasTree
-          tree={this.state.tree}
-          title={this.props.params.atlas.title}
-          versionId={this.state.versionId}
+          tree={tree}
+          title={atlas.title}
+          versionId={versionId}
           selectedSectionId={section._id}
           onSelectSection={this.onSelectSection}
           onAddSection={this.onAddSection}

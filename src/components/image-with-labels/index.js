@@ -42,18 +42,13 @@ export default class ImageWithLabels extends Component {
 
   static get defaultProps() {
     return {
+      mode: EDITION,
       maxWidth: 500,
       maxHeight: 400,
       maxResolutionX: 600,
       maxResolutionY: 800,
-      labelsChangedCallback: (labels) => console.log(labels),
-      gotFocusCallback: () => console.log('gotFocusCallback()'),
-      lostFocusCallback: () => console.log('lostFocusCallback()'),
-      errorDetectedCallback: err => { alert(err); console.log(err); },
       showLabels: true,
-      mode: EDITION,
       circleRadius: 4,
-      // colors
       lineHighlightColor: 'rgb(255,0,0)',
       lineNormalColor: 'rgb(0,0,0)',
       regionHighlightColor: 'rgba(255,255,0,0.2)',
@@ -62,13 +57,16 @@ export default class ImageWithLabels extends Component {
       stringHighlightColor: 'rgb(236,150,13)',
       stringNormalColor: 'rgb(255,255,255)',
       selectedLabelIds: [],
+      errorDetectedCallback: err => { alert(err); console.log(err); },
     };
   }
 
   constructor(props) {
     super(props);
 
-    this.mystate = {
+    /* we use '_' instead of 'state' to keep all variables that do not require a call
+    to React's render outside of 'state' */
+    this._ = {
       // define an id for this component
       componentId: componentId++,
       // copy mode
@@ -169,7 +167,7 @@ export default class ImageWithLabels extends Component {
 
   componentDidMount() {
     // add event listeners
-    switch (this.mystate.mode) {
+    switch (this._.mode) {
       case EDITION:
         window.addEventListener('mousedown', this.onMouseDown_EditionMode);
         window.addEventListener('mousemove', this.onMouseMove_EditionMode);
@@ -190,17 +188,13 @@ export default class ImageWithLabels extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    const mode = this.mystate.mode;
+    const mode = this._.mode;
     if (mode === EDITION) {
-      /* check if a new source was provided */
-      if (nextProps.source && !isEqual(this.props.source, nextProps.source)) {
-        this.loadImageAndLabels(nextProps.source, nextProps.labels);
-      }
       /* check if a new circle radius was provided */
       if (nextProps.circleRadius !== this.props.circleRadius) {
         // update radius of all ellipses
         const canvas = this.refs.labelCanvas;
-        for (const label of this.mystate.labelSet) {
+        for (const label of this._.labelSet) {
           for (const reg of label.regions) {
             if (reg.type === CIRCLE_TYPE) {
               reg.rx = nextProps.circleRadius / canvas.width;
@@ -216,19 +210,19 @@ export default class ImageWithLabels extends Component {
     if (mode !== READONLY && nextProps.showLabels !== this.props.showLabels) {
       if (nextProps.showLabels) {
         setTimeout(() => {
-          this.mystate.showLabels = true;
+          this._.showLabels = true;
           this.renderForAWhile(0);
           if (mode !== REGIONSONLY && mode !== MULTISELECT) this.forceUpdate(this.refreshAllLabelsPositions);
         }, 0);
       } else {
-        this.mystate.showLabels = false;
+        this._.showLabels = false;
         const canvas = this.refs.labelCanvas;
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         /* if in edition mode, notify parent that we lost focus */
-        if (mode === EDITION && this.mystate.componentFocused) {
-          this.mystate.componentFocused = false;
+        if (mode === EDITION && this._.componentFocused) {
+          this._.componentFocused = false;
           this.props.lostFocusCallback();
         }
       }
@@ -239,13 +233,14 @@ export default class ImageWithLabels extends Component {
     }
 
     if (mode === READONLY && !isEqual(nextProps.selectedLabelIds, this.props.selectedLabelIds)) {
-      // debugger
+      // determine labels that were selected and labels that were unselected
       const prevIds = this.props.selectedLabelIds;
       const currIds = nextProps.selectedLabelIds;
       const selected = currIds.filter(id => prevIds.indexOf(id) < 0);
       const unselected = prevIds.filter(id => currIds.indexOf(id) < 0);
+      // for labels that got unselected, make them invisible and stop their animations (if any)
       unselected.forEach(id => {
-        const label = this.mystate.id2labelMap[id];
+        const label = this._.id2labelMap[id];
         if (label) {
           label.visible = false;
           if (label.animationRunning) {
@@ -255,14 +250,19 @@ export default class ImageWithLabels extends Component {
           this.renderForAWhile();
         } else console.warn('WARNING: id = ', id, ' not found in id2labelMap');
       });
+      // for labels that got selected, start their animations
       selected.forEach(id => {
-        const label = this.mystate.id2labelMap[id];
+        const label = this._.id2labelMap[id];
         if (label) this.startRegionAnimationForLabel(label);
         else console.warn('WARNING: id = ', id, ' not found in id2labelMap');
       });
     }
   }
 
+  /**
+   * makes the label's regions switch between visible and invisible
+   * a couple times before staying definitely visible
+   */
   startRegionAnimationForLabel(label) {
     if (label.animationRunning) return;
     const makeVisible = () => { label.visible = true; this.renderForAWhile(); };
@@ -272,7 +272,7 @@ export default class ImageWithLabels extends Component {
     let count = 0;
     makeVisible();
     label.animationId = setInterval(() => {
-      if (this.mystate.componentUnmounted) {
+      if (this._.componentUnmounted) {
         clearInterval(label.animationId);
         label.animationRunning = false;
         return;
@@ -290,7 +290,7 @@ export default class ImageWithLabels extends Component {
 
   componentWillUnmount() {
     // remove event listeners
-    switch (this.mystate.mode) {
+    switch (this._.mode) {
       case EDITION:
         window.removeEventListener('mousedown', this.onMouseDown_EditionMode);
         window.removeEventListener('mousemove', this.onMouseMove_EditionMode);
@@ -307,12 +307,12 @@ export default class ImageWithLabels extends Component {
       default: break;
     }
     // remember we have been unmounted
-    this.mystate.componentUnmounted = true;
+    this._.componentUnmounted = true;
   }
 
   onMouseDown_EditionMode(event) {
     // don't do anything if labels are hidden
-    if (!this.mystate.showLabels) return;
+    if (!this._.showLabels) return;
     /* get mouse coordinates in canvas space */
     const canvas = this.refs.labelCanvas;
     const canvCoords = Utils2D.getElementMouseCoords(canvas, event);
@@ -324,11 +324,11 @@ export default class ImageWithLabels extends Component {
       0, 0, canvas.width, canvas.height) && isAncestorOf(this.refs.canvasWrapper, event.target);
 
     /* notify about gain or loss of focus to parent */
-    if (clickInsideCanvas && !this.mystate.componentFocused) {
-      this.mystate.componentFocused = true;
+    if (clickInsideCanvas && !this._.componentFocused) {
+      this._.componentFocused = true;
       this.props.gotFocusCallback();
-    } else if (!clickInsideCanvas && this.mystate.componentFocused) {
-      this.mystate.componentFocused = false;
+    } else if (!clickInsideCanvas && this._.componentFocused) {
+      this._.componentFocused = false;
       this.props.lostFocusCallback();
     }
 
@@ -340,12 +340,12 @@ export default class ImageWithLabels extends Component {
 
          /** Case 1) dragging a temporary label */
          // label is either dropped as a new one or merged into another one
-        if (this.mystate.draggingTemporaryLabel) {
-          const tmpLabel = this.mystate.temporaryLabel;
+        if (this._.draggingTemporaryLabel) {
+          const tmpLabel = this._.temporaryLabel;
           const label = this.getIntersectedLabel(mouseCanvasX, mouseCanvasY);
           // end dragging
-          this.mystate.draggingTemporaryLabel = false;
-          this.mystate.temporaryLabel = null;
+          this._.draggingTemporaryLabel = false;
+          this._.temporaryLabel = null;
           /** case 1.1) intersection with label */
           if (label) {
             label.regions.add(tmpLabel.region); // add region into existing label
@@ -361,9 +361,9 @@ export default class ImageWithLabels extends Component {
               y: tmpLabel.y,
               regions,
               text: DEFAULT_LABEL_TEXT,
-              id: this.mystate.labelId++ };
-            this.mystate.labelSet.add(newLabel); // add label to set
-            this.mystate.id2labelMap[newLabel.id] = newLabel;
+              id: this._.labelId++ };
+            this._.labelSet.add(newLabel); // add label to set
+            this._.id2labelMap[newLabel.id] = newLabel;
             // select the new label
             this.selectLabel(newLabel, true);
           }
@@ -371,10 +371,10 @@ export default class ImageWithLabels extends Component {
           this.props.labelsChangedCallback(this.exportLabelsToJSON());
 
         /** case 2) dragging a temporary point */
-        } else if (this.mystate.draggingNextTempPoint) {
+        } else if (this._.draggingNextTempPoint) {
           // check intersection against dropped points
           let intersected = false;
-          const tmpPts = this.mystate.tmpPoints;
+          const tmpPts = this._.tmpPoints;
           if (tmpPts.length >= 2) {
             const p = tmpPts[0];
             if (Utils2D.circlesIntersect(p.x * canvas.width, p.y * canvas.height,
@@ -398,7 +398,7 @@ export default class ImageWithLabels extends Component {
                   points,
                   x: innerPoint.x,
                   y: innerPoint.y,
-                  id: this.mystate.regionId++,
+                  id: this._.regionId++,
                 };
               /** otherwise, it's too small so we create an ellipse instead */
               } else {
@@ -407,7 +407,7 @@ export default class ImageWithLabels extends Component {
                   type: CIRCLE_TYPE, x, y,
                   rx: this.props.circleRadius / canvas.width,
                   ry: this.props.circleRadius / canvas.height,
-                  id: this.mystate.regionId++,
+                  id: this._.regionId++,
                 };
               }
               /** define region's string */
@@ -415,7 +415,7 @@ export default class ImageWithLabels extends Component {
               newRegion.stringPosition = this.getRegionStringPosition(newRegion);
 
               /** create temporary label */
-              this.mystate.temporaryLabel = {
+              this._.temporaryLabel = {
                 text: TEMPORARY_LABEL_TEXT,
                 x: nccoords.x,
                 y: nccoords.y,
@@ -424,12 +424,12 @@ export default class ImageWithLabels extends Component {
 
               /**  stop dragging temporary points */
               tmpPts.length = 0; // clear array
-              this.mystate.draggingNextTempPoint = false;
+              this._.draggingNextTempPoint = false;
 
               // re-render
               this.forceUpdate(() => {
                 // start dragging temp label
-                this.mystate.draggingTemporaryLabel = true;
+                this._.draggingTemporaryLabel = true;
                 // place temp label in its initial position
                 const tmpLabelDiv = this.refs[TEMPORARY_LABEL_REF];
                 tmpLabelDiv.style.left = `${nccoords.x * canvas.width - tmpLabelDiv.offsetWidth * 0.5}px`;
@@ -441,7 +441,7 @@ export default class ImageWithLabels extends Component {
             }
           }
           /** case 2.2) no intersection -> add a new point */
-          if (!intersected) this.mystate.tmpPoints.push({ x: nccoords.x, y: nccoords.y });
+          if (!intersected) this._.tmpPoints.push({ x: nccoords.x, y: nccoords.y });
 
         /** case 3) Nothing being dragged */
         } else {
@@ -453,8 +453,8 @@ export default class ImageWithLabels extends Component {
             const label = this.getIntersectedLabel(mouseCanvasX, mouseCanvasY);
             if (label) {
               /** intersection with label's text input detected */
-              this.mystate.draggingExistingLabel = true; // start dragging the label
-              this.mystate.draggedLabel = label;
+              this._.draggingExistingLabel = true; // start dragging the label
+              this._.draggedLabel = label;
               this.selectLabel(label); // label gets selected
               break; // pseudo GOTO
             }
@@ -486,12 +486,12 @@ export default class ImageWithLabels extends Component {
               // select the label
               this.selectLabel(ans.label);
               // start dragging the region
-              this.mystate.draggingRegion = true;
-              this.mystate.draggedRegion = ans.region;
-              this.mystate.regionLastPos = { x: nccoords.x, y: nccoords.y };
+              this._.draggingRegion = true;
+              this._.draggedRegion = ans.region;
+              this._.regionLastPos = { x: nccoords.x, y: nccoords.y };
               if (ans.region.type === POLYGON_TYPE) {
                 const bb = Utils2D.getBoundingBox(ans.region.points);
-                this.mystate.regionBBox = {
+                this._.regionBBox = {
                   minX: bb.minX - ans.region.x,
                   minY: bb.minY - ans.region.y,
                   maxX: bb.maxX - ans.region.x,
@@ -503,14 +503,14 @@ export default class ImageWithLabels extends Component {
 
             /** case 3.5)  DEFAULT: click on canvas */
             // we drop the first 2 points of the temporary polygon
-            this.mystate.tmpPoints.push({ x: nccoords.x, y: nccoords.y });
-            this.mystate.tmpPoints.push({ x: nccoords.x, y: nccoords.y });
+            this._.tmpPoints.push({ x: nccoords.x, y: nccoords.y });
+            this._.tmpPoints.push({ x: nccoords.x, y: nccoords.y });
             // start dragging the last point
-            this.mystate.draggingFirstTempPoint = true;
+            this._.draggingFirstTempPoint = true;
             break; // pseudo GOTO
           }
 
-          if (this.mystate.regionWithSelectedString && !stringClicked) {
+          if (this._.regionWithSelectedString && !stringClicked) {
             this.unselectSelectedRegionString();
           }
         }
@@ -518,8 +518,8 @@ export default class ImageWithLabels extends Component {
         // refresh scene
         this.renderForAWhile(0);
       } else {
-        if (this.mystate.regionWithSelectedString) {
-          this.mystate.regionWithSelectedString = null;
+        if (this._.regionWithSelectedString) {
+          this._.regionWithSelectedString = null;
           this.renderForAWhile(0);
         }
       }
@@ -528,17 +528,17 @@ export default class ImageWithLabels extends Component {
 
   onMouseMove_EditionMode(e) {
     // don't do anything if labels are hidden
-    if (!this.mystate.showLabels) return;
+    if (!this._.showLabels) return;
     // get mouse coordinates relative to canvas
     const canvas = this.refs.labelCanvas;
     const mcoords = Utils2D.getElementMouseCoords(canvas, e);
 
     /* dragging a temporal point */
-    if (this.mystate.draggingFirstTempPoint || this.mystate.draggingNextTempPoint) {
+    if (this._.draggingFirstTempPoint || this._.draggingNextTempPoint) {
       // clip and normalize coords
       const ncmcoords = Utils2D.getClippedAndNormalizedCoords(mcoords, canvas);
       // update last point
-      const tmpPoints = this.mystate.tmpPoints;
+      const tmpPoints = this._.tmpPoints;
       const lastPoint = tmpPoints[tmpPoints.length - 1];
       lastPoint.x = ncmcoords.x;
       lastPoint.y = ncmcoords.y;
@@ -546,11 +546,11 @@ export default class ImageWithLabels extends Component {
       this.renderForAWhile();
 
     /* dragging a temporal label */
-    } else if (this.mystate.draggingTemporaryLabel) {
+    } else if (this._.draggingTemporaryLabel) {
       // update label position
       const ncmcoords = Utils2D.getClippedAndNormalizedCoords(mcoords, canvas);
       const cmcoords = Utils2D.getClippedCoords(mcoords, canvas);
-      const tmpLabel = this.mystate.temporaryLabel;
+      const tmpLabel = this._.temporaryLabel;
       tmpLabel.x = ncmcoords.x;
       tmpLabel.y = ncmcoords.y;
       const tmpLabelDiv = this.refs[TEMPORARY_LABEL_REF];
@@ -560,27 +560,27 @@ export default class ImageWithLabels extends Component {
       this.renderForAWhile();
 
     /* dragging an existing label */
-    } else if (this.mystate.draggingExistingLabel) {
+    } else if (this._.draggingExistingLabel) {
       // update label position
       const ncmcoords = Utils2D.getClippedAndNormalizedCoords(mcoords, canvas);
-      const label = this.mystate.draggedLabel;
+      const label = this._.draggedLabel;
       label.x = ncmcoords.x;
       label.y = ncmcoords.y;
       this.refreshLabelPosition(label);
       // refresh scene
       this.renderForAWhile();
       // remember label position is dirty
-      this.mystate.selectedLabelPositionDirty = true;
+      this._.selectedLabelPositionDirty = true;
 
     /* dragging a region */
-    } else if (this.mystate.draggingRegion) {
+    } else if (this._.draggingRegion) {
       const ncmcoords = Utils2D.getClippedAndNormalizedCoords(mcoords, canvas);
-      const reg = this.mystate.draggedRegion;
-      const lp = this.mystate.regionLastPos;
+      const reg = this._.draggedRegion;
+      const lp = this._.regionLastPos;
       let dx = ncmcoords.x - lp.x;
       let dy = ncmcoords.y - lp.y;
       if (reg.type === POLYGON_TYPE) { // Polygon
-        const bb = this.mystate.regionBBox;
+        const bb = this._.regionBBox;
         if (dx < 0 && dx + reg.x + bb.minX < 0) {
           dx = - (reg.x + bb.minX);
         } else if (dx > 0 && dx + reg.x + bb.maxX > 1) {
@@ -611,30 +611,30 @@ export default class ImageWithLabels extends Component {
       reg.stringPosition = this.getRegionStringPosition(reg);
       this.refreshDeleteRegionIconPosition(reg);
       this.renderForAWhile();
-      this.mystate.regionLastPos = ncmcoords;
+      this._.regionLastPos = ncmcoords;
       // remember region's position is dirty
-      this.mystate.draggedRegionPositionDirty = true;
+      this._.draggedRegionPositionDirty = true;
     }
   }
 
   onMouseUp_EditionMode(e) {
-    if (this.mystate.draggingExistingLabel) {
-      this.mystate.draggingExistingLabel = false;
-      this.mystate.draggedLabel = null;
+    if (this._.draggingExistingLabel) {
+      this._.draggingExistingLabel = false;
+      this._.draggedLabel = null;
       // notify parent of changes in labels (if label's position has changed)
-      if (this.mystate.selectedLabelPositionDirty) {
+      if (this._.selectedLabelPositionDirty) {
         if (this.props.labelsChangedCallback) {
           this.props.labelsChangedCallback(this.exportLabelsToJSON());
         }
-        this.mystate.selectedLabelPositionDirty = false;
+        this._.selectedLabelPositionDirty = false;
       }
-    } else if (this.mystate.draggingFirstTempPoint) {
+    } else if (this._.draggingFirstTempPoint) {
       // get mouse coordinates relative to canvas
       const canvas = this.refs.labelCanvas;
       const mcoords = Utils2D.getElementMouseCoords(canvas, e);
       const ncmcoords = Utils2D.getClippedAndNormalizedCoords(mcoords, canvas);
       // check intersection against dropped points
-      const p = this.mystate.tmpPoints[0];
+      const p = this._.tmpPoints[0];
       if (Utils2D.circlesIntersect(p.x * canvas.width, p.y * canvas.height,
         TMP_CIRCLE_RADIUS, ncmcoords.x * canvas.width, ncmcoords.y * canvas.height,
         TMP_CIRCLE_RADIUS)) {
@@ -643,18 +643,18 @@ export default class ImageWithLabels extends Component {
           type: CIRCLE_TYPE, x, y,
           rx: this.props.circleRadius / canvas.width,
           ry: this.props.circleRadius / canvas.height,
-          id: this.mystate.regionId++,
+          id: this._.regionId++,
         };
         /** define region's string */
         newRegion.string = this.getNextRegionString();
         newRegion.stringPosition = this.getRegionStringPosition(newRegion);
 
         /**  stop dragging first temporary point */
-        this.mystate.tmpPoints.length = 0; // clear array
-        this.mystate.draggingFirstTempPoint = false;
+        this._.tmpPoints.length = 0; // clear array
+        this._.draggingFirstTempPoint = false;
 
         /** create temporary label */
-        this.mystate.temporaryLabel = {
+        this._.temporaryLabel = {
           text: TEMPORARY_LABEL_TEXT,
           x: ncmcoords.x,
           y: ncmcoords.y,
@@ -664,7 +664,7 @@ export default class ImageWithLabels extends Component {
         // re-render
         this.forceUpdate(() => {
           // start dragging temp label
-          this.mystate.draggingTemporaryLabel = true;
+          this._.draggingTemporaryLabel = true;
           // place temp label in its initial position
           const tmpLabelDiv = this.refs[TEMPORARY_LABEL_REF];
           tmpLabelDiv.style.left = `${ncmcoords.x * canvas.width - tmpLabelDiv.offsetWidth * 0.5}px`;
@@ -673,25 +673,25 @@ export default class ImageWithLabels extends Component {
 
       /** no intersection -> add a new point */
       } else {
-        this.mystate.tmpPoints.push({ x: ncmcoords.x, y: ncmcoords.y });
+        this._.tmpPoints.push({ x: ncmcoords.x, y: ncmcoords.y });
         /**  stop dragging first temporary point but start dragging next ones */
-        this.mystate.draggingFirstTempPoint = false;
-        this.mystate.draggingNextTempPoint = true;
+        this._.draggingFirstTempPoint = false;
+        this._.draggingNextTempPoint = true;
       }
       this.renderForAWhile();
-    } else if (this.mystate.draggingRegion) {
-      this.mystate.draggingRegion = false;
-      this.mystate.draggedRegion = null;
-      if (this.mystate.draggedRegionPositionDirty) {
+    } else if (this._.draggingRegion) {
+      this._.draggingRegion = false;
+      this._.draggedRegion = null;
+      if (this._.draggedRegionPositionDirty) {
         this.props.labelsChangedCallback(this.exportLabelsToJSON());
-        this.mystate.draggedRegionPositionDirty = false;
+        this._.draggedRegionPositionDirty = false;
       }
     }
   }
 
   onMouseDown_MultiSelectMode(event) {
     /* if labels hidden, don't do anything */
-    if (!this.mystate.showLabels) return;
+    if (!this._.showLabels) return;
 
     /* get mouse coordinates in canvas space */
     const canvas = this.refs.labelCanvas;
@@ -783,22 +783,22 @@ export default class ImageWithLabels extends Component {
   }
 
   unselectSelectedRegionString() {
-    const reg = this.mystate.regionWithSelectedString;
+    const reg = this._.regionWithSelectedString;
     if (reg) {
       if (!reg.string) reg.string = this.getNextRegionString();
-      this.mystate.regionWithSelectedString = null;
+      this._.regionWithSelectedString = null;
       this.refs.hiddenInput.blur();
-      if (this.mystate.selectedRegionStringDirty) {
+      if (this._.selectedRegionStringDirty) {
         this.props.labelsChangedCallback(this.exportLabelsToJSON());
-        this.mystate.selectedRegionStringDirty = false;
+        this._.selectedRegionStringDirty = false;
       }
     }
   }
 
   selectRegionString(reg, label) {
-    if (reg === this.mystate.regionWithSelectedString) return;
+    if (reg === this._.regionWithSelectedString) return;
     this.unselectSelectedRegionString();
-    this.mystate.regionWithSelectedString = reg;
+    this._.regionWithSelectedString = reg;
     this.selectLabel(label);
     const input = this.refs.hiddenInput;
     input.value = reg.string;
@@ -806,10 +806,10 @@ export default class ImageWithLabels extends Component {
   }
 
   intersectRegionStrings(mouseCanvasX, mouseCanvasY) {
-    if (this.mystate.labelSet.size > 0) {
+    if (this._.labelSet.size > 0) {
       const canvas = this.refs.labelCanvas;
       const ctx = canvas.getContext('2d');
-      for (const label of this.mystate.labelSet) {
+      for (const label of this._.labelSet) {
         for (const reg of label.regions) {
           const w = ctx.measureText(reg.string).width;
           const pos = reg.stringPosition;
@@ -824,7 +824,7 @@ export default class ImageWithLabels extends Component {
   }
 
   intersectRegionDeleteBtns(mouseCanvasX, mouseCanvasY) {
-    const label = this.mystate.selectedLabel;
+    const label = this._.selectedLabel;
     if (label) {
       const canvas = this.refs.labelCanvas;
       for (const reg of label.regions) {
@@ -876,7 +876,7 @@ export default class ImageWithLabels extends Component {
   checkStringIntersection(x, y, w, h, region) {
     const canvas = this.refs.labelCanvas;
     const ctx = canvas.getContext('2d');
-    for (const label of this.mystate.labelSet) {
+    for (const label of this._.labelSet) {
       for (const reg of label.regions) {
         if (reg === region) continue;
         const width = ctx.measureText(reg.string).width;
@@ -891,7 +891,7 @@ export default class ImageWithLabels extends Component {
 
   getNextRegionString() {
     const auxset = new Set();
-    for (const label of this.mystate.labelSet) {
+    for (const label of this._.labelSet) {
       for (const reg of label.regions) {
         if (reg.string.length < 5 && /^\d+$/.test(reg.string)) {
           auxset.add(parseInt(reg.string, 10));
@@ -907,7 +907,7 @@ export default class ImageWithLabels extends Component {
    * that the child div does not overflow the canvas
    */
   refreshLabelPosition(label) {
-    const labelDiv = this.refs[getLabelRef(label.id, this.mystate.componentId)];
+    const labelDiv = this.refs[getLabelRef(label.id, this._.componentId)];
     const canvas = this.refs.labelCanvas;
     const w = labelDiv.offsetWidth;
     const h = labelDiv.offsetHeight;
@@ -927,13 +927,13 @@ export default class ImageWithLabels extends Component {
   }
 
   refreshAllLabelsPositions() {
-    for (const label of this.mystate.labelSet) {
+    for (const label of this._.labelSet) {
       if (label.minimized) continue;
       this.refreshLabelPosition(label);
     }
-    if (this.mystate.draggingTemporaryLabel) {
+    if (this._.draggingTemporaryLabel) {
       const canvas = this.refs.labelCanvas;
-      const label = this.mystate.temporaryLabel;
+      const label = this._.temporaryLabel;
       const div = this.refs[TEMPORARY_LABEL_REF];
       div.style.left = `${label.x * canvas.width - div.offsetWidth * 0.5}px`;
       div.style.top = `${label.y * canvas.height - div.offsetHeight * 0.5}px`;
@@ -945,7 +945,7 @@ export default class ImageWithLabels extends Component {
    * which must be in normalized coordinates
    */
   intersectRegions(x, y) {
-    for (const label of this.mystate.labelSet) {
+    for (const label of this._.labelSet) {
       for (const reg of label.regions) {
         if (reg.type === POLYGON_TYPE ?
             (Utils2D.isPointInPolygonBoundingBox(x, y, reg.points) &&
@@ -964,9 +964,9 @@ export default class ImageWithLabels extends Component {
    */
   getIntersectedLabel(x, y) {
     // debugger
-    for (const label of this.mystate.labelSet) {
+    for (const label of this._.labelSet) {
       if (label.minimized) continue;
-      if (Utils2D.coordsInElement(x, y, this.refs[getLabelRef(label.id, this.mystate.componentId)])) {
+      if (Utils2D.coordsInElement(x, y, this.refs[getLabelRef(label.id, this._.componentId)])) {
         return label;
       }
     }
@@ -975,22 +975,22 @@ export default class ImageWithLabels extends Component {
 
   /** unselect the current selected label */
   unselectSelectedLabel() {
-    const label = this.mystate.selectedLabel;
+    const label = this._.selectedLabel;
     if (label) {
-      if (this.mystate.mode === EDITION) {
-        if (this.mystate.selectedLabelTextDirty) {
+      if (this._.mode === EDITION) {
+        if (this._.selectedLabelTextDirty) {
           this.props.labelsChangedCallback(this.exportLabelsToJSON());
-          this.mystate.selectedLabelTextDirty = false;
+          this._.selectedLabelTextDirty = false;
         }
-        document.getElementById(getLabelFocusId(label.id, this.mystate.componentId)).blur();
-      } else if (this.mystate.mode === WRITEANSWER) {
-        if (this.mystate.selectedLabelTextDirty) {
+        document.getElementById(getLabelFocusId(label.id, this._.componentId)).blur();
+      } else if (this._.mode === WRITEANSWER) {
+        if (this._.selectedLabelTextDirty) {
           this.props.labelAnswerChangedCallback({ id: label.id, text: label.text });
-          this.mystate.selectedLabelTextDirty = false;
+          this._.selectedLabelTextDirty = false;
         }
-        document.getElementById(getLabelFocusId(label.id, this.mystate.componentId)).blur();
+        document.getElementById(getLabelFocusId(label.id, this._.componentId)).blur();
       }
-      this.mystate.selectedLabel = null;
+      this._.selectedLabel = null;
       this.renderForAWhile(0);
       this.forceUpdate();
     }
@@ -999,18 +999,18 @@ export default class ImageWithLabels extends Component {
   /** select a label, and unselect the previous one */
   selectLabel(label, selectText) {
     // already selected? do nothing
-    if (label === this.mystate.selectedLabel) return;
+    if (label === this._.selectedLabel) return;
     this.unselectSelectedLabel(); // unselect previous selected label
     label.minimized = false;
-    this.mystate.selectedLabel = label;
-    if (this.mystate.mode === EDITION) this.refreshAllDeleteRegionIcons();
+    this._.selectedLabel = label;
+    if (this._.mode === EDITION) this.refreshAllDeleteRegionIcons();
     this.renderForAWhile(0);
     this.forceUpdate(() => {
       this.refreshLabelPosition(label);
-      const mode = this.mystate.mode;
+      const mode = this._.mode;
       if (mode === EDITION || mode === WRITEANSWER) {
         setTimeout(() => {
-          const id = getLabelFocusId(label.id, this.mystate.componentId);
+          const id = getLabelFocusId(label.id, this._.componentId);
           const elem = document.getElementById(id);
           elem.focus();
           if (mode === EDITION && selectText) {
@@ -1025,11 +1025,11 @@ export default class ImageWithLabels extends Component {
   }
 
   removeLabel(label) {
-    if (label === this.mystate.selectedLabel) {
-      this.mystate.selectedLabel = null;
+    if (label === this._.selectedLabel) {
+      this._.selectedLabel = null;
     }
-    this.mystate.labelSet.delete(label);
-    delete this.mystate.id2labelMap[label.id];
+    this._.labelSet.delete(label);
+    delete this._.id2labelMap[label.id];
     this.renderForAWhile(0);
     this.forceUpdate();
     // notify parent of changes in labels
@@ -1040,7 +1040,7 @@ export default class ImageWithLabels extends Component {
 
   exportLabelsToJSON() {
     const labelJSONArray = [];
-    for (const label of this.mystate.labelSet) {
+    for (const label of this._.labelSet) {
       const regions = [];
       for (const reg of label.regions) {
         if (reg.type === POLYGON_TYPE) {
@@ -1060,7 +1060,7 @@ export default class ImageWithLabels extends Component {
    */
   loadLabels(labels) {
     if (!labels) return;
-    const mode = this.mystate.mode;
+    const mode = this._.mode;
     const canvas = this.refs.labelCanvas;
     let lid = 0;
     let rid = 0;
@@ -1068,8 +1068,8 @@ export default class ImageWithLabels extends Component {
       const regions = new Set();
       const text = (mode === WRITEANSWER) ? '' : label.text;
       const newLabel = { id: label.id, regions, x: label.x, y: label.y, text };
-      this.mystate.labelSet.add(newLabel);
-      this.mystate.id2labelMap[newLabel.id] = newLabel;
+      this._.labelSet.add(newLabel);
+      this._.id2labelMap[newLabel.id] = newLabel;
       for (const reg of label.regions) {
         if (rid < reg.id) rid = reg.id;
         const region = cloneDeep(reg);
@@ -1082,8 +1082,8 @@ export default class ImageWithLabels extends Component {
       }
       if (lid < label.id) lid = label.id;
     }
-    this.mystate.labelId = lid + 1;
-    this.mystate.regionId = rid + 1;
+    this._.labelId = lid + 1;
+    this._.regionId = rid + 1;
     this.renderForAWhile(0);
     if (mode !== REGIONSONLY && mode !== MULTISELECT
       && mode !== READONLY) this.forceUpdate(this.refreshAllLabelsPositions);
@@ -1122,7 +1122,7 @@ export default class ImageWithLabels extends Component {
   /* load an image into an auxiliar canvas for rendering performance */
   loadImage(img) {
     // abort operations if componente was unmounted
-    if (this.mystate.componentUnmounted) return;
+    if (this._.componentUnmounted) return;
     // determine scale ratio
     let ratio = 1;
     if (img.width > this.props.maxWidth) {
@@ -1132,7 +1132,7 @@ export default class ImageWithLabels extends Component {
       ratio = Math.min(this.props.maxHeight / img.height, ratio);
     }
     // resize canvas and canvasAux
-    const canvasAux = this.mystate.canvasAux;
+    const canvasAux = this._.canvasAux;
     const lblcanvas = this.refs.labelCanvas;
     const imgcanvas = this.refs.imgCanvas;
     const cw = this.refs.canvasWrapper;
@@ -1153,7 +1153,7 @@ export default class ImageWithLabels extends Component {
     const imgctx = imgcanvas.getContext('2d');
     imgctx.drawImage(canvasAux, 0, 0, canvasAux.width, canvasAux.height, 0, 0, imgcanvas.width, imgcanvas.height);
     // set as background image
-    this.mystate.backgroundImg = img;
+    this._.backgroundImg = img;
     // clear all previous labels
     this.removeAllLabels();
   }
@@ -1173,21 +1173,21 @@ export default class ImageWithLabels extends Component {
   }
 
   removeAllLabels() {
-    if (this.mystate.labelSet.size === 0) return;
-    this.mystate.labelSet.clear();
-    this.mystate.id2labelMap = {};
-    this.mystate.selectedLabel = false;
-    this.mystate.temporaryLabel = null;
-    this.mystate.draggingTemporaryLabel = false;
-    this.mystate.draggingFirstTempPoint = false;
-    this.mystate.draggingNextTempPoint = false;
-    this.mystate.draggingExistingLabel = false;
-    this.mystate.draggingRegion = false;
-    this.mystate.draggedRegion = null;
-    this.mystate.draggedRegionPositionDirty = false;
-    this.mystate.selectedRegionStringDirty = false;
-    this.mystate.selectedLabelPositionDirty = false;
-    this.mystate.selectedLabelTextDirty = false;
+    if (this._.labelSet.size === 0) return;
+    this._.labelSet.clear();
+    this._.id2labelMap = {};
+    this._.selectedLabel = false;
+    this._.temporaryLabel = null;
+    this._.draggingTemporaryLabel = false;
+    this._.draggingFirstTempPoint = false;
+    this._.draggingNextTempPoint = false;
+    this._.draggingExistingLabel = false;
+    this._.draggingRegion = false;
+    this._.draggedRegion = null;
+    this._.draggedRegionPositionDirty = false;
+    this._.selectedRegionStringDirty = false;
+    this._.selectedLabelPositionDirty = false;
+    this._.selectedLabelTextDirty = false;
     this.renderForAWhile();
     this.forceUpdate();
     // notify parent of changes in labels
@@ -1196,8 +1196,8 @@ export default class ImageWithLabels extends Component {
 
   /** render the scene onto the canvas (EDITION MODE)*/
   renderScene_EditionMode() {
-    if (!this.mystate.showLabels || this.mystate.componentUnmounted ||
-    !this.mystate.renderingTimerRunning) return;
+    if (!this._.showLabels || this._.componentUnmounted ||
+    !this._.renderingTimerRunning) return;
 
     requestAnimationFrame(this.renderScene);
     const canvas = this.refs.labelCanvas;
@@ -1220,8 +1220,8 @@ export default class ImageWithLabels extends Component {
 
   /** render the scene onto the canvas (READONLY MODE)*/
   renderScene_ReadOnlyMode() {
-    if (!this.mystate.showLabels || this.mystate.componentUnmounted ||
-    !this.mystate.renderingTimerRunning) return;
+    if (!this._.showLabels || this._.componentUnmounted ||
+    !this._.renderingTimerRunning) return;
 
     requestAnimationFrame(this.renderScene);
     const canvas = this.refs.labelCanvas;
@@ -1234,7 +1234,7 @@ export default class ImageWithLabels extends Component {
     ctx.lineWidth = 1.2;
     ctx.fillStyle = this.props.regionHighlightColor;
     ctx.strokeStyle = this.props.lineHighlightColor;
-    for (const label of this.mystate.labelSet) {
+    for (const label of this._.labelSet) {
       if (!label.visible) continue;
       label.regions.forEach(reg => drawRegion(ctx, reg, cvwidth, cvheight, !this.props.fillRegions));
     }
@@ -1243,7 +1243,7 @@ export default class ImageWithLabels extends Component {
       ctx.fillStyle = this.props.stringHighlightColor;
       ctx.strokeStyle = this.props.lineHighlightColor;
       ctx.font = `${REG_STRING_HEIGHT}px sans-serif`;
-      for (const label of this.mystate.labelSet) {
+      for (const label of this._.labelSet) {
         if (!label.visible) continue;
         for (const reg of label.regions) {
           const pos = reg.stringPosition;
@@ -1256,8 +1256,8 @@ export default class ImageWithLabels extends Component {
 
   /** render the scene onto the canvas (REGIONSONLY MODE)*/
   renderScene_RegionsOnlyMode() {
-    if (!this.mystate.showLabels || this.mystate.componentUnmounted
-    || !this.mystate.renderingTimerRunning) return;
+    if (!this._.showLabels || this._.componentUnmounted
+    || !this._.renderingTimerRunning) return;
 
     requestAnimationFrame(this.renderScene);
     const canvas = this.refs.labelCanvas;
@@ -1274,8 +1274,8 @@ export default class ImageWithLabels extends Component {
 
   /** render the scene onto the canvas (MULTISELECT MODE)*/
   renderScene_MultiSelectMode() {
-    if (!this.mystate.showLabels || this.mystate.componentUnmounted ||
-      !this.mystate.renderingTimerRunning) return;
+    if (!this._.showLabels || this._.componentUnmounted ||
+      !this._.renderingTimerRunning) return;
 
     requestAnimationFrame(this.renderScene);
     const canvas = this.refs.labelCanvas;
@@ -1284,20 +1284,20 @@ export default class ImageWithLabels extends Component {
     const ctx = canvas.getContext('2d');
     /* 1) clear label canvas */
     ctx.clearRect(0, 0, cvwidth, cvheight);
-    if (this.mystate.labelSet.size === 0) return; // little optimization
+    if (this._.labelSet.size === 0) return; // little optimization
 
     /* 2) draw regions */
     // non-selected labels's regions
     ctx.fillStyle = this.props.regionNormalColor;
     ctx.strokeStyle = this.props.lineNormalColor;
     ctx.lineWidth = 1.2;
-    for (const label of this.mystate.labelSet) {
+    for (const label of this._.labelSet) {
       if (!label.selected) for (const reg of label.regions) drawRegion(ctx, reg, cvwidth, cvheight);
     }
     // selected labels's regions
     ctx.fillStyle = this.props.regionHighlightColor;
     ctx.strokeStyle = this.props.lineHighlightColor;
-    for (const label of this.mystate.labelSet) {
+    for (const label of this._.labelSet) {
       if (label.selected) for (const reg of label.regions) drawRegion(ctx, reg, cvwidth, cvheight);
     }
     /* 3) draw region's strings */
@@ -1309,7 +1309,7 @@ export default class ImageWithLabels extends Component {
       // non-selected labels's region strings
       ctx.fillStyle = this.props.stringNormalColor;
       ctx.strokeStyle = this.props.lineNormalColor;
-      for (const label of this.mystate.labelSet) {
+      for (const label of this._.labelSet) {
         if (!label.selected) {
           for (const reg of label.regions) {
             const pos = reg.stringPosition;
@@ -1321,7 +1321,7 @@ export default class ImageWithLabels extends Component {
       // selected labels's region strings
       ctx.fillStyle = this.props.stringHighlightColor;
       ctx.strokeStyle = this.props.lineHighlightColor;
-      for (const label of this.mystate.labelSet) {
+      for (const label of this._.labelSet) {
         if (label.selected) {
           for (const reg of label.regions) {
             const pos = reg.stringPosition;
@@ -1335,8 +1335,8 @@ export default class ImageWithLabels extends Component {
 
   /** render the scene onto the canvas (WRITEANSWER MODE)*/
   renderScene_WriteAnswerMode() {
-    if (!this.mystate.showLabels || this.mystate.componentUnmounted ||
-      !this.mystate.renderingTimerRunning) return;
+    if (!this._.showLabels || this._.componentUnmounted ||
+      !this._.renderingTimerRunning) return;
 
     requestAnimationFrame(this.renderScene);
     const canvas = this.refs.labelCanvas;
@@ -1359,21 +1359,21 @@ export default class ImageWithLabels extends Component {
     ctx.fillStyle = this.props.regionNormalColor;
     ctx.strokeStyle = this.props.lineNormalColor;
     ctx.lineWidth = 1.2;
-    for (const label of this.mystate.labelSet) {
-      if (label === this.mystate.selectedLabel) continue;
+    for (const label of this._.labelSet) {
+      if (label === this._.selectedLabel) continue;
       for (const reg of label.regions) {
         drawRegion(ctx, reg, cvwidth, cvheight);
       }
     }
     // temporary label's region
-    if (this.mystate.draggingTemporaryLabel) {
-      drawRegion(ctx, this.mystate.temporaryLabel.region, cvwidth, cvheight);
+    if (this._.draggingTemporaryLabel) {
+      drawRegion(ctx, this._.temporaryLabel.region, cvwidth, cvheight);
     }
     // selected label's regions
-    if (this.mystate.selectedLabel) {
+    if (this._.selectedLabel) {
       ctx.fillStyle = this.props.regionHighlightColor;
       ctx.strokeStyle = this.props.lineHighlightColor;
-      for (const reg of this.mystate.selectedLabel.regions) {
+      for (const reg of this._.selectedLabel.regions) {
         drawRegion(ctx, reg, cvwidth, cvheight);
       }
     }
@@ -1382,8 +1382,8 @@ export default class ImageWithLabels extends Component {
   drawLines(ctx, cvwidth, cvheight) {
     // normal lines
     ctx.strokeStyle = this.props.lineNormalColor;
-    for (const label of this.mystate.labelSet) {
-      if (label === this.mystate.selectedLabel) continue;
+    for (const label of this._.labelSet) {
+      if (label === this._.selectedLabel) continue;
       if (label.minimized) continue;
       for (const reg of label.regions) {
         Utils2D.drawLine(ctx, reg.x * cvwidth, reg.y * cvheight,
@@ -1391,16 +1391,16 @@ export default class ImageWithLabels extends Component {
       }
     }
     // temporary label's line
-    if (this.mystate.draggingTemporaryLabel) {
-      const label = this.mystate.temporaryLabel;
+    if (this._.draggingTemporaryLabel) {
+      const label = this._.temporaryLabel;
       const reg = label.region;
       Utils2D.drawLine(ctx, reg.x * cvwidth, reg.y * cvheight,
         label.x * cvwidth, label.y * cvheight);
     }
     // selected label's lines
-    if (this.mystate.selectedLabel) {
+    if (this._.selectedLabel) {
       ctx.strokeStyle = this.props.lineHighlightColor;
-      const label = this.mystate.selectedLabel;
+      const label = this._.selectedLabel;
       for (const reg of label.regions) {
         Utils2D.drawLine(ctx, reg.x * cvwidth, reg.y * cvheight,
           label.x * cvwidth, label.y * cvheight);
@@ -1409,12 +1409,12 @@ export default class ImageWithLabels extends Component {
   }
 
   drawTemporaryPolygon(ctx, cvwidth, cvheight) {
-    if (this.mystate.draggingFirstTempPoint || this.mystate.draggingNextTempPoint) {
+    if (this._.draggingFirstTempPoint || this._.draggingNextTempPoint) {
       ctx.fillStyle = this.props.regionNormalColor;
       ctx.strokeStyle = this.props.lineNormalColor;
       ctx.lineWidth = 2;
       // draw temporary lines between points
-      const tmpPts = this.mystate.tmpPoints;
+      const tmpPts = this._.tmpPoints;
       for (let i = 1; i < tmpPts.length; ++i) {
         Utils2D.drawLine(ctx,
           tmpPts[i - 1].x * cvwidth, tmpPts[i - 1].y * cvheight,
@@ -1430,9 +1430,9 @@ export default class ImageWithLabels extends Component {
   }
 
   drawDeleteIcons(ctx, cvwidth, cvheight) {
-    if (this.mystate.selectedLabel) {
+    if (this._.selectedLabel) {
       // debugger
-      for (const reg of this.mystate.selectedLabel.regions) {
+      for (const reg of this._.selectedLabel.regions) {
         const pos = reg.deleteIconPosition;
         Utils2D.drawDeleteIcon(ctx, pos.x * cvwidth, pos.y * cvheight,
           DELETE_ICON_WIDTH, DELETE_ICON_HEIGHT);
@@ -1441,22 +1441,22 @@ export default class ImageWithLabels extends Component {
   }
 
   drawRegionStrings(ctx, cvwidth, cvheight) {
-    if (this.mystate.labelSet.size > 0) {
+    if (this._.labelSet.size > 0) {
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       ctx.lineWidth = 0.8;
       ctx.fillStyle = this.props.stringNormalColor;
       ctx.strokeStyle = this.props.lineNormalColor;
       ctx.font = `${REG_STRING_HEIGHT}px sans-serif`;
-      for (const label of this.mystate.labelSet) {
+      for (const label of this._.labelSet) {
         for (const reg of label.regions) {
           const pos = reg.stringPosition;
-          if (reg === this.mystate.regionWithSelectedString) {
+          if (reg === this._.regionWithSelectedString) {
             ctx.fillStyle = this.props.stringFocusColor;
             ctx.fillText(reg.string, pos.x * cvwidth, pos.y * cvheight);
             ctx.strokeText(reg.string, pos.x * cvwidth, pos.y * cvheight);
             ctx.fillStyle = this.props.stringNormalColor;
-          } else if (label === this.mystate.selectedLabel) {
+          } else if (label === this._.selectedLabel) {
             ctx.fillStyle = this.props.stringHighlightColor;
             ctx.fillText(reg.string, pos.x * cvwidth, pos.y * cvheight);
             ctx.strokeText(reg.string, pos.x * cvwidth, pos.y * cvheight);
@@ -1473,17 +1473,17 @@ export default class ImageWithLabels extends Component {
   /** render the scene just for a while */
   renderForAWhile(milliseconds = 200) {
     if (this.renderingTimerRunning) return; // already running? ignore
-    this.mystate.renderingTimerRunning = true;
+    this._.renderingTimerRunning = true;
     this.renderScene();
     setTimeout(() => {
-      this.mystate.renderingTimerRunning = false;
+      this._.renderingTimerRunning = false;
     }, milliseconds);
   }
 
   onSelectedLabelTextChanged(e) {
     // debugger
-    this.mystate.selectedLabel.text = e.target.value;
-    this.mystate.selectedLabelTextDirty = true;
+    this._.selectedLabel.text = e.target.value;
+    this._.selectedLabelTextDirty = true;
   }
 
   onSelectedLabelKeyDown(e) {
@@ -1491,13 +1491,13 @@ export default class ImageWithLabels extends Component {
   }
 
   onSelectedLabelBlur() {
-    if (this.mystate.selectedLabelTextDirty) {
-      if (this.mystate.mode === EDITION) this.props.labelsChangedCallback(this.exportLabelsToJSON());
-      else if (this.mystate.mode === WRITEANSWER) {
-        const label = this.mystate.selectedLabel;
+    if (this._.selectedLabelTextDirty) {
+      if (this._.mode === EDITION) this.props.labelsChangedCallback(this.exportLabelsToJSON());
+      else if (this._.mode === WRITEANSWER) {
+        const label = this._.selectedLabel;
         this.props.labelAnswerChangedCallback({ id: label.id, text: label.text });
       }
-      this.mystate.selectedLabelTextDirty = false;
+      this._.selectedLabelTextDirty = false;
     }
   }
 
@@ -1507,7 +1507,7 @@ export default class ImageWithLabels extends Component {
 
   getOnMinimizeCallback(label) {
     return () => {
-      if (label === this.mystate.selectedLabel) this.unselectSelectedLabel();
+      if (label === this._.selectedLabel) this.unselectSelectedLabel();
       label.minimized = true;
       this.renderForAWhile();
       this.forceUpdate();
@@ -1515,26 +1515,26 @@ export default class ImageWithLabels extends Component {
   }
 
   onHiddenInputTextChanged() {
-    const reg = this.mystate.regionWithSelectedString;
+    const reg = this._.regionWithSelectedString;
     const hiddenInput = this.refs.hiddenInput;
     if (reg) {
       const val = hiddenInput.value;
       reg.string = val;
       reg.stringPosition = this.getRegionStringPosition(reg);
-      this.mystate.selectedRegionStringDirty = true;
+      this._.selectedRegionStringDirty = true;
       this.renderForAWhile();
     }
   }
 
   onHiddenInputKeyDown(e) {
     if (e.keyCode === 13) {
-      if (this.mystate.selectedRegionStringDirty) {
-        this.mystate.selectedRegionStringDirty = false;
-        const reg = this.mystate.regionWithSelectedString;
+      if (this._.selectedRegionStringDirty) {
+        this._.selectedRegionStringDirty = false;
+        const reg = this._.regionWithSelectedString;
         if (!reg.string) reg.string = this.getNextRegionString();
         this.props.labelsChangedCallback(this.exportLabelsToJSON());
       }
-      this.mystate.regionWithSelectedString = null;
+      this._.regionWithSelectedString = null;
       e.target.blur();
       this.renderForAWhile();
     }
@@ -1542,7 +1542,7 @@ export default class ImageWithLabels extends Component {
 
   refreshAllDeleteRegionIcons() {
     // debugger
-    const label = this.mystate.selectedLabel;
+    const label = this._.selectedLabel;
     if (label) {
       for (const reg of label.regions) this.refreshDeleteRegionIconPosition(reg);
     }
@@ -1580,25 +1580,25 @@ export default class ImageWithLabels extends Component {
   /* =============== */
 
   minimizeAllLabels() {
-    if (!this.mystate.showLabels || this.mystate.mode === REGIONSONLY || this.mystate.mode === MULTISELECT) return;
+    if (!this._.showLabels || this._.mode === REGIONSONLY || this._.mode === MULTISELECT) return;
     this.unselectSelectedLabel();
-    for (const label of this.mystate.labelSet) label.minimized = true;
+    for (const label of this._.labelSet) label.minimized = true;
     this.renderForAWhile();
     this.forceUpdate();
   }
 
   maximizeAllLabels() {
-    if (!this.mystate.showLabels || this.mystate.mode === REGIONSONLY || this.mystate.mode === MULTISELECT) return;
-    for (const label of this.mystate.labelSet) label.minimized = false;
+    if (!this._.showLabels || this._.mode === REGIONSONLY || this._.mode === MULTISELECT) return;
+    for (const label of this._.labelSet) label.minimized = false;
     this.renderForAWhile();
     this.forceUpdate(this.refreshAllLabelsPositions);
   }
 
   /* for MULTISELECT mode */
   updateSelectedLabels(selectedIds) {
-    for (const label of this.mystate.labelSet) label.selected = false;
+    for (const label of this._.labelSet) label.selected = false;
     for (const id of selectedIds) {
-      const label = this.mystate.id2labelMap[id];
+      const label = this._.id2labelMap[id];
       if (label) label.selected = true;
       else console.warn(`WARNING: id = ${id} not found in id2labelMap`);
     }
@@ -1608,11 +1608,11 @@ export default class ImageWithLabels extends Component {
   /* for MULTISELECT mode */
   updateLabelAnswers(answers) {
     for (const ans of answers) {
-      const label = this.mystate.id2labelMap[ans.id];
+      const label = this._.id2labelMap[ans.id];
       if (label) {
         label.text = ans.text;
         if (!label.minimized) {
-          const id = getLabelFocusId(label.id, this.mystate.componentId);
+          const id = getLabelFocusId(label.id, this._.componentId);
           const input = document.getElementById(id);
           if (input) input.value = label.text;
         }
@@ -1624,28 +1624,28 @@ export default class ImageWithLabels extends Component {
   /** React's render function */
   render() {
     let dynamicElements = [];
-    if (this.mystate.showLabels) {
-      switch (this.mystate.mode) {
+    if (this._.showLabels) {
+      switch (this._.mode) {
         case EDITION: {
           // temporary label
-          if (this.mystate.temporaryLabel) {
+          if (this._.temporaryLabel) {
             dynamicElements.push(this.props.renderLabel({
-              label: this.mystate.temporaryLabel,
+              label: this._.temporaryLabel,
               ref: TEMPORARY_LABEL_REF,
               key: TEMPORARY_LABEL_REF,
               style: { position: 'absolute', opacity: 0.5 },
             }));
           }
           // existing labels
-          for (const label of this.mystate.labelSet) {
+          for (const label of this._.labelSet) {
             if (label.minimized) continue; // skip if minimized
-            const ref = getLabelRef(label.id, this.mystate.componentId);
+            const ref = getLabelRef(label.id, this._.componentId);
             dynamicElements.push(
               this.props.renderLabel({
                 label,
                 ref,
                 key: ref,
-                focusId: getLabelFocusId(label.id, this.mystate.componentId),
+                focusId: getLabelFocusId(label.id, this._.componentId),
                 style: { position: 'absolute' },
                 onTextChanged: this.onSelectedLabelTextChanged,
                 onKeyDown: this.onSelectedLabelKeyDown,
@@ -1658,15 +1658,15 @@ export default class ImageWithLabels extends Component {
           break;
         }
         case WRITEANSWER: {
-          for (const label of this.mystate.labelSet) {
+          for (const label of this._.labelSet) {
             if (label.minimized) continue; // skip if minimized
-            const ref = getLabelRef(label.id, this.mystate.componentId);
+            const ref = getLabelRef(label.id, this._.componentId);
             dynamicElements.push(
               this.props.renderLabel({
                 mode: WRITEANSWER,
                 label,
                 ref, key: ref,
-                focusId: getLabelFocusId(label.id, this.mystate.componentId),
+                focusId: getLabelFocusId(label.id, this._.componentId),
                 style: { position: 'absolute' },
                 onTextChanged: this.onSelectedLabelTextChanged,
                 onKeyDown: this.onSelectedLabelKeyDown,
@@ -1786,6 +1786,7 @@ const styles = {
   hiddenInput: {
     position: 'absolute',
     left: -9999,
+    top: '50%',
   },
   opaqueDiv: {
     opacity: 0.5,

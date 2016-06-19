@@ -149,7 +149,7 @@ class NavigationBar extends Component {
   }
 
   render() {
-    const { title, ...props } = this.props;
+    const { user, title, ...props } = this.props;
 
     return (
       <Navbar style={styles.navbar} {...props}>
@@ -173,12 +173,12 @@ class NavigationBar extends Component {
               <Button bsSize="small" type="submit">Submit</Button>
             </Navbar.Form>
             */}
-
-            <NavItem eventKey={1} onClick={() => this.props.router.push('/documents')}>
-              <Icon style={styles.navIcon} name="book" /> Atlases
-            </NavItem>
-
-            {this.renderDropDown()}
+            {renderIf(user)(() =>
+              <NavItem eventKey={1} onClick={() => this.props.router.push('/documents')}>
+                <Icon style={styles.navIcon} name="book" /> Atlases
+              </NavItem>
+            )}
+            {renderIf(user)(() => this.renderDropDown())}
 
           </Nav>
 

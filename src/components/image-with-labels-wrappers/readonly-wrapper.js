@@ -1,13 +1,21 @@
 import React, { Component } from 'react';
 import ImageWithLabels from '../image-with-labels/';
 import renderIf from 'render-if';
+import {
+  Panel,
+  ListGroup,
+  ListGroupItem,
+  Col,
+  Row,
+  Grid,
+} from 'react-bootstrap';
 
 export default class ImageWithLabelsReadOnlyWrapper extends Component {
 
   static get defaultProps() {
     return {
       source: { url: 'http://www.humpath.com/IMG/jpg_brain_front_cut_01_10.jpg' },
-      circleRadius: 4,
+      circleRadius: 9,
       labels: JSON.parse(`[{"regions":[{"type":"C","x":0.328,"y":0.6201923076923077,"id":0,"string":"1"},
         {"type":"C","x":0.652,"y":0.6225961538461539,"id":1,"string":"2"}],"x":0.524,"y":0.25,
         "text":"label 1","id":0},{"regions":[{"type":"P","points":[{"x":0.772,"y":0.5528846153846154},
@@ -35,40 +43,83 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
 
   constructor(props) {
     super(props);
-    this.state = { selectedLabelIds: [] };
+    this.state = {
+      selectedLabelIds: [],
+      labels: [0, 1, 2, 3, 4, 5, 6],
+    };
+    this.renderLabel = this.renderLabel.bind(this);
+    this.showOrHideLabel = this.showOrHideLabel.bind(this);
   }
 
   componentDidMount() {
+<<<<<<< HEAD
+  }
+
+  showOrHideLabel(i) {
+    const labels = this.state.labels;
+    console.log(labels);
+    const index = labels.indexOf(i);
+    console.log(labels);
+    if (index > -1) {
+      labels.splice(index, 1);
+    }
+    console.log(labels);
+    this.setState({ labels });
+  }
+
+  renderLabel(element, i) {
+    return (
+      <ListGroupItem key={i} onClick={() => this.showOrHideLabel(element.id)}>
+        {element.text}
+      </ListGroupItem>
+    );
+=======
+    /** for testing, simulate someone selecting labels randomly */
     setInterval(() => {
       const labels = this.props.labels;
       const ids = new Set();
-      let count = Math.floor(Math.random() * labels.length) + 1;
+      let count = Math.floor(Math.random() * (labels.length + 1));
       while (count-- > 0) ids.add(labels[Math.floor(Math.random() * labels.length)].id);
       const array = Array.from(ids);
-      console.log("---> ", array);
+      console.log("---> ids = ", array);
       this.setState({ selectedLabelIds: array });
     }, 6000);
+>>>>>>> origin/feature/improve-images-with-labels
   }
 
   /** React's render function */
   render() {
+    const labels = this.state.labels;
     return (<div>
       {renderIf(this.props.source)(() => (
-        <ImageWithLabels
-          mode="READONLY"
-          ref="img"
-          source={this.props.source}
-          labels={this.props.labels}
-          circleRadius={this.props.circleRadius}
-          // colors
-          lineHighlightColor="rgb(255,0,0)"
-          regionHighlightColor="rgba(255,255,0,0.2)"
-          stringHighlightColor="rgb(236,150,13)"
-          // READONLY mode props
-          showRegionStrings
-          fillRegions
-          selectedLabelIds={this.state.selectedLabelIds}
-        />
+        <Panel>
+          <Grid>
+            <Row>
+              <Col md={3}>
+                <ListGroup style={styles.list}>
+                  {this.props.labels.map((element, i) => this.renderLabel(element, i))}
+                </ListGroup>
+              </Col>
+              <Col md={9}>
+                <ImageWithLabels
+                  mode="READONLY"
+                  ref="img"
+                  source={this.props.source}
+                  labels={this.props.labels}
+                  circleRadius={this.props.circleRadius}
+                  // colors
+                  lineHighlightColor="rgb(255,0,0)"
+                  regionHighlightColor="rgba(255,255,0,0.2)"
+                  stringHighlightColor="rgb(236,150,13)"
+                  // READONLY mode props
+                  showRegionStrings
+                  fillRegions
+                  selectedLabelIds={[0, 1, 2]}
+                />
+              </Col>
+            </Row>
+          </Grid>
+        </Panel>
       ))}
     </div>);
   }
@@ -81,4 +132,8 @@ ImageWithLabelsReadOnlyWrapper.propTypes = {
 };
 
 const styles = {
+  list: {
+    height: 300,
+    overflowY: 'scroll',
+  },
 };

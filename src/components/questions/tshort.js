@@ -18,7 +18,7 @@ class TShort extends Component {
   }
 
   static get defaultProps() {
-    return { answer: { options: [] }, interval: 700 };
+    return { answer: { options: [] }, interval: 3000 };
   }
 
   constructor(props) {
@@ -118,7 +118,7 @@ class TShort extends Component {
           style={styles.input}
           type="text"
           disabled={disabled}
-          placeholder="Your answer"
+          placeholder="Enter here your answer"
           value={values[0]}
           onChange={e => this.onTextChange(e, 0)}
         />
