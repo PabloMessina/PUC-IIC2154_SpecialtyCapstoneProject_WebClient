@@ -1,4 +1,4 @@
-/* eslint react/prop-types:0 */
+/* eslint react/prop-types:0 no-alert:0 */
 
 import React, { Component } from 'react';
 import {
@@ -16,6 +16,7 @@ import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
 import DocumentTitle from 'react-document-title';
 import renderIf from 'render-if';
+import ErrorAlert from '../error-alert';
 import moment from 'moment';
 
 import app, { currentUser } from '../../app';
@@ -27,7 +28,6 @@ const evaluationsQuestionService = app.service('/evaluations-questions');
 const answerService = app.service('/answers');
 const attendanceService = app.service('/attendances');
 
-import ErrorAlert from '../error-alert';
 
 const SECTIONS = [{
   name: 'Information',
@@ -45,10 +45,10 @@ const SECTIONS = [{
   name: 'Results',
   description: 'Answers and results',
   path: 'results',
-// }, {
-//   name: 'Recorrection',
-//   description: 'Problems reported',
-//   path: 'recorrection',
+}, {
+  name: 'Recorrection',
+  description: 'Problems reported',
+  path: 'recorrection',
 }];
 
 const MODES = {
@@ -62,6 +62,7 @@ const Section = ({ active, disabled, children, onClick, tooltip, ...props }) => 
       <Button
         style={styles.tab}
         href="#"
+        bsStyle={active ? 'primary' : 'default'}
         active={active}
         onClick={onClick}
         disabled={disabled}
@@ -150,8 +151,7 @@ class EvaluationCreate extends Component {
       instance: evaluation.instance,
       syncing: false,
       tabStates: Array(SECTIONS.length).fill('default'),
-
-      // attendance: props.attendance,
+      location: {},
     };
 
     this.findOrCreateAnswer = this.findOrCreateAnswer.bind(this);
@@ -171,6 +171,10 @@ class EvaluationCreate extends Component {
     this.onNavigateTo = this.onNavigateTo.bind(this);
     this.onQuestionAdd = this.onQuestionAdd.bind(this);
     this.onQuestionRemove = this.onQuestionRemove.bind(this);
+    // this.onGroupsChange = this.onGroupsChange.bind(this);
+    // this.onAttendantsChange = this.onAttendantsChange.bind(this);
+
+    this.getLocation = this.getLocation.bind(this);
   }
 
   componentDidMount() {
@@ -221,6 +225,10 @@ class EvaluationCreate extends Component {
   }
 
   onAnswerChange(question, answer) {
+    const { questions } = this.state;
+    const indexQ = questions.findIndex((q) => q.id === question.id);
+    questions[indexQ].answer = answer;
+    this.setState({ answers: { ...this.state.answers, [question.id]: answer }, questions });
     if (question && question.id) {
       return this.findOrCreateAnswer(question, answer);
     }
@@ -255,6 +263,19 @@ class EvaluationCreate extends Component {
 
   onNavigateTo(url) {
     this.props.router.push(url);
+  }
+
+  getLocation(options) {
+    // Convert to promise
+    return new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, options);
+    }).then(position => ({
+      type: 'Point',
+      coordinates: [
+        position.coords.latitude,
+        position.coords.longitude,
+      ],
+    }));
   }
 
   observe(evl) {
@@ -409,11 +430,15 @@ class EvaluationCreate extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  startEvaluation(attendance) {
+  async startEvaluation(attendance) {
     if (attendance) {
-      return attendanceService.patch(attendance.id, { startedAt: new Date() });
+      // Any date is ignored, because the server takes it's own time
+      const patched = await attendanceService.patch(attendance.id, { startedAt: new Date() });
+      const url = `/evaluations/show/${attendance.evaluationId}/questions`;
+      this.props.router.push(url);
+      return patched;
     } else {
-      return Promise.reject(new Error('Attendance not found'));
+      return new Error('Attendance not found');
     }
   }
 

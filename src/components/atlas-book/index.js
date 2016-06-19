@@ -1,20 +1,27 @@
-import React, { Component } from 'react';
+/* eslint no-underscore-dangle:0 no-alert:0 */
+
+import React, { PropTypes, Component } from 'react';
 import update from 'react-addons-update';
-import AtlasSection from '../atlas-section';
-import AtlasTree from '../atlas-tree';
-import app, { currentUser } from '../../app';
 import isEmpty from 'lodash/isEmpty';
 import DocumentTitle from 'react-document-title';
 
+import AtlasSection from '../atlas-section';
+import AtlasTree from '../atlas-tree';
+
+import app, { currentUser } from '../../app';
 const sectionService = app.service('/sections');
 const versionService = app.service('/versions');
 const treeService = app.service('/section-tree');
+
 
 export default class AtlasBook extends Component {
 
   static get propTypes() {
     return {
-      readOnly: React.PropTypes.bool,
+      readOnly: PropTypes.bool,
+      // React Router
+      router: PropTypes.object,
+      params: PropTypes.object,
     };
   }
   static get defaultProps() {
@@ -63,18 +70,27 @@ export default class AtlasBook extends Component {
     if (parentId) newSection.parentId = parentId;
 
     // Create section in server and set state on success
-    sectionService.create(newSection)
-    .then(result => {
-      // If it is defined, push, if not, set.
-      const action = tree[parentId] ? '$push' : '$set';
-      this.setState({
-        tree: update(tree, { [parentId]: { [action]: [result] } }),
-      });
-    })
-    .catch(error => console.log(error));
+    return sectionService.create(newSection)
+      .then(result => {
+        // If it is defined, push, if not, set.
+        const action = tree[parentId] ? '$push' : '$set';
+        this.setState({
+          tree: update(tree, { [parentId]: { [action]: [result] } }),
+          error: null,
+        });
+        return result;
+      })
+      .catch(error => this.setState({ error }));
   }
 
   onRemoveSection(section, sectionIndex) {
+    // TODO: check if has children
+    const hasChildren = true;
+    if (hasChildren && !window.confirm('This will remove all sub-sections. ¿Are you sure?')) {
+      // User did cancel
+      return false;
+    }
+
     const tree = this.state.tree;
     const { _id, parentId } = section;
     const currentSection = this.currentSection();
@@ -84,39 +100,29 @@ export default class AtlasBook extends Component {
 
     // Can't delete last root section
     // TODO: Create server validations
-    if (!parentId && siblings.length <= 1) return;
+    if (!parentId && siblings.length <= 1) return false;
 
     // Remove from server and set state on success
-    sectionService.remove(_id)
-    .then(result => {
-      const newState = {};
+    return sectionService.remove(_id)
+      .then(result => {
+        const newState = { error: null };
 
-      // Check if deleted section is selected and is last child
-      if (siblings[sectionIndex]._id === currentSection._id && sectionIndex === siblings.length - 1) {
-        if (sectionIndex === 0) {
-          // There are no children left, select parent
-          newState.sectionParentId = 'undefined';
-        } else {
-          // Go to next sibling
-          newState.sectionIndex = sectionIndex - 1;
+        // Check if deleted section is selected and is last child
+        if (siblings[sectionIndex]._id === currentSection._id && sectionIndex === siblings.length - 1) {
+          if (sectionIndex === 0) {
+            // There are no children left, select parent
+            newState.sectionParentId = 'undefined';
+          } else {
+            // Go to next sibling
+            newState.sectionIndex = sectionIndex - 1;
+          }
         }
-      }
-      // Update state
-      newState.tree = update(tree, { [parentId]: { $splice: [[sectionIndex, 1]] } });
-      this.setState(newState);
-    })
-    .catch(error => console.log(error));
-  }
-
-  /**
-   * Returns the currently selected section
-   * @returns {Object} The selected section or an empty section
-   */
-  currentSection() {
-    const { tree, sectionParentId, sectionIndex } = this.state;
-    if (!tree) return { title: '', content: null };
-
-    return tree[sectionParentId][sectionIndex];
+        // Update state
+        newState.tree = update(tree, { [parentId]: { $splice: [[sectionIndex, 1]] } });
+        this.setState(newState);
+        return result;
+      })
+      .catch(error => this.setState({ error }));
   }
 
 
@@ -135,6 +141,44 @@ export default class AtlasBook extends Component {
     });
   }
 
+  /**
+   * Called every time the currently selected section's contents are changed
+   *
+   * @param content
+   * @returns {undefined}
+   */
+  onChangeContent(content) {
+    if (!this.state.tree) return;
+    // Create a new object from current section and change content
+    const section = { ...this.currentSection(), content };
+    // Replace section in tree
+    this.replaceCurrentSection(section);
+    this.shouldPatchContent = true;
+  }
+
+  /**
+   * Called every time the currently selected section's title is changed
+   *
+   * @param title
+   */
+  onChangeTitle(title) {
+    // Create a new object from current section and change title
+    const section = { ...this.currentSection(), title };
+    // Replace section in tree
+    this.replaceCurrentSection(section);
+    this.shouldPatchTitle = true;
+  }
+
+  /**
+  * Returns the currently selected section
+  * @returns {Object} The selected section or an empty section
+  */
+  currentSection() {
+    const { tree, sectionParentId, sectionIndex } = this.state;
+    if (!tree) return { title: '', content: null };
+
+    return tree[sectionParentId][sectionIndex];
+  }
 
   /**
    * Replaces de currently selected section which is inside the tree with an updated version
@@ -152,36 +196,6 @@ export default class AtlasBook extends Component {
       }),
     });
   }
-
-  /**
-   * Called every time the currently selected section's contents are changed
-   *
-   * @param content
-   * @returns {undefined}
-   */
-  onChangeContent(content) {
-    if (!this.state.tree) return;
-    // Create a new object from current section and change content
-    const section = { ...this.currentSection(), content };
-    // Replace section in tree
-    this.replaceCurrentSection(section);
-    this.shouldPatchContent = true;
-  }
-
-
-  /**
-   * Called every time the currently selected section's title is changed
-   *
-   * @param title
-   */
-  onChangeTitle(title) {
-    // Create a new object from current section and change title
-    const section = { ...this.currentSection(), title };
-    // Replace section in tree
-    this.replaceCurrentSection(section);
-    this.shouldPatchTitle = true;
-  }
-
 
   /**
    * Fetches a tree containing all the atlas' sections
@@ -236,8 +250,12 @@ export default class AtlasBook extends Component {
 
   render() {
     const atlas = this.props.params.atlas;
-    const { tree, versionId } = this.state;
+    const { tree, versionId, error } = this.state;
     const readOnly = currentUser().id !== atlas.responsableId;
+
+    if (error) {
+      console.log(error); // eslint-disable-line
+    }
 
     const section = this.currentSection();
     return (

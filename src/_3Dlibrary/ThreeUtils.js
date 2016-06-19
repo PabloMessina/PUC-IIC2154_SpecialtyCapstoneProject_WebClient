@@ -1,4 +1,4 @@
-import THREE from 'n3d-threejs';
+import THREE from 'three';
 
 //unit vectors
 const UnitX_p = new THREE.Vector3(1, 0, 0);
@@ -121,7 +121,7 @@ const ThreeUtils = {
     const m = rDir.dot(pNormal);
     const n = rPos.dot(pNormal) - pPos.dot(pNormal);
     if (m === 0) {
-      console.log("WARNING: division by 0 detected");
+      console.log('WARNING: division by 0 detected');
       return null;
     }
     const t = - n / m;
@@ -135,6 +135,47 @@ const ThreeUtils = {
     return v3.x === 0 && v3.y === 0 && v3.z === 0;
   },
 
+  nearestPowerOfTwo(n) {
+    let x = 1;
+    while (x < n) x *= 2;
+    return x;
+  },
+
+  makeSprite({ editCanvasFunction, editSpriteFunction, opacity }) {
+    // create canvas
+    let canvas = document.createElement('canvas');
+    // edit canvas
+    if (editCanvasFunction) editCanvasFunction(canvas);
+    // make sure all dimensions are power of 2
+    const w2 = ThreeUtils.nearestPowerOfTwo(canvas.width);
+    const h2 = ThreeUtils.nearestPowerOfTwo(canvas.height);
+    if (canvas.width !== w2 || canvas.height !== h2) {
+      const cvs = document.createElement('canvas');
+      cvs.width = w2;
+      cvs.height = h2;
+      const ctx = cvs.getContext('2d');
+      ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, w2, h2);
+      canvas = cvs;
+    }
+    // generate texture from canvas
+    const texture = new THREE.Texture(canvas);
+    texture.needsUpdate = true;
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.LinearMipMapLinearFilter;
+    // generate material
+    const material = new THREE.SpriteMaterial({ map: texture });
+    // set opacity (if provided)
+    if (opacity) {
+      material.transparent = true;
+      material.opacity = opacity;
+    }
+    // generate and return sprite
+    const sprite = new THREE.Sprite(material);
+    // apply custom changes to sprite and return
+    if (editSpriteFunction) editSpriteFunction(sprite);
+    return sprite;
+  },
+
   /**
    * [makeTextSprite : given a text and some parameters, return a sprite with the text]
    * @param  {[string]} text   [the input text]
@@ -142,7 +183,7 @@ const ThreeUtils = {
    * foregroundColor, borderColor, borderThickness, worldFontHeight, etc.]
    * @return {[THREE::Sprite]}
    */
-  makeTextSprite(text, opacity, worldReferenceSize, params /* , getMinDelCoords */) {
+  makeTextSprite({ text, opacity, worldReferenceSize, params }) {
     // read params
     const font = params.font || 'Georgia';
     const fontSize = params.fontSize || 50;
@@ -154,72 +195,140 @@ const ThreeUtils = {
     const worldFontSizeCoef = params.worldFontSizeCoef || 0.045;
     const cornerRadiusCoef = params.cornerRadiusCoef || 0.35;
     const worldFontSize = worldReferenceSize * worldFontSizeCoef;
-    // create canvas and get its 2D context
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    // setup context for text
-    ctx.font = fontStyle;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = foregroundColor;
-    // get text's dimensions
-    const textWidth = Math.ceil(ctx.measureText(text).width);
-    const textHeight = getFontHeight(fontStyle);
-    const charWidth = textWidth / (text.length ? text.length : 1);
-    // resize canvas to fit text
-    canvas.width = textWidth + 4 * charWidth + 2 * borderThickness;
-    canvas.height = textHeight * 2 + borderThickness * 2;
-    // restore context's settings again after resizing
-    ctx.font = fontStyle;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    // draw background and border
-    roundRect(ctx,
-      borderThickness * 0.5, borderThickness * 0.5,
-      canvas.width - borderThickness,
-      canvas.height - borderThickness,
-      canvas.height * cornerRadiusCoef,
-      backgroundColor,
-      borderThickness,
-      borderColor);
-    // draw text
-    ctx.fillStyle = foregroundColor;
-    ctx.fillText(text, (canvas.width - textWidth) * 0.5, (canvas.height - textHeight) * 0.5);
-    /*
-    // draw minimize symbol
-    const miniX = canvas.width - borderThickness * 0.5 - charWidth * 3.6;
-    const miniY = borderThickness * 0.17;
-    ctx.fillText('-', miniX, miniY);
-    // draw delete symbol
-    const delX = canvas.width - borderThickness * 0.5 - charWidth * 2.1;
-    const delY = borderThickness * 0.16;
-    ctx.fillText('x', delX, delY);
-    // return min and del coords
-    if (getMinDelCoords) {
-      getMinDelCoords({
-        minimization: { x: miniX / canvas.width, y: miniY / canvas.height,
-          w: textWidth / canvas.width, h: textHeight / canvas.height },
-        deletion: { x: delX / canvas.width, y: delY / canvas.height,
-          w: textWidth / canvas.width, h: textHeight / canvas.height },
-      });
-    }
-    */
-    // generate texture from canvas
-    const texture = new THREE.Texture(canvas);
-    texture.needsUpdate = true;
-    texture.magFilter = THREE.NearestFilter;
-    texture.minFilter = THREE.LinearMipMapLinearFilter;
-    // generate texture
-    const material = new THREE.SpriteMaterial({ map: texture });
-    if (opacity) {
-      material.transparent = true;
-      material.opacity = opacity;
-    }
-    // generate and return sprite
-    const sprite = new THREE.Sprite(material);
-    const factor = worldFontSize / textHeight;
-    sprite.scale.set(canvas.width * factor, canvas.height * factor, 1);
-    return sprite;
+    // variables to share across functions
+    let canvas;
+    let sprite;
+    let textHeight;
+    // make sprite
+    return ThreeUtils.makeSprite({
+      opacity,
+      editCanvasFunction: (cvs) => {
+        canvas = cvs;
+        const ctx = canvas.getContext('2d');
+        // setup context for text
+        ctx.font = fontStyle;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = foregroundColor;
+        // get text's dimensions
+        const textWidth = Math.ceil(ctx.measureText(text).width);
+        textHeight = getFontHeight(fontStyle);
+        const charWidth = textWidth / (text.length ? text.length : 1);
+        // resize canvas to fit text
+        canvas.width = textWidth + 4 * charWidth + 2 * borderThickness;
+        canvas.height = textHeight * 2 + borderThickness * 2;
+        // restore context's settings again after resizing
+        ctx.font = fontStyle;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        // draw background and border
+        roundRect(ctx,
+          borderThickness * 0.5, borderThickness * 0.5,
+          canvas.width - borderThickness,
+          canvas.height - borderThickness,
+          canvas.height * cornerRadiusCoef,
+          backgroundColor,
+          borderThickness,
+          borderColor);
+        // draw text
+        ctx.fillStyle = foregroundColor;
+        ctx.fillText(text, (canvas.width - textWidth) * 0.5, (canvas.height - textHeight) * 0.5);
+      },
+      editSpriteFunction: (sprt) => {
+        sprite = sprt;
+        const factor = worldFontSize / textHeight;
+        sprite.scale.set(canvas.width * factor, canvas.height * factor, 1);
+      },
+    });
+  },
+
+  makeImageSprite({ img, resX, resY, worldWidth, worldHeight }) {
+    return ThreeUtils.makeSprite({
+      editCanvasFunction: (canvas) => {
+        const ctx = canvas.getContext('2d');
+        canvas.width = resX;
+        canvas.height = resY;
+        ctx.beginPath();
+        ctx.ellipse(0.5 * resX, 0.5 * resY, 0.5 * resX, 0.5 * resY, 0, 0, 2 * Math.PI);
+        ctx.clip();
+        ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, resX, resY);
+      },
+      editSpriteFunction: (sprite) => {
+        sprite.scale.set(worldWidth, worldHeight, 1);
+      },
+    });
+  },
+
+  makeDeleteIconSprite({ resX, resY, worldWidth, worldHeight }) {
+    return ThreeUtils.makeSprite({
+      editCanvasFunction: (canvas) => {
+        canvas.width = resX;
+        canvas.height = resY;
+        const ctx = canvas.getContext('2d');
+        // draw ellipse
+        const blw = (resX + resY) * 0.02;
+        ctx.beginPath();
+        ctx.ellipse(
+          0.5 * resX,
+          0.5 * resY,
+          0.5 * (resX - blw),
+          0.5 * (resY - blw),
+          0, 0, 2 * Math.PI);
+        ctx.fillStyle = 'red';
+        ctx.fill();
+        ctx.lineWidth = blw;
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+        // draw an X symbol
+        ctx.lineWidth = (resX + resY) * 0.075;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(0.3 * resX, 0.3 * resY);
+        ctx.lineTo(0.7 * resX, 0.7 * resY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0.7 * resX, 0.3 * resY);
+        ctx.lineTo(0.3 * resX, 0.7 * resY);
+        ctx.stroke();
+      },
+      editSpriteFunction: (sprite) => {
+        sprite.scale.set(worldWidth, worldHeight, 1);
+      },
+    });
+  },
+
+  makeMinimizeIconSprite({ resX, resY, worldWidth, worldHeight }) {
+    return ThreeUtils.makeSprite({
+      editCanvasFunction: (canvas) => {
+        canvas.width = resX;
+        canvas.height = resY;
+        const ctx = canvas.getContext('2d');
+        // draw ellipse
+        const blw = (resX + resY) * 0.02;
+        ctx.beginPath();
+        ctx.ellipse(
+          0.5 * resX,
+          0.5 * resY,
+          0.5 * (resX - blw),
+          0.5 * (resY - blw),
+          0, 0, 2 * Math.PI);
+        ctx.fillStyle = 'rgb(153,153,0)';
+        ctx.fill();
+        ctx.lineWidth = blw;
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+        // draw a - symbol
+        ctx.lineWidth = (resX + resY) * 0.06;
+        ctx.strokeStyle = 'white';
+        ctx.beginPath();
+        ctx.moveTo(0.17 * resX, 0.5 * resY);
+        ctx.lineTo(0.83 * resX, 0.5 * resY);
+        ctx.stroke();
+      },
+      editSpriteFunction: (sprite) => {
+        sprite.scale.set(worldWidth, worldHeight, 1);
+      },
+    });
   },
 
   /**
@@ -250,7 +359,8 @@ const ThreeUtils = {
     let closestObj = null;
     let closestGroup = null;
     let minD = null;
-    groups.forEach((group) => {
+    for (const group of groups) {
+      if (!group) continue;
       const intersects = raycaster.intersectObjects(group.children);
       if (intersects.length > 0) {
         const dist = intersects[0].distance;
@@ -260,7 +370,7 @@ const ThreeUtils = {
           closestGroup = group;
         }
       }
-    });
+    }
     // return the object and the group it belongs to (if any)
     // otherwise return null
     return closestObj ? { object: closestObj, group: closestGroup } : null;
@@ -275,12 +385,10 @@ const ThreeUtils = {
    * @return {[THREE.Mesh]}        [the plane]
    */
   createPlaneFromSprite(sprite, camera) {
-    const bbox = new THREE.BoundingBoxHelper(sprite);
-    bbox.update();
-    const width = bbox.box.max.x - bbox.box.min.x;
-    const height = bbox.box.max.y - bbox.box.min.y;
+    const width = sprite.scale.x;
+    const height = sprite.scale.y;
     const planeGeo = new THREE.PlaneGeometry(width, height);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const mat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     const spritePlane = new THREE.Mesh(planeGeo, mat);
     spritePlane.position.copy(sprite.position);
     spritePlane.quaternion.copy(camera.quaternion);

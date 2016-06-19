@@ -510,32 +510,40 @@ export default class EvaluationDescription extends Component {
             </Col>
 
             <Col xsOffset={0} xs={12} sm={3}>
-              <Panel>
-                <h4>{canEdit ? 'Evaluation settings' : 'Evaluation'}</h4>
-                <p>{canEdit
-                    ? 'Make sure to setup the evaluation with the correct parameters'
-                    : 'All the information about your evaluation is here. See the upper bar to navigate to the questions.'}</p>
-                {renderIf(canEdit)(() =>
-                  <div>
-                    <hr />
-                    <Button block disabled={status === STATUS.SAVING} bsStyle="primary" type="submit">
-                      {(() => {
-                        switch (status) {
-                          case STATUS.SAVING: return 'Saving...';
-                          case STATUS.SAVED: return 'Saved';
-                          default: return 'Save';
-                        }
-                      })()}
-                    </Button>
-                    <ErrorAlert
-                      error={this.state.error}
-                      onDismiss={() => this.setState({ error: null })}
-                    />
-                  </div>
-                )}
-              </Panel>
-            </Col>
 
+              {renderIf(canEdit)(() =>
+                <Panel>
+                  <h4>Evaluation settings</h4>
+                  <p>
+                    Make sure to setup the evaluation with the correct parameters
+                  </p>
+                  <hr />
+                  <Button block disabled={status === STATUS.SAVING} bsStyle="primary" type="submit">
+                    {(() => {
+                      switch (status) {
+                        case STATUS.SAVING: return 'Saving...';
+                        case STATUS.SAVED: return 'Saved';
+                        default: return 'Save';
+                      }
+                    })()}
+                  </Button>
+                  <ErrorAlert
+                    error={this.state.error}
+                    onDismiss={() => this.setState({ error: null })}
+                  />
+                </Panel>
+              )}
+
+              {renderIf(!canEdit)(() =>
+                <Panel>
+                  <h4>Evaluation</h4>
+                  <p>
+                    All the information about your evaluation is here. See the upper bar to navigate to the questions
+                  </p>
+                </Panel>
+              )}
+
+            </Col>
           </form>
         </Row>
       </div>

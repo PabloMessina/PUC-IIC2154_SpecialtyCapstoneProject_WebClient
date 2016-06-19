@@ -1,3 +1,5 @@
+/* eslint no-alert: 0 */
+
 import React, { Component } from 'react';
 import { Row, Col, Grid, Button, Table, Panel } from 'react-bootstrap';
 import Icon from 'react-fa';
@@ -7,7 +9,7 @@ import app from '../../app';
 const instanceService = app.service('/instances');
 const courseService = app.service('/courses');
 
-class MinTemplate extends Component {
+class CourseSettings extends Component {
 
   static get propTypes() {
     return {
@@ -33,17 +35,19 @@ class MinTemplate extends Component {
   }
 
   onDeleteInstance(instance) {
-    if (window.confirm("Do you really want to delete this course instance?")) {
+    if (window.confirm('Do you really want to delete this course instance?')) {
       return instanceService.remove(instance.id)
         .then(() => this.fetchInstances());
     }
+    return Promise.reject('User did cancel.');
   }
 
   onDeleteCourse() {
-    if (window.confirm("Do you really want to delete the entire course? ")) {
+    if (window.confirm('Do you really want to delete the entire course?')) {
       return courseService.remove(this.props.course.id)
         .then(() => this.props.router.push(`/organizations/show/${this.props.course.organizationId}/courses`));
     }
+    return Promise.reject('User did cancel.');
   }
 
   fetchInstances() {
@@ -111,4 +115,4 @@ const styles = {
   },
 };
 
-export default withRouter(MinTemplate);
+export default withRouter(CourseSettings);

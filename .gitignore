@@ -2,8 +2,13 @@
 
 dist
 public/*
+public/3d/*
 !public/index.html
 !public/favicon.ico
+!public/3d/index.html
+
+three/*
+!three/index.html
 
 #####=== Node ===#####
 

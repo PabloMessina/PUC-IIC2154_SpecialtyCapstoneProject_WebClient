@@ -1,9 +1,18 @@
-import React, { Component } from 'react';
+import React, { PropTypes, Component } from 'react';
 import ReactDOM from 'react-dom';
 import { EditorState, RichUtils, Entity } from 'draft-js';
 import { FormControl } from 'react-bootstrap';
 
 export default class InlineInput extends Component {
+
+  static propTypes = {
+    editorState: PropTypes.any,
+    onChange: PropTypes.func.isRequired,
+    editor: PropTypes.object,
+    editingLink: PropTypes.any,
+    cancelLink: PropTypes.any,
+  }
+
   constructor(props) {
     super(props);
     this.state = {
@@ -14,21 +23,11 @@ export default class InlineInput extends Component {
     this.onLinkKeyDown = this.onLinkKeyDown.bind(this);
   }
 
-  setLink() {
-    let { link } = this.state;
-    const { editorState } = this.props;
-    if (!link.startsWith('http://') && !link.startsWith('https://')) {
-      link = `http://${link}`;
+  componentDidUpdate(prevProps) {
+    if (this.props.editingLink && !prevProps.editingLink) {
+      const textInputNode = ReactDOM.findDOMNode(this.refs.textInput);
+      textInputNode.focus();
     }
-    const entityKey = Entity.create('link', 'MUTABLE', { url: link });
-    let newState = RichUtils.toggleLink(
-      editorState,
-      editorState.getSelection(),
-      entityKey
-    );
-    newState = EditorState.forceSelection(
-      newState, editorState.getSelection());
-      this.props.onChange(newState);
   }
 
   onLinkChange(event) {
@@ -61,11 +60,20 @@ export default class InlineInput extends Component {
     }
   }
 
-  componentDidUpdate(prevProps) {
-    if (this.props.editingLink && !prevProps.editingLink) {
-      const textInputNode = ReactDOM.findDOMNode(this.refs.textInput);
-      textInputNode.focus();
+  setLink() {
+    let { link } = this.state;
+    const { editorState } = this.props;
+    if (!link.startsWith('http://') && !link.startsWith('https://')) {
+      link = `http://${link}`;
     }
+    const entityKey = Entity.create('link', 'MUTABLE', { url: link });
+    let newState = RichUtils.toggleLink(
+      editorState,
+      editorState.getSelection(),
+      entityKey
+    );
+    newState = EditorState.forceSelection(newState, editorState.getSelection());
+    this.props.onChange(newState);
   }
 
   render() {
@@ -84,9 +92,3 @@ export default class InlineInput extends Component {
     );
   }
 }
-
-const styles = {
-  base: {
-
-  },
-};

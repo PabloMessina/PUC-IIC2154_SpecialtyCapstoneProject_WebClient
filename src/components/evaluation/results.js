@@ -111,7 +111,7 @@ function dataFromTshort(question, answers) {
   return <BarChart data={graph} />;
 }
 
-export default class MinTemplate extends Component {
+export default class EvaluationResults extends Component {
 
   static get propTypes() {
     return {

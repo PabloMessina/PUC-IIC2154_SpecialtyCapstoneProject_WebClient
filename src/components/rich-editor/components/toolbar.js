@@ -1,11 +1,10 @@
 import React, { Component } from 'react';
-import { RichUtils, Entity, getVisibleSelectionRect } from 'draft-js';
+import { getVisibleSelectionRect } from 'draft-js';
 import { Popover } from 'react-bootstrap';
 import InlineInput from './inline-input';
 import InlineControls from '../controls/inline-controls';
-import getSelectedEntityType from '../utils/getSelectedEntityType';
 
-//import LinkInput from "./components/LinkInput";
+// import LinkInput from "./components/LinkInput";
 
 export default class Toolbar extends Component {
   constructor(props) {
@@ -31,7 +30,7 @@ export default class Toolbar extends Component {
     const offsetLeft = (rangeBounds.left - editorBounds.left) + (rangeBounds.width / 2);
     // const offsetBottom =  - rangeBounds.top + editorBounds.top + rangeBounds.height;
     // const offsetBottom = rangeBounds.top - editorBounds.top - (toolbarHeight + 14);
-    //const offsetBottom = - rangeBounds.top;
+    // const offsetBottom = - rangeBounds.top;
     const offsetTop = rangeBounds.top + editor.scrollTop - editorBounds.top - (toolbarHeight ? toolbarHeight + 10 : 60);
     return { offsetLeft, offsetTop };
   }
@@ -155,7 +154,7 @@ const styles = {
     pointerEvents: 'none',
     borderWidth: '8px',
     borderStyle: 'solid',
-    borderColor: '#FFFFFF transparent',
+    // borderColor: '#FFFFFF transparent',
     borderColor: 'white transparent transparent',
     marginLeft: '-8px',
   },

@@ -1,30 +1,31 @@
-import React, { Component } from 'react';
+/* eslint no-underscore-dangle:0 */
+
+import React, { PropTypes, Component } from 'react';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
-import app from '../../app.js';
+
 import { Colors } from '../../styles';
 
-const sectionService = app.service('/sections');
 
 export default class Node extends Component {
 
   static get propTypes() {
     return {
-      style: React.PropTypes.any,
-      tree: React.PropTypes.object,
-      title: React.PropTypes.string,
-      root: React.PropTypes.bool,
-      selectedSectionId: React.PropTypes.string,
-      onSelectSection: React.PropTypes.func,
-      onAddSection: React.PropTypes.func,
-      onRemoveSection: React.PropTypes.func,
-      versionId: React.PropTypes.string,
-      sectionParentId: React.PropTypes.string,
-      sectionIndex: React.PropTypes.number,
-      level: React.PropTypes.number,
-      anidation: React.PropTypes.array,
-      collapsed: React.PropTypes.bool,
-      readOnly: React.PropTypes.bool,
+      style: PropTypes.any,
+      tree: PropTypes.object,
+      title: PropTypes.string,
+      root: PropTypes.bool,
+      selectedSectionId: PropTypes.string,
+      onSelectSection: PropTypes.func,
+      onAddSection: PropTypes.func,
+      onRemoveSection: PropTypes.func,
+      versionId: PropTypes.string,
+      sectionParentId: PropTypes.string,
+      sectionIndex: PropTypes.number,
+      level: PropTypes.number,
+      anidation: PropTypes.array,
+      collapsed: PropTypes.bool,
+      readOnly: PropTypes.bool,
     };
   }
 
@@ -72,10 +73,8 @@ export default class Node extends Component {
 
     // Change color on mouse hover
     let style = {};
-    if (hover)
-      style = {...style, ...styles.hover};
-    if (selected)
-      style = {...style, ...styles.selected};
+    if (hover) style = { ...style, ...styles.hover };
+    if (selected) style = { ...style, ...styles.selected };
 
     // Only render children if they exist
     const hasSubtree = subsections && subsections.length > 0 && !collapsed;
@@ -98,9 +97,11 @@ export default class Node extends Component {
           </span>
         ))}
 
+        {renderIf(root)(<hr />)}
+
         {renderIf(!root)(() => (
           <span
-            style={Object.assign({}, styles.sectionNav, style)}
+            style={{ ...styles.sectionNav, ...style }}
             onMouseEnter={() => this.setState({ hover: true })}
             onMouseLeave={() => this.setState({ hover: false })}
           >
@@ -164,8 +165,8 @@ const styles = {
   },
   selected: {
     color: Colors.MAIN,
-    //background: Colors.MAIN,
-    //color: Colors.WHITE,
+    // background: Colors.MAIN,
+    // color: Colors.WHITE,
   },
   icon: {
     marginLeft: 10,

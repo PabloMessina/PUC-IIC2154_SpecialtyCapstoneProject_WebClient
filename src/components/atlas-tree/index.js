@@ -1,46 +1,48 @@
-import React, { Component } from 'react';
-import Node from './node.js';
+import React, { PropTypes } from 'react';
 import renderIf from 'render-if';
 
+import Node from './node.js';
 
-export default class AtlasTree extends Component {
+const AtlasTree = ({
+  title,
+  tree,
+  versionId,
+  selectedSectionId,
+  readOnly,
+  onSelectSection,
+  onAddSection,
+  onRemoveSection,
+  ...props,
+}) => (
+  <div style={styles.container} {...props}>
+    {renderIf(tree)(() => (
+      <Node
+        root
+        title={title}
+        tree={tree}
+        versionId={versionId}
+        readOnly={readOnly}
+        selectedSectionId={selectedSectionId}
+        onSelectSection={onSelectSection}
+        onAddSection={onAddSection}
+        onRemoveSection={onRemoveSection}
+      />
+    ))}
+  </div>
+);
 
-  static get propTypes() {
-    return {
-      readOnly: React.PropTypes.bool,
-      title: React.PropTypes.string,
-      tree: React.PropTypes.object,
-      versionId: React.PropTypes.string.isRequired,
-      selectedSectionId: React.PropTypes.string,
-      onSelectSection: React.PropTypes.func,
-      onAddSection: React.PropTypes.func,
-      onRemoveSection: React.PropTypes.func,
-    };
-  }
+AtlasTree.propTypes = {
+  readOnly: PropTypes.bool,
+  title: PropTypes.string,
+  tree: PropTypes.object,
+  versionId: PropTypes.string.isRequired,
+  selectedSectionId: PropTypes.string,
+  onSelectSection: PropTypes.func,
+  onAddSection: PropTypes.func,
+  onRemoveSection: PropTypes.func,
+};
 
-  render() {
-    const { title, tree, versionId, selectedSectionId, readOnly } = this.props;
-    return (
-      <div style={styles.container}>
-
-        {renderIf(tree)(() => (
-          <Node
-            root
-            title={title}
-            tree={tree}
-            versionId={versionId}
-            readOnly={readOnly}
-            selectedSectionId={selectedSectionId}
-            onSelectSection={this.props.onSelectSection}
-            onAddSection={this.props.onAddSection}
-            onRemoveSection={this.props.onRemoveSection}
-          />
-        ))}
-      </div>
-    );
-  }
-}
-
+export default AtlasTree;
 
 const styles = {
   container: {

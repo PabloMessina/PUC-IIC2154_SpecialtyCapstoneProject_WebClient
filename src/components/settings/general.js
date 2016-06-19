@@ -1,12 +1,9 @@
 import React, { Component } from 'react';
 import {
-  Row,
-  Col,
   Button,
   FormGroup,
   ControlLabel,
   FormControl,
-  HelpBlock,
 } from 'react-bootstrap';
 
 import app, { currentUser } from '../../app';
@@ -48,20 +45,21 @@ export default class General extends Component {
   }
 
   onSubmit(e) {
+    e.preventDefault();
     const patch = {
       name: this.state.name,
       email: this.state.email,
     };
     return userService.patch(this.state.id, patch)
       .then(user => this.setState({ user }))
-      .catch(error => console.log(error));
+      .catch(error => this.setState({ error }));
   }
 
   render() {
     return (
       <div style={styles.container}>
         <h1>General</h1>
-        <br/>
+        <br />
         <form style={styles.container} >
           <FormGroup controlId="name">
             <ControlLabel>Name</ControlLabel>

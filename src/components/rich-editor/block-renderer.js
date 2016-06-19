@@ -1,5 +1,5 @@
 import Renderer3DWrapper from '../renderer-3d-wrapper';
-import ImageWithLabelsWrapper from '../image-with-labels-wrapper';
+import ImageWithLabelsEditionWrapper from '../image-with-labels-wrappers/edition-wrapper';
 import Latex from './components/latex';
 import { Image, Audio, Video } from './components/media';
 import { removeTeXBlock } from './modifiers/tex-modifiers';
@@ -29,18 +29,30 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
         component: Renderer3DWrapper,
         editable: false,
         props: {
-          readOnly,
+          mode: readOnly ? 'READONLY' : 'EDITION',
           gotFocusCallback: () => setState({ editorLocked: true }),
           lostFocusCallback: () => setState({ editorLocked: false }),
+          onMetadataChanged: () => console.log('===> metadata changed'),
+          source: {
+            remoteFiles: {
+              mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
+              obj: 'https://lopezjuri.com/videos/nRBC.obj',
+              images: ['https://lopezjuri.com/videos/M_10___Default1.jpg'],
+            },
+          },
+          metadata: { },
         },
       },
       imageWithLabels: {
-        component: ImageWithLabelsWrapper,
+        component: ImageWithLabelsEditionWrapper,
         editable: false,
         props: {
-          readOnly,
+          // mode: readOnly ? 'READONLY' : 'EDITION',
+          source: { url: 'http://www.humpath.com/IMG/jpg_brain_front_cut_01_10.jpg' },
+          metadata: {},
           gotFocusCallback: () => setState({ editorLocked: true }),
           lostFocusCallback: () => setState({ editorLocked: false }),
+          onMetadataChanged: () => console.log('onMetadataChanged()'),
         },
       },
       // 3d-video: { component: 3DVideo, editable: false },

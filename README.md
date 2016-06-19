@@ -18,12 +18,17 @@ git checkout develop
 
 ### Setup
 
-Make sure you have installed [Node 5.x](https://nodejs.org/en/).
+Make sure you have installed [Node 6.x](https://nodejs.org/en/).
 
 Install project dependencies:
 
 ```sh
 npm install
+```
+
+You can see the project dependencies and their versions by reading [package.json](/package.json) or by typing (once installed):
+```sh
+npm list
 ```
 
 ### Running
@@ -34,4 +39,6 @@ Start the development server on [`http://localhost:3000`](http://localhost:3000/
 npm start
 ```
 
-> It's debuggable with `debugger`
+> You can debug it with your browser's debugger
+
+### Deployment

@@ -110,7 +110,6 @@ export default class CreateQuestion extends Component {
         this.setState({ question: { ...this.state.question, fields, answer } }),
       onBodyChange: content => this.setState({ question: { ...this.state.question, content } }),
     });
-
     return (
       <div style={styles.container}>
       {renderIf(!this.props.edit)(
@@ -119,10 +118,10 @@ export default class CreateQuestion extends Component {
             This is que question-creator menu, this will add a question to the course pool.
             To create a new question:
             <ol>
-            <li>Select the type of the question.</li>
-            <li>Add the respective tags.</li>
-            <li>Write the question body.</li>
-            <li>Add the correct answer and submit.</li>
+              <li>Select the type of the question.</li>
+              <li>Add the respective tags.</li>
+              <li>Write the question body.</li>
+              <li>Add the correct answer and submit.</li>
             </ol>
           </Col>
         </Row>
