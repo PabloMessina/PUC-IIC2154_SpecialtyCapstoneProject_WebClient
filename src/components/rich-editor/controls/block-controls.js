@@ -71,9 +71,13 @@ export default class BlockControls extends Component {
   add3D() {
     const editorState = this.props.editorState;
     const onSuccess = (files) => {
-      const remoteFiles = {};
+      const remoteFiles = { images: [] };
       files.forEach(({ url, type }) => {
-        remoteFiles[type] = url;
+        if (type === 'mtl' || type === 'obj') {
+          remoteFiles[type] = url;
+        } else {
+          remoteFiles.images.push()
+        }
       });
       const entityKey = Entity.create('model', 'IMMUTABLE', { remoteFiles });
       // Here the media is inserted
