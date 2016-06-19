@@ -2,9 +2,10 @@ import React, { PropTypes, Component } from 'react';
 import { Col, Panel, Button, Modal, ListGroup, ListGroupItem } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { withRouter } from 'react-router';
+import renderIf from 'render-if';
+
 import AtlasGrid from '../../document-list/atlas-grid';
 
-import renderIf from 'render-if';
 import app from '../../../app';
 const biblographyService = app.service('/biblographies');
 const atlasService = app.service('/atlases');

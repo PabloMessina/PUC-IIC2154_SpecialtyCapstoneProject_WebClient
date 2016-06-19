@@ -12,9 +12,10 @@ import {
 } from 'react-bootstrap';
 import { withRouter } from 'react-router';
 import renderIf from 'render-if';
-import ErrorAlert from '../error-alert';
 import DocumentTitle from 'react-document-title';
+import isEmail from 'validator/lib/isEmail';
 
+import ErrorAlert from '../error-alert';
 import { login, join } from '../../app';
 
 /**
@@ -75,9 +76,7 @@ class SignUp extends Component {
   }
 
   validateEmail(email) {
-    const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    if (re.test(email)) return 'success';
-    return 'error';
+    return isEmail(email) ? 'success' : 'warning';
   }
 
   validateName(name) {

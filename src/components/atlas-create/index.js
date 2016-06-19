@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PropTypes, Component } from 'react';
 import {
   Button,
   Grid,
@@ -13,24 +13,26 @@ import {
 import Icon from 'react-fa';
 import { withRouter } from 'react-router';
 import Select from 'react-select';
+
 import ErrorAlert from '../error-alert';
 
 import app from '../../app.js';
 const atlasService = app.service('/atlases');
 
+
 class AtlasCreate extends Component {
 
   static get propTypes() {
     return {
-      title: React.PropTypes.string,
-      authors: React.PropTypes.array,
-      tags: React.PropTypes.array,
-      description: React.PropTypes.string,
-      cover: React.PropTypes.string,
-      imagePreviewUrl: React.PropTypes.string,
+      title: PropTypes.string,
+      authors: PropTypes.array,
+      tags: PropTypes.array,
+      description: PropTypes.string,
+      cover: PropTypes.string,
+      imagePreviewUrl: PropTypes.string,
       // From react-router
-      router: React.PropTypes.object,
-      params: React.PropTypes.object,
+      router: PropTypes.object,
+      params: PropTypes.object,
     };
   }
   static get defaultProps() {
@@ -155,7 +157,7 @@ class AtlasCreate extends Component {
   }
 
   render() {
-    const organization = this.state.organization;
+    const { organization } = this.state;
 
     return (
       <Grid style={styles.container}>

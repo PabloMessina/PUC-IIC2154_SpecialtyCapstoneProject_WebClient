@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { PropTypes } from 'react';
 import {
   Entity,
 } from 'draft-js';
@@ -10,6 +10,11 @@ const Link = (props) => {
       {props.children}
     </a>
   );
+};
+
+Link.propTypes = {
+  entityKey: PropTypes.any,
+  children: PropTypes.any,
 };
 
 export default Link;

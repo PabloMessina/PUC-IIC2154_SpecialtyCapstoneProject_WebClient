@@ -4,6 +4,10 @@ import { Row, Col } from 'react-bootstrap';
 
 export default class MinTemplate extends Component {
 
+  static propTypes = {}
+
+  static defaultProps = {}
+
   constructor(props) {
     super(props);
     this.state = {

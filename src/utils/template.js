@@ -1,5 +1,6 @@
-import React, { Component } from 'react';
+import React, { PropTypes, Component } from 'react';
 import { Grid, Row, Col, Button } from 'react-bootstrap';
+import { withRouter } from 'react-router';
 import renderIf from 'render-if';
 
 /**
@@ -12,12 +13,18 @@ import renderIf from 'render-if';
  * https://react-bootstrap.github.io/components.html
  */
 
-export default class TemplateComponent extends Component {
+class TemplateComponent extends Component {
 
-  static get defaultProps() {
-    return {
-      message: 'Template',
-    };
+  /*
+    See: https://facebook.github.io/react/docs/reusable-components.html#prop-validation
+   */
+  static propTypes = {
+    message: PropTypes.string,
+    style: PropTypes.object,
+  }
+
+  static defaultProps = {
+    message: 'Template',
   }
 
   constructor(props) {
@@ -30,18 +37,20 @@ export default class TemplateComponent extends Component {
     // ES6 bindings
     // See: https://facebook.github.io/react/docs/reusable-components.html#es6-classes
     // See: https://github.com/yannickcr/eslint-plugin-react/blob/master/docs/rules/jsx-no-bind.md#es6-classes
-    this.handleClick = this.handleClick.bind(this);
+    this.onClick = this.onClick.bind(this);
   }
 
-  handleClick() {
+  onClick() {
     this.setState({ something: !this.state.something });
   }
 
   render() {
-    return (
-      <Grid style={styles.container}>
+    const { message, style, ...props } = this.props;
 
-        <h1>{this.props.message}</h1>
+    return (
+      <Grid style={{ ...styles.container, ...style }} {...props}>
+
+        <h1>{message}</h1>
 
         <Row>
           <Col xs={12}>
@@ -52,7 +61,7 @@ export default class TemplateComponent extends Component {
               ))}
             </ul>
 
-            <Button bsStyle="primary" onClick={this.handleClick}>Press me</Button>
+            <Button bsStyle="primary" onClick={this.onClick}>Press me</Button>
 
             {/* Conditional rendenring (https://github.com/mrpatiwi/render-if) */}
             {renderIf(this.state.something)(() => (
@@ -66,12 +75,7 @@ export default class TemplateComponent extends Component {
   }
 }
 
-/*
-  See: https://facebook.github.io/react/docs/reusable-components.html#prop-validation
- */
-TemplateComponent.propTypes = {
-  message: React.PropTypes.string,
-};
+export default withRouter(TemplateComponent);
 
 /*
   See: https://facebook.github.io/react/tips/inline-styles.html

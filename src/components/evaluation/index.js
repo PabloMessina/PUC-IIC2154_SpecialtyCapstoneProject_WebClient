@@ -1,4 +1,4 @@
-/* eslint react/prop-types:0 */
+/* eslint react/prop-types:0 no-alert:0 */
 
 import React, { Component } from 'react';
 import {

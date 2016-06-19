@@ -14,7 +14,7 @@ import ErrorAlert from '../error-alert';
 import app from '../../app';
 const questionService = app.service('/questions');
 
-import CreateQuestionModal from '../create-question/modal';
+import CreateQuestionModal from '../question-create/modal';
 import { TrueFalse, MultiChoice, TShort } from '../questions';
 
 

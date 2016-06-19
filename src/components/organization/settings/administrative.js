@@ -1,4 +1,6 @@
-import React, { Component } from 'react';
+/* eslint no-alert:0 */
+
+import React, { PropTypes, Component } from 'react';
 import { Row, Col, Button } from 'react-bootstrap';
 import { withRouter } from 'react-router';
 import ErrorAlert from '../../error-alert';
@@ -11,8 +13,8 @@ class OrganizationSettingsAdministrative extends Component {
 
   static get propTypes() {
     return {
-      organization: React.PropTypes.object,
-      router: React.PropTypes.object,
+      organization: PropTypes.object,
+      router: PropTypes.object,
     };
   }
 

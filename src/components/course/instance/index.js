@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PropTypes, Component } from 'react';
 import { Row, Col, ListGroup, ListGroupItem, Panel } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { withRouter } from 'react-router';
@@ -33,16 +33,16 @@ class Instance extends Component {
 
   static get propTypes() {
     return {
-      organization: React.PropTypes.object,
-      course: React.PropTypes.object,
-      instance: React.PropTypes.object,
-      participant: React.PropTypes.object,
-      membership: React.PropTypes.object,
+      organization: PropTypes.object,
+      course: PropTypes.object,
+      instance: PropTypes.object,
+      participant: PropTypes.object,
+      membership: PropTypes.object,
       // React Router
-      router: React.PropTypes.object,
-      params: React.PropTypes.object,
-      location: React.PropTypes.object,
-      children: React.PropTypes.any,
+      router: PropTypes.object,
+      params: PropTypes.object,
+      location: PropTypes.object,
+      children: PropTypes.any,
     };
   }
 
