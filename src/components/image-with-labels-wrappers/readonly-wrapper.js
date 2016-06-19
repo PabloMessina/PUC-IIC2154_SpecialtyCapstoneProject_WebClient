@@ -56,9 +56,7 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
 
   showOrHideLabel(i) {
     const labels = this.state.labels;
-    console.log(labels);
     const index = labels.indexOf(i);
-    console.log(labels);
     if (index > -1) {
       labels.splice(index, 1);
     }
@@ -69,14 +67,13 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
   renderLabel(element, i) {
     return (
       <ListGroupItem key={i} onClick={() => this.showOrHideLabel(element.id)}>
-        {element.text}
+        {element.id}
       </ListGroupItem>
     );
   }
 
   /** React's render function */
   render() {
-    const labels = this.state.labels;
     return (<div>
       {renderIf(this.props.source)(() => (
         <Panel>
@@ -101,7 +98,7 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
                   // READONLY mode props
                   showRegionStrings
                   fillRegions
-                  selectedLabelIds={[0, 1, 2]}
+                  selectedLabelIds={this.state.labels}
                 />
               </Col>
             </Row>
