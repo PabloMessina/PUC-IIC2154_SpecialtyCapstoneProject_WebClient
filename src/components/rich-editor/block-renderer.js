@@ -9,7 +9,7 @@ import {
 
 
 export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnly) => {
-  const getBlock = (type, props) => {
+  const getBlock = (type, props, entityKey) => {
     const blocks = {
       audio: { component: Audio, editable: false },
       image: { component: Image, editable: false },
@@ -32,15 +32,9 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
           mode: readOnly ? 'READONLY' : 'EDITION',
           gotFocusCallback: () => setState({ editorLocked: true }),
           lostFocusCallback: () => setState({ editorLocked: false }),
-          onMetadataChanged: () => console.log('===> metadata changed'),
-          source: {
-            remoteFiles: {
-              mtl: 'https://lopezjuri.com/videos/nRBC.mtl',
-              obj: 'https://lopezjuri.com/videos/nRBC.obj',
-              images: ['https://lopezjuri.com/videos/M_10___Default1.jpg'],
-            },
+          onMetadataChanged: (metadata) => {
+            Entity.mergeData(entityKey, { metadata });
           },
-          metadata: { },
         },
       },
       imageWithLabels: {
@@ -48,11 +42,11 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
         editable: false,
         props: {
           // mode: readOnly ? 'READONLY' : 'EDITION',
-          source: { url: 'http://www.humpath.com/IMG/jpg_brain_front_cut_01_10.jpg' },
-          metadata: {},
           gotFocusCallback: () => setState({ editorLocked: true }),
           lostFocusCallback: () => setState({ editorLocked: false }),
-          onMetadataChanged: () => console.log('onMetadataChanged()'),
+          onMetadataChanged: (metadata) => {
+            Entity.mergeData(entityKey, { metadata });
+          },
         },
       },
       // 3d-video: { component: 3DVideo, editable: false },
@@ -66,11 +60,12 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
   // Block renderer
   return (block) => {
     if (block.getType() === 'atomic') {
-      const entity = Entity.get(block.getEntityAt(0));
+      const entityKey = block.getEntityAt(0);
+      const entity = Entity.get(entityKey);
       if (entity) {
         const type = entity.getType();
         const props = entity.getData();
-        return getBlock(type, props);
+        return getBlock(type, props, entityKey);
       }
     }
 

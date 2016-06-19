@@ -76,10 +76,10 @@ export default class BlockControls extends Component {
         if (type === 'mtl' || type === 'obj') {
           remoteFiles[type] = url;
         } else {
-          remoteFiles.images.push()
+          remoteFiles.images.push();
         }
       });
-      const entityKey = Entity.create('model', 'IMMUTABLE', { remoteFiles });
+      const entityKey = Entity.create('model', 'IMMUTABLE', { source: { remoteFiles }, metadata: {} });
       // Here the media is inserted
       this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
         editorState,
@@ -91,7 +91,7 @@ export default class BlockControls extends Component {
     this.props.onShowFileModal({
       type: 'model',
       multiple: true,
-      acceptedFiles: '.mtl,.obj',
+      acceptedFiles: '.mtl,.obj,image/*',
       maxFiles: 2,
       onSuccess,
     });
@@ -102,7 +102,7 @@ export default class BlockControls extends Component {
     const onSuccess = (files) => {
       let editorState = this.props.editorState;
       files.forEach(({ url }) => {
-        const entityKey = Entity.create(type, 'IMMUTABLE', { src: url });
+        const entityKey = Entity.create(type, 'IMMUTABLE', { source: { url }, metadata: {} });
 
         // Here the media is inserted
         editorState = AtomicBlockUtils.insertAtomicBlock(

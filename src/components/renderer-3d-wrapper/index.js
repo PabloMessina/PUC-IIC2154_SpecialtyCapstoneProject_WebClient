@@ -104,7 +104,7 @@ export default class Renderer3DWrapper extends Component {
 
   constructor(props) {
     super(props);
-    const { mode, metadata } = this.props.blockProps;
+    const { mode, metadata } = props.blockProps;
     // state used in render
     this.state = {
       mode,
@@ -114,15 +114,9 @@ export default class Renderer3DWrapper extends Component {
       hasLoadedModel: false,
       showingLabels: true,
       loadingModel: false,
-<<<<<<< HEAD
-      labels: props.labels,
-      normalLabelStyle: props.normalLabelStyle,
-      highlightedLabelStyle: props.highlightedLabelStyle,
-=======
       downloading: false,
       downloadMessage: '',
       labelStyleControlShowAllOptions: false,
->>>>>>> develop
     };
     // state not used in render
     this._ = {
@@ -347,10 +341,6 @@ export default class Renderer3DWrapper extends Component {
     const sphereRadiusCoef = metadata.sphereRadiusCoef || defaultSphereRadiusCoef;
 
     // check label style to use
-<<<<<<< HEAD
-    const { readOnly, remoteFiles } = this.props.blockProps;
-=======
->>>>>>> develop
     let labelStyle;
     switch (labelStyleMode) {
       case 'normal':
@@ -472,20 +462,12 @@ export default class Renderer3DWrapper extends Component {
         </div>
         <Renderer3D
           ref="r3d"
-<<<<<<< HEAD
-          canEdit={!readOnly}
-          remoteFiles={remoteFiles}
-          labels={this.state.labels}
-          normalLabelStyle={this.state.normalLabelStyle}
-          highlightedLabelStyle={this.state.highlightedLabelStyle}
-=======
           mode={mode}
           source={source}
           labels={labels}
           normalLabelStyle={normalLabelStyle}
           highlightedLabelStyle={highlightedLabelStyle}
           sphereRadiusCoef={sphereRadiusCoef}
->>>>>>> develop
           labelsChangedCallback={this.onLabelsChanged}
           loadingStartingCallback={this.onLoadingStarting}
           loadingProgressCallback={this.onLoadingProgress}
