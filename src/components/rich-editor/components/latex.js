@@ -1,17 +1,21 @@
-/* eslint no-underscore-dangle:0 no-multi-comp:0 */
-import katex from 'katex';
-import React from 'react';
+/* eslint no-underscore-dangle:0 react/no-multi-comp:0 */
+
+import React, { PropTypes, Component } from 'react';
 import { OverlayTrigger, Popover, Button } from 'react-bootstrap';
 import { Entity } from 'draft-js';
+import katex from 'katex';
 
-class KatexOutput extends React.Component {
+class KatexOutput extends Component {
+
+  static propTypes = {
+    content: PropTypes.object,
+    readOnly: PropTypes.bool,
+    onClick: PropTypes.func,
+  }
+
   constructor(props) {
     super(props);
     this.timer = null;
-  }
-
-  shouldComponentUpdate(nextProps) {
-    return !nextProps.readOnly;
   }
 
   componentDidMount() {
@@ -22,6 +26,10 @@ class KatexOutput extends React.Component {
     if (nextProps.content !== this.props.content) {
       this.update();
     }
+  }
+
+  shouldComponentUpdate(nextProps) {
+    return !nextProps.readOnly;
   }
 
   componentWillUnmount() {
@@ -49,7 +57,13 @@ class KatexOutput extends React.Component {
   }
 }
 
-export default class Latex extends React.Component {
+export default class Latex extends Component {
+
+  static propTypes = {
+    block: PropTypes.any,
+    blockProps: PropTypes.any,
+  }
+
   constructor(props) {
     super(props);
     this.state = { editMode: false };

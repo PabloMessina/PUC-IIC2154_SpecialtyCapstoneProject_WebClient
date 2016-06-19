@@ -18,7 +18,7 @@ const evaluationsQuestionService = app.service('/evaluations-questions');
 
 import { TrueFalse, MultiChoice, TShort, Correlation } from '../questions';
 import Progress from './progress';
-import CreateQuestionModal from '../create-question/modal';
+import CreateQuestionModal from '../question-create/modal';
 import { Colors } from '../../styles';
 import renderIf from 'render-if';
 

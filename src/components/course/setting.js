@@ -1,3 +1,5 @@
+/* eslint no-alert: 0 */
+
 import React, { Component } from 'react';
 import { Row, Col, Grid, Button, Table, Panel } from 'react-bootstrap';
 import Icon from 'react-fa';
@@ -7,7 +9,7 @@ import app from '../../app';
 const instanceService = app.service('/instances');
 const courseService = app.service('/courses');
 
-class MinTemplate extends Component {
+class CourseSettings extends Component {
 
   static get propTypes() {
     return {
@@ -113,4 +115,4 @@ const styles = {
   },
 };
 
-export default withRouter(MinTemplate);
+export default withRouter(CourseSettings);

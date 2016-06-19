@@ -97,14 +97,18 @@ export default class Progress extends Component {
             <p style={styles.time}>{time}</p>
           </div>
         ))}
-        {/*<div style={styles.row}>
+
+        {/*
+        <div style={styles.row}>
           <h6>Start:</h6>
           <span>{timeStart}</span>
         </div>
         <div style={styles.row}>
           <h6>Finish:</h6>
           <span>{timeFinish}</span>
-        </div>*/}
+        </div>
+        */}
+
         {renderIf(diff < 0)(() => (
           <h6 style={styles.header}>Time is over.</h6>
         ))}

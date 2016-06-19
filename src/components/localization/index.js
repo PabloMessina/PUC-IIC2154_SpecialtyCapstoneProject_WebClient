@@ -7,8 +7,8 @@ import { GoogleMapLoader, GoogleMap, Circle, Marker } from 'react-google-maps';
 import { triggerEvent } from 'react-google-maps/lib/utils';
 import { Button } from 'react-bootstrap';
 
-import app from '../../app';
-const attendanceService = app.service('/attendances');
+// import app from '../../app';
+// const attendanceService = app.service('/attendances');
 
 /*
  * This is the modify version of:

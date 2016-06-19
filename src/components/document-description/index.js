@@ -1,4 +1,6 @@
-import React, { Component } from 'react';
+/* eslint no-alert: 0 */
+
+import React, { PropTypes, Component } from 'react';
 import {
   Grid,
   Image,
@@ -25,16 +27,14 @@ const atlasesService = app.service('/atlases');
 // const annotationService = app.service('/annotations');
 // const bookmarkService = app.service('/annotations');
 
-// TODO descomentar feathers y asegurar conexion
-// TODO apretar ojo para navegar a bookmark/annotation
 
 class DocumentDescription extends Component {
 
   static get propTypes() {
     return {
-      router: React.PropTypes.object,
-      atlas: React.PropTypes.object,
-      params: React.PropTypes.object,
+      router: PropTypes.object,
+      atlas: PropTypes.object,
+      params: PropTypes.object,
     };
   }
 
@@ -63,13 +63,13 @@ class DocumentDescription extends Component {
         { label: 'Technology', value: 'Technology' },
       ],
       annotations: [{
-        content: 'Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis. Fusce condimentum nunc ac nisi vulputate fringilla. Donec lacinia congue felis in faucibus',
+        content: 'Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo.',
         userId: 'Uhash1234',
         sectionId: 'Seccion 12.3',
         createdAt: '05-11-2015',
         updatedAt: '22-12-2015',
       }, {
-        content: 'Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis. Fusce condimentum nunc ac nisi vulputate fringilla. Donec lacinia congue felis in faucibusCras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. Cras purus odio, vestibulum in vulputate at, tempus viverra turpis. Fusce condimentum nunc ac nisi vulputate fringilla. Donec lacinia congue felis in faucibus',
+        content: 'Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque ante sollicitudin commodo. ',
         userId: 'Uhash1234',
         sectionId: 'Seccion 12.3',
         createdAt: '05-11-2015',
@@ -121,9 +121,12 @@ class DocumentDescription extends Component {
   }
 
   onPressDelete() {
-    return atlasesService.remove(this.props.params.atlas.id)
-      .then(() => this.props.router.push('/documents'))
-      .catch(error => console.log(error));
+    if (window.confirm('Delete Atlas? All the content will be lost.')) {
+      return atlasesService.remove(this.props.params.atlas.id)
+        .then(() => this.props.router.push('/documents'))
+        .catch(error => this.setState({ error }));
+    }
+    return false;
   }
 
   onSubmitUpdate(e) {
@@ -223,7 +226,7 @@ class DocumentDescription extends Component {
    * @param {integer} key [key value of annotation for frontEnd deletion]
    * @param {integer} id {id value of annotation for backEnd deletion}
    */
-  handleDeleteAnnotation(key, id) {
+  handleDeleteAnnotation(key, id) { // eslint-disable-line
     if (window.confirm('Delete annotation? Deleted annotations cannot be recovered')) {
       // Delete annotation from state
       const annotations = [...this.state.annotations];
@@ -249,7 +252,7 @@ class DocumentDescription extends Component {
    * @param {integer} key [key value of bookmark for frontEnd deletion]
    * @param {integer} id {id value of bookmark for backEnd deletion}
    */
-  handleDeleteBookmark(key, id) {
+  handleDeleteBookmark(key, id) { // eslint-disable-line
     if (window.confirm('Delete bookmark? Deleted bookmarks cannot be recovered')) {
       // Delete annotation from state
       const bookmarks = [...this.state.bookmarks];

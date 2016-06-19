@@ -1,10 +1,11 @@
 import React, { PropTypes, Component } from 'react';
 import { Collapse } from 'react-bootstrap';
-import _ from 'lodash';
+import isEqual from 'lodash/isEqual';
 
 import RichEditor from '../rich-editor';
 
-const minDelta = 30;
+const MIN_DELTA = 30;
+
 
 export default class AtlasSection extends Component {
 
@@ -38,8 +39,8 @@ export default class AtlasSection extends Component {
   // Only update if contents or title have changed
   shouldComponentUpdate(nextProps, nextState) {
     const collapsedChanged = this.state.collapsed !== nextState.collapsed;
-    const contentChanged = !_.isEqual(nextProps.section.content, this.props.section.content);
-    const titleChanged = !_.isEqual(nextProps.section.title, this.props.section.title);
+    const contentChanged = !isEqual(nextProps.section.content, this.props.section.content);
+    const titleChanged = !isEqual(nextProps.section.title, this.props.section.title);
 
     return contentChanged || titleChanged || collapsedChanged;
   }
@@ -66,13 +67,11 @@ export default class AtlasSection extends Component {
     const y = e.target.scrollTop;
     const { previousY } = this.state;
     const delta = y - previousY;
-    if (delta > minDelta && !this.state.collapsed) {
+    if (delta > MIN_DELTA && !this.state.collapsed) {
       // Scrolling down
-      console.log('collapsed')
       this.setState({ collapsed: true });
-    } else if (-delta > minDelta && this.state.collapsed) {
+    } else if (-delta > MIN_DELTA && this.state.collapsed) {
       // Scrolling up
-      console.log('not collapsed')
       this.setState({ collapsed: false });
     } else {
       return;
