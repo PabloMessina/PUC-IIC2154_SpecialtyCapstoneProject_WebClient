@@ -52,7 +52,6 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
   }
 
   componentDidMount() {
-<<<<<<< HEAD
   }
 
   showOrHideLabel(i) {
@@ -73,18 +72,6 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
         {element.text}
       </ListGroupItem>
     );
-=======
-    /** for testing, simulate someone selecting labels randomly */
-    setInterval(() => {
-      const labels = this.props.labels;
-      const ids = new Set();
-      let count = Math.floor(Math.random() * (labels.length + 1));
-      while (count-- > 0) ids.add(labels[Math.floor(Math.random() * labels.length)].id);
-      const array = Array.from(ids);
-      console.log("---> ids = ", array);
-      this.setState({ selectedLabelIds: array });
-    }, 6000);
->>>>>>> origin/feature/improve-images-with-labels
   }
 
   /** React's render function */
