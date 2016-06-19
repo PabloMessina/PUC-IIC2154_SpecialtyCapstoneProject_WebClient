@@ -6,7 +6,8 @@
   "scripts": {
     "start:dev": "node server.js",
     "start:prod": "node server.production.js",
-    "build": "webpack --config webpack.production.config.js -p",
+    "build": "npm run build:app && npm run build:3d",
+    "build:app": "webpack --config webpack.production.config.js -p",
     "build:3d": "webpack --config webpack.production.3d.config.js",
     "test": "jest",
     "clean": "rm -fr $TMPDIR/react-* && rm -rf node_modules && npm install",
