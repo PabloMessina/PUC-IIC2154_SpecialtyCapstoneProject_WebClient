@@ -106,6 +106,8 @@ export default class Questions extends Component {
       error: null,
       // when the test is over
       isOver: false,
+      // when the mouse is over the time panel
+      toggle: false,
     };
 
     this.renderQuestion = this.renderQuestion.bind(this);
@@ -116,6 +118,7 @@ export default class Questions extends Component {
     this.onModalClose = this.onModalClose.bind(this);
     this.onModalSave = this.onModalSave.bind(this);
     this.onTimeout = this.onTimeout.bind(this);
+    this.toggleHover = this.toggleHover.bind(this);
   }
 
   componentDidMount() {
@@ -160,6 +163,10 @@ export default class Questions extends Component {
 
   onTimeout() {
     this.setState({ isOver: true });
+  }
+
+  toggleHover() {
+    this.setState({ hover: !this.state.hover });
   }
 
   fetchTags() {
@@ -359,25 +366,32 @@ export default class Questions extends Component {
     const isStarted = startedAt.isValid();
 
     const validation = isStarted && !isOver;
+
+    let timeStyle;
+    if (this.state.hover) {
+      timeStyle = styles.hover;
+    } else {
+      timeStyle = styles.noHover;
+    }
     return (
-      <Row>
-        <Col style={styles.rigth} xs={12} sm={12} md={3}>
-          <Progress {...time} />
-        </Col>
+      <div>
         {validation ?
           <div>
-            <Col style={styles.left} xs={12} sm={12} md={9}>
+            <Col style={styles.left} xs={12} sm={12} mdOffset={1} md={10}>
               {this.renderEvaluation('student')}
             </Col>
           </div>
           :
           <div>
-            <Col xs={12} sm={12} md={9}>
+            <Col xs={12} sm={12} mdOffset={1} md={10}>
               <h3 style={{ display: 'flex', justifyContent: 'center' }}>Evaluation is not longer available</h3>
             </Col>
           </div>
-      }
-      </Row>
+        }
+        <div style={timeStyle} onMouseEnter={this.toggleHover} onMouseLeave={this.toggleHover}>
+          <Progress {...time} />
+        </div>
+      </div>
     );
   }
 
@@ -471,5 +485,16 @@ const styles = {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  noHover: {
+    position: 'fixed',
+    bottom: 30,
+    right: 20,
+    opacity: 0.5,
+  },
+  hover: {
+    position: 'fixed',
+    bottom: 30,
+    right: 20,
   },
 };

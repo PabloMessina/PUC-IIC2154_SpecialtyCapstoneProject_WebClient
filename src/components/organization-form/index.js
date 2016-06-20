@@ -105,6 +105,18 @@ export default class OrganizationForm extends Component {
           />
         </FormGroup>
 
+        <FormGroup controlId="logo">
+          <ControlLabel>Logo</ControlLabel>
+          <FormControl
+            type="text"
+            value={this.state.logo}
+            label="Logo"
+            onChange={e => this.setState({ logo: e.target.value })}
+            disabled={disabled}
+            required
+          />
+        </FormGroup>
+
         <FormGroup controlId="address">
           <ControlLabel>Address</ControlLabel>
           <FormControl
