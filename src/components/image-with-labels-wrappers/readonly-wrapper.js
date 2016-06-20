@@ -55,12 +55,15 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
   }
 
   showOrHideLabel(i) {
-    const labels = this.state.labels;
+    const labels = this.state.labels.slice(0);
     const index = labels.indexOf(i);
     if (index > -1) {
       labels.splice(index, 1);
+    } else {
+      labels.push(i);
     }
     console.log(labels);
+    // debugger
     this.setState({ labels });
   }
 
