@@ -64,7 +64,7 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
   }
 
   generateArray(element, i) {
-    if (element) return i;
+    if (element) return this.props.labels[i].id;
     else return null;
   }
 
@@ -93,7 +93,9 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
 
   /** React's render function */
   render() {
-    const labels = this.state.labels.map((element, i) => this.generateArray(element, i));
+    const selectedLabels = this.state.labels.filter((value) => value);
+    const labels = selectedLabels.map((element, i) => this.generateArray(element, i));
+    console.log(labels);
     return (<div>
       {renderIf(this.props.source)(() => (
         <Grid>
