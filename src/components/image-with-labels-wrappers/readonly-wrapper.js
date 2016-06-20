@@ -4,11 +4,12 @@ import renderIf from 'render-if';
 import {
   Panel,
   ListGroup,
-  ListGroupItem,
+  Checkbox,
   Col,
   Row,
   Grid,
 } from 'react-bootstrap';
+import Colors from '../../styles';
 
 export default class ImageWithLabelsReadOnlyWrapper extends Component {
 
@@ -43,11 +44,13 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
 
   constructor(props) {
     super(props);
+    const selectedLabels = this.props.labels.map(() => true);
     this.state = {
-      selectedLabelIds: [],
-      labels: [0, 1, 2, 3, 4, 5, 6],
+      labels: selectedLabels,
     };
     this.renderLabel = this.renderLabel.bind(this);
+    this.selectAll = this.selectAll.bind(this);
+    this.generateArray = this.generateArray.bind(this);
     this.showOrHideLabel = this.showOrHideLabel.bind(this);
   }
 
@@ -56,57 +59,68 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
 
   showOrHideLabel(i) {
     const labels = this.state.labels.slice(0);
-    const index = labels.indexOf(i);
-    if (index > -1) {
-      labels.splice(index, 1);
+    labels[i] = !labels[i];
+    this.setState({ labels });
+  }
+
+  generateArray(element, i) {
+    if (element) return i;
+    else return null;
+  }
+
+  selectAll() {
+    let labels;
+    if (this.state.labels[0]) {
+      labels = this.props.labels.map(() => false);
     } else {
-      labels.push(i);
+      labels = this.props.labels.map(() => true);
     }
-    console.log(labels);
-    // debugger
     this.setState({ labels });
   }
 
   renderLabel(element, i) {
     return (
-      <ListGroupItem key={i} onClick={() => this.showOrHideLabel(element.id)}>
-        {element.id}
-      </ListGroupItem>
+      <Checkbox
+        key={i}
+        checked={this.state.labels[i]}
+        ref={`checkbox${i}`}
+        onClick={() => this.showOrHideLabel(element.id)}
+      >
+        {element.text}
+      </Checkbox>
     );
   }
 
   /** React's render function */
   render() {
+    const labels = this.state.labels.map((element, i) => this.generateArray(element, i));
     return (<div>
       {renderIf(this.props.source)(() => (
-        <Panel>
-          <Grid>
-            <Row>
-              <Col md={3}>
-                <ListGroup style={styles.list}>
-                  {this.props.labels.map((element, i) => this.renderLabel(element, i))}
-                </ListGroup>
-              </Col>
-              <Col md={9}>
-                <ImageWithLabels
-                  mode="READONLY"
-                  ref="img"
-                  source={this.props.source}
-                  labels={this.props.labels}
-                  circleRadius={this.props.circleRadius}
-                  // colors
-                  lineHighlightColor="rgb(255,0,0)"
-                  regionHighlightColor="rgba(255,255,0,0.2)"
-                  stringHighlightColor="rgb(236,150,13)"
-                  // READONLY mode props
-                  showRegionStrings
-                  fillRegions
-                  selectedLabelIds={this.state.labels}
-                />
-              </Col>
-            </Row>
-          </Grid>
-        </Panel>
+        <Grid>
+          <Col md={2}>
+            <ListGroup style={styles.list}>
+              {this.props.labels.map((element, i) => this.renderLabel(element, i))}
+            </ListGroup>
+            <a style={styles.selectAll} onClick={this.selectAll}>Select All</a>
+          </Col>
+          <Col md={10}>
+            <ImageWithLabels
+              mode="READONLY"
+              ref="img"
+              source={this.props.source}
+              labels={this.props.labels}
+              circleRadius={this.props.circleRadius}
+              // colors
+              lineHighlightColor={Colors.MAIN}
+              regionHighlightColor={Colors.MAIN}
+              stringHighlightColor={Colors.MAIN}
+              // READONLY mode props
+              showRegionStrings
+              fillRegions
+              selectedLabelIds={labels}
+            />
+          </Col>
+        </Grid>
       ))}
     </div>);
   }
@@ -122,5 +136,8 @@ const styles = {
   list: {
     height: 300,
     overflowY: 'scroll',
+  },
+  selectAll: {
+    cursor: 'pointer',
   },
 };
