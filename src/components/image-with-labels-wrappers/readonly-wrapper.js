@@ -82,7 +82,7 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
         key={i}
         checked={this.state.labels[i]}
         ref={`checkbox${i}`}
-        onClick={() => this.showOrHideLabel(element.id)}
+        onChange={() => this.showOrHideLabel(element.id)}
       >
         {element.text}
       </Checkbox>
