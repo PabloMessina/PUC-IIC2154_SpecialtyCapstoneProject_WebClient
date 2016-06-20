@@ -1695,7 +1695,7 @@ export default class ImageWithLabels extends Component {
     }
 
     return (
-      <div style={this.props.style}>
+      <div style={{ ...styles.root, ...this.props.style }}>
         <div ref="canvasWrapper" style={styles.canvasWrapper}>
           <canvas ref="imgCanvas" style={styles.canvas}></canvas>
           <canvas ref="labelCanvas" style={styles.canvas}></canvas>
@@ -1787,6 +1787,9 @@ ImageWithLabels.propTypes = {
 };
 
 const styles = {
+  root: {
+    display: 'inline-block',
+  },
   canvas: {
     position: 'absolute',
     top: 0,

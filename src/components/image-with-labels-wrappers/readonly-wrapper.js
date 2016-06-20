@@ -2,12 +2,14 @@ import React, { Component } from 'react';
 import ImageWithLabels from '../image-with-labels/';
 import renderIf from 'render-if';
 import {
+  Panel,
   ListGroup,
   Checkbox,
   Col,
+  Row,
   Grid,
 } from 'react-bootstrap';
-import Colors from '../../styles';
+import { Colors } from '../../styles';
 
 export default class ImageWithLabelsReadOnlyWrapper extends Component {
 
@@ -42,37 +44,29 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
 
   constructor(props) {
     super(props);
-    const selectedLabels = this.props.labels.map(() => true);
+    const labels = this.props.labels.map(label => ({ id: label.id, selected: false }));
     this.state = {
-      labels: selectedLabels,
+      labels,
     };
     this.renderLabel = this.renderLabel.bind(this);
     this.selectAll = this.selectAll.bind(this);
-    this.generateArray = this.generateArray.bind(this);
+    this.unselectAll = this.unselectAll.bind(this);
     this.showOrHideLabel = this.showOrHideLabel.bind(this);
-  }
-
-  componentDidMount() {
   }
 
   showOrHideLabel(i) {
     const labels = this.state.labels.slice(0);
-    labels[i] = !labels[i];
+    labels[i].selected = !labels[i].selected;
     this.setState({ labels });
   }
 
-  generateArray(element, i) {
-    if (element) return this.props.labels[i].id;
-    else return null;
+  selectAll() {
+    const labels = this.props.labels.map(label => ({ id: label.id, selected: true }));
+    this.setState({ labels });
   }
 
-  selectAll() {
-    let labels;
-    if (this.state.labels[0]) {
-      labels = this.props.labels.map(() => false);
-    } else {
-      labels = this.props.labels.map(() => true);
-    }
+  unselectAll() {
+    const labels = this.props.labels.map(label => ({ id: label.id, selected: false }));
     this.setState({ labels });
   }
 
@@ -80,9 +74,9 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
     return (
       <Checkbox
         key={i}
-        checked={this.state.labels[i]}
+        checked={this.state.labels[i].selected}
         ref={`checkbox${i}`}
-        onClick={() => this.showOrHideLabel(element.id)}
+        onChange={() => this.showOrHideLabel(i)}
       >
         {element.text}
       </Checkbox>
@@ -91,8 +85,7 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
 
   /** React's render function */
   render() {
-    const selectedLabels = this.state.labels.filter((value) => value);
-    const labels = selectedLabels.map((element, i) => this.generateArray(element, i));
+    const selectedLabelIds = this.state.labels.filter(l => l.selected).map(l => l.id);
     return (<div>
       {renderIf(this.props.source)(() => (
         <Grid>
@@ -101,6 +94,8 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
               {this.props.labels.map((element, i) => this.renderLabel(element, i))}
             </ListGroup>
             <a style={styles.selectAll} onClick={this.selectAll}>Select All</a>
+            <br />
+            <a style={styles.unselectAll} onClick={this.unselectAll}>Unselect All</a>
           </Col>
           <Col md={10}>
             <ImageWithLabels
@@ -110,13 +105,13 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
               labels={this.props.labels}
               circleRadius={this.props.circleRadius}
               // colors
-              lineHighlightColor={Colors.MAIN}
-              regionHighlightColor={Colors.MAIN}
-              stringHighlightColor={Colors.MAIN}
+              lineHighlightColor={Colors.withAlpha('MAIN', 0.9)}
+              regionHighlightColor={Colors.withAlpha('MAIN', 0.4)}
+              stringHighlightColor={Colors.withAlpha('MAIN', 0.5)}
               // READONLY mode props
               showRegionStrings
               fillRegions
-              selectedLabelIds={labels}
+              selectedLabelIds={selectedLabelIds}
             />
           </Col>
         </Grid>
@@ -137,6 +132,9 @@ const styles = {
     overflowY: 'scroll',
   },
   selectAll: {
+    cursor: 'pointer',
+  },
+  unselectAll: {
     cursor: 'pointer',
   },
 };
