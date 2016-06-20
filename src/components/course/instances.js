@@ -177,6 +177,13 @@ class CourseInstances extends Component {
           </EasyTransition>
         )}
 
+        {renderIf(!canEdit && instances.length === 0)(() =>
+          <div>
+            <h3>There is not course instances where you could access</h3>
+            <p>Please contact an organization administrator</p>
+          </div>
+        )}
+
       </div>
     );
   }
