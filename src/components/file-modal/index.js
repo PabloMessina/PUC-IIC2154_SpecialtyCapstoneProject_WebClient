@@ -1,19 +1,20 @@
 import React, { Component } from 'react';
 import DropzoneComponent from 'react-dropzone-component/lib/react-dropzone';
-import { Modal, ProgressBar, Button } from 'react-bootstrap';
-import renderIf from 'render-if';
-import app from '../../app';
+import { Modal, Button } from 'react-bootstrap';
 import update from 'react-addons-update';
 
 // const SUPPORTED_FILES = {
   // image: ['jpg'],
 // };
-const URL = 'http://localhost:3001/api/v1/storage/';
+const URL = 'http://files.lupi.online/api/v1/storage/';
 export default class FileModal extends Component {
   static get propTypes() {
     return {
       show: React.PropTypes.bool,
       onSuccess: React.PropTypes.func,
+      onHide: React.PropTypes.func,
+      maxFiles: React.PropTypes.number,
+      acceptedFiles: React.PropTypes.string,
       type: React.PropTypes.string,
     };
   }
@@ -24,7 +25,6 @@ export default class FileModal extends Component {
 
     this.state = {
       files: [],
-      progress: 0,
       uploaded: false,
       uploading: false,
       canUpload: true,
@@ -93,8 +93,8 @@ export default class FileModal extends Component {
   }
 
   render() {
-    const { show, multiple, acceptedFiles, maxFiles } = this.props;
-    const { progress, canUpload, uploading, uploaded } = this.state;
+    const { show, acceptedFiles, maxFiles } = this.props;
+    const { canUpload, uploading, uploaded } = this.state;
 
     const djsConfig = {
       createImageThumbnails: false,
@@ -107,7 +107,7 @@ export default class FileModal extends Component {
     };
 
     const config = {
-      postUrl: URL + 'store/',
+      postUrl: `${URL}store/`,
     };
 
     // const success = multiple? 'successmultiple' : 'success';
