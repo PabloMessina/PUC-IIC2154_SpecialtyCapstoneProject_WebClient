@@ -119,7 +119,7 @@ export default function compose(ComposedComponent) {
               <ComposedComponent {...customProps} question={question} mode={mode} />
             </div>
 
-            {renderIf(ComposedComponent.instructions)(() =>
+            {renderIf(ComposedComponent.instructions && mode !== 'reader')(() =>
               <div style={styles.instructions}>
                 <ComposedComponent.instructions />
               </div>
