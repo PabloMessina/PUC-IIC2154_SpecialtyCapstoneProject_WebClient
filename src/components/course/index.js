@@ -9,6 +9,9 @@ import { withRouter } from 'react-router';
 import renderIf from 'render-if';
 import DocumentTitle from 'react-document-title';
 
+import app from '../../app';
+const instanceService = app.service('/instances');
+
 /**
  * Component life-cycle:
  * https://facebook.github.io/react/docs/component-specs.html
@@ -36,17 +39,37 @@ class Course extends Component {
     this.state = {
       organization: props.params.course.organization,
       course: props.params.course,
-      instances: props.params.course.instances,
+      instances: props.params.course.instances || [],
       instance: -1, // index
     };
+    this.observe = this.observe.bind(this);
+  }
+
+  componentDidMount() {
+    const { course } = this.state;
+    this.observe(course);
   }
 
   componentWillReceiveProps(nextProps) {
     // Because router onEnter is not called when navigation between childrens.
     const course = nextProps.params.course;
     if (course && course.id !== this.state.course.id) {
-      this.setState({ course, organization: course.organization, instances: course.instances });
+      this.setState({ course, organization: course.organization, instances: course.instances || [] });
+      this.observe(course);
     }
+  }
+
+  componentWillUnmount() {
+    if (this.observer) this.observer.unsubscribe();
+  }
+
+  observe(course) {
+    const query = {
+      courseId: course.id || course,
+    };
+    this.observer = instanceService.find({ query }).map(result => result.data)
+      .subscribe(instances => this.setState({ instances }));
+    return this.observer;
   }
 
   render() {

@@ -40,7 +40,7 @@ class CourseInstances extends Component {
 
   componentDidMount() {
     this.fetchMembership(this.props.organization.id);
-    this.fetchParticipants(this.props.instances.map(i => i.id));
+    this.fetchParticipants(this.props.instances);
 
     // If we are in a subrouter, do not redirect
     if (this.subpath) return;
@@ -64,9 +64,8 @@ class CourseInstances extends Component {
     if (organization && organization.id !== this.props.organization.id) {
       this.fetchMembership(organization.id);
     }
-    // TODO: check if array is different
     if (instances && instances.length) {
-      this.fetchParticipants(instances.map(i => i.id));
+      this.fetchParticipants(instances);
     }
   }
 
@@ -112,9 +111,9 @@ class CourseInstances extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  fetchParticipants(instancesId) {
+  fetchParticipants(instances) {
     const query = {
-      instanceId: { $in: instancesId },
+      instanceId: { $in: instances.map(i => i.id || i) },
       userId: currentUser().id,
     };
     return participantService.find({ query })

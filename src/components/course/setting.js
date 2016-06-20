@@ -39,7 +39,7 @@ class CourseSettings extends Component {
       return instanceService.remove(instance.id)
         .then(() => this.fetchInstances());
     }
-    return Promise.reject('User did cancel.');
+    return false;
   }
 
   onDeleteCourse() {
@@ -47,7 +47,7 @@ class CourseSettings extends Component {
       return courseService.remove(this.props.course.id)
         .then(() => this.props.router.push(`/organizations/show/${this.props.course.organizationId}/courses`));
     }
-    return Promise.reject('User did cancel.');
+    return false;
   }
 
   fetchInstances() {
@@ -72,7 +72,7 @@ class CourseSettings extends Component {
               <thead>
                 <tr>
                   <th>Instance</th>
-                  <th>Students</th>
+                  {/* <th>Students</th> */}
                   <th>Status</th>
                 </tr>
               </thead>
@@ -80,10 +80,10 @@ class CourseSettings extends Component {
               {this.state.instances.map((instance, i) => (
                 <tr key={i}>
                   <td>{instance.period}</td>
-                  <td>quantity</td>
+                  {/* <td>quantity</td> */}
                   <td>
                     <Button bsStyle="danger" onClick={() => this.onDeleteInstance(instance)}>
-                      Remove course
+                      Remove instance
                     </Button>
                   </td>
                 </tr>
@@ -91,7 +91,7 @@ class CourseSettings extends Component {
               </tbody>
             </Table>
             <hr />
-            <p>Delete all course</p>
+            <p>Delete course and all its content</p>
             <Button bsStyle="danger" onClick={() => this.onDeleteCourse()}>
               Remove course
             </Button>

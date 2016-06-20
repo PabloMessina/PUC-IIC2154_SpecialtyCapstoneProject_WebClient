@@ -35,8 +35,8 @@ class InstanceCreate extends Component {
     this.state = {
       period: '',
       minGrade: 0,
-      maxGrade: 0,
-      approvalGrade: 0,
+      maxGrade: 100,
+      approvalGrade: 50,
     };
     this.onSubmit = this.onSubmit.bind(this);
     this.onChange = this.onChange.bind(this);
@@ -45,15 +45,15 @@ class InstanceCreate extends Component {
   onSubmit(e) {
     e.preventDefault();
     const courseId = this.props.course.id;
-    const instance = {
+    const data = {
       courseId,
       period: this.state.period,
       minGrade: this.state.minGrade,
       maxGrade: this.state.maxGrade,
       approvalGrade: this.state.approvalGrade,
     };
-    return instanceService.create(instance)
-      .then(() => this.props.router.push(`/courses/show/${courseId}`))
+    return instanceService.create(data)
+      .then(instance => this.props.router.push(`/courses/show/${courseId}/instances/show/${instance.id}`))
       .catch(error => this.setState({ submiting: false, error }));
   }
 
