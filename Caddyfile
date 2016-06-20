@@ -1,9 +1,0 @@
-www.lupi.online, lupi.online {
-  proxy / webclient:3000 {
-    proxy_header Host {host}
-    proxy_header X-Real-IP {remote}
-    proxy_header X-Forwarded-Proto {scheme}
-  }
-  gzip
-  tls lopezjuripatricio@gmail.com
-}

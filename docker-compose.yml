@@ -1,20 +1,18 @@
-proxy:
-  image: zzrot/alpine-caddy
-  restart: always
+loadbalancer:
+  image: dockercloud/haproxy
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
   ports:
     - 80:80
-    - 443:443
   links:
     - webclient
-  volumes:
-    - ./Caddyfile:/etc/Caddyfile
-    - ./.caddy:/root/.caddy
 
 webclient:
   build: .
   restart: always
   environment:
     - NODE_ENV=production
+    - VIRTUAL_HOST=lupi.online
 
 newrelic:
   image: uzyexe/newrelic
