@@ -2,11 +2,9 @@ import React, { Component } from 'react';
 import ImageWithLabels from '../image-with-labels/';
 import renderIf from 'render-if';
 import {
-  Panel,
   ListGroup,
   Checkbox,
   Col,
-  Row,
   Grid,
 } from 'react-bootstrap';
 import Colors from '../../styles';
@@ -95,7 +93,6 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
   render() {
     const selectedLabels = this.state.labels.filter((value) => value);
     const labels = selectedLabels.map((element, i) => this.generateArray(element, i));
-    console.log(labels);
     return (<div>
       {renderIf(this.props.source)(() => (
         <Grid>
