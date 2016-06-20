@@ -86,7 +86,7 @@ source ~/.bashrc
 Edit [`docker-compose.yml`](docker-compose.yml) depending on your needs. Once ready:
 
 ```sh
-# Start databases
+# Build and start the application
 docker-compose up -d
 ```
 
@@ -109,6 +109,10 @@ docker-compose rm web-client
 
 # Update the repository
 git pull
+
+# Remove old image
+docker images
+docker rmi <IMAGE_ID>
 
 # Re-build and run container
 docker-compose up -d
