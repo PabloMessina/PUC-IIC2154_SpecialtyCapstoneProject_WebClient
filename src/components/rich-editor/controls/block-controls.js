@@ -22,6 +22,15 @@ const BLOCK_TYPES = [
 ];
 
 export default class BlockControls extends Component {
+  static get propTypes() {
+    return {
+      onShowFileModal: React.PropTypes.func.isRequired,
+      onCloseFileModal: React.PropTypes.func.isRequired,
+      editorState: React.PropTypes.object,
+      onChange: React.PropTypes.func.isRequired,
+    };
+  }
+
   constructor(props) {
     super(props);
     this.addMedia = this.addMedia.bind(this);
@@ -29,18 +38,20 @@ export default class BlockControls extends Component {
   }
 
   addMedia(type) {
-    const src = window.prompt('Enter a URL');
-    if (!src) {
-      return null;
-    }
-
-    const entityKey = Entity.create(type, 'IMMUTABLE', { src });
-
-    return AtomicBlockUtils.insertAtomicBlock(
-      this.props.editorState,
-      entityKey,
-      ' '
-    );
+    const onSuccess = (files) => {
+      let editorState = this.props.editorState;
+      files.forEach(({ url }) => {
+        const entityKey = Entity.create(type, 'IMMUTABLE', { src: url });
+        // Here the media is inserted
+        editorState = AtomicBlockUtils.insertAtomicBlock(
+          editorState,
+          entityKey,
+          ' '
+        );
+      });
+      this.props.onChange(editorState);
+    };
+    this.props.onShowFileModal({ type, multiple: true, acceptedFiles: `${type}/*`, onSuccess });
   }
 
   addLatex() {
@@ -50,62 +61,80 @@ export default class BlockControls extends Component {
       { content: 'Click\\ me...' }
     );
 
-    return AtomicBlockUtils.insertAtomicBlock(
+    this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
       this.props.editorState,
       entityKey,
       ' '
-    );
+    ));
   }
 
   add3D() {
-    const entityKey = Entity.create(
-      'model',
-      'IMMUTABLE',
-      { src: ' ' }
-    );
+    const editorState = this.props.editorState;
+    const onSuccess = (files) => {
+      const remoteFiles = { images: [] };
+      files.forEach(({ url, type }) => {
+        if (type === 'mtl' || type === 'obj') {
+          remoteFiles[type] = url;
+        } else {
+          remoteFiles.images.push();
+        }
+      });
+      const entityKey = Entity.create('model', 'IMMUTABLE', { source: { remoteFiles }, metadata: {} });
+      // Here the media is inserted
+      this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
+        editorState,
+        entityKey,
+        ' '
+      ));
+    };
 
-    return AtomicBlockUtils.insertAtomicBlock(
-      this.props.editorState,
-      entityKey,
-      ' '
-    );
+    this.props.onShowFileModal({
+      type: 'model',
+      multiple: true,
+      acceptedFiles: '.mtl,.obj,image/*',
+      maxFiles: 2,
+      onSuccess,
+    });
   }
 
   add2D() {
-    const entityKey = Entity.create(
-      'imageWithLabels',
-      'IMMUTABLE',
-      { src: ' ' }
-    );
+    const type = 'imageWithLabels';
+    const onSuccess = (files) => {
+      let editorState = this.props.editorState;
+      files.forEach(({ url }) => {
+        const entityKey = Entity.create(type, 'IMMUTABLE', { source: { url }, metadata: {} });
 
-    return AtomicBlockUtils.insertAtomicBlock(
-      this.props.editorState,
-      entityKey,
-      ' '
-    );
+        // Here the media is inserted
+        editorState = AtomicBlockUtils.insertAtomicBlock(
+          editorState,
+          entityKey,
+          ' '
+        );
+      });
+      this.props.onChange(editorState);
+    };
+    this.props.onShowFileModal({ type, multiple: true, acceptedFiles: 'image/*', onSuccess });
   }
 
   onBlockToggle(type) {
-    let state;
     switch (type) {
       case 'audio':
       case 'image':
       case 'video':
-        state = this.addMedia(type);
+        this.addMedia(type);
         break;
       case 'latex':
-        state = this.addLatex();
+        this.addLatex();
         break;
       case 'model':
-        state = this.add3D();
+        this.add3D();
         break;
       case 'imageWithLabels':
-        state = this.add2D();
+        this.add2D();
         break;
       default:
-        state = RichUtils.toggleBlockType(this.props.editorState, type);
+        this.props.onChange(RichUtils.toggleBlockType(this.props.editorState, type));
     }
-    this.props.onChange(state);
   }
 
   render() {
