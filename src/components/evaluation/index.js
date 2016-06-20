@@ -204,6 +204,16 @@ class EvaluationCreate extends Component {
     if (this.attendanceObserver) this.attendanceObserver.unsubscribe();
   }
 
+  onPublishConfirm = () => {
+    const { attendances } = this.state;
+    if (attendances.length !== 0 || confirm(  // eslint-disable-line
+      `This evaluation has no students assigned!
+
+      Do you really want to publish it?`)) {
+      this.onPublish(true);
+    }
+  }
+
   onPublish(published = false) {
     return evaluationService.patch(this.state.evaluation.id, { published })
       .then(evaluation => {
@@ -214,7 +224,7 @@ class EvaluationCreate extends Component {
   }
 
   onDelete() {
-    if (window.confirm('Do you really want to delete this test?')) {
+    if (window.confirm('Do you really want to delete this test?')) { // eslint-disable-line
       const { course, instance, evaluation } = this.state;
       const url = `/courses/show/${course.id}/instances/show/${instance.id}/evaluations`;
       return evaluationService.remove(evaluation.id)
@@ -565,7 +575,7 @@ class EvaluationCreate extends Component {
             {renderIf(canEdit)(() =>
               <ButtonToolbar className="pull-right" style={{ marginTop: 30 }}>
                 {renderIf(!evaluation.published)(() =>
-                  <Button bsStyle="primary" onClick={() => this.onPublish(true)}>Publish</Button>
+                  <Button bsStyle="primary" onClick={this.onPublishConfirm}>Publish</Button>
                 )}
                 {renderIf(evaluation.published)(() =>
                   <Button bsStyle="warning" onClick={() => this.onPublish(false)}>Un-Publish</Button>
