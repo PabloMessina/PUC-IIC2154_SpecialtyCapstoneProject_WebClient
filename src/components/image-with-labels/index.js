@@ -1095,6 +1095,19 @@ export default class ImageWithLabels extends Component {
     }
     this._.labelId = lid + 1;
     this._.regionId = rid + 1;
+
+    if (mode === READONLY) {
+      /* make sure to make visible labels that are selected */
+      const { selectedLabelIds } = this.props;
+      if (selectedLabelIds) {
+        selectedLabelIds.forEach(id => {
+          const label = this._.id2labelMap[id];
+          if (label) label.visible = true;
+          else console.warn('WARNING: id = ', id, ' not found in id2labelMap');
+        });
+      }
+    }
+
     this.renderForAWhile(0);
     if (mode !== REGIONSONLY && mode !== MULTISELECT
       && mode !== READONLY) this.forceUpdate(this.refreshAllLabelsPositions);
@@ -1699,7 +1712,7 @@ export default class ImageWithLabels extends Component {
     }
 
     return (
-      <div style={this.props.style}>
+      <div style={{ ...styles.root, ...this.props.style }}>
         <div ref="canvasWrapper" style={styles.canvasWrapper}>
           <canvas ref="imgCanvas" style={styles.canvas}></canvas>
           <canvas ref="labelCanvas" style={styles.canvas}></canvas>
@@ -1791,6 +1804,9 @@ ImageWithLabels.propTypes = {
 };
 
 const styles = {
+  root: {
+    display: 'inline-block',
+  },
   canvas: {
     position: 'absolute',
     top: 0,
