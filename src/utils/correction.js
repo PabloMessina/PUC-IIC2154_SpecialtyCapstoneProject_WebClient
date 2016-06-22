@@ -6,6 +6,7 @@ export default function correction(qtype, correct, answer, options) {
     case 'tshort': return tshort(correct.options, answer.options[0], options);
     case 'multiChoice': return multiChoice(correct.choices, answer.choices, options);
     case 'trueFalse': return trueFalse(correct.value, answer.value, options);
+    case 'correlation': return correlation(correct.choices, answer.choices, options);
     default: return null;
   }
 }
@@ -44,6 +45,24 @@ export function trueFalse(correct, answer) {
 
 export function multiChoice(correct, answer) {
   const reducing = (a, b) => a.reduce((count, current) => (b.indexOf(current) > -1 ? count : count + 1), 0);
+
+  const max = correct.length;
+  const dist = reducing(correct, answer) + reducing(answer, correct);
+  return {
+    correctness: Math.max(1 - (dist / max), 0),
+    accuracy: 1,
+  };
+}
+
+export function correlation(correct, answer) {
+  const equal = (a, b) => {
+    if (a.length !== b.length) return false;
+    return a.reduce((previous, current, index) => previous && b[index] === current, true);
+  };
+  const includes = (array, elem) => array
+    .reduce((previous, current) => previous || (equal(current, elem) && equal(elem, current)), false);
+
+  const reducing = (a, b) => b.reduce((count, current) => (includes(a, current) ? count : count + 1), 0);
 
   const max = correct.length;
   const dist = reducing(correct, answer) + reducing(answer, correct);

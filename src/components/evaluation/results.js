@@ -2,113 +2,56 @@
 
 import React, { PropTypes, Component } from 'react';
 import { Panel, Row, Col } from 'react-bootstrap';
-import { Pie as PieChart, Bar as BarChart } from 'react-chartjs';
+// import { Pie as PieChart, Bar as BarChart } from 'react-chartjs';
 import renderIf from 'render-if';
 
-import correction, { transform } from '../../utils/correction';
+// import correction, { transform } from '../../utils/correction';
 import app from '../../app';
 const answerService = app.service('/answers');
 
-import { Colors } from '../../styles';
+// import { Colors } from '../../styles';
 
-import { TrueFalse, MultiChoice, TShort } from '../questions';
+import {
+  TrueFalse,
+  MultiChoice,
+  TShort,
+  Correlation,
+} from '../questions';
+import {
+  TrueFalse as TrueFalseResult,
+  MultiChoice as MultiChoiceResult,
+  TShort as TShortResult,
+  Correlation as CorrelationResult,
+} from './qresults';
 
-const COLORS = {
-  RED: Colors.RED,
-  GREEN: Colors.MAIN,
-  GRAY: Colors.GRAY,
-};
+// const COLORS = {
+//   RED: Colors.RED,
+//   GREEN: Colors.MAIN,
+//   GRAY: Colors.GRAY,
+// };
 
 function questionFactory(qtype, props) {
   switch (qtype) {
     case 'trueFalse': return <TrueFalse {...props} />;
     case 'multiChoice': return <MultiChoice {...props} />;
     case 'tshort': return <TShort {...props} />;
+    case 'correlation': return <Correlation {...props} />;
     default: return null;
   }
 }
 
 function dataFactory(question, answers) {
+  const props = {
+    question,
+    answers,
+  };
   switch (question.qtype) {
-    case 'trueFalse': return dataFromTrueFalse(question, answers);
-    case 'multiChoice': return dataFromMultiChoice(question, answers);
-    case 'tshort': return dataFromTshort(question, answers);
+    case 'trueFalse': return <TrueFalseResult {...props} />;
+    case 'multiChoice': return <MultiChoiceResult {...props} />;
+    case 'tshort': return <TShortResult {...props} />;
+    case 'correlation': return <CorrelationResult {...props} />;
     default: return null;
   }
-}
-
-function dataFromMultiChoice(question, answers) {
-  const correct = question.answer;
-
-  const size = question.answer.choices.length;
-  const labels = Array(size + 1).fill(0).map((_, i) => (1 / size * i).toFixed(2));
-
-  const dataAnswers = answers
-    .map(answer => correction(question.qtype, correct, answer.answer).correctness.toFixed(2));
-  const data = Array(size + 1).fill(0);
-  dataAnswers.forEach(elem => (data[labels.findIndex(e => e === elem)] += 1));
-
-  const graph = {
-    labels,
-    datasets: [{
-      label: '',
-      data,
-    }],
-  };
-  return <BarChart data={graph} />;
-}
-
-function dataFromTrueFalse(question, answers) {
-  const data = answers
-    .map(a => a.answer)
-    .reduce((array, current) => {
-      if (current.value === 1) array[0] += 1;
-      else if (current.value === -1) array[1] += 1;
-      else array[2] += 1;
-      return array;
-    }, [0, 0, 0]);
-
-  const colors = [
-    COLORS.GREEN,
-    COLORS.RED,
-    COLORS.GRAY,
-  ];
-
-  const graph = {
-    labels: ['True', 'False', 'Unanswered'],
-    datasets: [{
-      data,
-      backgroundColor: colors,
-      hoverBackgroundColor: colors,
-    }],
-  };
-
-  return <PieChart data={graph} />;
-}
-
-function dataFromTshort(question, answers) {
-  // const correct = question.answer.options.map(ans => transform(ans.toLowerCase()));
-
-  let data = answers.map(ans => transform(ans.answer.options[0].toLowerCase()))
-    .reduce((last, current) => {
-      if (last[current]) {
-        last[current] += 1;
-      } else {
-        last[current] = 1;
-      }
-      return last;
-    }, {});
-  const labels = Object.keys(data);
-  data = labels.map(label => data[label]);
-
-  const graph = {
-    labels,
-    datasets: [{
-      data,
-    }],
-  };
-
-  return <BarChart data={graph} />;
 }
 
 export default class EvaluationResults extends Component {
