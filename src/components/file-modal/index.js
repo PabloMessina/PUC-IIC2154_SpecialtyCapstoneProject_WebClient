@@ -110,7 +110,7 @@ export default class FileModal extends Component {
       uploadMultiple: true,
       acceptedFiles,
       maxFiles: maxFiles || null,
-      // accept: (file) => console.log(file),
+            // accept: (file) => console.log(file),
       // addRemoveLinks: true,
     };
 
