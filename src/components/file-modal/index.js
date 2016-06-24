@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
 import DropzoneComponent from 'react-dropzone-component/lib/react-dropzone';
-import { Modal, Button } from 'react-bootstrap';
+import { Alert, Modal, Button } from 'react-bootstrap';
 import update from 'react-addons-update';
+import renderIf from 'render-if';
 
 // const SUPPORTED_FILES = {
   // image: ['jpg'],
@@ -32,6 +33,7 @@ export default class FileModal extends Component {
 
     // this.updateProgress = this.updateProgress.bind(this);
     this.onSuccess = this.onSuccess.bind(this);
+    this.onError = this.onError.bind(this);
     this.onHide = this.onHide.bind(this);
     this.onOk = this.onOk.bind(this);
     this.onClick = this.onClick.bind(this);
@@ -72,6 +74,10 @@ export default class FileModal extends Component {
     });
   }
 
+  onError(file, error) {
+    this.setState({ error });
+  }
+
   onFinishUpload() {
     this.setState({ uploading: false, uploaded: true });
   }
@@ -81,9 +87,11 @@ export default class FileModal extends Component {
   }
 
   onClick() {
-    const { uploaded } = this.state;
-    if (uploaded) {
+    const { uploaded, error } = this.state;
+    if (uploaded && !error) {
       this.onOk();
+    } else if (error) {
+      this.props.onHide();
     } else {
       this.onUpload();
     }
@@ -94,7 +102,7 @@ export default class FileModal extends Component {
 
   render() {
     const { show, acceptedFiles, maxFiles } = this.props;
-    const { canUpload, uploading, uploaded } = this.state;
+    const { canUpload, uploading, uploaded, error } = this.state;
 
     const djsConfig = {
       createImageThumbnails: false,
@@ -118,6 +126,7 @@ export default class FileModal extends Component {
       successmultiple: this.onSuccess,
       addedfile: this.onAddFile,
       queuecomplete: this.onFinishUpload,
+      error: this.onError,
     };
 
     const buttonText = uploaded ? 'Ok' : 'Upload';
@@ -125,16 +134,24 @@ export default class FileModal extends Component {
     return (
       <Modal show={show} onHide={this.onHide}>
         <Modal.Body>
-          <DropzoneComponent
-            djsConfig={djsConfig}
-            eventHandlers={eventHandlers}
-            config={config}
-          />
+          {renderIf(!error)(() => (
+            <DropzoneComponent
+              djsConfig={djsConfig}
+              eventHandlers={eventHandlers}
+              config={config}
+            />
+          ))}
+          {renderIf(error)(() => (
+            <Alert bsStyle="danger" onDismiss={this.handleAlertDismiss}>
+              <h4>Oh snap! You got an error!</h4>
+              <p>Please try again later.</p>
+            </Alert>
+          ))}
         </Modal.Body>
         <Modal.Footer>
           <Button
-            disabled={uploading || !canUpload}
-            bsStyle="success"
+            disabled={!error && (uploading || !canUpload)}
+            bsStyle={error ? 'danger' : 'success'}
             onClick={this.onClick}
           >
             {buttonText}
