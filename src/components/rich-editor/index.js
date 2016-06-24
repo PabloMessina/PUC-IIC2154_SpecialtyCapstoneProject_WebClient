@@ -99,7 +99,7 @@ export default class RichEditor extends Component {
     // this.focus();
     this.setState({ showFileModal: false, fileModalProps: {} }, () => {
       this.focus();
-      processFiles();
+      if (processFiles) processFiles();
     });
   }
 

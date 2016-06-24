@@ -37,6 +37,27 @@ export default class BlockControls extends Component {
     this.onBlockToggle = this.onBlockToggle.bind(this);
   }
 
+  onBlockToggle(type) {
+    switch (type) {
+      case 'audio':
+      case 'image':
+      case 'video':
+        this.addMedia(type);
+        break;
+      case 'latex':
+        this.addLatex();
+        break;
+      case 'model':
+        this.add3D();
+        break;
+      case 'imageWithLabels':
+        this.add2D();
+        break;
+      default:
+        this.props.onChange(RichUtils.toggleBlockType(this.props.editorState, type));
+    }
+  }
+
   addMedia(type) {
     const onSuccess = (files) => {
       let editorState = this.props.editorState;
@@ -92,7 +113,7 @@ export default class BlockControls extends Component {
       type: 'model',
       multiple: true,
       acceptedFiles: '.mtl,.obj,image/*',
-      maxFiles: 2,
+      maxFiles: 10,
       onSuccess,
     });
   }
@@ -114,27 +135,6 @@ export default class BlockControls extends Component {
       this.props.onChange(editorState);
     };
     this.props.onShowFileModal({ type, multiple: true, acceptedFiles: 'image/*', onSuccess });
-  }
-
-  onBlockToggle(type) {
-    switch (type) {
-      case 'audio':
-      case 'image':
-      case 'video':
-        this.addMedia(type);
-        break;
-      case 'latex':
-        this.addLatex();
-        break;
-      case 'model':
-        this.add3D();
-        break;
-      case 'imageWithLabels':
-        this.add2D();
-        break;
-      default:
-        this.props.onChange(RichUtils.toggleBlockType(this.props.editorState, type));
-    }
   }
 
   render() {
