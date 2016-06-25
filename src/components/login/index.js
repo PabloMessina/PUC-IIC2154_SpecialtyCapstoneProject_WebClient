@@ -6,7 +6,7 @@ import {
   Button,
   FormGroup,
   FormControl,
-  ControlLabel,
+  Image,
 } from 'react-bootstrap';
 import ErrorAlert from '../error-alert';
 import DocumentTitle from 'react-document-title';
@@ -43,12 +43,18 @@ class Login extends Component {
     // See: https://github.com/yannickcr/eslint-plugin-react/blob/master/docs/rules/jsx-no-bind.md#es6-classes
     this.authenticate = this.authenticate.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
+    this.onSignupClick = this.onSignupClick.bind(this);
   }
 
   onSubmit(e) {
     // Prevent page refresh
     e.preventDefault();
     this.authenticate();
+  }
+
+  onSignupClick() {
+    const url = '/signup';
+    return this.props.router.push(url);
   }
 
   setEmail(value) {
@@ -87,11 +93,16 @@ class Login extends Component {
     return (
       <Grid>
         <DocumentTitle title="Login" />
-        <Col xs={12} xsOffset={0} md={6} mdOffset={3}>
+        <Col xs={12} xsOffset={0} sm={6} smOffset={3} md={4} mdOffset={4} style={styles.panel}>
           <Panel>
+            <Image
+              src="/img/logo.png"
+              style={styles.logo}
+              responsive
+            />
+            <hr />
             <form onSubmit={this.onSubmit}>
               <FormGroup controlId="name" validationState={this.state.emailValidation}>
-                <ControlLabel>Email Address</ControlLabel>
                 <FormControl
                   type="text"
                   label="Email Address"
@@ -103,22 +114,26 @@ class Login extends Component {
               </FormGroup>
 
               <FormGroup>
-                <ControlLabel>Password</ControlLabel>
                 <FormControl
                   type="password"
                   label="Password"
-                  placeholder="********"
+                  placeholder="••••••••••"
                   value={this.state.password}
                   onChange={e => this.setState({ password: e.target.value })}
                 />
               </FormGroup>
+              <br />
               <Button
+                block
                 type="submit"
                 bsStyle="primary"
+                style={styles.bttn}
                 disabled={this.state.submiting}
               >
-                Log in
+                Login
               </Button>
+              <br />
+              <a onClick={this.onSignupClick} style={{ cursor: 'pointer' }}>Don't have an account? Sign up here</a>
             </form>
             <br />
 
@@ -137,5 +152,24 @@ class Login extends Component {
     );
   }
 }
+
+const styles = {
+  panel: {
+    paddingTop: '70px',
+    verticalAlign: 'center',
+  },
+  title: {
+    textAlign: 'center',
+  },
+  bttn: {
+    margin: 'auto',
+    display: 'block',
+  },
+  logo: {
+    width: '70px',
+    height: '70px',
+    margin: 'auto',
+  },
+};
 
 export default withRouter(Login);

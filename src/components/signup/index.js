@@ -52,6 +52,12 @@ class SignUp extends Component {
     };
     this.onSubmit = this.onSubmit.bind(this);
     this.authenticate = this.authenticate.bind(this);
+    this.onLoginClick = this.onLoginClick.bind(this);
+  }
+
+  onLoginClick() {
+    const url = '/login';
+    return this.props.router.push(url);
   }
 
   onSubmit(e) {
@@ -116,74 +122,76 @@ class SignUp extends Component {
     return (
       <Grid style={styles.container}>
         <DocumentTitle title="Sign up" />
-        <Row>
-          <Col xs={12}>
-            <h1>
+        <Col xs={12} xsOffset={0} sm={6} smOffset={3} md={4} mdOffset={4} style={styles.panel}>
+          <Panel>
+            <h3>
               Create Account
-            </h1>
+            </h3>
             <p>Fill this form to create your account</p>
-          </Col>
-        </Row>
-        <Row>
-          <Col xs={12}>
-            <Panel>
-              <form onSubmit={this.onSubmit}>
-                <FormGroup validationState={this.state.nameValidation}>
-                  <ControlLabel>Name</ControlLabel>
-                  <FormControl
-                    type="text"
-                    label="Name"
-                    value={this.state.name}
-                    onChange={e => this.setName(e.target.value)}
-                  />
-                  <FormControl.Feedback />
-                  {renderIf(this.state.nameValidation === 'error')(
-                    <HelpBlock>Must have at least 4 characters.</HelpBlock>
-                  )}
-                </FormGroup>
-                <FormGroup validationState={this.state.emailValidation}>
-                  <ControlLabel>Email</ControlLabel>
-                  <FormControl
-                    type="email"
-                    label="Email"
-                    value={this.state.email}
-                    onChange={e => this.setEmail(e.target.value)}
-                  />
-                  <FormControl.Feedback />
-                  {renderIf(this.state.emailValidation === 'error')(
-                    <HelpBlock>Invalid email.</HelpBlock>
-                  )}
-                </FormGroup>
-                <FormGroup validationState={this.state.passwordValidation}>
-                  <ControlLabel>Password</ControlLabel>
-                  <FormControl
-                    type="password"
-                    label="Password"
-                    value={this.state.password}
-                    onChange={e => this.setPassword(e.target.value)}
-                  />
-                  <FormControl.Feedback />
-                  {renderIf(this.state.passwordValidation === 'error')(
-                    <HelpBlock>Must have at least 4 characters.</HelpBlock>
-                  )}
-                </FormGroup>
-                <Button
-                  bsStyle="primary"
-                  type="submit"
-                  value="Submit"
-                >
-                  Submit
-                </Button>
-              </form>
+            <hr />
+            <form onSubmit={this.onSubmit}>
+              <FormGroup validationState={this.state.nameValidation}>
+                <ControlLabel>Name:</ControlLabel>
+                <FormControl
+                  type="text"
+                  label="Name"
+                  placeholder="John Smith"
+                  value={this.state.name}
+                  onChange={e => this.setName(e.target.value)}
+                />
+                <FormControl.Feedback />
+                {renderIf(this.state.nameValidation === 'error')(
+                  <HelpBlock>Must have at least 4 characters.</HelpBlock>
+                )}
+              </FormGroup>
+              <FormGroup validationState={this.state.emailValidation}>
+                <ControlLabel>Email:</ControlLabel>
+                <FormControl
+                  type="email"
+                  label="Email"
+                  placeholder="user@email.com"
+                  value={this.state.email}
+                  onChange={e => this.setEmail(e.target.value)}
+                />
+                <FormControl.Feedback />
+                {renderIf(this.state.emailValidation === 'error')(
+                  <HelpBlock>Invalid email.</HelpBlock>
+                )}
+              </FormGroup>
+              <FormGroup validationState={this.state.passwordValidation}>
+                <ControlLabel>Password:</ControlLabel>
+                <FormControl
+                  type="password"
+                  label="Password"
+                  placeholder="••••••••••"
+                  value={this.state.password}
+                  onChange={e => this.setPassword(e.target.value)}
+                />
+                <FormControl.Feedback />
+                {renderIf(this.state.passwordValidation === 'error')(
+                  <HelpBlock>Must have at least 4 characters.</HelpBlock>
+                )}
+              </FormGroup>
+              <Button
+                block
+                bsStyle="primary"
+                type="submit"
+                value="Submit"
+                style={styles.bttn}
+              >
+                Submit
+              </Button>
+              <br />
+              <a onClick={this.onLoginClick} style={{ cursor: 'pointer' }}>Already have an account? Login here</a>
+            </form>
 
-              <ErrorAlert
-                error={this.state.error}
-                onDismiss={() => this.setState({ error: null })}
-              />
+            <ErrorAlert
+              error={this.state.error}
+              onDismiss={() => this.setState({ error: null })}
+            />
 
-            </Panel>
-          </Col>
-        </Row>
+          </Panel>
+        </Col>
       </Grid>
     );
   }
@@ -196,6 +204,17 @@ class SignUp extends Component {
 const styles = {
   container: {
 
+  },
+  title: {
+    textAlign: 'center',
+  },
+  panel: {
+    paddingTop: '50px',
+    verticalAlign: 'center',
+  },
+  bttn: {
+    margin: 'auto',
+    display: 'block',
   },
 };
 
