@@ -25,6 +25,7 @@ module.exports = {
     new ExtractTextPlugin('styles.css'),
     new CopyWebpackPlugin([
       { from: 'img', to: 'img' },
+      { from: 'favicons', to: '.' },
     ]),
     new webpack.optimize.OccurrenceOrderPlugin(),
     new webpack.optimize.DedupePlugin(),
