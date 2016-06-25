@@ -128,13 +128,13 @@ class CourseCreate extends Component {
         </Breadcrumb>
 
         <Row>
-          <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
+          <Col xsOffset={0} xs={12} mdOffset={1} md={7}>
             <h2>New Course</h2>
           </Col>
         </Row>
 
         <Row>
-          <Col xsOffset={0} xs={12} smOffset={1} sm={7}>
+          <Col xsOffset={0} xs={12} mdOffset={1} md={7} style={{ marginBottom: 20 }}>
             <p>
               Take a group of people from your organization and assing them evaluations
               and a bibliography of atlases to read.
@@ -145,12 +145,12 @@ class CourseCreate extends Component {
               <li>Trace the performance of your students.</li>
             </ul>
 
-            <hr />
-
             <ErrorAlert
               error={this.state.error}
               onDismiss={() => this.setState({ error: null })}
             />
+
+            <hr />
 
             <form onSubmit={this.onSubmit}>
 
@@ -193,6 +193,18 @@ class CourseCreate extends Component {
                 <Select
                   multi
                   allowCreate
+                  onBlur={e => {
+                    const value = e.target.value;
+                    if (value && value.length) {
+                      // We just follow the format of labels of the component
+                      const instances = [...this.state.instances, {
+                        create: true,
+                        label: value,
+                        value,
+                      }];
+                      this.setState({ instances });
+                    }
+                  }}
                   addLabelText={'Add instance: {label}'}
                   noResultsText="Type and add a instance with any name"
                   value={this.state.instances}
@@ -214,7 +226,7 @@ class CourseCreate extends Component {
             </form>
           </Col>
 
-          <Col xsOffset={0} xs={12} sm={3}>
+          <Col xsOffset={0} xs={12} md={3}>
             <Panel>
               <h5><Icon style={styles.icon} size="lg" name="info-circle" /> Need help?</h5>
               <hr />

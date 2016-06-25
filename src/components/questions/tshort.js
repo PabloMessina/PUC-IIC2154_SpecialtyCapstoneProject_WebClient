@@ -1,140 +1,98 @@
-import React, { PropTypes, Component } from 'react';
+import React from 'react';
 import {
   Button,
   FormGroup,
   FormControl,
 } from 'react-bootstrap';
 import renderIf from 'render-if';
-import debounce from 'lodash/debounce';
-
 
 import compose, { QuestionPropTypes } from './question';
 
 
-class TShort extends Component {
+const TShort = ({ mode, answer, onAnswerChange, ...props }) => {
+  // Skip problems with nulls
+  const options = (answer.options || []).map(o => o || '');
 
-  static get propTypes() {
-    return { ...QuestionPropTypes, interval: PropTypes.number };
+  const subcomp = {
+    options,
+    onAddAnswer: () => onAnswerChange({ options: [...options, ''] }),
+    onTextChange: (e, index) => {
+      e.preventDefault();
+      const changed = [...options];
+      changed[index] = e.target.value;
+      onAnswerChange({ options: changed });
+    },
+    onRemoveAnswer: (e, index) => {
+      e.preventDefault();
+      const changed = [...options];
+      changed.splice(index, 1);
+      onAnswerChange({ options: changed });
+    },
+  };
+
+  switch (mode) {
+    case 'editor': return <Editor {...subcomp} {...props} />;
+    case 'responder': return <Responder {...subcomp} {...props} />;
+    case 'reader': return <Responder {...subcomp} {...props} />;
+    default: return null;
   }
+};
 
-  static get defaultProps() {
-    return { answer: { options: [] }, interval: 3000 };
-  }
-
-  constructor(props) {
-    super(props);
-    const answer = props.answer;
-    this.state = {
-      values: answer.options && answer.options.length ? answer.options : [''],
-    };
-    this.onTextChange = this.onTextChange.bind(this);
-    this.onAddAnswer = this.onAddAnswer.bind(this);
-    this.onRemoveAnswer = this.onRemoveAnswer.bind(this);
-
-    if (this.props.onAnswerChange) {
-      // Debouce this method call (only call it if has no change after the interval)
-      this.onAnswerChange = debounce(this.props.onAnswerChange, props.interval);
-    }
-  }
-
-  componentWillReceiveProps(nextProps) {
-    this.setState({ values: nextProps.answer.options || [] });
-  }
-
-  onAddAnswer() {
-    const values = [...this.state.values, ''];
-    this.setState({ values });
-    if (this.onAnswerChange) this.onAnswerChange({ options: values });
-  }
-
-  onRemoveAnswer(event, index) {
-    event.preventDefault();
-
-    const values = [...this.state.values];
-    values.splice(index, 1);
-    this.setState({ values });
-    if (this.onAnswerChange) this.onAnswerChange({ options: values });
-  }
-
-  onTextChange(event, index) {
-    event.preventDefault();
-
-    const values = [...this.state.values];
-    values[index] = event.target.value;
-    this.setState({ values });
-    if (this.onAnswerChange) this.onAnswerChange({ options: values });
-  }
-
-  renderEditor() {
-    const { disabled } = this.props;
-    const { values } = this.state;
-
-    return (
-      <form style={styles.container} onSubmit={e => e.preventDefault()}>
-        <FormGroup>
-          {values.map((value, i) => (
-            <FormGroup key={i} style={styles.row}>
-              <FormControl
-                type="text"
-                placeholder={i > 0 ? 'Enter alternative answer' : 'Enter answer'}
-                value={value}
-                disabled={disabled}
-                onChange={e => this.onTextChange(e, i)}
-              />
-              {renderIf(!disabled && i > 0)(() => (
-                <Button
-                  style={styles.addButton}
-                  bsStyle="link"
-                  type="button"
-                  onClick={e => this.onRemoveAnswer(e, i)}
-                >
-                  -
-                </Button>
-              ))}
-            </FormGroup>
+const Editor = ({ options, disabled, onAddAnswer, onRemoveAnswer, onTextChange, ...props }) => (
+  <form style={styles.container} onSubmit={e => e.preventDefault()} {...props}>
+    <FormGroup>
+      {options.map((value, i) => (
+        <FormGroup key={i} style={styles.row}>
+          <FormControl
+            type="text"
+            placeholder={i > 0 ? 'Enter alternative answer' : 'Enter answer'}
+            value={value}
+            disabled={disabled}
+            onChange={e => onTextChange(e, i)}
+          />
+          {renderIf(!disabled && i > 0)(() => (
+            <Button
+              style={styles.addButton}
+              bsStyle="link"
+              type="button"
+              onClick={e => onRemoveAnswer(e, i)}
+            >
+              -
+            </Button>
           ))}
         </FormGroup>
-        <Button
-          style={styles.addButton}
-          bsStyle="link"
-          type="button"
-          disabled={disabled}
-          onClick={this.onAddAnswer}
-        >
-          Add another posible answer
-        </Button>
-      </form>
-    );
-  }
+      ))}
+    </FormGroup>
+    <Button
+      style={styles.addButton}
+      bsStyle="link"
+      type="button"
+      disabled={disabled}
+      onClick={onAddAnswer}
+    >
+      Add another posible answer
+    </Button>
+  </form>
+);
 
+const Responder = ({ options, disabled, onTextChange, ...props }) => (
+  <form style={styles.container} onSubmit={e => e.preventDefault()} {...props}>
+    <FormControl
+      style={styles.input}
+      type="text"
+      disabled={disabled}
+      placeholder="Enter here your answer"
+      value={options[0]}
+      onChange={e => onTextChange(e, 0)}
+    />
+  </form>
+);
 
-  renderResponder() {
-    const { disabled } = this.props;
-    const { values } = this.state;
-
-    return (
-      <form style={styles.container} onSubmit={e => e.preventDefault()}>
-        <FormControl
-          style={styles.input}
-          type="text"
-          disabled={disabled}
-          placeholder="Enter here your answer"
-          value={values[0]}
-          onChange={e => this.onTextChange(e, 0)}
-        />
-      </form>
-    );
-  }
-
-  render() {
-    switch (this.props.mode) {
-      case 'editor': return this.renderEditor();
-      case 'responder': return this.renderResponder();
-      case 'reader': return this.renderResponder();
-      default: return null;
-    }
-  }
-}
+TShort.propTypes = QuestionPropTypes;
+TShort.defaultProps = { answer: { options: [] } };
+TShort.isAnswered = (answer) => answer && answer.options && answer.options.length && answer.options[0].length;
+Editor.propTypes = QuestionPropTypes;
+Responder.propTypes = QuestionPropTypes;
 
 const styles = {
   container: {

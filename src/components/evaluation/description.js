@@ -318,10 +318,13 @@ export default class EvaluationDescription extends Component {
                 <ControlLabel>Tag</ControlLabel>
                 <Select
                   simpleValue={false}
-                  value={tag}
+                  value={tag || ''}
                   options={tags}
                   onChange={value => this.onChange('tag', value)}
-                  onBlur={e => this.onChange('tag', e.target.value)}
+                  onBlur={e => {
+                    const value = e.target.value;
+                    if (value && value.length) this.onChange('tag', value);
+                  }}
                   disabled={disabled}
                   allowCreate
                   addLabelText="Create the tag: {label}"

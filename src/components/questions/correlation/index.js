@@ -5,7 +5,8 @@ import ReactDOM from 'react-dom';
 import { Col, Row, Panel, Button, Alert } from 'react-bootstrap';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
-import _ from 'lodash';
+import isEqual from 'lodash/isEqual';
+import cloneDeep from 'lodash/cloneDeep';
 
 import compose, { QuestionPropTypes } from '../question';
 import Canvas from './canvas';
@@ -15,22 +16,18 @@ import Coordinates from './coordinates';
 
 class Correlation extends Component {
 
-  static get propTypes() {
-    return QuestionPropTypes;
-  }
+  static propTypes = QuestionPropTypes
 
-  static get defaultProps() {
-    return {
-      fields: {
-        columns: [
-          ['element 1', 'element 2'],
-          ['element A', 'element B'],
-        ],
-      },
-      answer: {
-        choices: [],
-      },
-    };
+  static defaultProps = {
+    fields: {
+      columns: [
+        ['element 1', 'element 2'],
+        ['element A', 'element B'],
+      ],
+    },
+    answer: {
+      choices: [],
+    },
   }
 
   static instructions({ style, ...props }) {
@@ -55,7 +52,7 @@ class Correlation extends Component {
       showCantDelete: false,
     };
 
-    this.coordinates = new Coordinates(bootstrapCSS.rowMarginBottom);
+    this.coordinates = new Coordinates(BOOTSTRAP_CSS.rowMarginBottom);
     this.updateElements = true;
     this.resetHeights();
   }
@@ -78,7 +75,7 @@ class Correlation extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (!_.isEqual(this.props.fields, nextProps.fields)) {
+    if (!isEqual(this.props.fields, nextProps.fields)) {
       this.handleResize();
     }
   }
@@ -105,7 +102,7 @@ class Correlation extends Component {
   }
 
   componentWillUpdate(nextProps, nextState) {
-    this.updateElements = _.isEqual(this.state.dragging, nextState.dragging);
+    this.updateElements = isEqual(this.state.dragging, nextState.dragging);
   }
 
   onElementClick = (sourceColumn, sourceIndex) => {
@@ -170,7 +167,7 @@ class Correlation extends Component {
   linkElements = (newChoice) => {
     const { answer, onAnswerChange } = this.props;
     const choices = [...answer.choices];
-    const index = choices.findIndex(choice => _.isEqual(choice, newChoice));
+    const index = choices.findIndex(choice => isEqual(choice, newChoice));
     if (index === -1) {
       // add answer
       choices.push(newChoice);
@@ -185,7 +182,7 @@ class Correlation extends Component {
 
   onEdit = (columnNumber, index, name) => {
     const { fields, onFieldsChange } = this.props;
-    const columns = _.cloneDeep(fields.columns);
+    const columns = cloneDeep(fields.columns);
     columns[columnNumber][index] = name;
 
     onFieldsChange({ columns });
@@ -199,7 +196,7 @@ class Correlation extends Component {
 
     const { answer, fields, onFieldsAndAnswerChange } = this.props;
 
-    const columns = _.cloneDeep(fields.columns);
+    const columns = cloneDeep(fields.columns);
     columns[deletingColNum].splice(deletingIndex, 1);
 
     const choices = [];
@@ -225,7 +222,7 @@ class Correlation extends Component {
   onAddElementClick = (columnNumber) => {
     const newName = undefined;
     const { fields, onFieldsChange } = this.props;
-    const columns = _.cloneDeep(fields.columns);
+    const columns = cloneDeep(fields.columns);
     columns[columnNumber].push(newName);
     onFieldsChange({ columns });
   }
@@ -254,7 +251,7 @@ class Correlation extends Component {
     const { fields, mode } = this.props;
     const { extraRowSpace, dragging } = this.state;
     const { columns } = fields;
-    const { md, sm, xs } = gridElementsColumns;
+    const { md, sm, xs } = GRID_ELEMENTS_COLUMNS;
     const cursorClick = dragging && dragging.sourceColumn !== i;
     const isDragging = !!dragging;
     const canEdit = mode === 'editor';
@@ -283,7 +280,7 @@ class Correlation extends Component {
   }
 
   renderAddElementButton = (i) => {
-    const { md, sm, xs } = gridElementsColumns;
+    const { md, sm, xs } = GRID_ELEMENTS_COLUMNS;
     const pull = i === 0 ? 'pull-right' : 'pull-left';
 
     return (
@@ -333,10 +330,10 @@ class Correlation extends Component {
 
     const choices = answer ? answer.choices : [];
 
-    const { md, sm, xs } = gridElementsColumns;
-    const mdCanvas = 12 - 2 * md;
-    const smCanvas = 12 - 2 * sm;
-    const xsCanvas = 12 - 2 * xs;
+    const { md, sm, xs } = GRID_ELEMENTS_COLUMNS;
+    const MD_CANVAS = 12 - 2 * md;
+    const SM_CANVAS = 12 - 2 * sm;
+    const XS_CANVAS = 12 - 2 * xs;
 
     const onMouseMove = dragging ? dragging.onMouseMove : null;
     const cursor = dragging ? 'cursorGrabbing' : '';
@@ -366,7 +363,7 @@ class Correlation extends Component {
             {this.renderElementsColumn(0)}
             <Col
               ref={ref => { this.colRef = ref; }}
-              md={mdCanvas} sm={smCanvas} xs={xsCanvas}
+              md={MD_CANVAS} sm={SM_CANVAS} xs={XS_CANVAS}
             />
             {this.renderElementsColumn(1)}
           </div>
@@ -378,7 +375,7 @@ class Correlation extends Component {
           <div>
             <Row style={styles.buttonsRow}>
               {this.renderAddElementButton(0)}
-              <Col md={mdCanvas} sm={smCanvas} xs={xsCanvas} />
+              <Col md={MD_CANVAS} sm={SM_CANVAS} xs={XS_CANVAS} />
               {this.renderAddElementButton(1)}
             </Row>
 
@@ -410,14 +407,14 @@ class Correlation extends Component {
 export default compose(Correlation);
 
 
-const gridElementsColumns = {
+const GRID_ELEMENTS_COLUMNS = {
   md: 3,
   sm: 4,
   xs: 4,
 };
 
 // Should match bootstrap's CSS
-const bootstrapCSS = {
+const BOOTSTRAP_CSS = {
   rowMarginBottom: 23,
 };
 
@@ -430,7 +427,7 @@ const styles = {
     position: 'absolute',
   },
   buttonsRow: {
-    marginTop: bootstrapCSS.rowMarginBottom,
-    marginBottom: bootstrapCSS.rowMarginBottom,
+    marginTop: BOOTSTRAP_CSS.rowMarginBottom,
+    marginBottom: BOOTSTRAP_CSS.rowMarginBottom,
   },
 };

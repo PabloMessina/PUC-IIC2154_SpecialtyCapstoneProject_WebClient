@@ -85,40 +85,33 @@ const Section = ({ active, disabled, children, onClick, tooltip, ...props }) => 
 };
 
 
-class EvaluationCreate extends Component {
+class Evaluation extends Component {
 
-  static get propTypes() {
-    return {
-      // Main object
-      evaluation: React.PropTypes.object,
+  static propTypes = {
+    // Main object
+    evaluation: React.PropTypes.object,
 
-      // Defaults
-      questions: React.PropTypes.array,
-      attendances: React.PropTypes.array,
+    // Defaults
+    questions: React.PropTypes.array,
+    attendances: React.PropTypes.array,
 
-      // Instructor mode
-      evaluationQuestions: React.PropTypes.array,
-      // Student mode
-      answers: React.PropTypes.object,
+    // Instructor mode
+    evaluationQuestions: React.PropTypes.array,
+    // Student mode
+    answers: React.PropTypes.object,
 
-      // React Router
-      router: React.PropTypes.object,
-      params: React.PropTypes.object,
-      children: React.PropTypes.any,
-      location: React.PropTypes.any,
-
-      // groups: React.PropTypes.array,
-      // attendance: React.PropTypes.object,
-    };
+    // React Router
+    router: React.PropTypes.object,
+    params: React.PropTypes.object,
+    children: React.PropTypes.any,
+    location: React.PropTypes.any,
   }
 
-  static get defaultProps() {
-    return {
-      questions: [],
-      evaluationQuestions: [],
-      answers: {},
-      attendances: [],
-    };
+  static defaultProps = {
+    questions: [],
+    evaluationQuestions: [],
+    answers: {},
+    attendances: [],
   }
 
   constructor(props) {
@@ -153,28 +146,6 @@ class EvaluationCreate extends Component {
       tabStates: Array(SECTIONS.length).fill('default'),
       location: {},
     };
-
-    this.findOrCreateAnswer = this.findOrCreateAnswer.bind(this);
-    this.startEvaluation = this.startEvaluation.bind(this);
-
-    this.observe = this.observe.bind(this);
-    this.observeAnswers = this.observeAnswers.bind(this);
-    this.observeEvaluation = this.observeEvaluation.bind(this);
-    this.observeEvaluationQuestions = this.observeEvaluationQuestions.bind(this);
-    this.observeQuestions = this.observeQuestions.bind(this);
-
-    this.onPublish = this.onPublish.bind(this);
-    this.onDelete = this.onDelete.bind(this);
-    this.onNavigateTo = this.onNavigateTo.bind(this);
-    this.onAnswerChange = this.onAnswerChange.bind(this);
-    this.onFieldsChange = this.onFieldsChange.bind(this);
-    this.onNavigateTo = this.onNavigateTo.bind(this);
-    this.onQuestionAdd = this.onQuestionAdd.bind(this);
-    this.onQuestionRemove = this.onQuestionRemove.bind(this);
-    // this.onGroupsChange = this.onGroupsChange.bind(this);
-    // this.onAttendantsChange = this.onAttendantsChange.bind(this);
-
-    this.getLocation = this.getLocation.bind(this);
   }
 
   componentDidMount() {
@@ -214,8 +185,9 @@ class EvaluationCreate extends Component {
     }
   }
 
-  onPublish(published = false) {
-    return evaluationService.patch(this.state.evaluation.id, { published })
+  onPublish = (published = false) => {
+    const id = this.state.evaluation.id;
+    return evaluationService.patch(id, { published })
       .then(evaluation => {
         this.setState({ evaluation, error: null });
         return evaluation;
@@ -223,7 +195,7 @@ class EvaluationCreate extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  onDelete() {
+  onDelete = () => {
     if (window.confirm('Do you really want to delete this test?')) { // eslint-disable-line
       const { course, instance, evaluation } = this.state;
       const url = `/courses/show/${course.id}/instances/show/${instance.id}/evaluations`;
@@ -234,7 +206,7 @@ class EvaluationCreate extends Component {
     return true;
   }
 
-  onAnswerChange(question, answer) {
+  onAnswerChange = (question, answer) => {
     const { questions } = this.state;
     const indexQ = questions.findIndex((q) => q.id === question.id);
     questions[indexQ].answer = answer;
@@ -245,11 +217,11 @@ class EvaluationCreate extends Component {
     return null;
   }
 
-  onFieldsChange() {
+  onFieldsChange = () => {
     throw new Error('onFieldsChange: not implemented!');
   }
 
-  onQuestionAdd(question) {
+  onQuestionAdd = (question) => {
     if (!question) return null;
     this.setState({ syncing: true });
 
@@ -259,7 +231,7 @@ class EvaluationCreate extends Component {
       .catch(error => this.setState({ error, syncing: false }));
   }
 
-  onQuestionRemove(question) {
+  onQuestionRemove = (question) => {
     if (!question) return null;
     this.setState({ syncing: true });
 
@@ -271,24 +243,19 @@ class EvaluationCreate extends Component {
     }
   }
 
-  onNavigateTo(url) {
-    this.props.router.push(url);
-  }
+  onNavigateTo = (url) => this.props.router.push(url)
 
-  getLocation(options) {
-    // Convert to promise
-    return new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, options);
-    }).then(position => ({
-      type: 'Point',
-      coordinates: [
-        position.coords.latitude,
-        position.coords.longitude,
-      ],
-    }));
-  }
+  getLocation = (options) => new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, options);
+  }).then(position => ({
+    type: 'Point',
+    coordinates: [
+      position.coords.latitude,
+      position.coords.longitude,
+    ],
+  }))
 
-  observe(evl) {
+  observe = (evl) => {
     const user = currentUser();
 
     this.evaluationObserver = this.observeEvaluation(evl).subscribe(evaluation => {
@@ -331,7 +298,7 @@ class EvaluationCreate extends Component {
     });
   }
 
-  observeAnswers(evaluation, attendance, questions) {
+  observeAnswers = (evaluation, attendance, questions) => {
     const query = {
       teamId: attendance.teamId || attendance.userId,
       evaluationId: evaluation.id || evaluation,
@@ -340,7 +307,7 @@ class EvaluationCreate extends Component {
     return answerService.find({ query }).map(result => result.data);
   }
 
-  observeEvaluationQuestions(evl) {
+  observeEvaluationQuestions = (evl) => {
     const query = {
       evaluationId: evl.id || evl,
       $sort: { id: -1 },
@@ -348,25 +315,23 @@ class EvaluationCreate extends Component {
     return evaluationsQuestionService.find({ query }).map(result => result.data);
   }
 
-  observeQuestions(questions) {
+  observeQuestions = (questions) => {
     const query = {
       id: { $in: questions.map(q => q.id || q) },
     };
     return questionService.find({ query }).map(result => result.data);
   }
 
-  observeEvaluation(evl) {
-    return evaluationService.get(evl.id || evl);
-  }
+  observeEvaluation = (evl) => evaluationService.get(evl.id || evl)
 
-  observeAttendances(evaluation) {
+  observeAttendances = (evaluation) => {
     const query = {
       evaluationId: evaluation.id || evaluation,
     };
     return attendanceService.find({ query }).map(result => result.data);
   }
 
-  findOrCreateAnswer(question, answer) {
+  findOrCreateAnswer = (question, answer) => {
     const { evaluation, attendance, participant } = this.state;
     const mode = ['admin', 'write'].includes(participant.permission) ? MODES.instructor : MODES.student;
 
@@ -387,27 +352,28 @@ class EvaluationCreate extends Component {
         .then(result => result.data[0])
         .then(old => {
           previous = old;
-          if (old) return answerService.patch(old.id, { ...old, answer });
-          return answerService.create({
-            teamId: attendance.teamId,
-            questionId: question.id || question,
-            evaluationId: evaluation.id,
-            answer,
-          });
+          return (old)
+            ? answerService.patch(old.id, { ...old, answer })
+            : answerService.create({
+              teamId: attendance.teamId,
+              questionId: question.id || question,
+              evaluationId: evaluation.id,
+              answer,
+            });
         })
         .then(() => this.setState({ error: null }))
         .catch(error => {
           // Restore previous answer value
           this.setState({
             error,
-            answers: { ...this.state.answers, [question.id]: previous || undefined },
+            answers: { ...this.state.answers, [question.id]: previous ? previous.answer : undefined },
           });
         });
     }
     return null;
   }
 
-  fetchCourse(crs) {
+  fetchCourse = (crs) => {
     const query = {
       id: crs.id || crs,
       $populate: 'organization',
@@ -421,7 +387,7 @@ class EvaluationCreate extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  fetchParticipants(instance) {
+  fetchParticipants = (instance) => {
     const query = {
       instanceId: instance.id || instance,
       $populate: ['user'],
@@ -440,7 +406,7 @@ class EvaluationCreate extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  async startEvaluation(attendance) {
+  startEvaluation = async (attendance) => {
     if (attendance) {
       // Any date is ignored, because the server takes it's own time
       const patched = await attendanceService.patch(attendance.id, { startedAt: new Date() });
@@ -647,7 +613,7 @@ class EvaluationCreate extends Component {
   }
 }
 
-export default withRouter(EvaluationCreate);
+export default withRouter(Evaluation);
 
 const styles = {
   container: {

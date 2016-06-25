@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import {
   Button,
   FormGroup,
@@ -8,43 +8,33 @@ import { Colors } from '../../styles';
 import compose, { QuestionPropTypes } from './question';
 
 
-class TrueFalse extends Component {
+const TrueFalse = ({ style, disabled, answer: { value }, onAnswerChange }) => {
+  const left = {
+    disabled,
+    style: value === 1 ? { ...styles.button, ...styles.buttonTrue } : styles.button,
+    onClick: () => onAnswerChange({ value: value === 1 ? 0 : 1 }),
+  };
 
-  static get propTypes() {
-    return QuestionPropTypes;
-  }
+  const right = {
+    disabled,
+    style: value === -1 ? { ...styles.button, ...styles.buttonFalse } : styles.button,
+    onClick: () => onAnswerChange({ value: value === -1 ? 0 : -1 }),
+  };
 
-  static get defaultProps() {
-    return { answer: { value: 0 } };
-  }
+  return (
+    <form style={{ ...styles.container, ...style }}>
+      <FormGroup style={styles.buttons}>
+        <Button {...left}>True</Button>
+        <div style={{ width: 20 }} />
+        <Button {...right}>False</Button>
+      </FormGroup>
+    </form>
+  );
+};
 
-  render() {
-    const { answer, disabled, onAnswerChange } = this.props;
-    const value = answer.value;
-
-    const left = {
-      disabled,
-      style: value === 1 ? { ...styles.button, ...styles.buttonTrue } : styles.button,
-      onClick: () => onAnswerChange({ value: value === 1 ? 0 : 1 }),
-    };
-
-    const right = {
-      disabled,
-      style: value === -1 ? { ...styles.button, ...styles.buttonFalse } : styles.button,
-      onClick: () => onAnswerChange({ value: value === -1 ? 0 : -1 }),
-    };
-
-    return (
-      <form style={styles.container}>
-        <FormGroup style={styles.buttons}>
-          <Button {...left}>True</Button>
-          <div style={{ width: 20 }} />
-          <Button {...right}>False</Button>
-        </FormGroup>
-      </form>
-    );
-  }
-}
+TrueFalse.propTypes = QuestionPropTypes;
+TrueFalse.defaultProps = { answer: { value: 0 } };
+TrueFalse.isAnswered = (answer) => answer && answer.value && answer.value !== 0;
 
 const styles = {
   container: {

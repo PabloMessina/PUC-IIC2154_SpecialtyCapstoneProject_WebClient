@@ -22,11 +22,6 @@ import CreateQuestionModal from '../question-create/modal';
 import { Colors } from '../../styles';
 import renderIf from 'render-if';
 
-const MODES = {
-  instructor: 'instructor',
-  student: 'student',
-};
-
 function questionFactory(qtype, props) {
   switch (qtype) {
     case 'trueFalse': return <TrueFalse {...props} />;
@@ -36,6 +31,7 @@ function questionFactory(qtype, props) {
     default: return null;
   }
 }
+
 
 export default class Questions extends Component {
 
@@ -146,17 +142,17 @@ export default class Questions extends Component {
         evaluationId: this.state.evaluationId,
       };
       return evaluationsQuestionService.find({ query })
-      .then(result => result.data[0])
-      .then(old => {
-        const data = {
-          customContent: question.content,
-          customField: question.fields,
-          customAnswer: question.answer,
-        };
-        return evaluationsQuestionService.patch(old.id, { ...data });
-      })
-      .then(() => this.setState({ creating: false, editing: false, error: null }))
-      .catch(error => this.setState({ error }));
+        .then(result => result.data[0])
+        .then(old => {
+          const data = {
+            customContent: question.content,
+            customField: question.fields,
+            customAnswer: question.answer,
+          };
+          return evaluationsQuestionService.patch(old.id, { ...data });
+        })
+        .then(() => this.setState({ creating: false, editing: false, error: null }))
+        .catch(error => this.setState({ error }));
     }
     return null;
   }
@@ -271,6 +267,13 @@ export default class Questions extends Component {
         <hr />
 
         {this.renderQuestionList(questions)}
+        {renderIf(questions.length === 0)(() =>
+          <p style={{ textAlign: 'center' }}>
+            There is not questions to show.
+            <br />
+            Click on <strong>Add custom question</strong>.
+          </p>
+        )}
       </Panel>
     );
   }
@@ -327,24 +330,14 @@ export default class Questions extends Component {
     );
   }
 
-  renderMode(mode) {
-    switch (mode) {
-      case 'student': return this.renderStudent();
-      case 'instructor': return this.renderInstructor();
-      default: return null;
-    }
-  }
-
   renderStudent() {
-    const { questions, attendances } = this.props;
-    const evaluation = this.props.evaluation;
+    const { evaluation, questions, attendances } = this.props;
     const attendance = attendances.find(a => a.userId === currentUser().id);
     const start = moment.max(attendance.startedAt, moment());
     const finish = moment.min(evaluation.finishAt, moment(attendance.startedAt).add(evaluation.duration, 'ms'));
     const time = {
       total: questions.length,
       current: Object.keys(this.props.answers).length,
-      // TODO: use real values
       onTimeout: this.onTimeout,
       start,
       finish,
@@ -367,14 +360,10 @@ export default class Questions extends Component {
 
     const validation = isStarted && !isOver;
 
-    let timeStyle;
-    if (this.state.hover) {
-      timeStyle = styles.hover;
-    } else {
-      timeStyle = styles.noHover;
-    }
+    const timeStyle = this.state.hover ? styles.hover : styles.noHover;
+
     return (
-      <div>
+      <Row>
         {validation ?
           <div>
             <Col style={styles.left} xs={12} sm={12} mdOffset={1} md={10}>
@@ -391,7 +380,7 @@ export default class Questions extends Component {
         <div style={timeStyle} onMouseEnter={this.toggleHover} onMouseLeave={this.toggleHover}>
           <Progress {...time} />
         </div>
-      </div>
+      </Row>
     );
   }
 
@@ -429,13 +418,11 @@ export default class Questions extends Component {
   }
 
   render() {
-    const mode = ['admin', 'write'].includes(this.props.participant.permission) ? MODES.instructor : MODES.student;
-    return (
-      <div>
-        <p>{this.state.error}</p>
-        {this.renderMode(mode)}
-      </div>
-    );
+    if (['admin', 'write'].includes(this.props.participant.permission)) {
+      return this.renderInstructor();
+    } else {
+      return this.renderStudent();
+    }
   }
 }
 

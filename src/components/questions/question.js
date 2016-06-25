@@ -1,6 +1,8 @@
-import React, { Component, PropTypes } from 'react';
+import React, { PropTypes, Component } from 'react';
 import { FormGroup } from 'react-bootstrap';
 import renderIf from 'render-if';
+import debounce from 'lodash/debounce';
+
 import RichEditor from '../rich-editor';
 
 export const QuestionPropTypes = {
@@ -13,6 +15,7 @@ export const QuestionPropTypes = {
   showType: PropTypes.bool,
   disabled: PropTypes.bool,
   padding: PropTypes.number,
+  interval: PropTypes.number,
   onAnswerChange: PropTypes.func,
   onFieldsChange: PropTypes.func,
   onFieldsAndAnswerChange: PropTypes.func,
@@ -23,6 +26,7 @@ const QTYPE = {
   trueFalse: 'True/False',
   multiChoice: 'Multi-choice',
   tshort: 'Short text',
+  correlation: 'Correlation',
 };
 
 const MODES = [
@@ -31,19 +35,51 @@ const MODES = [
   'editor',
 ];
 
+const NOOP = () => {};
+
 export default function compose(ComposedComponent) {
   return class Question extends Component {
-    static get propTypes() {
-      return QuestionPropTypes;
+    static propTypes = QuestionPropTypes
+    static defaultProps = {
+      showType: true,
+      mode: MODES[0],
+      padding: 20,
+      disabled: false,
+      interval: 3000,
+      onAnswerChange: NOOP,
+      onFieldsChange: NOOP,
+      onBodyChange: NOOP,
     }
 
-    static get defaultProps() {
-      return { showType: true, mode: MODES[0], padding: 20, disabled: false };
-    }
+    static isAnswered = ComposedComponent.isAnswered
 
     constructor(props) {
       super(props);
-      this.state = {};
+      const { question, interval, onFieldsChange, onAnswerChange } = props;
+      this.state = {
+        answer: question.answer || undefined,
+        fields: question.fields || undefined,
+      };
+      this.delayedAnswerChange = interval ? debounce(onAnswerChange, interval) : onAnswerChange;
+      this.delayedFieldsChange = interval ? debounce(onFieldsChange, interval) : onFieldsChange;
+    }
+
+    componentWillReceiveProps = ({ question }) => {
+      // Set to undefined if falsy (null can be dangerous)
+      this.setState({
+        answer: question.answer || undefined,
+        fields: question.fields || undefined,
+      });
+    }
+
+    onAnswerChange = (answer) => {
+      this.setState({ answer });
+      this.delayedAnswerChange(answer);
+    }
+
+    onFieldsChange = (fields) => {
+      this.setState({ fields });
+      this.delayedFieldsChange(fields);
     }
 
     render() {
@@ -57,15 +93,20 @@ export default function compose(ComposedComponent) {
         onBodyChange,
         ...props,
       } = this.props;
+
+      const { answer, fields } = this.state;
+
       const customProps = {
         ...props,
-        // Set to undefined (if it's null) so the components can use defaultProps with this
-        answer: question.answer || undefined,
-        fields: question.fields || undefined,
+        answer,
+        fields,
+        onAnswerChange: this.onAnswerChange,
+        onFieldsChange: this.onFieldsChange,
       };
-      const pad = { paddingLeft: padding, paddingRight: padding };
+
       // Convert to array
       const contents = [].concat(question.content);
+
       return (
         <div style={{ ...styles.question, ...style }}>
 
@@ -91,12 +132,6 @@ export default function compose(ComposedComponent) {
                   content={question.content}
                   onChange={onBodyChange}
                 />
-                {/* <FormControl
-                  componentClass="textarea"
-                  value={question.content.insert}
-                  placeholder="Question body"
-                  onChange={e => this.props.onBodyChange({ insert: e.target.value })}
-                /> */}
               </FormGroup>
             )}
             {renderIf(mode !== 'editor')(() =>
@@ -109,13 +144,12 @@ export default function compose(ComposedComponent) {
                     onChange={onBodyChange}
                     readOnly
                   />
-                  // <p key={i}>{content.insert || content}</p>
                 ))}
               </div>
             )}
 
             {/* Render specific content */}
-            <div style={{ ...pad, ...styles.component }}>
+            <div style={{ paddingLeft: padding, paddingRight: padding, ...styles.component }}>
               <ComposedComponent {...customProps} question={question} mode={mode} />
             </div>
 
@@ -144,7 +178,7 @@ const styles = {
     flexDirection: 'column',
   },
   texts: {
-    marginTop: 2,
+    marginTop: 0,
     marginBottom: 0,
   },
   component: {
@@ -158,6 +192,7 @@ const styles = {
   },
   identifier: {
     marginRight: 15,
+    marginTop: 19,
   },
   richEditor: {
     padding: 50,

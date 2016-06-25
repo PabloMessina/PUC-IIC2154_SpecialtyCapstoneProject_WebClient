@@ -4,6 +4,8 @@ import Icon from 'react-fa';
 import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
 import DocumentTitle from 'react-document-title';
+import renderIf from 'render-if';
+
 import app, { currentUser } from '../../app';
 const membershipService = app.service('/memberships');
 
@@ -113,8 +115,7 @@ class Organization extends Component {
 
   render() {
     const { organization, membership } = this.state;
-    const { name, description } = organization;
-    const logo = 'https://coursera-university-assets.s3.amazonaws.com/89/d0ddf06ad611e4b53d95ff03ce5aa7/360px.png';
+    const { name, description, logo } = organization;
     return (
       <Grid style={styles.container} fluid>
         <DocumentTitle title={name} />
@@ -123,7 +124,9 @@ class Organization extends Component {
             <Grid style={styles.content}>
               <Row style={styles.banner}>
                 <Col xsOffset={0} xs={12} smOffset={0} sm={11} style={styles.information}>
-                  <Image style={styles.logo} src={logo} rounded />
+                  {renderIf(logo)(() =>
+                    <Image style={styles.logo} src={logo} rounded />
+                  )}
                   <div style={styles.texts}>
                     <h1 style={styles.name}>{name}</h1>
                     <p style={styles.description}>{description || 'No description'}</p>

@@ -104,6 +104,7 @@ export default class CreateQuestion extends Component {
       disabled: false,
       mode: 'editor',
       showType: false,
+      interval: 0,
       onAnswerChange: answer => this.setState({ question: { ...this.state.question, answer } }),
       onFieldsChange: fields => this.setState({ question: { ...this.state.question, fields } }),
       onFieldsAndAnswerChange: (fields, answer) =>
