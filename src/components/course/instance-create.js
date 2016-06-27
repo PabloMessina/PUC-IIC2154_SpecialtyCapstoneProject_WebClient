@@ -43,7 +43,6 @@ class InstanceCreate extends Component {
   }
 
   onSubmit(e) {
-    e.preventDefault();
     const courseId = this.props.course.id;
     const data = {
       courseId,

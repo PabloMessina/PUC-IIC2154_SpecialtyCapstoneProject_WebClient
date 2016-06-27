@@ -82,6 +82,7 @@ class AnnouncementsPanel extends Component {
               subject: announcement.subject,
               date: announcement.createdAt,
               responsable: announcement.responsable ? announcement.responsable.name : '',
+              instanceId: announcement.instanceId,
             };
             return (
               <div key={index}>

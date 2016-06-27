@@ -1,9 +1,12 @@
 import React, { Component, PropTypes } from 'react';
 import {
 } from 'react-bootstrap';
-
 import renderIf from 'render-if';
 import moment from 'moment';
+import { Link } from 'react-router';
+
+import app from '../../app';
+const instanceService = app.service('/instances');
 
 import RichEditor from '../rich-editor';
 
@@ -12,32 +15,62 @@ function formatDate(date) {
 }
 
 
-export default class Login extends Component {
+export default class Announcement extends Component {
 
-  static get propTypes() {
-    return {
-      subject: PropTypes.string,
-      content: PropTypes.object,
-      responsable: PropTypes.string,
-      date: PropTypes.any,
-    };
+  static propTypes = {
+    subject: PropTypes.string,
+    content: PropTypes.object,
+    responsable: PropTypes.string,
+    date: PropTypes.any,
+    instanceId: PropTypes.string,
   }
 
-  static get defaultProps() {
-    return {
-      responsable: '',
-    };
+  static defaultProps = {
+    responsable: '',
+    instanceId: '',
   }
 
-  constructor(props) {
-    super(props);
-    this.state = {};
+  state = {
+    instance: null,
+  }
+
+  componentDidMount() {
+    const { instanceId } = this.props;
+    if (instanceId) this.fetchInstance(instanceId);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const { instanceId } = nextProps;
+    if (instanceId) this.fetchInstance(instanceId);
+  }
+
+  fetchInstance = (instanceId) => {
+    const query = {
+      id: instanceId,
+      $populate: 'course',
+      $limit: 1,
+    };
+    return instanceService.find({ query })
+      .then(result => {
+        const instance = result.data[0];
+        this.setState({ instance });
+      });
   }
 
   render() {
-    const { subject, content, responsable, date } = this.props;
+    const { subject, content, responsable, date, instanceId } = this.props;
+    const { instance } = this.state;
     return (
       <div>
+        {renderIf(instance)(() =>
+          <Link
+            key={instance}
+            style={styles.instance}
+            to={`/courses/show/${instance.course.id}/instances/show/${instanceId}`}
+          >
+            <small>{instance.course.name} {instance.period} </small>
+          </Link>
+        )}
         <div style={styles.header}>
           <h5 style={styles.subject}>
             {subject}
@@ -68,6 +101,9 @@ const styles = {
   subject: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  instance: {
+
   },
   header: {
     display: 'flex',

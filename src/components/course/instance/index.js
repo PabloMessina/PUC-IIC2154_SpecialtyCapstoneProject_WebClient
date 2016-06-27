@@ -26,6 +26,10 @@ const ELEMENTS = [
     name: 'Bibliography',
     icon: 'book',
     path: 'bibliography',
+  }, {
+    name: 'Question Pool',
+    icon: 'question-circle-o',
+    path: 'questionpool',
   },
 ];
 
@@ -43,6 +47,12 @@ class Instance extends Component {
       params: PropTypes.object,
       location: PropTypes.object,
       children: PropTypes.any,
+    };
+  }
+
+  static get defaultProps() {
+    return {
+      participant: {},
     };
   }
 
@@ -79,14 +89,15 @@ class Instance extends Component {
 
   render() {
     const { organization, course, instance, participant, membership } = this.props;
-
+    const canEdit = ['admin', 'write'].includes(participant.permission);
+    const elements = canEdit ? ELEMENTS : ELEMENTS.filter(elem => elem.name !== 'Question Pool');
     return (
       <div style={styles.container}>
         <Row>
           <Col xs={12} sm={3} md={3}>
             <Panel style={styles.navigator} header={instance.period}>
               <ListGroup fill>
-                {ELEMENTS.map((element, i) => this.renderListElement(element, i))}
+                {elements.map((element, i) => this.renderListElement(element, i))}
               </ListGroup>
             </Panel>
           </Col>

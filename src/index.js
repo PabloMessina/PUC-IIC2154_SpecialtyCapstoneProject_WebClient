@@ -51,6 +51,7 @@ import CourseInstanceEvaluations from './components/course/instance/evaluations'
 import CourseInstanceAnnouncements from './components/course/instance/announcements';
 import CourseInstanceAnalytics from './components/course/instance/analytics';
 import CourseInstanceBibliography from './components/course/instance/bibliography';
+import CourseQuestionPools from './components/course/instance/question-pool';
 import CourseSettings from './components/course/setting';
 import CourseInstanceCreate from './components/course/instance-create';
 
@@ -213,6 +214,7 @@ const Routing = (
             <Route path="analytics" component={CourseInstanceAnalytics} />
             <Route path="evaluations" component={CourseInstanceEvaluations} />
             <Route path="bibliography" component={CourseInstanceBibliography} />
+            <Route path="questionpool" component={CourseQuestionPools} />
           </Route>
         </Route>
       </Route>

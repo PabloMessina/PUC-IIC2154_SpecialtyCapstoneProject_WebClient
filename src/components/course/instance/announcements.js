@@ -67,10 +67,11 @@ export default class InstanceEvaluations extends Component {
   }
 
   onModalSave() {
-    this.setState({ loading: true });
-
+    if (!window.confirm('Do you really want to proceed?')) return false; // eslint-disable-line
     if (!this.state.content) return this.setState({ error: new Error('Announcement is missing content.') });
     if (!this.state.subject) return this.setState({ error: new Error('Announcement is missing subject.') });
+
+    this.setState({ loading: true });
 
     const announcement = {
       subject: this.state.subject,
