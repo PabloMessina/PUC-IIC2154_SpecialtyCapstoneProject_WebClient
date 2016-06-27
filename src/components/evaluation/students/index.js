@@ -59,17 +59,14 @@ function generateId() {
 
 class Students extends Component {
 
-  static get propTypes() {
-    return {
-      // participants: PropTypes.array.isRequired,
-      attendances: PropTypes.array,
-      instance: PropTypes.object,
-      evaluation: PropTypes.object,
-      participant: PropTypes.object,
-      onAttendanceAdd: PropTypes.func,
-      onAttendanceUpdate: PropTypes.func,
-      onAttendanceRemove: PropTypes.func,
-    };
+  static propTypes = {
+    attendances: PropTypes.array,
+    instance: PropTypes.object,
+    evaluation: PropTypes.object,
+    participant: PropTypes.object,
+    onAttendanceAdd: PropTypes.func,
+    onAttendanceUpdate: PropTypes.func,
+    onAttendanceRemove: PropTypes.func,
   }
 
   static attendancesToGroup(attendances) {
@@ -84,27 +81,17 @@ class Students extends Component {
     }, []);
   }
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      /**
-       * All students in the course
-       * @type {Array}
-       */
-      students: [],
-      /**
-       * @type {Number}
-       * Value of groupSize input
-       */
-      groupSize: 3,
-    };
-
-    this.randomGroupGenerator = this.randomGroupGenerator.bind(this);
-    this.unassignedStudents = this.unassignedStudents.bind(this);
-    this.fetchAllStudents = this.fetchAllStudents.bind(this);
-    this.addToGroup = this.addToGroup.bind(this);
-    this.removeFromGroup = this.removeFromGroup.bind(this);
-    this.updateOrCreateAttendance = this.updateOrCreateAttendance.bind(this);
+  state = {
+    /**
+     * All students in the course
+     * @type {Array}
+     */
+    students: [],
+    /**
+     * @type {Number}
+     * Value of groupSize input
+     */
+    groupSize: 1,
   }
 
   componentDidMount() {
@@ -115,7 +102,7 @@ class Students extends Component {
     this.fetchAllStudents(nextProps.instance);
   }
 
-  fetchAllStudents(instance) {
+  fetchAllStudents = (instance) => {
     const query = {
       id: instance.id || instance,
       $populate: 'user',
@@ -132,13 +119,15 @@ class Students extends Component {
    * Students not assigned to any group
    * @return {array} Array with attendance objects
    */
-  unassignedStudents(attendances) {
-    return this.state.students
+  unassignedStudents = (attendances) => this.state.students
+      // Filter non-students
+      .filter(student => student.participant && student.participant.permission === 'read')
+      // Filter already selected
       .filter(student => attendances.findIndex(a => a.userId === student.id) === -1)
-      .sort((a, b) => a.name > b.name);
-  }
+      // Sort by name
+      .sort((a, b) => a.name > b.name)
 
-  addToGroup(user, teamId) {
+  addToGroup = (user, teamId) => {
     const query = {
       teamId,
       userId: user.id || user,
@@ -149,12 +138,11 @@ class Students extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  removeFromGroup(attendance) {
-    return attendanceService.remove(attendance.id || attendance)
-      .catch(error => this.setState({ error }));
-  }
+  removeFromGroup = (attendance) => attendanceService
+    .remove(attendance.id || attendance)
+    .catch(error => this.setState({ error }))
 
-  updateOrCreateAttendance(user, teamId = generateId()) {
+  updateOrCreateAttendance = (user, teamId = generateId()) => {
     const userId = user.id || user;
     const evaluationId = this.props.evaluation.id;
     const query = {
@@ -175,13 +163,19 @@ class Students extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  randomGroupGenerator(groupSize) {
+  reset = () => {
+    const { attendances } = this.props;
+    return Promise.all(attendances.map(a => attendanceService.remove(a.id)))
+      .catch(error => this.setState({ error }));
+  }
+
+  randomGroupGenerator = (groupSize) => {
     if (groupSize < 1 || groupSize > this.state.students.length || groupSize % 1 !== 0) {
       // TODO: error without 'alert'?
       // eslint-disable-next-line no-alert
       return alert('Invalid group size. Groups must be integer numbers between 1 and number of students');
     }
-    const unselectedStudents = shuffle(this.state.students);
+    const unselectedStudents = shuffle(this.state.students.filter(s => s.participant.permission === 'read'));
     const teams = [];
     const promises = [];
     while (unselectedStudents.length > 0) {
@@ -205,15 +199,7 @@ class Students extends Component {
     return Promise.all(promises);
   }
 
-  renderMode(mode) {
-    switch (mode) {
-      case 'student': return this.renderStudent();
-      case 'instructor': return this.renderInstructor();
-      default: return null;
-    }
-  }
-
-  renderStudent() {
+  renderStudent = () => {
     const user = currentUser();
     const teamId = this.props.attendances.find(att => att.userId === user.id).teamId;
     const evaluation = this.props;
@@ -268,7 +254,7 @@ class Students extends Component {
     );
   }
 
-  renderInstructor() {
+  renderInstructor = () => {
     // const all = this.state.students;
     const { attendances, evaluation } = this.props;
     // attendances.forEach(attendance => {
@@ -299,6 +285,7 @@ class Students extends Component {
                 min="1"
                 max="99"
                 placeholder="3"
+                value={this.state.groupSize}
                 style={styles.groupSizeInput}
                 onChange={e => { this.setState({ groupSize: e.target.value }); }}
               />
@@ -309,7 +296,7 @@ class Students extends Component {
               >
                 Generate
               </Button>
-              <Button onClick={() => this.randomGroupGenerator(1)}> Reset </Button>
+              <Button onClick={this.reset}> Reset </Button>
             </Form>
             <br />
           </Col>
@@ -347,11 +334,11 @@ class Students extends Component {
 
   render() {
     const mode = ['admin', 'write'].includes(this.props.participant.permission) ? MODES.instructor : MODES.student;
-    return (
-      <div>
-        {this.renderMode(mode)}
-      </div>
-    );
+    switch (mode) {
+      case 'student': return this.renderStudent();
+      case 'instructor': return this.renderInstructor();
+      default: return null;
+    }
   }
 }
 

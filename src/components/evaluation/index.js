@@ -336,8 +336,8 @@ class Evaluation extends Component {
     const mode = ['admin', 'write'].includes(participant.permission) ? MODES.instructor : MODES.student;
 
     // Set it locally
-    this.setState({ answers: { ...this.state.answers, [question.id]: answer } });
     let previous = this.state.answers[question.id];
+    this.setState({ answers: { ...this.state.answers, [question.id]: answer } });
 
     // If we are a student
     if (mode === MODES.student) {

@@ -15,6 +15,7 @@ import Icon from 'react-fa';
 import app, { currentUser } from '../../app';
 const questionService = app.service('/questions');
 const evaluationsQuestionService = app.service('/evaluations-questions');
+const answerService = app.service('/answers');
 
 import { TrueFalse, MultiChoice, TShort, Correlation } from '../questions';
 import Progress from './progress';
@@ -35,86 +36,73 @@ function questionFactory(qtype, props) {
 
 export default class Questions extends Component {
 
-  static get propTypes() {
-    return {
-      mode: PropTypes.string,
-      pool: PropTypes.array,
-      selected: PropTypes.array,
-      tags: PropTypes.array,
-      hidden: PropTypes.array,
+  static propTypes = {
+    mode: PropTypes.string,
+    pool: PropTypes.array,
+    selected: PropTypes.array,
+    tags: PropTypes.array,
+    hidden: PropTypes.array,
 
-      // Instructor mode
-      answers: PropTypes.object,
+    // Instructor mode
+    answers: PropTypes.object,
 
-      // Student mode
-      evaluationQuestions: PropTypes.array,
+    // Student mode
+    evaluationQuestions: PropTypes.array,
 
-      // From parent
-      organization: PropTypes.object,
-      course: PropTypes.object,
-      participant: PropTypes.object,
-      evaluation: PropTypes.object,
-      questions: PropTypes.array,
-      interval: PropTypes.number,
-      attendances: PropTypes.array,
+    // From parent
+    organization: PropTypes.object,
+    course: PropTypes.object,
+    participant: PropTypes.object,
+    evaluation: PropTypes.object,
+    questions: PropTypes.array,
+    interval: PropTypes.number,
+    attendances: PropTypes.array,
 
-      onEvaluationChange: PropTypes.func,
-      onAnswerChange: PropTypes.func,
-      onFieldsChange: PropTypes.func,
-      onFieldsAndAnswerChange: PropTypes.func,
-      onQuestionRemove: PropTypes.func,
-      onQuestionAdd: PropTypes.func,
-    };
+    onEvaluationChange: PropTypes.func,
+    onAnswerChange: PropTypes.func,
+    onFieldsChange: PropTypes.func,
+    onFieldsAndAnswerChange: PropTypes.func,
+    onQuestionRemove: PropTypes.func,
+    onQuestionAdd: PropTypes.func,
   }
 
-  static get defaultProps() {
-    return {
-      selected: [],
-      tags: [],
-      pool: [],
-      hidden: [],
-      interval: 1000,
-    };
+  static defaultProps = {
+    selected: [],
+    tags: [],
+    pool: [],
+    hidden: [],
+    interval: 1000,
   }
 
   static diff(start, finish) {
     return moment(finish).diff(start);
   }
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      // All tags
-      tags: props.tags,
-      // Selected tags
-      selected: props.selected,
-      // hidden questions
-      hidden: props.hidden,
-      // all the questions
-      pool: props.pool,
-      // is creating a new question
-      creating: false,
-      // is editing a question
-      editing: false,
-      // question that is being edited
-      currentQuestion: undefined,
-      // common error
-      error: null,
-      // when the test is over
-      isOver: false,
-      // when the mouse is over the time panel
-      toggle: false,
-    };
-
-    this.renderQuestion = this.renderQuestion.bind(this);
-    this.renderEvaluation = this.renderEvaluation.bind(this);
-    this.renderQuestionPool = this.renderQuestionPool.bind(this);
-    this.renderQuestionList = this.renderQuestionList.bind(this);
-
-    this.onModalClose = this.onModalClose.bind(this);
-    this.onModalSave = this.onModalSave.bind(this);
-    this.onTimeout = this.onTimeout.bind(this);
-    this.toggleHover = this.toggleHover.bind(this);
+  state = {
+    // All tags
+    tags: this.props.tags,
+    // Selected tags
+    selected: this.props.selected,
+    // hidden questions
+    hidden: this.props.hidden,
+    // all the questions
+    pool: this.props.pool,
+    // is creating a new question
+    creating: false,
+    // is editing a question
+    editing: false,
+    // question that is being edited
+    currentQuestion: undefined,
+    // common error
+    error: null,
+    // when the test is over
+    isOver: false,
+    // when the mouse is over the time panel
+    toggle: false,
+    // modify student evaluation
+    viewAs: null,
+    viewAsLoading: false,
+    viewAsAnswers: {},
   }
 
   componentDidMount() {
@@ -122,11 +110,11 @@ export default class Questions extends Component {
     this.fetchTags();
   }
 
-  onModalClose(/* question */) {
+  onModalClose = (/* question */) => {
     this.setState({ creating: false, editing: false });
   }
 
-  onModalSave(question) {
+  onModalSave = (question) => {
     if (this.state.creating) {
       const data = { ...question, id: undefined, organizationId: this.props.organization.id };
 
@@ -157,15 +145,48 @@ export default class Questions extends Component {
     return null;
   }
 
-  onTimeout() {
-    this.setState({ isOver: true });
+  onViewAsAnswerChange = (question, answer) => {
+    const { viewAs } = this.state;
+    const { evaluation } = this.props;
+
+    let previous = this.state.viewAsAnswers[question.id];
+    this.setState({ viewAsAnswers: { ...this.state.viewAsAnswers, [question.id]: answer } });
+
+    const query = {
+      teamId: viewAs,
+      questionId: question.id || question,
+      evaluationId: evaluation.id,
+      $limit: 1,
+    };
+
+    return answerService.find({ query })
+      .then(result => result.data[0])
+      .then(old => {
+        previous = old;
+        return (old)
+          ? answerService.patch(old.id, { ...old, answer })
+          : answerService.create({
+            teamId: viewAs,
+            questionId: question.id || question,
+            evaluationId: evaluation.id,
+            answer,
+          });
+      })
+      .then(() => this.setState({ error: null }))
+      .catch(error => {
+        // Restore previous answer value
+        this.setState({
+          error,
+          viewAsAnswers: { ...this.state.viewAsAnswers, [question.id]: previous ? previous.answer : undefined },
+        });
+      });
   }
 
-  toggleHover() {
-    this.setState({ hover: !this.state.hover });
-  }
+  onTimeout = () => this.setState({ isOver: true })
 
-  fetchTags() {
+  toggleHover = () => this.setState({ hover: !this.state.hover })
+
+  fetchTags = () => {
     const query = {
       organizationId: this.props.organization.id,
     };
@@ -178,14 +199,24 @@ export default class Questions extends Component {
       .then(tags => this.setState({ tags }));
   }
 
-  fetchQuestions(organizationId) {
+  fetchQuestions = (organizationId) => {
     const query = { organizationId };
     return questionService.find({ query })
       .then(result => result.data)
       .then(questions => this.setState({ pool: questions }));
   }
 
-  renderQuestionList(questions) {
+  fetchAsnwersOf = (teamId) => {
+    const query = {
+      teamId,
+      evaluationId: this.state.evaluation,
+    };
+    return answerService.find({ query })
+      .then(result => result.data)
+      .catch(error => this.setError({ error }));
+  }
+
+  renderQuestionList = (questions) => {
     const { pool, selected } = this.state;
     const objects = pool
       // Match tags
@@ -214,20 +245,27 @@ export default class Questions extends Component {
     );
   }
 
-  renderQuestion(props, identifier, userMode) {
+  renderQuestion = (props, identifier, userMode) => {
     const { onAnswerChange, onFieldsChange, onFieldsAndAnswerChange } = this.props;
     const question = props.question;
-    let mode = 'reader';
+
+    let mode;
     switch (userMode) {
       case 'instructor': mode = 'reader'; break;
       case 'student': mode = 'responder'; break;
       default: mode = 'reader'; break;
     }
+
     const element = questionFactory(question.qtype, {
       ...props,
       identifier,
       mode,
-      onAnswerChange: answer => onAnswerChange(question, answer),
+      onAnswerChange: answer => {
+        // Modify the selected student answer
+        if (this.state.viewAs) this.onViewAsAnswerChange(question, answer);
+        // Use normally
+        else onAnswerChange(question, answer);
+      },
       onFieldsChange: field => onFieldsChange(question, field),
       onFieldsAndAnswerChange: (field, answer) => onFieldsAndAnswerChange(question, field, answer),
     });
@@ -239,7 +277,7 @@ export default class Questions extends Component {
     );
   }
 
-  renderQuestionPool() {
+  renderQuestionPool = () => {
     const { questions } = this.props;
     const { selected, tags } = this.state;
 
@@ -278,7 +316,7 @@ export default class Questions extends Component {
     );
   }
 
-  renderEvaluation(mode) {
+  renderEvaluation = (mode) => {
     const {
       evaluation,
       questions,
@@ -286,17 +324,31 @@ export default class Questions extends Component {
       onQuestionRemove,
       evaluationQuestions,
     } = this.props;
+
+    const { viewAs, viewAsAnswers } = this.state;
     const objects = questions.map(question => {
       const eq = evaluationQuestions.find(item => item.questionId === question.id);
-      const answ = (eq && eq.customAnswer) ? eq.customAnswer : answers[question.id];
+
+      let answer = undefined;
+      let disabled = false;
+      if (mode === 'instructor' && viewAs) {
+        answer = viewAsAnswers[question.id];
+      } else if (mode === 'instructor') {
+        answer = (eq && eq.customAnswer) ? eq.customAnswer : question.answer;
+        disabled = true;
+      } else {
+        answer = answers[question.id];
+      }
+
       return ({
+        disabled,
         question: {
           ...question,
-          answer: answ || (mode === 'instructor' ? question.answer : undefined),
+          answer,
           fields: (eq && eq.customField) ? eq.customField : question.fields,
           content: (eq && eq.customContent) ? eq.customContent : question.content,
         },
-        disabled: mode === 'instructor',
+        // disabled: mode === 'instructor',
       });
     });
     return (
@@ -309,7 +361,7 @@ export default class Questions extends Component {
         {objects.map((object, i) => (
           <div key={i} style={styles.wrapper}>
             {this.renderQuestion(object, i + 1, mode)}
-            {renderIf(mode === 'instructor')(
+            {renderIf(mode === 'instructor' && !viewAs)(
               <div style={styles.icons}>
                 <Icon
                   size="lg"
@@ -330,7 +382,7 @@ export default class Questions extends Component {
     );
   }
 
-  renderStudent() {
+  renderStudent = () => {
     const { evaluation, questions, attendances } = this.props;
     const attendance = attendances.find(a => a.userId === currentUser().id);
     const start = moment.max(attendance.startedAt, moment());
@@ -384,8 +436,14 @@ export default class Questions extends Component {
     );
   }
 
-  renderInstructor() {
-    const { editing, creating, currentQuestion } = this.state;
+  renderInstructor = () => {
+    const { viewAs, viewAsLoading, editing, creating, currentQuestion } = this.state;
+
+    const students = this.props.attendances.filter(a => a.user).map(a => ({
+      label: a.user.name,
+      value: a.teamId,
+    }));
+
     return (
       <Row>
         <CreateQuestionModal
@@ -411,6 +469,34 @@ export default class Questions extends Component {
           </Col>
         </Col>
         <Col style={styles.left} xs={12} sm={12} md={7}>
+          <div style={{ padding: 10, paddingTop: 0, marginBottom: 10 }}>
+            <h5>View evaluation as:</h5>
+            <p>
+              You can <strong>view and edit</strong> the evaluation of a student. Even after the deadline is reached.
+            </p>
+            <Select
+              value={viewAs}
+              options={students}
+              loading={viewAsLoading}
+              placeholder={'Student or team'}
+              onChange={teamId => {
+                // Set loading
+                this.setState({ viewAs: teamId, viewAsLoading: true });
+                if (teamId) {
+                  // Fetch answer form selected user
+                  return this.fetchAsnwersOf(teamId).then(answers => {
+                    // Save those answers to the state
+                    const viewAsAnswers = {};
+                    answers.forEach(a => (viewAsAnswers[a.questionId] = a.answer));
+                    this.setState({ viewAsAnswers, viewAsLoading: false });
+                  });
+                } else {
+                  // Exit viewAs mode reseting the related state values
+                  return this.setState({ viewAs: '', viewAsAnswers: {}, viewAsLoading: false });
+                }
+              }}
+            />
+          </div>
           {this.renderEvaluation('instructor')}
         </Col>
       </Row>
