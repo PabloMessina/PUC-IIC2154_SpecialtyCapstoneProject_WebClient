@@ -490,7 +490,7 @@ export default class EvaluationDescription extends Component {
                     <ControlLabel>Before it starts, should appear as:</ControlLabel>
                     <Radio
                       checked={surprise}
-                      onChange={() => this.onChange('secret', true)}
+                      onChange={() => this.onChange('surprise', true)}
                       disabled={disabled}
                     >
                       <strong>Secret or surprise</strong>
@@ -499,7 +499,7 @@ export default class EvaluationDescription extends Component {
                     </Radio>
                     <Radio
                       checked={!surprise}
-                      onChange={() => this.onChange('secret', false)}
+                      onChange={() => this.onChange('surprise', false)}
                       disabled={disabled}
                     >
                       <strong>Visible</strong>

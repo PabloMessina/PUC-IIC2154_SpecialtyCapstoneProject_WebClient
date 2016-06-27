@@ -11,9 +11,11 @@ import {
 } from 'react-bootstrap';
 import moment from 'moment';
 import Icon from 'react-fa';
+import renderIf from 'render-if';
 
 import app, { currentUser } from '../../app';
 const questionService = app.service('/questions');
+const attendanceService = app.service('/attendances');
 const evaluationsQuestionService = app.service('/evaluations-questions');
 const answerService = app.service('/answers');
 
@@ -21,7 +23,6 @@ import { TrueFalse, MultiChoice, TShort, Correlation } from '../questions';
 import Progress from './progress';
 import CreateQuestionModal from '../question-create/modal';
 import { Colors } from '../../styles';
-import renderIf from 'render-if';
 
 function questionFactory(qtype, props) {
   switch (qtype) {
@@ -71,7 +72,7 @@ export default class Questions extends Component {
     tags: [],
     pool: [],
     hidden: [],
-    interval: 1000,
+    interval: 10000, // 10 seconds
   }
 
   static diff(start, finish) {
@@ -106,8 +107,24 @@ export default class Questions extends Component {
   }
 
   componentDidMount() {
-    if (this.props.organization) this.fetchQuestions(this.props.organization.id);
+    const { organization, attendances, participant, interval } = this.props;
+    if (this.props.organization) this.fetchQuestions(organization.id);
     this.fetchTags();
+
+    // Send localization to server per time interval
+    if (participant.permission === 'read') {
+      this.timer = setInterval(() => {
+        const attendance = attendances.find(a => a.userId === currentUser().id);
+        this.getLocation().then(geojson => {
+          // console.log('Location sent to server');
+          attendanceService.patch(attendance.id, { startedAt: new Date(), location: geojson });
+        });
+      }, interval);
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.timer) clearInterval(this.timer);
   }
 
   onModalClose = (/* question */) => {
@@ -183,6 +200,19 @@ export default class Questions extends Component {
   }
 
   onTimeout = () => this.setState({ isOver: true })
+
+  getLocation = (options) => { // eslint-disable-line
+    // Convert to promise
+    return new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, options);
+    }).then(position => ({
+      type: 'Point',
+      coordinates: [
+        position.coords.latitude,
+        position.coords.longitude,
+      ],
+    }));
+  }
 
   toggleHover = () => this.setState({ hover: !this.state.hover })
 

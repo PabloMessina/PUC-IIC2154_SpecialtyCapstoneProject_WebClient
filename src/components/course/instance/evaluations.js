@@ -130,7 +130,7 @@ class InstanceEvaluations extends Component {
         sections.done.push(evaluation);
       } else if (moment(evaluation.startAt) < now) {
         sections.inProgress.push(evaluation);
-      } else {
+      } else if (!evaluation.surprise || canEdit) {
         sections.upcoming.push(evaluation);
       }
     });
