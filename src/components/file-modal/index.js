@@ -1,8 +1,10 @@
 import React, { Component } from 'react';
 import DropzoneComponent from 'react-dropzone-component/lib/react-dropzone';
-import { Alert, Modal, Button } from 'react-bootstrap';
+import { Modal, Button } from 'react-bootstrap';
 import update from 'react-addons-update';
 import renderIf from 'render-if';
+
+import ErrorAlert from '../error-alert';
 
 // const SUPPORTED_FILES = {
   // image: ['jpg'],
@@ -140,12 +142,10 @@ export default class FileModal extends Component {
               config={config}
             />
           ))}
-          {renderIf(error)(() => (
-            <Alert bsStyle="danger" onDismiss={this.handleAlertDismiss}>
-              <h4>Oh snap! You got an error!</h4>
-              <p>Please try again later.</p>
-            </Alert>
-          ))}
+          <ErrorAlert
+            error={this.state.error}
+            onDismiss={() => this.setState({ error: null })}
+          />
         </Modal.Body>
         <Modal.Footer>
           <Button
