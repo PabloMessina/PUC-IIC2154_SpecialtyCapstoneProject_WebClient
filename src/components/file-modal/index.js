@@ -7,7 +7,6 @@ import renderIf from 'render-if';
 import JSZip from 'jszip';
 
 import ErrorAlert from '../error-alert';
-
 // const SUPPORTED_FILES = {
   // image: ['jpg'],
 // };

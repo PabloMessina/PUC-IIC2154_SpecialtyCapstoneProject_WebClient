@@ -6,6 +6,7 @@ import {
   FormControl,
   HelpBlock,
 } from 'react-bootstrap';
+import FileModal from '../file-modal';
 
 const MIN_LENGTH = 5;
 const SUBSCRIPTION = [{
@@ -58,6 +59,9 @@ export default class OrganizationForm extends Component {
       logo: props.organization.logo || '',
     };
     this.onSubmit = this.onSubmit.bind(this);
+    this.onChooseLogo = this.onChooseLogo.bind(this);
+    this.showFileModal = this.showFileModal.bind(this);
+    this.closeFileModal = this.closeFileModal.bind(this);
   }
 
   onSubmit(e) {
@@ -74,8 +78,29 @@ export default class OrganizationForm extends Component {
     }
   }
 
+  onChooseLogo() {
+    const onSuccess = urls => {
+      if (urls && urls[0]) {
+        this.setState({ logo: urls[0] });
+      }
+    };
+    this.showFileModal({ multiple: false, acceptedFiles: 'image/*', onSuccess });
+  }
+
+  showFileModal(props) {
+    this.setState({ showFileModal: true, fileModalProps: props });
+  }
+
+  closeFileModal(processFiles) {
+    // this.focus();
+    this.setState({ showFileModal: false, fileModalProps: {} }, () => {
+      if (processFiles) processFiles();
+    });
+  }
+
   render() {
     const { disabled } = this.props;
+    const { showFileModal, fileModalProps } = this.state;
 
     return (
       <form style={styles.container} onSubmit={this.onSubmit}>
@@ -107,14 +132,9 @@ export default class OrganizationForm extends Component {
 
         <FormGroup controlId="logo">
           <ControlLabel>Logo</ControlLabel>
-          <FormControl
-            type="text"
-            value={this.state.logo}
-            label="Logo"
-            onChange={e => this.setState({ logo: e.target.value })}
-            disabled={disabled}
-            required
-          />
+          <Button onClick={this.onChooseLogo}>
+            Select file
+          </Button>
         </FormGroup>
 
         <FormGroup controlId="address">
@@ -145,6 +165,11 @@ export default class OrganizationForm extends Component {
         <Button bsStyle="primary" type="submit" disabled={disabled}>
           {this.props.action}
         </Button>
+        <FileModal
+          show={showFileModal}
+          onHide={this.closeFileModal}
+          {...fileModalProps}
+        />
       </form>
     );
   }
