@@ -153,6 +153,8 @@ export default class Renderer3DWrapper extends Component {
     this.onSphereRadiusCoefChanged = this.onSphereRadiusCoefChanged.bind(this);
     this.onTouchStart = this.onTouchStart.bind(this);
     this.checkInComponente = this.checkInComponente.bind(this);
+    this.readContent = this.readContent.bind(this);
+    this.fetchFiles = this.fetchFiles.bind(this);
 
     /* =================== */
     /* EVALUATION MODE API */
@@ -163,39 +165,37 @@ export default class Renderer3DWrapper extends Component {
   componentWillMount() {
     const { zipUrl } = this.props.blockProps.source;
     if (!zipUrl) return;
+    this.fetchFiles(zipUrl).then(localFiles => {
+      this.setState({ source: { localFiles } });
+    });
+  }
 
-    const localFiles = [];
-    fetch(zipUrl, { method: 'GET', mode: 'cors' })
+  readContent(name, file) {
+    const doti = name.lastIndexOf('.');
+    if (doti === -1) throw new Error(`file ${name} without extension`);
+    const ext = name.substring(doti + 1);
+
+    if (ext === 'mtl' || ext === 'obj') { // mtl or obj -> text file
+      return file
+        .async('text')
+        .then(content => new File([content], name, { type: 'text/plain' }));
+    } else { // image -> binary file
+      return file
+        .async('uint8array')
+        .then(content => new File([content], name));
+    }
+  }
+
+  async fetchFiles(zipUrl) {
+    const zip = await fetch(zipUrl, { method: 'GET', mode: 'cors' })
       .then(response => response.blob())
-      .then(blob => JSZip().loadAsync(blob))
-      .then(zip => {
-        const promises = [];
-        zip.forEach((name, file) => {
-          promises.push(
-            file
-              .async('array')
-              .then(content => {
-                /* get file extension */
-                const doti = name.lastIndexOf('.');
-                if (doti === -1) throw new Error(`file ${name} without extension`);
-                const ext = name.substring(doti + 1);
+      .then(blob => JSZip().loadAsync(blob));
 
-                if (ext === 'mtl' || ext === 'obj') { // mtl or obj -> text file
-                  const text = content.map(b => String.fromCharCode(b)).join('');
-                  localFiles.push(new File([text], name, { type: 'text/plain' }));
-                } else { // image -> binary file
-                  const buf = new ArrayBuffer(content.length);
-                  const bufView = new Uint8Array(buf);
-                  for (let i = 0, len = content.length; i < len; ++i) bufView[i] = content[i];
-                  localFiles.push(new File([buf], name));
-                }
-              })
-          );
-        });
-        return Promise.all(promises);
-      })
-      .then(() => this.setState({ source: { localFiles } }))
-      .catch(error => { alert(error); console.log(error); });
+    const promises = [];
+    zip.forEach((name, file) => {
+      promises.push(this.readContent(name, file));
+    });
+    return await Promise.all(promises);
   }
 
   componentDidMount() {
