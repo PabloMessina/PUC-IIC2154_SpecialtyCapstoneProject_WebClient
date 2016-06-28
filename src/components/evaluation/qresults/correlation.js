@@ -29,7 +29,7 @@ export default class Correlation extends Component {
     const labels = Array(size + 1).fill(0).map((_, i) => (1 / size * i));
 
     const dataAnswers = answers
-      .map(answer => correction(question.qtype, correct, answer.answer).correctness);
+      .map(answer => correction(question.qtype, correct, answer.answer).correct);
     const data = Array(size + 1).fill(0);
     dataAnswers.forEach(elem => (data[labels.findIndex(e => e === elem)] += 1));
 

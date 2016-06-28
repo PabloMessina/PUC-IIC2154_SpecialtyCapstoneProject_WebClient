@@ -8,6 +8,7 @@ import {
   Panel,
   Col,
   Row,
+  // FormControl,
 } from 'react-bootstrap';
 import moment from 'moment';
 import Icon from 'react-fa';
@@ -16,7 +17,7 @@ import renderIf from 'render-if';
 import app, { currentUser } from '../../app';
 const questionService = app.service('/questions');
 const attendanceService = app.service('/attendances');
-const evaluationsQuestionService = app.service('/evaluations-questions');
+const evaluationQuestionsService = app.service('/evaluations-questions');
 const answerService = app.service('/answers');
 
 import { TrueFalse, MultiChoice, TShort, Correlation } from '../questions';
@@ -73,6 +74,7 @@ export default class Questions extends Component {
     pool: [],
     hidden: [],
     interval: 10000, // 10 seconds
+    evaluationQuestions: [{ points: 0 }],
   }
 
   static diff(start, finish) {
@@ -104,6 +106,8 @@ export default class Questions extends Component {
     viewAs: null,
     viewAsLoading: false,
     viewAsAnswers: {},
+
+    currentPoints: this.props.evaluationQuestions.map(eq => eq.points || 0),
   }
 
   componentDidMount() {
@@ -120,6 +124,15 @@ export default class Questions extends Component {
           attendanceService.patch(attendance.id, { startedAt: new Date(), location: geojson });
         });
       }, interval);
+    }
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const { evaluationQuestions } = this.props;
+    const newEQ = nextProps.evaluationQuestions;
+    if (newEQ) {
+      const currentPoints = newEQ.map(eq => eq.points);
+      this.setState({ evaluationQuestions, currentPoints });
     }
   }
 
@@ -146,7 +159,7 @@ export default class Questions extends Component {
         questionId: question.id,
         evaluationId: this.state.evaluationId,
       };
-      return evaluationsQuestionService.find({ query })
+      return evaluationQuestionsService.find({ query })
         .then(result => result.data[0])
         .then(old => {
           const data = {
@@ -154,7 +167,7 @@ export default class Questions extends Component {
             customField: question.fields,
             customAnswer: question.answer,
           };
-          return evaluationsQuestionService.patch(old.id, { ...data });
+          return evaluationQuestionsService.patch(old.id, { ...data });
         })
         .then(() => this.setState({ creating: false, editing: false, error: null }))
         .catch(error => this.setState({ error }));
@@ -212,6 +225,25 @@ export default class Questions extends Component {
         position.coords.longitude,
       ],
     }));
+  }
+
+  setPoints = (event, index) => {
+    const currentPoints = this.state.currentPoints;
+    currentPoints[index] = event.target.value;
+    this.setState({ currentPoints });
+  }
+
+  patchPoints = (event, object) => {
+    const { evaluationQuestions } = this.state;
+    const questionId = object.question.id;
+    const points = event.target.value;
+    const index = this.props.evaluationQuestions.findIndex(item => item.questionId === questionId);
+    return evaluationQuestionsService.patch(evaluationQuestions[index].id, { points })
+      .then(result => {
+        evaluationQuestions[index] = result;
+        this.setState({ evaluationQuestions });
+      })
+      .catch(error => this.setState({ error }));
   }
 
   toggleHover = () => this.setState({ hover: !this.state.hover })
@@ -357,8 +389,7 @@ export default class Questions extends Component {
 
     const { viewAs, viewAsAnswers } = this.state;
     const objects = questions.map(question => {
-      const eq = evaluationQuestions.find(item => item.questionId === question.id);
-
+      const eq = evaluationQuestions.find(item => item.questionId === question.id) || { points: 0 };
       let answer = undefined;
       let disabled = false;
       if (mode === 'instructor' && viewAs) {
@@ -371,6 +402,7 @@ export default class Questions extends Component {
       }
 
       return ({
+        points: eq.points,
         disabled,
         question: {
           ...question,
@@ -381,10 +413,13 @@ export default class Questions extends Component {
         // disabled: mode === 'instructor',
       });
     });
+    const points = evaluationQuestions.reduce((previous, current) => previous + current.points, 0);
+
     return (
       <Panel>
         <div style={styles.row}>
-          <h3>{evaluation.title || 'No title'}</h3>
+          <h3>{evaluation.title || 'No title'} </h3>
+          <p style={styles.points}>{points} {points > 1 ? 'points' : 'point'}</p>
         </div>
         <p>{evaluation.description || ''}</p>
 
@@ -393,6 +428,14 @@ export default class Questions extends Component {
             {this.renderQuestion(object, i + 1, mode)}
             {renderIf(mode === 'instructor' && !viewAs)(
               <div style={styles.icons}>
+                <input
+                  style={styles.pointsInput}
+                  type="number"
+                  value={this.state.currentPoints[i]}
+                  onChange={event => this.setPoints(event, i)}
+                  onBlur={event => this.patchPoints(event, object)}
+                />
+                <span style={styles.pts}>pts.</span>
                 <Icon
                   size="lg"
                   name="times"
@@ -551,7 +594,20 @@ const styles = {
 
   },
   row: {
-
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  points: {
+    marginLeft: 10,
+  },
+  pointsInput: {
+    maxWidth: 30,
+    fontWeight: '100',
+    fontSize: 12,
+  },
+  pts: {
+    marginBottom: 25,
   },
   select: {
     flex: 1,
@@ -567,7 +623,8 @@ const styles = {
   wrapper: {
     display: 'flex',
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
+    alignItems: 'flex-start',
   },
   icons: {
     display: 'flex',

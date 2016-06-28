@@ -235,7 +235,7 @@ class Evaluation extends Component {
     if (!question) return null;
     this.setState({ syncing: true });
 
-    const evalq = this.state.evaluationQuestions.find(eq => eq.questionId === question.id || question);
+    const evalq = this.state.evaluationQuestions.find(eq => eq.questionId === (question.id || question));
     if (evalq && evalq.id) {
       return evaluationsQuestionService.remove(evalq.id).catch(error => this.setState({ error, syncing: false }));
     } else {
@@ -272,28 +272,28 @@ class Evaluation extends Component {
         attendances,
         attendance: attendances.find(att => att.userId === user.id && att.evaluationId === evl.id),
       });
+    });
 
-      this.evalQuestionObserver = this.observeEvaluationQuestions(evl).subscribe(evaluationQuestions => {
-        // console.debug('evaluationQuestions$', evaluationQuestions);
-        this.setState({ evaluationQuestions });
-        const ids = evaluationQuestions.map(eq => (eq.questionId));
+    this.evalQuestionObserver = this.observeEvaluationQuestions(evl).subscribe(evaluationQuestions => {
+      // console.debug('evaluationQuestions$', evaluationQuestions);
+      this.setState({ evaluationQuestions });
+      const ids = evaluationQuestions.map(eq => (eq.questionId));
 
-        const attendance = attendances
-          .find(att => att.userId === user.id && att.evaluationId === evl.id);
+      const attendance = this.state.attendances
+        .find(att => att.userId === user.id && att.evaluationId === evl.id);
 
-        if (attendance) {
-          this.answerObserver = this.observeAnswers(evl, attendance, ids).subscribe(objects => {
-            // console.debug('answers$', objects);
-            const answers = {};
-            objects.forEach(({ questionId, answer }) => (answers[questionId] = answer));
-            this.setState({ answers });
-          });
-        }
-
-        this.questionObserver = this.observeQuestions(ids).subscribe(questions => {
-          // console.debug('questions$', questions);
-          this.setState({ questions });
+      if (attendance) {
+        this.answerObserver = this.observeAnswers(evl, attendance, ids).subscribe(objects => {
+          // console.debug('answers$', objects);
+          const answers = {};
+          objects.forEach(({ questionId, answer }) => (answers[questionId] = answer));
+          this.setState({ answers });
         });
+      }
+
+      this.questionObserver = this.observeQuestions(ids).subscribe(questions => {
+        // console.debug('questions$', questions);
+        this.setState({ questions });
       });
     });
   }
@@ -310,7 +310,7 @@ class Evaluation extends Component {
   observeEvaluationQuestions = (evl) => {
     const query = {
       evaluationId: evl.id || evl,
-      $sort: { id: -1 },
+      $sort: { createdAt: -1 },
     };
     return evaluationsQuestionService.find({ query }).map(result => result.data);
   }
@@ -318,6 +318,7 @@ class Evaluation extends Component {
   observeQuestions = (questions) => {
     const query = {
       id: { $in: questions.map(q => q.id || q) },
+      $sort: { createdAt: -1 },
     };
     return questionService.find({ query }).map(result => result.data);
   }
@@ -486,13 +487,13 @@ class Evaluation extends Component {
       <Grid style={styles.container}>
         <DocumentTitle title={evaluation.title} />
         <Breadcrumb>
-          <Breadcrumb.Item>
+          <Breadcrumb.Item active>
             Organizations
           </Breadcrumb.Item>
           <Breadcrumb.Item onClick={() => this.onNavigateTo(`/organizations/show/${organization.id}`)}>
             {organization ? organization.name : 'Loading...'}
           </Breadcrumb.Item>
-          <Breadcrumb.Item>
+          <Breadcrumb.Item onClick={() => this.onNavigateTo(`/organizations/show/${organization.id}/courses`)}>
             Courses
           </Breadcrumb.Item>
           <Breadcrumb.Item onClick={() => this.onNavigateTo(`/courses/show/${course.id}`)}>

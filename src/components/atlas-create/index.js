@@ -165,7 +165,7 @@ class AtlasCreate extends Component {
         <br />
 
         <Breadcrumb>
-          <Breadcrumb.Item>
+          <Breadcrumb.Item active>
             Organizations
           </Breadcrumb.Item>
           <Breadcrumb.Item onClick={() => this.props.router.push(`/organizations/show/${organization.id}`)}>
