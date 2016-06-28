@@ -62,8 +62,7 @@ class Dashboard extends Component {
           <Col xs={12} sm={10}>
             <h2>Welcome {user.name}</h2>
             <p>
-              Lorem ipsum dolor sit amet, consectetur adipisicing elit,
-              sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+              ATLAS is a new and simpler way to connect students to organizations by providing academic material and online evaluations
             </p>
 
             <Tabs
