@@ -35,6 +35,7 @@ function questionFactory(qtype, props) {
   }
 }
 
+// TODO: add time-sync to prevent cheats
 
 export default class Questions extends Component {
 
@@ -458,7 +459,9 @@ export default class Questions extends Component {
   renderStudent = () => {
     const { evaluation, questions, attendances } = this.props;
     const attendance = attendances.find(a => a.userId === currentUser().id);
-    const start = moment.max(attendance.startedAt, moment());
+    // Right now
+    const now = moment();
+    const start = moment.max(attendance.startedAt, now);
     const finish = moment.min(evaluation.finishAt, moment(attendance.startedAt).add(evaluation.duration, 'ms'));
     const time = {
       total: questions.length,
@@ -468,8 +471,6 @@ export default class Questions extends Component {
       finish,
     };
 
-    // Right now
-    const now = moment();
     // In 'ms'
     const duration = evaluation.duration;
     // // When the evaluation finish
@@ -492,7 +493,7 @@ export default class Questions extends Component {
         {validation ?
           <div>
             <Col style={styles.left} xs={12} sm={12} mdOffset={1} md={10}>
-              {this.renderEvaluation('student')}
+              {this.renderEvaluation('student', time)}
             </Col>
           </div>
           :
@@ -503,7 +504,9 @@ export default class Questions extends Component {
           </div>
         }
         <div style={timeStyle} onMouseEnter={this.toggleHover} onMouseLeave={this.toggleHover}>
-          <Progress {...time} />
+          <Panel>
+            <Progress {...time} />
+          </Panel>
         </div>
       </Row>
     );
@@ -592,6 +595,9 @@ const styles = {
   },
   rigth: {
 
+  },
+  titleBar: {
+    position: 'relative',
   },
   row: {
     display: 'flex',

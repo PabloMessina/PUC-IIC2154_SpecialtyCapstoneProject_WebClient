@@ -87,7 +87,7 @@ export default class Progress extends Component {
     // const timeStart = this.formatDate(start);
     // const timeFinish = this.formatDate(finish);
     return (
-      <Panel style={styles.container}>
+      <div style={styles.container}>
         {renderIf(diff > 0)(() => (
           <div
             style={styles.header}
@@ -112,7 +112,7 @@ export default class Progress extends Component {
         {renderIf(diff < 0)(() => (
           <h6 style={styles.header}>Time is over.</h6>
         ))}
-      </Panel>
+      </div>
     );
   }
 }

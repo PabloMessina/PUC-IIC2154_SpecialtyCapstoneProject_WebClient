@@ -6,6 +6,7 @@ import renderIf from 'render-if';
 import moment from 'moment';
 
 import EvaluationCell from '../../evaluation-cell';
+import { withTimeSyncronizer } from '../../time-syncronizer';
 
 import app, { currentUser } from '../../../app';
 const evaluationService = app.service('/evaluations');
@@ -13,26 +14,23 @@ const attendanceService = app.service('/attendances');
 
 
 class InstanceEvaluations extends Component {
-
-  static get propTypes() {
-    return {
-      organization: PropTypes.object,
-      course: PropTypes.object,
-      instance: PropTypes.object,
-      participant: PropTypes.object,
-      membership: PropTypes.object,
-      // React Router
-      router: PropTypes.object,
-      params: PropTypes.object,
-      evaluations: PropTypes.array,
-    };
+  static propTypes = {
+    organization: PropTypes.object,
+    course: PropTypes.object,
+    instance: PropTypes.object,
+    participant: PropTypes.object,
+    membership: PropTypes.object,
+    // React Router
+    router: PropTypes.object,
+    params: PropTypes.object,
+    evaluations: PropTypes.array,
+    // Time syncronizer
+    getTime: PropTypes.func,
   }
 
-  static get defaultProps() {
-    return {
-      evaluations: [],
-      participant: {},
-    };
+  static defaultProps = {
+    evaluations: [],
+    participant: {},
   }
 
   constructor(props) {
@@ -109,7 +107,7 @@ class InstanceEvaluations extends Component {
   }
 
   render() {
-    const participant = this.props.participant;
+    const { participant, getTime } = this.props;
     const canEdit = ['admin', 'write'].includes(participant.permission);
 
     const attendances = this.state.attendances;
@@ -124,7 +122,8 @@ class InstanceEvaluations extends Component {
     };
 
     // sorted quizes
-    const now = moment();
+    const now = getTime();
+
     evaluations.forEach(evaluation => {
       if (moment(evaluation.finishAt) < now) {
         sections.done.push(evaluation);
@@ -138,7 +137,10 @@ class InstanceEvaluations extends Component {
     return (
       <div style={styles.container}>
         <Col xs={12} md={8}>
-          <h4 style={styles.title}>In Progress</h4>
+          <div style={styles.hour}>
+            <h4 style={styles.title}>In Progress</h4>
+            <p><Icon style={styles.icon} name="clock-o" /> {now.format('HH:mm')}</p>
+          </div>
           {sections.inProgress.map(this.renderRow)}
           {renderIf(sections.inProgress.length === 0)(() => (
             <div>
@@ -187,7 +189,7 @@ class InstanceEvaluations extends Component {
   }
 }
 
-export default withRouter(InstanceEvaluations);
+export default withRouter(withTimeSyncronizer({ ticks: 3 })(InstanceEvaluations));
 
 const styles = {
   container: {
@@ -204,5 +206,11 @@ const styles = {
   },
   text: {
     marginBottom: 3,
+  },
+  hour: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 };

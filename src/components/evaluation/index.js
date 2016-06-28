@@ -1,16 +1,13 @@
 /* eslint react/prop-types:0 no-alert:0 */
 
-import React, { Component } from 'react';
+import React, { PropTypes, Component } from 'react';
 import {
   Grid,
   Row,
   Col,
   ButtonToolbar,
-  ButtonGroup,
   Button,
   Breadcrumb,
-  Tooltip,
-  OverlayTrigger,
 } from 'react-bootstrap';
 import { withRouter } from 'react-router';
 import EasyTransition from 'react-easy-transition';
@@ -18,6 +15,9 @@ import DocumentTitle from 'react-document-title';
 import renderIf from 'render-if';
 import ErrorAlert from '../error-alert';
 import moment from 'moment';
+
+import HorizontalNavigationBar from './navigation-bar/';
+import { withTimeSyncronizer } from '../time-syncronizer';
 
 import app, { currentUser } from '../../app';
 const courseService = app.service('/courses');
@@ -27,7 +27,6 @@ const questionService = app.service('/questions');
 const evaluationsQuestionService = app.service('/evaluations-questions');
 const answerService = app.service('/answers');
 const attendanceService = app.service('/attendances');
-
 
 const SECTIONS = [{
   name: 'Information',
@@ -56,55 +55,35 @@ const MODES = {
   student: 'student',
 };
 
-const Section = ({ active, disabled, children, onClick, tooltip, ...props }) => {
-  const element = (
-    <ButtonGroup {...props}>
-      <Button
-        style={styles.tab}
-        href="#"
-        bsStyle={active ? 'primary' : 'default'}
-        active={active}
-        onClick={onClick}
-        disabled={disabled}
-      >
-        {children}
-      </Button>
-    </ButtonGroup>
-  );
-
-  if (tooltip) {
-    return (
-      <OverlayTrigger
-        placement="bottom"
-        overlay={<Tooltip id="question-tooltip">{tooltip}</Tooltip>}
-      >
-        {element}
-      </OverlayTrigger>
-    );
-  } else return element;
-};
-
+const StartButton = withTimeSyncronizer({ ticks: 5 })(({ finishAt, startAt, onClick, getTime }) => {
+  const now = getTime();
+  const disabled = !now.isBetween(moment(startAt), moment(finishAt));
+  return <Button bsStyle="primary" disabled={disabled} onClick={onClick}>Start evaluation</Button>;
+});
 
 class Evaluation extends Component {
 
   static propTypes = {
     // Main object
-    evaluation: React.PropTypes.object,
+    evaluation: PropTypes.object,
 
     // Defaults
-    questions: React.PropTypes.array,
-    attendances: React.PropTypes.array,
+    questions: PropTypes.array,
+    attendances: PropTypes.array,
 
     // Instructor mode
-    evaluationQuestions: React.PropTypes.array,
+    evaluationQuestions: PropTypes.array,
     // Student mode
-    answers: React.PropTypes.object,
+    answers: PropTypes.object,
 
     // React Router
-    router: React.PropTypes.object,
-    params: React.PropTypes.object,
-    children: React.PropTypes.any,
-    location: React.PropTypes.any,
+    router: PropTypes.object,
+    params: PropTypes.object,
+    children: PropTypes.any,
+    location: PropTypes.any,
+
+    // Time syncronizer
+    // getTime: PropTypes.func,
   }
 
   static defaultProps = {
@@ -441,47 +420,8 @@ class Evaluation extends Component {
       error,
     } = this.state;
 
-    const now = moment();
-    const time = moment(evaluation.finishAt) > now && moment(evaluation.startAt) < now;
     const canEdit = participant && ['admin', 'write'].includes(participant.permission);
     const selected = this.selected;
-
-    const sections = SECTIONS.filter(section => {
-      // Remove Results
-      if (!canEdit && section.name === 'Results') return false;
-      return true;
-    }).map(section => {
-      const active = selected === section.path;
-      const url = `/evaluations/show/${evaluation.id}/${section.path}`;
-
-      let disabled = false;
-      let tooltip = null;
-      if (attendance && section.name === 'Questions' && !canEdit) {
-        // In 'ms'
-        const duration = evaluation.duration;
-        // // When the evaluation can be started
-        const startAt = moment(evaluation.startAt);
-        // // When the evaluation finish
-        const finishAt = moment(evaluation.finishAt);
-        // // When the user started
-        const startedAt = moment(attendance.startedAt);
-        // // The user deadline
-        const finishedAt = startedAt.isValid() ? moment.min(finishAt, startedAt.clone().add(duration, 'ms')) : finishAt;
-        // // We are in the valid range
-        const isOpen = now.isBetween(startAt, finishAt);
-        // // We passed our or the global deadline
-        const isOver = now.isAfter(finishedAt);
-        // // We started the evaluation before
-        const isStarted = startedAt.isValid();
-        // is disabled if can't edit and has not started yet or did finish
-        disabled = (!isOpen || !(isOpen && isStarted && !isOver));
-
-        if (isOver) tooltip = 'Evaluation is over';
-        else if (isOpen && !isStarted) tooltip = 'You must start the evaluation first';
-        else if (!isOpen) tooltip = `You must wait till ${startAt.format('MMMM Do, h:mm:ss')} to start`;
-      }
-      return { ...section, url, active, disabled, tooltip };
-    });
 
     return (
       <Grid style={styles.container}>
@@ -550,8 +490,12 @@ class Evaluation extends Component {
                 <Button bsStyle="danger" onClick={this.onDelete}>Delete</Button>
               </ButtonToolbar>
             )}
-            {renderIf(!canEdit && attendance && !attendance.startedAt && time)(() =>
-              <Button bsStyle="primary" onClick={() => this.startEvaluation(attendance)}>Start evaluation</Button>
+            {renderIf(!canEdit && attendance && !attendance.startedAt)(() =>
+              <StartButton
+                finishAt={evaluation.finishAt}
+                startAt={evaluation.startAt}
+                onClick={() => this.startEvaluation(attendance)}
+              />
             )}
           </Col>
         </Row>
@@ -562,14 +506,14 @@ class Evaluation extends Component {
         />
         <Row>
           <Col style={styles.bar} xsOffset={0} xs={12}>
-            <ButtonGroup justified>
-              {sections.map(({ name, description, path, url, ...props }, i) =>
-                <Section key={i} onClick={() => this.props.router.push(url)} {...props}>
-                  <h5 style={styles.tabTitle}>{name}</h5>
-                  <small style={styles.tabDescription}>{description}</small>
-                </Section>
-              )}
-            </ButtonGroup>
+            <HorizontalNavigationBar
+              sections={SECTIONS}
+              selected={selected}
+              evaluation={evaluation}
+              attendance={attendance}
+              canEdit={canEdit}
+              onClick={section => this.props.router.push(`/evaluations/show/${evaluation.id}/${section.path}`)}
+            />
           </Col>
         </Row>
         <hr />
