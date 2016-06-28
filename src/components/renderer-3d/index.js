@@ -18,9 +18,6 @@ const DEFAULT_EVALUATION_LABEL_MESSAGE = '...';
 const OBJ_EXT = '.obj';
 const MTL_EXT = '.mtl';
 
-const OBJ_SIZE_THRESHOLD = 1024 * 1014 * 7;
-const MTL_SIZE_THRESHOLD = 1024 * 512;
-
 const DELETE_ICON_URL = 'http://localhost:3000/img/delete_icon.png';
 const MINIMIZE_ICON_URL = 'http://localhost:3000/img/minimize_icon.png';
 
@@ -119,7 +116,7 @@ export default class Renderer3D extends Component {
     // set up instance of THREE.WebGLRenderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
-    renderer.setClearColor(0x4fccf2, 1);
+    renderer.setClearColor(0xecf0f1, 1);
     viewport.appendChild(renderer.domElement);
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
@@ -132,7 +129,7 @@ export default class Renderer3D extends Component {
     scene.add(ambientLight);
 
     // camera light
-    const cameraLight = new THREE.PointLight(0xffffff, 1);
+    const cameraLight = new THREE.PointLight(0xffffff, 0.1);
     cameraLight.position.set(0, 0, 50);
     scene.add(cameraLight);
 
@@ -236,6 +233,7 @@ export default class Renderer3D extends Component {
       iconSpriteGroup,
       iconCircleGroup,
     };
+
 
     /* load source, it must be either remoteFiles (JSON object with urls) or
      localFiles (an array of File objects, e.g: [objFile, mtlFile, imgFile1, imgFile2, ... ]) */
@@ -360,15 +358,10 @@ export default class Renderer3D extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    console.log("===> renderer-3d:::componentWillReceiveProps()");
     if (this._.mode === EDITION && this._.meshGroup) {
       /* check for changes in labels */
       // debugger
       if (!isEqual(this._.lastLabelsJSONScreenshot, nextProps.labels)) {
-        console.log('nextProps.labels');
-        console.log(JSON.stringify(nextProps.labels));
-        console.log('lastLabelsJSONScreenshot');
-        console.log(JSON.stringify(this._.lastLabelsJSONScreenshot));
         this._.highlightedLabelStyle = nextProps.highlightedLabelStyle;
         this._.normalLabelStyle = nextProps.normalLabelStyle;
         this.loadLabels(nextProps.labels);
@@ -669,6 +662,9 @@ export default class Renderer3D extends Component {
    * @return {[Promise]}       [a promise wrapping all the asynchronous actions performed]
    */
   load3DModelFromFiles(files) {
+    console.log("====>load3DModelFromFiles()");
+    console.log("files = ", files);
+
     // files we   to read
     let objFile = null;
     let mtlFile = null;
@@ -678,8 +674,7 @@ export default class Renderer3D extends Component {
     // ------------------------------------------------
     // iterate through files and select them according
     // to their file extension
-    for (let i = 0; i < files.length; ++i) {
-      const file = files.item(i);
+    files.forEach(file => {
       const fname = file.name;
 
       if (fname.length > OBJ_EXT.length &&
@@ -695,22 +690,13 @@ export default class Renderer3D extends Component {
         textureFiles[fname] = file;
         texturePaths[fname] = URL.createObjectURL(file);
       }
-    }
+    });
 
     // ---------------------------------
     // parse MTL and OBJ files
     // ---------------------------------
     if (mtlFile === null) return Promise.reject('mtl file not found');
     if (objFile === null) return Promise.reject('obj file not found');
-    if (mtlFile.size > MTL_SIZE_THRESHOLD) {
-      return Promise.reject(`${mtlFile.name} has ${mtlFile.size}
-        bytes > ${MTL_SIZE_THRESHOLD}. It's too heavy :S`);
-    }
-    if (objFile.size > OBJ_SIZE_THRESHOLD) {
-      return Promise.reject(`${objFile.name} has ${objFile.size}
-bytes > ${OBJ_SIZE_THRESHOLD} bytes. It's too heavy :S. Maybe you should
-reduce the complexity of your mesh by applying mesh simplification on it.`);
-    }
 
     let textureFilesUsed;
 
@@ -1904,6 +1890,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
     e.preventDefault();
     const touches = e.touches;
 
+    /* 1 finger */
     if (touches.length === 1) {
       const viewport = this.refs.viewport;
       const vpcoords = this.getViewportCoords(touches[0].clientX, touches[0].clientY);
@@ -1952,18 +1939,14 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       this._.orbitingCamera_touch = true;
       this._.touchCoords1.x = screenX;
       this._.touchCoords1.y = screenY;
-
-    /* panning -> dragging camera */
-    } else if (touches.length === 2) {
-      const center = TouchUtils.touchesClientCenter(touches);
-      this._.draggingCamera_touch = true;
-      this._.touchCoords1.x = center.x;
-      this._.touchCoords1.y = center.y;
-
-    } else if (touches.length >= 3) {
-      this._.pinchDist1 = TouchUtils.touchesAvgSquareDistanceToCenter(touches);
-      this._.pinching = true;
     }
+    // save initial position
+    const center = TouchUtils.touchesClientCenter(touches);
+    this._.touchCoords1.x = center.x;
+    this._.touchCoords1.y = center.y;
+    // save initial pinch distance
+    this._.pinchDist1 = TouchUtils.touchesAvgSquareDistanceToCenter(touches);
+
     // refresh canvas
     this.animateForAWhile();
   }
@@ -1971,6 +1954,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
   onTouchMove(e) {
     e.preventDefault();
     const touches = e.touches;
+    /* 1 finger -> orbit camera*/
     if (touches.length === 1) {
       const vpcoords = this.getViewportCoords(touches[0].clientX, touches[0].clientY);
       const screenX = vpcoords.x;
@@ -1986,31 +1970,18 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
       }
       this._.draggingCamera_touch = false;
       this._.pinching = false;
-    } else if (touches.length === 2) {
+    /* 2 or more fingers */
+    } else {
+      /* pinching -> zoom camera */
       const center = TouchUtils.touchesClientCenter(touches);
-      if (this._.draggingCamera_touch) {
-        this._.touchCoords2.x = center.x;
-        this._.touchCoords2.y = center.y;
-        this._.draggingCamera_touch_updatePending = true;
-      } else {
-        this._.draggingCamera_touch = true;
-        this._.touchCoords1.x = center.x;
-        this._.touchCoords1.y = center.y;
-      }
-      this._.orbitingCamera_touch = false;
-      this._.pinching = false;
-    } else if (touches.length >= 3) {
+      this._.touchCoords2.x = center.x;
+      this._.touchCoords2.y = center.y;
+      this._.draggingCamera_touch_updatePending = true;
+      /* pinching -> zoom camera */
       const pinchDist = TouchUtils.touchesAvgSquareDistanceToCenter(touches);
-      if (this._.pinching) {
-        this._.pinchDist2 = pinchDist;
-        this._.pinchCenter = TouchUtils.touchesClientCenter(touches);
-        this._.pinching_updatePending = true;
-      } else {
-        this._.pinchDist1 = pinchDist;
-        this._.pinching = true;
-      }
-      this._.orbitingCamera_touch = false;
-      this._.draggingCamera_touch = false;
+      this._.pinchDist2 = pinchDist;
+      this._.pinchCenter = TouchUtils.touchesClientCenter(touches);
+      this._.pinching_updatePending = true;
     }
     this.animateForAWhile();
   }
@@ -2023,7 +1994,7 @@ reduce the complexity of your mesh by applying mesh simplification on it.`);
 
   render() {
     return (
-      <div>
+      <div style={styles.root}>
         <div
           style={styles.viewport} ref="viewport"
           onWheel={this.handleWheel}
@@ -2073,8 +2044,13 @@ Renderer3D.propTypes = {
 };
 
 const styles = {
+  root: {
+    width: '100%',
+    height: '100%',
+  },
   viewport: {
-    height: '350px',
+    width: '100%',
+    height: '100%',
   },
   hiddenTxtInp: {
     position: 'absolute',

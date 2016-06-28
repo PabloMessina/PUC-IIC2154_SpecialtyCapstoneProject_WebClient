@@ -59,9 +59,9 @@ export default class BlockControls extends Component {
   }
 
   addMedia(type) {
-    const onSuccess = (files) => {
+    const onSuccess = (urls) => {
       let editorState = this.props.editorState;
-      files.forEach(({ url }) => {
+      urls.forEach((url) => {
         const entityKey = Entity.create(type, 'IMMUTABLE', { src: url });
         // Here the media is inserted
         editorState = AtomicBlockUtils.insertAtomicBlock(
@@ -91,16 +91,9 @@ export default class BlockControls extends Component {
 
   add3D() {
     const editorState = this.props.editorState;
-    const onSuccess = (files) => {
-      const remoteFiles = { images: [] };
-      files.forEach(({ url, type }) => {
-        if (type === 'mtl' || type === 'obj') {
-          remoteFiles[type] = url;
-        } else {
-          remoteFiles.images.push();
-        }
-      });
-      const entityKey = Entity.create('model', 'IMMUTABLE', { source: { remoteFiles }, metadata: {} });
+    const onSuccess = (urls) => {
+      const zipUrl = urls[0];
+      const entityKey = Entity.create('model', 'IMMUTABLE', { source: { zipUrl }, metadata: {} });
       // Here the media is inserted
       this.props.onChange(AtomicBlockUtils.insertAtomicBlock(
         editorState,
@@ -111,6 +104,7 @@ export default class BlockControls extends Component {
 
     this.props.onShowFileModal({
       type: 'model',
+      zip: true,
       multiple: true,
       acceptedFiles: '.mtl,.obj,image/*',
       maxFiles: 10,
@@ -120,9 +114,9 @@ export default class BlockControls extends Component {
 
   add2D() {
     const type = 'imageWithLabels';
-    const onSuccess = (files) => {
+    const onSuccess = (urls) => {
       let editorState = this.props.editorState;
-      files.forEach(({ url }) => {
+      urls.forEach((url) => {
         const entityKey = Entity.create(type, 'IMMUTABLE', { source: { url }, metadata: {} });
 
         // Here the media is inserted

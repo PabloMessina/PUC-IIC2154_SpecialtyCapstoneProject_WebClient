@@ -1,15 +1,17 @@
 import React, { Component } from 'react';
-import DropzoneComponent from 'react-dropzone-component/lib/react-dropzone';
-import { Modal, Button } from 'react-bootstrap';
+import Icon from 'react-fa';
+import Dropzone from 'react-dropzone';
+import { Modal, Button, ListGroup, ListGroupItem } from 'react-bootstrap';
 import update from 'react-addons-update';
 import renderIf from 'render-if';
+import JSZip from 'jszip';
 
 import ErrorAlert from '../error-alert';
 
 // const SUPPORTED_FILES = {
   // image: ['jpg'],
 // };
-const URL = 'http://files.lupi.online/api/v1/storage/';
+const URL = 'http://files.lupi.online/api/v1/storage';
 export default class FileModal extends Component {
   static get propTypes() {
     return {
@@ -19,128 +21,175 @@ export default class FileModal extends Component {
       maxFiles: React.PropTypes.number,
       acceptedFiles: React.PropTypes.string,
       type: React.PropTypes.string,
+      zip: React.PropTypes.bool,
     };
   }
 
   constructor(props) {
     super(props);
 
-
     this.state = {
       files: [],
-      uploaded: false,
-      uploading: false,
-      canUpload: true,
+      fileUrls: [],
+      uploadState: null,
     };
 
     // this.updateProgress = this.updateProgress.bind(this);
-    this.onSuccess = this.onSuccess.bind(this);
-    this.onError = this.onError.bind(this);
+    this.clear = this.clear.bind(this);
     this.onHide = this.onHide.bind(this);
-    this.onOk = this.onOk.bind(this);
+    this.onSuccess = this.onSuccess.bind(this);
+    this.onDropRejected = this.onDropRejected.bind(this);
     this.onClick = this.onClick.bind(this);
     this.onUpload = this.onUpload.bind(this);
-    this.onAddFile = this.onAddFile.bind(this);
-    this.onFinishUpload = this.onFinishUpload.bind(this);
-  }
-
-  onSuccess(files, { fileNames }) {
-    // We need the url and the extension of the file
-    const fileDescriptors = fileNames.map((name, i) => {
-      const fileExtension = /(?:\.([^.]+))?$/.exec(files[i].name)[1];
-      return { url: `${URL}${name}`, type: fileExtension };
-    });
-    this.setState({ files: update(this.state.files, { $push: fileDescriptors }) });
+    this.onDrop = this.onDrop.bind(this);
+    this.onRemoveFile = this.onRemoveFile.bind(this);
   }
 
   onHide() {
-    const { files } = this.state;
+    const { uploadState, error } = this.state;
+    if (!error && (uploadState !== null && uploadState !== 'success')) {
+      return;
+    } else {
+      this.clear();
+      this.props.onHide();
+    }
+  }
+
+  onSuccess() {
+    const { fileUrls } = this.state;
     const { onSuccess } = this.props;
     // this.dropzone.options.autoProcessQueue = false;
     this.setState({
       files: [],
-      uploading: false,
-      uploaded: false,
+      fileUrls: [],
+      uploadState: null,
     }, () => {
-      if (files.length === 0) return;
+      if (fileUrls.length === 0) return;
       this.props.onHide(() => {
-        onSuccess(files);
+        onSuccess(fileUrls);
       });
     });
   }
 
+  onDrop(dropped) {
+    const files = update(this.state.files, { $push: dropped });
+    this.setState({ files });
+  }
+
+  onDropRejected() {
+    this.setState({ uploadState: null, error: 'Unsupported files!' });
+  }
+
   onUpload() {
-    this.setState({ uploading: true }, () => {
-      // this.dropzone.options.autoProcessQueue = true;
-      this.dropzone.processQueue();
-    });
-  }
+    const { zip } = this.props;
+    const { files } = this.state;
 
-  onError(file, error) {
-    this.setState({ error });
-  }
+    const uploadData = (data) => {
+      const req = {
+        method: 'POST',
+        body: data,
+      };
+      this.setState({ uploadState: 'uploading' });
+      return fetch(`${URL}/store`, req)
+        .then(result => result.json())
+        .then(value => {
+          const fileUrls = value.fileNames.map((name) => `${URL}/${name}`);
+          this.setState({ fileUrls, uploadState: 'success' });
+        })
+        .catch(error => this.setState({ error, uploadState: null }));
+    };
 
-  onFinishUpload() {
-    this.setState({ uploading: false, uploaded: true });
-  }
+    const data = new FormData();
 
-  onOk() {
-    this.onHide();
+    if (zip) {
+      const zipper = new JSZip();
+      files.forEach((file) => zipper.file(file.name, file));
+      this.setState({ uploadState: 'compressing' });
+      zipper.generateAsync({
+        type: 'blob',
+        compression: 'DEFLATE',
+        compressionOptions: 9,
+      })
+      .then(content => {
+        data.append('file', content);
+        uploadData(data);
+      });
+    } else {
+      files.forEach((file) => data.append('file', file));
+      uploadData(data);
+    }
   }
 
   onClick() {
-    const { uploaded, error } = this.state;
-    if (uploaded && !error) {
-      this.onOk();
+    const { uploadState, error } = this.state;
+    if (uploadState === 'success' && !error) {
+      this.onSuccess();
     } else if (error) {
-      this.props.onHide();
+      this.onHide();
     } else {
       this.onUpload();
     }
   }
 
-  onAddFile() {
+  onRemoveFile(e, index) {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = update(this.state.files, { $splice: [[index, 1]] });
+    this.setState({ files });
+  }
+
+  clear() {
+    this.setState({
+      files: [],
+      fileUrls: [],
+      uploadState: null,
+      error: null,
+    });
   }
 
   render() {
     const { show, acceptedFiles, maxFiles } = this.props;
-    const { canUpload, uploading, uploaded, error } = this.state;
+    const { files, uploadState, error } = this.state;
 
-    const djsConfig = {
-      createImageThumbnails: false,
-      autoProcessQueue: uploading,
-      uploadMultiple: true,
-      acceptedFiles,
-      maxFiles: maxFiles || null,
-      // addRemoveLinks: true,
-    };
-
-    const config = {
-      postUrl: `${URL}store/`,
-    };
-
-    // const success = multiple? 'successmultiple' : 'success';
-
-    const eventHandlers = {
-      // uploadprogress: this.updateProgress,
-      init: (dropzone) => { this.dropzone = dropzone; },
-      successmultiple: this.onSuccess,
-      addedfile: this.onAddFile,
-      queuecomplete: this.onFinishUpload,
-      error: this.onError,
-    };
-
-    const buttonText = uploaded ? 'Ok' : 'Upload';
+    let buttonText;
+    let buttonDisabled = true;
+    switch (uploadState) {
+      case 'uploading':
+        buttonText = 'Uploading...';
+        break;
+      case 'compressing':
+        buttonText = 'Compressing...';
+        break;
+      default:
+        buttonText = 'Ok';
+        buttonDisabled = false;
+    }
 
     return (
       <Modal show={show} onHide={this.onHide}>
         <Modal.Body>
           {renderIf(!error)(() => (
-            <DropzoneComponent
-              djsConfig={djsConfig}
-              eventHandlers={eventHandlers}
-              config={config}
-            />
+            <Dropzone
+              style={styles.dropzone}
+              accept={acceptedFiles}
+              onDrop={this.onDrop}
+              onDropRejected={this.onDropRejected}
+            >
+              {renderIf(files)(() => (
+                <ListGroup>
+                  {files.map((file, i) => (
+                    <ListGroupItem style={styles.file} key={i}>
+                      {file.name}
+                      <Icon name="remove" onClick={(e) => this.onRemoveFile(e, i)} />
+                    </ListGroupItem>
+                  ))}
+                </ListGroup>
+              ))}
+
+              {renderIf(files.length === 0)(() => (
+                <p>Click or drop some files!</p>
+              ))}
+            </Dropzone>
           ))}
           <ErrorAlert
             error={this.state.error}
@@ -149,7 +198,7 @@ export default class FileModal extends Component {
         </Modal.Body>
         <Modal.Footer>
           <Button
-            disabled={!error && (uploading || !canUpload)}
+            disabled={buttonDisabled}
             bsStyle={error ? 'danger' : 'success'}
             onClick={this.onClick}
           >
@@ -160,3 +209,14 @@ export default class FileModal extends Component {
     );
   }
 }
+
+const styles = {
+  dropzone: {
+
+  },
+  file: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+};

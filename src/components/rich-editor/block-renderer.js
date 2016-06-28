@@ -7,7 +7,6 @@ import {
   Entity,
 } from 'draft-js';
 
-
 export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnly) => {
   const getBlock = (type, props, entityKey) => {
     const blocks = {
@@ -35,6 +34,9 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
           onMetadataChanged: (metadata) => {
             Entity.mergeData(entityKey, { metadata });
             updateEditor();
+          },
+          style: {
+            height: 400,
           },
         },
       },

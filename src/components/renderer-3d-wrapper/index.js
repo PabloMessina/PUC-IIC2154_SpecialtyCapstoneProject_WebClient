@@ -6,6 +6,7 @@ import { Button, Dropdown } from 'react-bootstrap';
 import renderIf from 'render-if';
 import Icon, { IconStack } from 'react-fa';
 import clone from 'lodash/clone';
+import JSZip from 'jszip';
 
 const LIGHT_BLUE = '#9fdef7';
 const BLACK = '#000000';
@@ -68,6 +69,9 @@ export default class Renderer3DWrapper extends Component {
             // mtl: 'http://localhost:5000/nRBC.mtl',
             // obj: 'http://localhost:5000/nRBC.obj',
             // images: ['http://localhost:5000/nRBC.jpg'],
+            // mtl: 'http://localhost:5000/untitled.mtl',
+            // obj: 'http://localhost:5000/untitled.obj',
+            // images: ['http://localhost:5000/untitled.jpg'],
           },
           // localFiles: [mtl, obj, image1, image2, ... ]
           // },
@@ -92,22 +96,26 @@ export default class Renderer3DWrapper extends Component {
           normalLabelStyle: defaultNormalLabelStyle,
           sphereRadiusCoef: defaultSphereRadiusCoef,
         },
-        gotFocusCallback: () => {},
-        lostFocusCallback: () => {},
-        onMetadataChanged: () => console.log('===> metadata changed'),
+
+        // EVALUATION mode only
+        onLabelAnswerChanged: (ans) => console.log(ans),
 
         // EDITION mode only
-        onLabelAnswerChanged: (ans) => console.log(ans),
+        onMetadataChanged: () => console.log('===> metadata changed'),
+        gotFocusCallback: () => {},
+        lostFocusCallback: () => {},
       },
     };
   }
 
   constructor(props) {
     super(props);
-    const { mode, metadata } = props.blockProps;
+    const { mode, metadata, source } = props.blockProps;
+
     // state used in render
     this.state = {
       mode,
+      source: (source && (source.remoteFiles || source.localFiles)) ? source : null,
       metadata: metadata || {},
       labelStyleMode: 'normal',
       labelDropdownOpen: false,
@@ -150,6 +158,44 @@ export default class Renderer3DWrapper extends Component {
     /* EVALUATION MODE API */
     /* =================== */
     this.updateLabelAnswers = this.updateLabelAnswers.bind(this);
+  }
+
+  componentWillMount() {
+    const { zipUrl } = this.props.blockProps.source;
+    if (!zipUrl) return;
+
+    const localFiles = [];
+    fetch(zipUrl, { method: 'GET', mode: 'cors' })
+      .then(response => response.blob())
+      .then(blob => JSZip().loadAsync(blob))
+      .then(zip => {
+        const promises = [];
+        zip.forEach((name, file) => {
+          promises.push(
+            file
+              .async('array')
+              .then(content => {
+                /* get file extension */
+                const doti = name.lastIndexOf('.');
+                if (doti === -1) throw new Error(`file ${name} without extension`);
+                const ext = name.substring(doti + 1);
+
+                if (ext === 'mtl' || ext === 'obj') { // mtl or obj -> text file
+                  const text = content.map(b => String.fromCharCode(b)).join('');
+                  localFiles.push(new File([text], name, { type: 'text/plain' }));
+                } else { // image -> binary file
+                  const buf = new ArrayBuffer(content.length);
+                  const bufView = new Uint8Array(buf);
+                  for (let i = 0, len = content.length; i < len; ++i) bufView[i] = content[i];
+                  localFiles.push(new File([buf], name));
+                }
+              })
+          );
+        });
+        return Promise.all(promises);
+      })
+      .then(() => this.setState({ source: { localFiles } }))
+      .catch(error => { alert(error); console.log(error); });
   }
 
   componentDidMount() {
@@ -282,7 +328,6 @@ export default class Renderer3DWrapper extends Component {
 
   /* handle change on sphere radius coef */
   onSphereRadiusCoefChanged(e) {
-    console.log('====> onSphereRadiusCoefChanged()');
     const coef = Number(e.target.value);
     const metadata = { ...this.state.metadata };
     // update state and notify parent
@@ -315,7 +360,7 @@ export default class Renderer3DWrapper extends Component {
       if (elem === this.refs.root) { inComponent = true; break; }
       elem = elem.parentElement;
     }
-    if (!inComponent) this.refs.r3d.unselectSelectedLabel();
+    if (!inComponent && this.refs.r3d) this.refs.r3d.unselectSelectedLabel();
     if (inComponent && !this._.componentFocused) {
       this._.componentFocused = true;
       this.refs.r3d.gotFocus();
@@ -333,9 +378,8 @@ export default class Renderer3DWrapper extends Component {
 
   render() {
     // extract from props
-    const { source } = this.props.blockProps;
     // extract from state
-    const { metadata, mode, labelStyleMode } = this.state;
+    const { metadata, mode, labelStyleMode, source } = this.state;
     // set defaults
     const normalLabelStyle = metadata.normalLabelStyle || defaultNormalLabelStyle;
     const highlightedLabelStyle = metadata.highlightedLabelStyle || defaultHighlightedLabelStyle;
@@ -358,7 +402,7 @@ export default class Renderer3DWrapper extends Component {
     const hasLabels = labels.length > 0;
 
     return (
-      <div ref="root" style={styles.globalDivStyle}>
+      <div ref="root" style={{ ...styles.root, ...this.props.blockProps.style }}>
         <div style={styles.toolbar}>
           <Button
             style={styles.toolbarButton}
@@ -462,26 +506,30 @@ export default class Renderer3DWrapper extends Component {
             </Dropdown>
           ))}
         </div>
-        <Renderer3D
-          ref="r3d"
-          mode={mode}
-          source={source}
-          labels={labels}
-          normalLabelStyle={normalLabelStyle}
-          highlightedLabelStyle={highlightedLabelStyle}
-          sphereRadiusCoef={sphereRadiusCoef}
-          labelsChangedCallback={this.onLabelsChanged}
-          loadingStartingCallback={this.onLoadingStarting}
-          loadingProgressCallback={this.onLoadingProgress}
-          loadingErrorCallback={this.onLoadingError}
-          loadingCompletedCallback={this.onLoadingCompleted}
-          downloadCycleStartedCallback={this.onDownloadCycleStarted}
-          downloadCycleFinishedCallback={this.onDownloadCycleFinished}
-          downloadingFileCallback={this.onDownloadingFile}
+        {renderIf(source)(() => (
+          <Renderer3D
+            ref="r3d"
+            mode={mode}
+            source={source}
+            labels={labels}
+            normalLabelStyle={normalLabelStyle}
+            highlightedLabelStyle={highlightedLabelStyle}
+            sphereRadiusCoef={sphereRadiusCoef}
+            loadingStartingCallback={this.onLoadingStarting}
+            loadingProgressCallback={this.onLoadingProgress}
+            loadingErrorCallback={this.onLoadingError}
+            loadingCompletedCallback={this.onLoadingCompleted}
+            downloadCycleStartedCallback={this.onDownloadCycleStarted}
+            downloadCycleFinishedCallback={this.onDownloadCycleFinished}
+            downloadingFileCallback={this.onDownloadingFile}
 
-          // in EVALUATION mode
-          labelAnswerChangedCallback={this.props.blockProps.onLabelAnswerChanged}
-        />
+            // in Edition mode
+            labelsChangedCallback={this.onLabelsChanged}
+
+            // in EVALUATION mode
+            labelAnswerChangedCallback={this.props.blockProps.onLabelAnswerChanged}
+          />
+        ))}
         {this.state.loadingModel ?
           <div style={styles.progressDiv}>
             <span height="20px">{this.state.progressMessage}</span> <br />
@@ -551,9 +599,10 @@ const styles = {
   highlightLabel: {
     marginLeft: 'auto',
   },
-  globalDivStyle: {
+  root: {
+    width: '100%',
+    height: '100%',
     position: 'relative',
-    width: '85%',
   },
   toolbar: {
     position: 'absolute',

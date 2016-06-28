@@ -21,7 +21,6 @@ const MTLLoader = {
 
       // set filereader's success function
       fr.onload = () => {
-        // auxiliar variables and data structures
         const text = fr.result; // file's text
         parseMtlText(text, texturePaths, resolve, reject, interrupter, onFileDownloadStarted);
       };
@@ -32,6 +31,7 @@ const MTLLoader = {
       };
 
       // read the file as plain text
+      // fr.readAsText(mtlFile);
       fr.readAsText(mtlFile);
     });
   },
@@ -91,8 +91,8 @@ function parseMtlText(mtlText, texturePaths, resolve, reject, interrupter, onFil
                 Number(tokens[1]), Number(tokens[2]), Number(tokens[3]));
               break;
 
-            case 'ka':
-              // ambient color, in THREE.js it seems to be 'emissive'
+            case 'ke':
+              // emmisive color
               params.emissive = new THREE.Color(
                 Number(tokens[1]), Number(tokens[2]), Number(tokens[3]));
               break;
@@ -131,6 +131,12 @@ function parseMtlText(mtlText, texturePaths, resolve, reject, interrupter, onFil
                 params.opacity = 1 - transparency;
                 params.transparent = true;
               }
+              break;
+            }
+
+            case 'ni': {
+              // reflectivity
+              params.reflectivity = Number(value);
               break;
             }
 
@@ -225,6 +231,7 @@ function parseMtlText(mtlText, texturePaths, resolve, reject, interrupter, onFil
             res();
           },
           null, (err) => {
+            console.warn(err);
             rej(err);
           }
         );
