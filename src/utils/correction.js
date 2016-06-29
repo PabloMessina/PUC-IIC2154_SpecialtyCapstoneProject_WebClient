@@ -3,7 +3,11 @@ import levenshtein from 'fast-levenshtein';
 
 export default function correction(qtype, correct, answer, options) {
   switch (qtype) {
-    case 'tshort': return tshort(correct.options, answer.options[0], options);
+    case 'tshort': {
+      const correctAnswer = correct.options || [];
+      const userAnswer = answer.options ? answer.options[0] : '';
+      return tshort(correctAnswer, userAnswer, options);
+    }
     case 'multiChoice': return multiChoice(correct.choices, answer.choices, options);
     case 'trueFalse': return trueFalse(correct.value, answer.value, options);
     case 'correlation': return correlation(correct.choices, answer.choices, options);
@@ -12,10 +16,10 @@ export default function correction(qtype, correct, answer, options) {
 }
 
 /**
- * [tshort find nearest word in options and return correctness and accuracy]
+ * [tshort find nearest word in options and return correct and score]
  * @param  {array} correct [array with options]
  * @param  {string} answer  [answer to evaluate]
- * @return {object: { correctness: boolean, accuracy: double}}
+ * @return {object: { correct: boolean, score: double}}
  */
 export function tshort(correct, answer, { threshold, lower, special }) {
   answer = lower ? answer.toLowerCase() : answer;
@@ -31,15 +35,15 @@ export function tshort(correct, answer, { threshold, lower, special }) {
   }, { dist: Infinity, word: '' });
   const isCorrect = threshold ? min.dist <= threshold : min.dist <= min.word.length / 2;
   return {
-    correctness: isCorrect ? 1 : 0,
-    accuracy: 100 - (min.dist * 100 / min.word.length),
+    correct: isCorrect ? 1 : 0,
+    score: 1 - (min.dist / min.word.length),
   };
 }
 
 export function trueFalse(correct, answer) {
   return {
-    correctness: answer === correct ? 1 : 0,
-    accuracy: 1,
+    correct: answer === correct ? 1 : 0,
+    score: 1,
   };
 }
 
@@ -49,8 +53,8 @@ export function multiChoice(correct, answer) {
   const max = correct.length;
   const dist = reducing(correct, answer) + reducing(answer, correct);
   return {
-    correctness: Math.max(1 - (dist / max), 0),
-    accuracy: 1,
+    correct: dist === 0 ? 1 : 0,
+    score: Math.max(1 - (dist / max), 0),
   };
 }
 
@@ -67,8 +71,8 @@ export function correlation(correct, answer) {
   const max = correct.length;
   const dist = reducing(correct, answer) + reducing(answer, correct);
   return {
-    correctness: Math.max(1 - (dist / max), 0),
-    accuracy: 1,
+    correct: dist === 0 ? 1 : 0,
+    score: Math.max(1 - (dist / max), 0),
   };
 }
 

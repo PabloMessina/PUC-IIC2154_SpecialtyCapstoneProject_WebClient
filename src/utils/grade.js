@@ -8,7 +8,7 @@
  *  @param {intger} threshold [Minimum percentage score needed to approve evaluation (50%, 60%, etc).
  *            In other words: percentage needed to obtain half grade.]
  */
-export function grade(score, { maxGrade, minGrade, threshold }) {
+export default function grade(score, maxGrade, minGrade, threshold) {
   if (score <= threshold) {
     return ((score * ((((maxGrade + minGrade) / 2) - minGrade) / threshold)) + minGrade);
   } else {

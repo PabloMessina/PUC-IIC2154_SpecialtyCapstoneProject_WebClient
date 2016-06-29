@@ -21,7 +21,9 @@
     "better-react-spinkit": "^1.2.2",
     "bootstrap": "^3.3.6",
     "bootswatch": "^3.3.6",
+    "browser-filesaver": "^1.1.1",
     "chart.js": "^2.1.3",
+    "crypto-browserify": "^3.11.0",
     "draft-js": "^0.7.0",
     "draftjs-multidecorators": "^1.0.0",
     "express": "^4.13.4",
@@ -32,6 +34,7 @@
     "feathers-hooks": "^1.5.2",
     "feathers-reactive": "^0.2.0",
     "feathers-socketio": "^1.3.4",
+    "json2csv": "^3.5.0",
     "jszip": "^3.0.0",
     "katex": "^0.6.0",
     "lodash": "^4.11.1",
@@ -59,7 +62,8 @@
     "socket.io-client": "^1.4.5",
     "three": "^0.77.1",
     "validator": "^5.4.0",
-    "whatwg-fetch": "^1.0.0"
+    "whatwg-fetch": "^1.0.0",
+    "xlsx": "git+https://github.com/taandrighetti/js-xlsx.git#beta"
   },
   "devDependencies": {
     "babel-core": "^6.7.7",

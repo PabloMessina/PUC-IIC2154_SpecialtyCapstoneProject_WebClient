@@ -4,10 +4,22 @@ import { Row, Col, Table, Button, ButtonGroup, ControlLabel, Panel } from 'react
 import Select from 'react-select';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
+import json2csv from 'json2csv';
+import FileSaver from 'browser-filesaver';
+
+import ErrorAlert from '../../error-alert';
+import Excel from '../../../utils/excel';
 
 import app, { currentUser } from '../../../app';
+const attendanceService = app.service('/attendances');
 const participantService = app.service('/participants');
 const evaluationService = app.service('/evaluations');
+const evaluationsQuestionService = app.service('/evaluations-questions');
+
+import correction from '../../../utils/correction';
+import grade from '../../../utils/grade.js';
+
+// TODO: check hardcoded values
 
 const GRAPH_OPTIONS = {
   responsive: true,
@@ -60,16 +72,19 @@ export default class Summary extends Component {
       instance: PropTypes.object,
       // React Router
       params: PropTypes.object,
-      evaluations: PropTypes.array,
     };
   }
 
   constructor(props) {
     super(props);
+
     this.state = {
       tab: 1,
       students: [],
       evaluations: [],
+      attendances: [],
+      evaluationsQuestions: [],
+      users: [],
       selectedEvaluations: [],
       selectedStudents: [],
       loading: false,
@@ -80,7 +95,18 @@ export default class Summary extends Component {
     };
     this.onSelect = this.onSelect.bind(this);
     this.onEvaluationSelect = this.onEvaluationSelect.bind(this);
+
+    this.fetchAttendances = this.fetchAttendances.bind(this);
     this.fetchStudents = this.fetchStudents.bind(this);
+    this.fetchEvaluations = this.fetchEvaluations.bind(this);
+    this.fetchEvaluationsQuestions = this.fetchEvaluationsQuestions.bind(this);
+
+    this.calculateTeamsPercentages = this.calculateTeamsPercentages.bind(this);
+    this.createStudentDatasets = this.createStudentDatasets.bind(this);
+    this.createHistogramDataset = this.createHistogramDataset.bind(this);
+
+    this.renderStudent = this.renderStudent.bind(this);
+    this.renderAssistant = this.renderAssistant.bind(this);
   }
 
   componentDidMount() {
@@ -88,10 +114,15 @@ export default class Summary extends Component {
     this.fetchStudents(instance);
     this.fetchEvaluations(instance)
       .then(evaluations => {
+        evaluations.forEach(evaluation => {
+          this.fetchAttendances(evaluation);
+          this.fetchEvaluationsQuestions(evaluation);
+        });
         const selectedEvaluations = evaluations.map(evaluation => evaluation.id);
-        const titleHistogram = selectedEvaluations.length ? selectedEvaluations[0].title : '';
-        this.setState({ selectedEvaluations, titleHistogram });
-      });
+        const titleHistogram = selectedEvaluations.length ? evaluations[0].title : '';
+        return this.setState({ selectedEvaluations, titleHistogram });
+      })
+      .catch(error => this.setState({ error }));
   }
 
   onEvaluationSelect(e, evaluation) {
@@ -110,6 +141,265 @@ export default class Summary extends Component {
     this.setState({ tab });
   }
 
+  getTotalPoints(evaluation) {
+    return evaluation.questions.reduce((previous, current) => previous + current.evaluationsQuestion.points, 0);
+  }
+
+  getGrades(evaluation) {
+    const teamPercentages = this.calculateTeamsPercentages(evaluation);
+    const teamGrades = this.calculateTeamsGrades(teamPercentages);
+    const studentGrades = this.assignStudentGrades(teamGrades, evaluation);
+    return studentGrades;
+  }
+
+  getStudentAverage(grades) {
+    const total = grades.reduce((sum, evalGrade) => sum + evalGrade, 0);
+    const divider = (grades.length - grades.filter((g) => g === null).length);
+    return divider ? total / divider : total / grades.length;
+    // return total / grades.length; // Depending on way of calculating average.
+  }
+
+  getAnalyticsAverages(evalAnalytics) {
+    const totalMin = evalAnalytics.reduce((sum, analyticGrade) => analyticGrade.min ? sum + analyticGrade.min : sum, 0);
+    const totalMax = evalAnalytics.reduce((sum, analyticGrade) => analyticGrade.max ? sum + analyticGrade.max : sum, 0);
+    const totalAvg = evalAnalytics.reduce((sum, analyticGrade) => analyticGrade.avg ? sum + analyticGrade.avg : sum, 0);
+    return {
+      min: totalMin ? totalMin / evalAnalytics.length : null,
+      max: totalMax ? totalMax / evalAnalytics.length : null,
+      avg: totalAvg ? totalAvg / evalAnalytics.length : null,
+    };
+  }
+
+  getMinMaxAvgStddev(evaluation) {
+    const grades = this.getGrades(evaluation);
+    if (grades.length === 0) return {};
+
+    let min = grades[0].grade;
+    let max = grades[0].grade;
+    let avg = 0;
+    const stddev = 0;
+    grades.forEach(evalGrade => {
+      avg += evalGrade.grade;
+      if (evalGrade.grade < min) {
+        min = evalGrade.grade;
+      }
+      if (evalGrade.grade > max) {
+        max = evalGrade.grade;
+      }
+    });
+    avg = avg / grades.length;
+    return { min, max, avg, stddev };
+    // TODO calculate stddev
+  }
+
+  calculateTeamsPercentages(evaluation) {
+    const answers = [...evaluation.answers];
+    const questions = [...evaluation.questions];
+    const attendances = this.state.attendances;
+    const evaluationsQuestions = this.state.evaluationsQuestions[evaluation.id];
+    const answeredTeams = []; // For filter
+    const teamPointsTuple = []; // [{ teamId: 123345, points: 2 }]
+    if (!evaluationsQuestions || !answers.length || !questions.length) return {};
+    answers.sort((a, b) => {
+      if (a.questionId < b.questionId) return -1;
+      if (a.questionId > b.questionId) return 1;
+      return 0;
+    });
+    questions.sort((a, b) => {
+      if (a.id < b.id) return -1;
+      if (a.id > b.id) return 1;
+      return 0;
+    });
+
+    questions.forEach(question => {
+      const eq = evaluationsQuestions.find(item => item.questionId === question.id);
+      answers.forEach(answer => {
+        if (answer.questionId === question.id) {
+          let options = {};
+          if (question.qtype === 'tshort') {
+            options = {
+              threshold: 0.6,
+              lower: true,
+              special: true,
+            };
+          }
+          const correctionQuestion = correction(question.qtype, question.answer, answer.answer, options);
+          const pointsAwarded = correctionQuestion && correctionQuestion.correct ? eq.points : 0;
+          // const pointsAwarded = eq.points;
+          teamPointsTuple.push({ teamId: answer.teamId, points: pointsAwarded });
+          answeredTeams.push(answer.teamId);
+        }
+      });
+    });
+
+    const maxPoints = evaluationsQuestions.reduce((previous, current) => current.points + previous, 0);
+    const points = teamPointsTuple.reduce((previous, current) => {
+      const teamId = current.teamId;
+      const old = { ... previous };
+      if (old[teamId]) old[teamId] = old[teamId] + current.points;
+      else old[teamId] = current.points;
+      return old;
+    }, {});
+
+    // Add teams that did not answer with points = 0
+    if (attendances[evaluation.id]) { // WORKAROUND RACE CONDITION
+      const allTeams = attendances[evaluation.id].map(attendance => attendance.teamId);
+      const unansweredTeams = allTeams.filter((teamId) => answeredTeams.indexOf(teamId) === -1);
+      Object(unansweredTeams).forEach(key => (points[key] = 0));
+    }
+
+    Object.keys(points).forEach(key => (points[key] = points[key] / maxPoints));
+    return points;
+  }
+
+  calculateTeamsGrades(teamPercentage) {
+    const { instance } = this.props;
+    const {
+      // approvalGrade,
+      minGrade,
+      maxGrade,
+    } = instance;
+
+    return Object.keys(teamPercentage).reduce((previous, teamId) => {
+      // const gradeValue = grade(teamPercentage[teamId], maxGrade, minGrade, approvalGrade);
+      const gradeValue = grade(teamPercentage[teamId], maxGrade, minGrade, 0.5);
+      return { ...previous, [teamId]: gradeValue };
+    }, {});
+  }
+
+  assignStudentGrades(teamsGradesTuple, evaluation) {
+    const users = this.state.students.map(participant => participant.user);
+    const { attendances } = this.state;
+    return attendances[evaluation.id] ? attendances[evaluation.id].map(attendance => {
+      const user = users.find(item => attendance.userId === item.id);
+      const teamId = attendance.teamId;
+      const studentName = user ? user.name : '';
+      return {
+        studentName,
+        studentId: attendance.userId,
+        grade: teamsGradesTuple[teamId] || 0,
+      };
+    }) : [];
+  }
+
+  createStudentDatasets(evaluations, students) {   // evaluationGrades and students already filtered
+    const data = students.map(student => ({ studentId: student.id, studentName: student.label, grades: [] }));
+    evaluations.forEach(evaluation => {
+      const studentGrades = this.getGrades(evaluation);
+      students.forEach((student, k) => {
+        const index = studentGrades.findIndex(element => element.studentId === student.id);
+        // const indexData = data.findIndex(element => element.studentId === student.id); // esto es igual a k
+        if (index > -1) { // Student did take test
+          // data[indexData].grades.push(studentGrades[index].grade);
+          data[k].grades.push(studentGrades[index].grade);
+        } else {
+          // data[indexData].grades.push(null); // Averiguar como acepta falta de datos Chart.js
+          data[k].grades.push(null);
+        }
+      });
+    });
+    return data;
+  }
+
+  createHistogramDataset(evaluation, min, max, approvalGrade, barNumber) {
+    const studentGrades = this.getGrades(evaluation);
+    const step = ((max - min) / barNumber);
+    const range = [];
+    const labels = [];
+    const dataset = [];
+    let failed = 0;
+    let passed = 0;
+    let i = min;
+    let k = 0;
+    let j = 0;
+
+    while (i < max) {
+      range.push(i);
+      i += step;
+    }
+    range.push(max);
+
+    for (k = 0; k < range.length - 2; k++) {
+      let count = 0;
+      for (j = 0; j < studentGrades.length; j++) {
+        if (studentGrades[j].grade >= range[k] && studentGrades[j].grade < range[k + 1]) {
+          count++;
+        }
+      }
+      labels.push(range[k].toFixed(2) + ' - ' + range[k + 1].toFixed(2));  // eslint-disable-line
+      dataset.push(count);
+    }
+
+    // Border case: last step in range
+    let lastCount = 0;
+    studentGrades.forEach(studentGrade => {
+      if (studentGrade.grade >= range[range.length - 2] && studentGrade.grade <= max) {
+        lastCount++;
+      }
+      if (studentGrade.grade < approvalGrade) {
+        failed++;
+      } else {
+        passed++;
+      }
+    });
+    dataset.push(lastCount);
+    labels.push(range[range.length - 2].toFixed(2) + ' - ' + max.toFixed(2));  // eslint-disable-line
+    return { labels, dataset, failed, passed };
+  }
+
+  formatForJSON2CSV(gradesTable, evaluations) {
+    const labels = [];
+    evaluations.forEach(evaluation => {
+      labels.push(evaluation.title);
+    });
+    const fields = ['Student name'].concat(labels);
+    const gradesJSON2CSV = [];
+    gradesTable.forEach(studentGrades => {
+      const grades = studentGrades.grades.reduce((previous, current, i) =>
+      ({
+        ...previous,
+        [labels[i]]: current,
+      }), { 'Student name': studentGrades.studentName });
+      // ((evalGrade, i) => {
+      //   grades.push({ [[labels[i]]]: evalGrade });
+      // });
+      gradesJSON2CSV.push(grades);
+    });
+    return { gradesJSON2CSV, fields };
+  }
+
+  exportCSV(studentTable, evaluations, courseName, spanishDelimiter) {
+    const gradesCSVformat = this.formatForJSON2CSV(studentTable, evaluations);
+    json2csv({
+      data: gradesCSVformat.gradesJSON2CSV,
+      fields: gradesCSVformat.fields,
+      del: spanishDelimiter ? ';' : ',',
+    },
+    (error, csv) => {
+      if (error) {
+        this.setState({ error });
+      } else {
+        const blob = new Blob([csv], { type: 'data:text/csv;charset=utf-8,' });
+        FileSaver.saveAs(blob, `${courseName}.csv`);
+      }
+    });
+  }
+
+  fetchAttendances(evaluation) {
+    const evaluationId = evaluation.id || evaluation;
+    const query = {
+      evaluationId,
+    };
+    return attendanceService.find({ query })
+      .then(result => result.data)
+      .then(newAttendances => {
+        const attendances = { ...this.state.attendances };
+        attendances[evaluationId] = newAttendances;
+        this.setState({ attendances });
+      })
+      .catch(error => this.setState({ error }));
+  }
+
   fetchStudents(instance) {
     const query = {
       instanceId: instance.id || instance,
@@ -125,6 +415,8 @@ export default class Summary extends Component {
     this.setState({ loading: true });
     const query = {
       instanceId: instance.id || instance,
+      $populate: ['answer', 'question'],
+      $sort: { createdAt: -1 },
     };
     return evaluationService.find({ query })
       .then(result => result.data)
@@ -135,26 +427,81 @@ export default class Summary extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  render() {
-    const { instance, membership, participant } = this.props;
-    const { students, selectedEvaluations } = this.state;
+  fetchEvaluationsQuestions(evaluation) {
+    const evaluationId = evaluation.id || evaluation;
+    this.setState({ loading: true });
+    const query = {
+      evaluationId,
+    };
+    return evaluationsQuestionService.find({ query })
+      .then(result => result.data)
+      .then(eq => {
+        const evaluationsQuestions = { ...this.state.evaluationsQuestions };
+        evaluationsQuestions[evaluationId] = eq;
+        this.setState({ evaluationsQuestions, loading: false, error: null });
+        return evaluationsQuestions;
+      })
+      .catch(error => this.setState({ error }));
+  }
+
+  gradesToExcelClick = (...args) => {
+    const error = Excel.gradesToExcel(...args);
+    if (error) this.setState({ error });
+  }
+
+  renderAssistant() {
+    const {
+      instance,
+      // participant,
+      course,
+    } = this.props;
+    const {
+      attendances,
+      students,
+      selectedEvaluations,
+      evaluationsQuestions,
+    } = this.state;
+
     const evaluations = this.state.evaluations.sort((a, b) => new Date(a.startAt) - new Date(b.startAt));
 
-    const canEdit = ['admin', 'write'].includes(membership.permission) || ['admin'].includes(participant.permission);
+    if (!students.length
+      || !evaluations.length
+      // || !selectedEvaluations.length
+      || !Object.keys(attendances).length
+      || !Object.keys(evaluationsQuestions).length
+    ) {
+      return (<p></p>);
+    }
 
-    const user = currentUser();
-    const dropdown = students.filter(s => canEdit || s.user.id === user.id).map(student => ({
+    // const user = currentUser();
+    const dropdown = students.map(student => ({
       id: student.user.id,
       value: student.user.id,
       label: student.user.name,
     }));
-    const me = {
-      id: user.id,
-      value: user.id,
-      label: user.name,
-    };
-    const selectedStudents = canEdit ? this.state.selectedStudents : [me];
+    const allStudents = students.map(student => ({
+      id: student.user.id,
+      value: student.user.id,
+      label: student.user.name,
+    }));
+
+    // const me = {
+    //   id: user.id,
+    //   value: user.id,
+    //   label: user.name,
+    // };
+
+    const selectedStudents = this.state.selectedStudents;
     const filteredEvaluations = evaluations.filter(evaluation => selectedEvaluations.indexOf(evaluation.id) > -1);
+    const completeAnalytics = [];
+    evaluations.forEach((evaluation) => {
+      completeAnalytics.push(this.getMinMaxAvgStddev(evaluation));
+    });
+    const analyticsAverages = this.getAnalyticsAverages(completeAnalytics);
+    // if (selectedEvaluations.length > 0) {
+    //   this.setState({ histogramEvaluation: selectedEvaluations[0] });
+    // }
+
 
     const { approvalGrade, minGrade, maxGrade } = instance;
     const labels = [];
@@ -162,24 +509,29 @@ export default class Summary extends Component {
     const min = [];
     const avg = [];
     const reprove = [];
+    // const studentGrades = [];
     filteredEvaluations.forEach(evaluation => {
+      const analyticsValues = this.getMinMaxAvgStddev(evaluation);
       labels.push(evaluation.title);
-      min.push(Math.floor((Math.random() * 15) + 25));
-      avg.push(Math.floor((Math.random() * 15) + 45));
-      max.push(Math.floor((Math.random() * 10) + 60));
+      min.push(analyticsValues.min);
+      avg.push(analyticsValues.avg);
+      max.push(analyticsValues.max);
       reprove.push(approvalGrade);
     });
 
-    const dataGraph = selectedStudents.map(student => ({
+    const studentData = this.createStudentDatasets(filteredEvaluations, selectedStudents);
+    const studentTable = this.createStudentDatasets(evaluations, allStudents);
+
+    const dataGraph = studentData.map(student => ({
       ...DEFAULT_LINE,
-      label: student.label,
+      label: student.studentName,
       borderColor: 'rgba(52, 73, 94,1.0)',
       backgroundColor: 'rgba(75,192,192,0)',
       pointBorderColor: 'rgba(52, 73, 94,1.0)',
       pointBackgroundColor: '#fff',
       pointHoverRadius: 6,
       pointRadius: 3,
-      data: filteredEvaluations.map(() => Math.floor((Math.random() * 20) + 40)),
+      data: student.grades,
     }));
 
     const dataAnalitycs = [{
@@ -221,29 +573,19 @@ export default class Summary extends Component {
       datasets,
     };
 
-    // const grades = students.map(() => Math.floor((Math.random() * 20) + 40));
-    // for (let i = 0; i < 100; i++) {
-    //   grades.push(Math.floor((Math.random() * 100)));
-    // }
-    // const histData = Array.apply(null, Array(10)).map(Number.prototype.valueOf, 0);
-    // grades.forEach(grade => {
-    //   histData[Math.floor(grade * 10 / (maxGrade - minGrade))] += 1;
-    // });
-    const dataFailed = [1, 5, 8, 10, 13, 0, 0, 0, 0, 0];
-    const dataPassed = [0, 0, 0, 0, 0, 15, 13, 10, 6, 2];
+    const evaluationData = this.createHistogramDataset(
+      evaluations[this.state.histogramEvaluation],
+      minGrade,
+      maxGrade,
+      approvalGrade,
+      Math.ceil(Math.sqrt(students.length))); // Recommended amount of classes in histogram
 
     const datasetsHistogram = [{
       ...DEFAULT_LINE,
-      label: 'Failed',
-      borderColor: 'rgba(192, 57, 43,1.0)',
-      backgroundColor: 'rgba(192, 57, 43,0.5)',
-      data: dataFailed,
-    }, {
-      ...DEFAULT_LINE,
-      label: 'Passed',
+      label: 'Frequency',
       borderColor: 'rgba(39, 174, 96,1.0)',
       backgroundColor: 'rgba(39, 174, 96,0.5)',
-      data: dataPassed,
+      data: evaluationData.dataset,
     }];
 
     const optionsHistogram = {
@@ -256,7 +598,7 @@ export default class Summary extends Component {
     };
 
     const dataHistogram = {
-      labels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      labels: evaluationData.labels,
       datasets: datasetsHistogram,
     };
 
@@ -271,7 +613,7 @@ export default class Summary extends Component {
                 placeholder="Students..."
                 onChange={(value, label) => this.setState({ selectedStudents: label, redraw: true })}
                 isLoading={this.state.loading}
-                disabled={!canEdit}
+                disabled={false}
                 value={selectedStudents}
               />
             </Col>
@@ -344,24 +686,75 @@ export default class Summary extends Component {
                   <thead>
                     <tr>
                       <th>Student</th>
-                      {this.state.evaluations.map((evaluation, i) => (
+                      {evaluations.map((evaluation, i) => (
                         <th key={i}>{evaluation.title}</th>
                       ))}
                       <th>Avg</th>
                     </tr>
                   </thead>
                   <tbody>
-                  {this.state.students.map((student, i) => (
+                  {studentTable.map((student, i) => (
                     <tr key={i}>
-                      <td>{student.user.name}</td>
-                      {this.state.evaluations.map((a, j) => (
-                        <td key={j}>{Math.floor((Math.random() * 60) + 10)}</td>
+                      <td>{student.studentName}</td>
+                      {student.grades.map((evalGrade, j) => (
+                        <td key={j}>{evalGrade || evalGrade === 0 ? evalGrade.toFixed(3) : null}</td>
                       ))}
-                      <th>5,2</th>
+                      <th>{this.getStudentAverage(student.grades).toFixed(3)}</th>
                     </tr>
                   ))}
+                    <tr>
+                      <th> Min </th>
+                        {completeAnalytics.map((evaluation, k) => (
+                          <td key={k}>{evaluation.min || evaluation.min === 0 ? evaluation.min.toFixed(3) : null}</td>
+                        ))}
+                      <th>{analyticsAverages.min || analyticsAverages.min === 0 ? analyticsAverages.min.toFixed(3) : null}</th>
+                    </tr>
+                    <tr>
+                      <th> Max </th>
+                        {completeAnalytics.map((evaluation, k) => (
+                          <td key={k}> {evaluation.max || evaluation.max === 0 ? evaluation.max.toFixed(3) : null} </td>
+                        ))}
+                      <th>{analyticsAverages.max || analyticsAverages.max === 0 ? analyticsAverages.max.toFixed(3) : null}</th>
+                    </tr>
+                    <tr>
+                      <th> Avg </th>
+                        {completeAnalytics.map((evaluation, k) => (
+                          <td key={k}> {evaluation.avg || evaluation.avg === 0 ? evaluation.avg.toFixed(3) : null} </td>
+                        ))}
+                      <th>{analyticsAverages.avg || analyticsAverages.avg === 0 ? analyticsAverages.avg.toFixed(3) : null}</th>
+                    </tr>
                   </tbody>
                 </Table>
+
+                <Row>
+                  <Col>
+                    <Button
+                      bsStyle="primary"
+                      style={styles.download}
+                      onClick={() => this.gradesToExcelClick(evaluations, studentTable, course.name)}
+                    >
+                      Download table as Excel
+                    </Button>
+                  </Col>
+                  <Col>
+                    <Button
+                      bsStyle="primary"
+                      style={styles.download}
+                      onClick={() => this.exportCSV(studentTable, evaluations, course.name, false)}
+                    >
+                      Download table as CSV for Office in English
+                    </Button>
+                  </Col>
+                  <Col>
+                    <Button
+                      bsStyle="primary"
+                      style={styles.download}
+                      onClick={() => this.exportCSV(studentTable, evaluations, course.name, true)}
+                    >
+                      Download table as CSV for Office in Spanish
+                    </Button>
+                  </Col>
+                </Row>
               </Col>
             </Row>
           )}
@@ -374,6 +767,7 @@ export default class Summary extends Component {
                 options={optionsHistogram}
                 width="700" height="500"
               />
+              <h5>Failed: {evaluationData.failed} | Passed: {evaluationData.passed}</h5>
             </Col>
             <Col xsOffset={8}>
               <ControlLabel>Evaluations</ControlLabel>
@@ -394,8 +788,240 @@ export default class Summary extends Component {
           </Row>
         )}
         </Row>
+        <ErrorAlert
+          error={this.state.error}
+          onDismiss={() => this.setState({ error: null })}
+        />
       </div>
     );
+  }
+
+  renderStudent() {
+    const {
+      instance,
+      // participant,
+    } = this.props;
+    const {
+      attendances,
+      students,
+      selectedEvaluations,
+      evaluationsQuestions,
+    } = this.state;
+    const evaluations = this.state.evaluations.sort((a, b) => new Date(a.startAt) - new Date(b.startAt));
+    if (!students.length
+      || !evaluations.length
+      // || !selectedEvaluations.length
+      || !Object.keys(attendances).length
+      || !Object.keys(evaluationsQuestions).length
+    ) {
+      return (<p></p>);
+    }
+
+    const filteredEvaluations = evaluations.filter(evaluation => selectedEvaluations.indexOf(evaluation.id) > -1);
+
+    const completeAnalytics = [];
+    evaluations.forEach((evaluation) => {
+      completeAnalytics.push(this.getMinMaxAvgStddev(evaluation));
+    });
+    const analyticsAverages = this.getAnalyticsAverages(completeAnalytics);
+
+    const { approvalGrade, minGrade, maxGrade } = instance;
+    const labels = [];
+    const max = [];
+    const min = [];
+    const avg = [];
+    const reprove = [];
+
+    filteredEvaluations.forEach(evaluation => {
+      const analyticsValues = this.getMinMaxAvgStddev(evaluation);
+      labels.push(evaluation.title);
+      min.push(analyticsValues.min);
+      avg.push(analyticsValues.avg);
+      max.push(analyticsValues.max);
+      reprove.push(approvalGrade);
+    });
+
+    const currentStudent = [{ id: currentUser().id, label: currentUser().name, value: currentUser().id }];
+
+    const studentData = this.createStudentDatasets(filteredEvaluations, currentStudent);
+    const studentTable = this.createStudentDatasets(evaluations, currentStudent);
+
+    const dataGraph = studentData.map(student => ({
+      ...DEFAULT_LINE,
+      label: student.studentName,
+      borderColor: 'rgba(52, 73, 94,1.0)',
+      backgroundColor: 'rgba(75,192,192,0)',
+      pointBorderColor: 'rgba(52, 73, 94,1.0)',
+      pointBackgroundColor: '#fff',
+      pointHoverRadius: 6,
+      pointRadius: 3,
+      data: student.grades,
+    }));
+
+    const dataAnalitycs = [{
+      ...LINES.MAX,
+      label: 'Max',
+      data: max,
+    }, {
+      ...LINES.AVG,
+      label: 'Average',
+      data: avg,
+    }, {
+      ...LINES.MIN,
+      label: 'Min',
+      data: min,
+    }, {
+      ...LINES.REPR,
+      label: 'Reprobation',
+      data: reprove,
+    }];
+
+    const datasets = [...dataAnalitycs, ...dataGraph];
+
+    const options = {
+      ...GRAPH_OPTIONS,
+      scales: {
+        yAxes: [{
+          display: true,
+          ticks: {
+            // beginAtZero: true,
+            suggestedMin: minGrade,
+            suggestedMax: maxGrade,
+          },
+        }],
+      },
+    };
+
+    const data = {
+      labels,
+      datasets,
+    };
+
+    return (
+      <div style={styles.container}>
+        <Row>
+          <Col xsOffset={3}>
+            <Button
+              onClick={(e) => { this.setState({ tab: 1 }); e.target.blur(); }}
+              bsStyle={this.state.tab === 1 ? 'primary' : 'link'}
+            >
+              <Icon style={styles.icon} name="area-chart" />
+              Chart
+            </Button>
+            <Button
+              onClick={(e) => { this.setState({ tab: 2 }); e.target.blur(); }}
+              bsStyle={this.state.tab === 2 ? 'primary' : 'link'}
+            >
+              <Icon style={styles.icon} name="table" />
+              Table
+            </Button>
+          </Col>
+          <br />
+          {renderIf(this.state.tab === 1)(() =>
+            <Row>
+              {renderIf(selectedEvaluations.length > 1)(() =>
+                <Col xs={8}>
+                  <LineChart
+                    data={data}
+                    redraw={this.state.redraw}
+                    options={options}
+                    width="700" height="500"
+                  />
+                </Col>
+              )}
+              {renderIf(selectedEvaluations.length <= 1)(() =>
+                <Col xs={8}>
+                  <Panel header="Chart tool">
+                    Please select at least two evaluations.
+                  </Panel>
+                </Col>
+              )}
+              <Col xsOffset={8}>
+                <ControlLabel>Evaluations</ControlLabel>
+                <Col xs={10}>
+                  <ButtonGroup vertical block>
+                    {evaluations.map(evaluation => (
+                      <Button
+                        bsStyle={selectedEvaluations.indexOf(evaluation.id) > -1 ? 'primary' : 'default'}
+                        key={evaluation.id}
+                        onClick={e => this.onEvaluationSelect(e, evaluation)}
+                      >
+                        {evaluation.title}
+                      </Button>
+                    ))}
+                  </ButtonGroup>
+                </Col>
+              </Col>
+            </Row>
+          )}
+          {renderIf(this.state.tab === 2)(() =>
+            <Row>
+              <Col xs={12}>
+                <Table striped condensed hover>
+                  <thead>
+                    <tr>
+                      <th>Student</th>
+                      {this.state.evaluations.map((evaluation, i) => (
+                        <th key={i}>{evaluation.title}</th>
+                      ))}
+                      <th>Avg</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  {studentTable.map((student, i) => (
+                    <tr key={i}>
+                      <td>{student.studentName}</td>
+                      {student.grades.map((evalGrade, j) => (
+                        <td key={j}>{evalGrade || evalGrade === 0 ? evalGrade.toFixed(3) : null}</td>
+                      ))}
+                      <th>{this.getStudentAverage(student.grades).toFixed(3)}</th>
+                    </tr>
+                  ))}
+                    <tr>
+                      <th> Min </th>
+                        {completeAnalytics.map((evaluation, k) => (
+                          <td key={k}>{evaluation.min || evaluation.min === 0 ? evaluation.min.toFixed(3) : null}</td>
+                        ))}
+                      <th>{analyticsAverages.min || analyticsAverages.min === 0 ? analyticsAverages.min.toFixed(3) : null}</th>
+                    </tr>
+                    <tr>
+                      <th> Max </th>
+                        {completeAnalytics.map((evaluation, k) => (
+                          <td key={k}> {evaluation.max || evaluation.max === 0 ? evaluation.max.toFixed(3) : null} </td>
+                        ))}
+                      <th>{analyticsAverages.max || analyticsAverages.max === 0 ? analyticsAverages.max.toFixed(3) : null}</th>
+                    </tr>
+                    <tr>
+                      <th> Avg </th>
+                        {completeAnalytics.map((evaluation, k) => (
+                          <td key={k}> {evaluation.avg || evaluation.avg === 0 ? evaluation.avg.toFixed(3) : null} </td>
+                        ))}
+                      <th>{analyticsAverages.avg || analyticsAverages.avg === 0 ? analyticsAverages.avg.toFixed(3) : null}</th>
+                    </tr>
+                  </tbody>
+                </Table>
+              </Col>
+            </Row>
+          )}
+        </Row>
+        <ErrorAlert
+          error={this.state.error}
+          onDismiss={() => this.setState({ error: null })}
+        />
+      </div>
+    );
+  }
+
+  render() {
+    const {
+      membership,
+      participant,
+    } = this.props;
+
+    const canEdit = ['admin', 'write'].includes(membership.permission) || ['admin'].includes(participant.permission);
+
+    if (canEdit) return this.renderAssistant();
+    return this.renderStudent();
   }
 }
 
@@ -413,5 +1039,9 @@ const styles = {
   },
   icon: {
     paddingRight: 7,
+  },
+  download: {
+    margin: 5,
+    marginLeft: 40,
   },
 };

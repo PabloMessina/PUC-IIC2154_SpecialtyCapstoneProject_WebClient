@@ -50,4 +50,15 @@ module.exports = {
       },
     ],
   },
+
+  // For XLSX
+  // https://github.com/SheetJS/js-xlsx/issues/285#issuecomment-160305339
+  node: {
+    fs: 'empty',
+  },
+  externals: [
+    {
+      './cptable': 'var cptable',
+    },
+  ],
 };
