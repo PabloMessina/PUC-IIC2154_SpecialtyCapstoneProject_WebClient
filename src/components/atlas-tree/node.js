@@ -2,6 +2,7 @@
 
 import React, { PropTypes, Component } from 'react';
 import renderIf from 'render-if';
+import Icon from 'react-fa';
 
 import { Colors } from '../../styles';
 
