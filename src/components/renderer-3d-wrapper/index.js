@@ -178,11 +178,15 @@ export default class Renderer3DWrapper extends Component {
     if (ext === 'mtl' || ext === 'obj') { // mtl or obj -> text file
       return file
         .async('text')
-        .then(content => new File([content], name, { type: 'text/plain' }));
+        .then(content => {
+          return { name, blob: new Blob([content], { type: 'text/plain' }) };
+        });
     } else { // image -> binary file
       return file
         .async('uint8array')
-        .then(content => new File([content], name));
+        .then(content => {
+          return { name, blob: new Blob([content]) };
+        });
     }
   }
 

@@ -680,15 +680,15 @@ export default class Renderer3D extends Component {
       if (fname.length > OBJ_EXT.length &&
         fname.substr(fname.length - OBJ_EXT.length, fname.length)
         .toLowerCase() === OBJ_EXT) {
-        objFile = file; // obj file
+        objFile = file.blob; // obj file
       } else if (fname.length > MTL_EXT.length &&
         fname.substr(fname.length - MTL_EXT.length, fname.length)
         .toLowerCase() === MTL_EXT) {
-        mtlFile = file; // mtl file
+        mtlFile = file.blob; // mtl file
       } else {
         // map filename to file and path
-        textureFiles[fname] = file;
-        texturePaths[fname] = URL.createObjectURL(file);
+        textureFiles[fname] = file.blob;
+        texturePaths[fname] = URL.createObjectURL(file.blob);
       }
     });
 

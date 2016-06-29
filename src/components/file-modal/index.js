@@ -34,6 +34,12 @@ export default class FileModal extends Component {
     };
   }
 
+  static get defaultProps() {
+    return {
+      multiple: true,
+    };
+  }
+
   constructor(props) {
     super(props);
 
