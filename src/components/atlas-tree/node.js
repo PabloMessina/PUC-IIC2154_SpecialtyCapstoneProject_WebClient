@@ -1,7 +1,6 @@
 /* eslint no-underscore-dangle:0 */
 
 import React, { PropTypes, Component } from 'react';
-import Icon from 'react-fa';
 import renderIf from 'render-if';
 
 import { Colors } from '../../styles';

@@ -37,6 +37,7 @@ class Settings extends Component {
   }
 
   render() {
+    // Buttons hidden because it's incomplete
     return (
       <Grid style={styles.container}>
         <DocumentTitle title="Settings" />
@@ -53,7 +54,7 @@ class Settings extends Component {
             >
               General
             </ListGroupItem>
-            <ListGroupItem
+            {/*<ListGroupItem
               style={styles.lista}
               active={this.state.selected === 2}
               onClick={() => {
@@ -92,7 +93,7 @@ class Settings extends Component {
               }}
             >
               My Atlases
-            </ListGroupItem>
+            </ListGroupItem>*/}
           </ListGroup>
         </Col>
         <Col sm={6} md={9}>

@@ -7,18 +7,23 @@ import DocumentTitle from 'react-document-title';
 import app, { currentUser } from '../../app';
 const participantService = app.service('/participants');
 const instanceService = app.service('/instances');
+const atlasesService = app.service('/atlases');
+
 export default class UserProfile extends Component {
 
   constructor(props) {
     super(props);
     this.state = {
       instances: [],
+      atlases: [],
     };
     this.fetchInstances = this.fetchInstances.bind(this);
+    this.fetchAtlases = this.fetchAtlases.bind(this);
   }
 
   componentDidMount() {
     this.fetchInstances();
+    this.fetchAtlases();
   }
 
   fetchInstances(custom) {
@@ -39,6 +44,18 @@ export default class UserProfile extends Component {
       .then(({ data, total }) => this.setState({ instances: data, total }));
   }
 
+  fetchAtlases() {
+    console.log(currentUser());
+    const query = {
+      responsableId: currentUser().id,
+    };
+    return atlasesService.find({ query })
+    .then(results => {
+      console.log(results);
+      this.setState({ atlases: results.data });
+    });
+  }
+
   render() {
     const creation = moment(currentUser().createdAt);
     return (
@@ -50,7 +67,8 @@ export default class UserProfile extends Component {
             <h2>{currentUser().name}</h2>
             <p><Icon name="envelope-o" /> {currentUser().email}</p>
             <hr />
-            <h5>Member since: {creation.format('MMMM Do YYYY')}</h5>
+            <h5>Member since:</h5>
+            <h5>{creation.format('MMMM Do YYYY')}</h5>
           </Col>
           <Col xs={12} sm={9}>
             <Nav bsStyle="tabs" activeKey={1} onSelect={this.handleSelect}>
@@ -61,8 +79,9 @@ export default class UserProfile extends Component {
               <Col sm={6}>
                 <Panel header={<h3><Icon name="clock-o" /> Recent Atlases</h3>}>
                   <ListGroup fill>
-                    <ListGroupItem>Calculus 1</ListGroupItem>
-                    <ListGroupItem>Calculus 2</ListGroupItem>
+                    {this.state.atlases.map(atlas =>
+                      <ListGroupItem>{atlas.title}</ListGroupItem>
+                    )}
                   </ListGroup>
                 </Panel>
               </Col>
