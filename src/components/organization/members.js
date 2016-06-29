@@ -4,6 +4,8 @@ import Select from 'react-select';
 import moment from 'moment';
 import renderIf from 'render-if';
 
+import ErrorAlert from '../error-alert/';
+
 import app from '../../app';
 const membershipService = app.service('/memberships');
 const userService = app.service('/users');
@@ -63,10 +65,16 @@ export default class CourseTab extends Component {
     if (ROLES[key]) {
       // Role changed
       const permission = ROLES[key].value;
-      return membershipService.patch(membership.id, { permission });
+      return membershipService.patch(membership.id, { permission })
+        // feathers-reactive bug: Can't use 'catch' directly
+        .then(result => result)
+        .catch(error => this.setState({ error }));
     }
     // Removed
-    return membershipService.remove(membership.id);
+    return membershipService.remove(membership.id)
+      // feathers-reactive bug: Can't use 'catch' directly
+      .then(result => result)
+      .catch(error => this.setState({ error }));
   }
 
   onSubmit(e) {
@@ -86,7 +94,8 @@ export default class CourseTab extends Component {
     this.setState({ loading: true });
     return userService.find({ query })
       .then(result => result.data)
-      .then(users => this.setState({ users, loading: false }));
+      .then(users => this.setState({ users, loading: false }))
+      .catch(error => this.setState({ error }));
   }
 
   observe(organization) {
@@ -207,6 +216,10 @@ export default class CourseTab extends Component {
             <p>Each member has a specific role inside the organization.</p>
             <hr />
             <p>Search users and add a bulk of them to the organization.</p>
+            <ErrorAlert
+              error={this.state.error}
+              onDismiss={() => this.setState({ error: null })}
+            />
           </Panel>
         </Col>
       </Grid>

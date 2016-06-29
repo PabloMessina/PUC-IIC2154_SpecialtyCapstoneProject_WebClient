@@ -4,6 +4,8 @@ import Select from 'react-select';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
 
+import ErrorAlert from '../../error-alert/';
+
 import app from '../../../app';
 const participantService = app.service('/participants');
 const organizationService = app.service('/organizations');
@@ -224,6 +226,10 @@ export default class InstanceStudents extends Component {
             <p>Each participant has a specific role inside the course.</p>
             <hr />
             <p>Search participants and add a role to them on the course.</p>
+            <ErrorAlert
+              error={this.state.error}
+              onDismiss={() => this.setState({ error: null })}
+            />
           </Panel>
         </Col>
       </div>

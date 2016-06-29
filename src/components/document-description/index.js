@@ -20,11 +20,14 @@ import Select from 'react-select';
 import renderIf from 'render-if';
 import DocumentTitle from 'react-document-title';
 
+import ErrorAlert from '../error-alert/';
+
 import app, { currentUser } from '../../app';
-import { Colors } from '../../styles';
 const atlasesService = app.service('/atlases');
 // const annotationService = app.service('/annotations');
 // const bookmarkService = app.service('/annotations');
+
+import { Colors } from '../../styles';
 
 
 class DocumentDescription extends Component {
@@ -451,8 +454,14 @@ class DocumentDescription extends Component {
             <h4>Take a look inside</h4>
             <p>Click "Go to Atlas" to view the contents of this book</p>
             <hr />
-            <p>View your annotations and bookmarks in the panel below.
-            Press the eye icon to navigate to them and the trash icon to delete them.</p>
+            <p>
+              View your annotations and bookmarks in the panel below.
+              Press the eye icon to navigate to them and the trash icon to delete them.
+            </p>
+            <ErrorAlert
+              error={this.state.error}
+              onDismiss={() => this.setState({ error: null })}
+            />
           </Panel>
         </Col>
         <Col xs={12} md={12}>
