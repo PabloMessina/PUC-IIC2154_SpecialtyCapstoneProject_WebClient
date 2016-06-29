@@ -106,7 +106,7 @@ export default class OrganizationForm extends Component {
       <form style={styles.container} onSubmit={this.onSubmit}>
 
         <FormGroup controlId="name" validationState={validateName(this.state.name)}>
-          <ControlLabel>Organization name</ControlLabel>
+          <ControlLabel>Organization Name*</ControlLabel>
           <FormControl
             type="text"
             value={this.state.name}
@@ -114,24 +114,26 @@ export default class OrganizationForm extends Component {
             label="Organization name"
             onChange={e => this.setState({ name: e.target.value })}
             disabled={disabled}
+            required
           />
           <FormControl.Feedback />
           <HelpBlock>Must be unique and not too short</HelpBlock>
         </FormGroup>
 
         <FormGroup controlId="description">
-          <ControlLabel>Description</ControlLabel>
+          <ControlLabel>Description*</ControlLabel>
           <FormControl
             componentClass="textarea"
             value={this.state.description}
             placeholder="Organization description..."
             onChange={e => this.setState({ description: e.target.value })}
             disabled={disabled}
+            required
           />
         </FormGroup>
 
         <FormGroup controlId="logo">
-          <ControlLabel>Logo</ControlLabel>
+          <ControlLabel>Logo* </ControlLabel>
           <Button onClick={this.onChooseLogo}>
             Select file
           </Button>

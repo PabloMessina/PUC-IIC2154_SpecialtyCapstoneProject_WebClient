@@ -3,13 +3,20 @@ import { Grid, Row, Col, Image, Nav, NavItem, ListGroup, ListGroupItem, Panel } 
 import Icon from 'react-fa';
 import moment from 'moment';
 import DocumentTitle from 'react-document-title';
+import { withRouter } from 'react-router';
 
 import app, { currentUser } from '../../app';
 const participantService = app.service('/participants');
 const instanceService = app.service('/instances');
 const atlasesService = app.service('/atlases');
 
-export default class UserProfile extends Component {
+class UserProfile extends Component {
+
+  static get propTypes() {
+    return {
+      router: React.PropTypes.object,
+    };
+  }
 
   constructor(props) {
     super(props);
@@ -19,11 +26,23 @@ export default class UserProfile extends Component {
     };
     this.fetchInstances = this.fetchInstances.bind(this);
     this.fetchAtlases = this.fetchAtlases.bind(this);
+    this.onAtlasSelect = this.onAtlasSelect.bind(this);
+    this.onCourseSelect = this.onCourseSelect.bind(this);
   }
 
   componentDidMount() {
     this.fetchInstances();
     this.fetchAtlases();
+  }
+
+  onAtlasSelect(atlas) {
+    const url = `/documents/${atlas.id}`;
+    return this.props.router.push(url);
+  }
+
+  onCourseSelect(course) {
+    const url = `/courses/show/${course.id}`;
+    return this.props.router.push(url);
   }
 
   fetchInstances(custom) {
@@ -45,13 +64,11 @@ export default class UserProfile extends Component {
   }
 
   fetchAtlases() {
-    console.log(currentUser());
     const query = {
       responsableId: currentUser().id,
     };
     return atlasesService.find({ query })
     .then(results => {
-      console.log(results);
       this.setState({ atlases: results.data });
     });
   }
@@ -80,7 +97,7 @@ export default class UserProfile extends Component {
                 <Panel header={<h3><Icon name="clock-o" /> Recent Atlases</h3>}>
                   <ListGroup fill>
                     {this.state.atlases.map(atlas =>
-                      <ListGroupItem>{atlas.title}</ListGroupItem>
+                      <ListGroupItem onClick={() => this.onAtlasSelect(atlas)}>{atlas.title}</ListGroupItem>
                     )}
                   </ListGroup>
                 </Panel>
@@ -89,7 +106,9 @@ export default class UserProfile extends Component {
                 <Panel header={<h3><Icon name="graduation-cap" /> Courses</h3>}>
                   <ListGroup fill>
                     {this.state.instances.map(instance => (
-                      <ListGroupItem>{instance.course.name}</ListGroupItem>
+                      <ListGroupItem onClick={() => this.onCourseSelect(instance.course)}>
+                      {instance.course.name}
+                      </ListGroupItem>
                     ))}
                   </ListGroup>
                 </Panel>
@@ -119,3 +138,5 @@ const styles = {
     color: 'black',
   },
 };
+
+export default withRouter(UserProfile);

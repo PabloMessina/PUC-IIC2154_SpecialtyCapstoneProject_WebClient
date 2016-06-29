@@ -212,24 +212,26 @@ class AtlasCreate extends Component {
             <form onSubmit={this.onSubmit}>
 
               <FormGroup controlId="name" validationState={this.getValidationState()}>
-                <ControlLabel>Title</ControlLabel>
+                <ControlLabel>Title*</ControlLabel>
                 <FormControl
                   type="text"
                   value={this.state.title}
                   placeholder="Advanced calculus"
                   label="Atlas title"
                   onChange={e => this.setState({ title: e.target.value })}
+                  required
                 />
                 <FormControl.Feedback />
               </FormGroup>
 
               <FormGroup controlId="description">
-                <ControlLabel>Description</ControlLabel>
+                <ControlLabel>Description*</ControlLabel>
                 <FormControl
                   componentClass="textarea"
                   value={this.state.description}
                   placeholder="Atlas description..."
                   onChange={e => this.setState({ description: e.target.value })}
+                  required
                 />
               </FormGroup>
 
@@ -251,6 +253,7 @@ class AtlasCreate extends Component {
                   <Select
                     multi
                     simpleValue={false}
+                    allowCreate
                     disabled={false}
                     value={this.state.tags}
                     options={this.state.allTags}

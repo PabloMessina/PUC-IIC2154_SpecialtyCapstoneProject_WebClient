@@ -155,13 +155,14 @@ class CourseCreate extends Component {
             <form onSubmit={this.onSubmit}>
 
               <FormGroup controlId="name">
-                <ControlLabel>Course name</ControlLabel>
+                <ControlLabel>Course name*</ControlLabel>
                 <FormControl
                   type="text"
                   value={this.state.name}
                   placeholder="Introduction to Psicology"
                   label="Organization name"
                   onChange={e => this.setState({ name: e.target.value })}
+                  required
                 />
                 <FormControl.Feedback />
               </FormGroup>
