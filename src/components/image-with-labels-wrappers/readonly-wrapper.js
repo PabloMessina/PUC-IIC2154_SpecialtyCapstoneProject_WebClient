@@ -2,11 +2,9 @@ import React, { Component } from 'react';
 import ImageWithLabels from '../image-with-labels/';
 import renderIf from 'render-if';
 import {
-  Panel,
   ListGroup,
   Checkbox,
   Col,
-  Row,
   Grid,
 } from 'react-bootstrap';
 import { Colors } from '../../styles';
@@ -44,7 +42,7 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
 
   constructor(props) {
     super(props);
-    const labels = this.props.labels.map(label => ({ id: label.id, selected: false }));
+    const labels = props.blockProps.metadata.labels.map(label => ({ id: label.id, selected: false }));
     this.state = {
       labels,
     };
@@ -61,12 +59,12 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
   }
 
   selectAll() {
-    const labels = this.props.labels.map(label => ({ id: label.id, selected: true }));
+    const labels = this.state.labels.map(label => ({ id: label.id, selected: true }));
     this.setState({ labels });
   }
 
   unselectAll() {
-    const labels = this.props.labels.map(label => ({ id: label.id, selected: false }));
+    const labels = this.state.labels.map(label => ({ id: label.id, selected: false }));
     this.setState({ labels });
   }
 
@@ -86,12 +84,15 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
   /** React's render function */
   render() {
     const selectedLabelIds = this.state.labels.filter(l => l.selected).map(l => l.id);
+    const { source, metadata } = this.props.blockProps;
+    const circleRadius = metadata.circleRadius || 4;
+    const labels = metadata.labels || {};
     return (<div>
-      {renderIf(this.props.source)(() => (
+      {renderIf(source)(() => (
         <Grid>
           <Col md={2}>
             <ListGroup style={styles.list}>
-              {this.props.labels.map((element, i) => this.renderLabel(element, i))}
+              {labels.map((element, i) => this.renderLabel(element, i))}
             </ListGroup>
             <a style={styles.selectAll} onClick={this.selectAll}>Select All</a>
             <br />
@@ -101,9 +102,9 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
             <ImageWithLabels
               mode="READONLY"
               ref="img"
-              source={this.props.source}
-              labels={this.props.labels}
-              circleRadius={this.props.circleRadius}
+              source={source}
+              labels={labels}
+              circleRadius={circleRadius}
               // colors
               lineHighlightColor={Colors.withAlpha('MAIN', 0.9)}
               regionHighlightColor={Colors.withAlpha('MAIN', 0.4)}
@@ -121,9 +122,7 @@ export default class ImageWithLabelsReadOnlyWrapper extends Component {
 }
 
 ImageWithLabelsReadOnlyWrapper.propTypes = {
-  source: React.PropTypes.object.isRequired,
-  labels: React.PropTypes.array.isRequired,
-  circleRadius: React.PropTypes.number.isRequired,
+  blockProps: React.PropTypes.object.isRequired,
 };
 
 const styles = {

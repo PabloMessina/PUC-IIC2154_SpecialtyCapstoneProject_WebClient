@@ -1,5 +1,6 @@
 import Renderer3DWrapper from '../renderer-3d-wrapper';
-import ImageWithLabelsEditionWrapper from '../image-with-labels-wrappers/edition-wrapper';
+import InteractiveEdition from '../image-with-labels-wrappers/edition-wrapper';
+import InteractiveReadOnly from '../image-with-labels-wrappers/readonly-wrapper';
 import Latex from './components/latex';
 import { Image, Audio, Video } from './components/media';
 import { removeTeXBlock } from './modifiers/tex-modifiers';
@@ -41,7 +42,7 @@ export const createBlockRenderer = (modifyBlock, setState, updateEditor, readOnl
         },
       },
       imageWithLabels: {
-        component: ImageWithLabelsEditionWrapper,
+        component: readOnly ? InteractiveReadOnly : InteractiveEdition,
         editable: false,
         props: {
           // mode: readOnly ? 'READONLY' : 'EDITION',
