@@ -6,7 +6,6 @@ import Node from './node.js';
 const AtlasTree = ({
   title,
   tree,
-  versionId,
   selectedSectionId,
   readOnly,
   onSelectSection,
@@ -20,7 +19,6 @@ const AtlasTree = ({
         root
         title={title}
         tree={tree}
-        versionId={versionId}
         readOnly={readOnly}
         selectedSectionId={selectedSectionId}
         onSelectSection={onSelectSection}
@@ -35,7 +33,6 @@ AtlasTree.propTypes = {
   readOnly: PropTypes.bool,
   title: PropTypes.string,
   tree: PropTypes.object,
-  versionId: PropTypes.string.isRequired,
   selectedSectionId: PropTypes.string,
   onSelectSection: PropTypes.func,
   onAddSection: PropTypes.func,

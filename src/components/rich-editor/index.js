@@ -28,6 +28,7 @@ export default class RichEditor extends Component {
   static get propTypes() {
     return {
       style: PropTypes.object,
+      saving: PropTypes.bool,
       content: PropTypes.object,
       contentKey: PropTypes.any,
       readOnly: PropTypes.bool,
@@ -115,10 +116,15 @@ export default class RichEditor extends Component {
   }
 
   render() {
-    const { style, readOnly, onScroll } = this.props;
+    const { style, saving, readOnly, onScroll } = this.props;
     const { editorState, editorLocked, showFileModal, fileModalProps } = this.state;
 
     if (!editorState) return null;
+
+    let savingState = null;
+    if (saving !== undefined) {
+      savingState = (saving) ? 'Saving...' : 'All changes has beed saved';
+    }
 
     return (
       <div style={styles.container}>
@@ -131,6 +137,7 @@ export default class RichEditor extends Component {
               editorState={editorState}
               onChange={editorLocked ? () => {} : this.onChange}
             />
+            <p style={styles.saving}>{savingState}</p>
           </div>
         ))}
         <div
@@ -181,10 +188,15 @@ const styles = {
   },
   controls: {
     display: 'flex',
+    flexDirection: 'row',
     paddingLeft: 20,
     paddingBottom: 5,
     backgroundColor: 'white',
     zIndex: 1,
     borderBottom: '1px solid rgba(0,0,0,0.07)',
+  },
+  saving: {
+    fontWeight: '100',
+    marginLeft: 20,
   },
 };

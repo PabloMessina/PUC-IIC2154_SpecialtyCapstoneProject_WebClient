@@ -19,7 +19,6 @@ export default class Node extends Component {
       onSelectSection: PropTypes.func,
       onAddSection: PropTypes.func,
       onRemoveSection: PropTypes.func,
-      versionId: PropTypes.string,
       sectionParentId: PropTypes.string,
       sectionIndex: PropTypes.number,
       level: PropTypes.number,

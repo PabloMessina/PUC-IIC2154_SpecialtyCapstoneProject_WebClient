@@ -2,8 +2,11 @@
 
 import React, { PropTypes, Component } from 'react';
 import update from 'react-addons-update';
-import isEmpty from 'lodash/isEmpty';
 import DocumentTitle from 'react-document-title';
+
+import isEmpty from 'lodash/isEmpty';
+import isEqual from 'lodash/isEqual';
+import debounce from 'lodash/debounce';
 
 import AtlasSection from '../atlas-section';
 import AtlasTree from '../atlas-tree';
@@ -16,57 +19,53 @@ const treeService = app.service('/section-tree');
 
 export default class AtlasBook extends Component {
 
-  static get propTypes() {
-    return {
-      readOnly: PropTypes.bool,
-      // React Router
-      router: PropTypes.object,
-      params: PropTypes.object,
-    };
+  static propTypes = {
+    readOnly: PropTypes.bool,
+    interval: PropTypes.number,
+    maxWait: PropTypes.number,
+    // React Router
+    router: PropTypes.object,
+    params: PropTypes.object,
   }
-  static get defaultProps() {
-    return {
-      readOnly: false,
-    };
+
+  static defaultProps = {
+    readOnly: false,
+    interval: 3000, // 3 seconds
+    maxWait: 10000, // 10 seconds
   }
 
   constructor(props) {
     super(props);
     this.state = {
       tree: null,
+      saving: false,
       sectionParentId: 'undefined', // First select root sections
       sectionIndex: 0, // Select the first root section
-      versionId: '',
+      version: {},
+      lastTitle: '',
+      lastContent: '',
     };
-
-    // Wether it should send a request to the
-    // server to patch the current section.
-    this.shouldPatchContent = false;
-    this.shouldPatchTitle = false;
-
-    this.fetchTree = this.fetchTree.bind(this);
-    this.tryPatchSection = this.tryPatchSection.bind(this);
-    this.onSelectSection = this.onSelectSection.bind(this);
-    this.onAddSection = this.onAddSection.bind(this);
-    this.onRemoveSection = this.onRemoveSection.bind(this);
-    this.onChangeContent = this.onChangeContent.bind(this);
-    this.onChangeTitle = this.onChangeTitle.bind(this);
-    this.currentSection = this.currentSection.bind(this);
-    this.replaceCurrentSection = this.replaceCurrentSection.bind(this);
+    this.debouncedPatchSection = debounce(this.patchSection, props.interval, { maxWait: props.maxWait });
   }
 
   componentDidMount() {
-    this.fetchTree();
+    this.fetchTree(this.props.params.atlas);
   }
 
-  componentWillUnmount() {
-    clearInterval(this.patchTimer);
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.params && nextProps.params.atlas) {
+      this.fetchTree(nextProps.params.atlas);
+    }
+    if (nextProps.interval !== this.props.interval) {
+      // TODO: update when maxWait changes
+      this.debouncedPatchSection = debounce(this.patchSection, nextProps.interval, { maxWait: nextProps.maxWait });
+    }
   }
 
-  onAddSection(parentId) {
-    const { tree, versionId } = this.state;
+  onAddSection = (parentId) => {
+    const { tree, version } = this.state;
 
-    const newSection = { versionId };
+    const newSection = { versionId: version.id };
     if (parentId) newSection.parentId = parentId;
 
     // Create section in server and set state on success
@@ -83,7 +82,7 @@ export default class AtlasBook extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  onRemoveSection(section, sectionIndex) {
+  onRemoveSection = (section, sectionIndex) => {
     // TODO: check if has children
     const hasChildren = true;
     if (hasChildren && !window.confirm('This will remove all sub-sections. ¿Are you sure?')) {
@@ -132,8 +131,9 @@ export default class AtlasBook extends Component {
    * @param sectionParentId
    * @param sectionIndex
    */
-  onSelectSection(sectionParentId, sectionIndex) {
-    this.tryPatchSection();
+  onSelectSection = (sectionParentId, sectionIndex) => {
+    // Save current content
+    this.debouncedPatchSection.flush();
 
     this.setState({
       sectionParentId,
@@ -147,13 +147,14 @@ export default class AtlasBook extends Component {
    * @param content
    * @returns {undefined}
    */
-  onChangeContent(content) {
+  onChangeContent = (content) => {
     if (!this.state.tree) return;
+    if (isEmpty(content) || isEqual(this.state.lastContent, content)) return;
+
     // Create a new object from current section and change content
     const section = { ...this.currentSection(), content };
     // Replace section in tree
     this.replaceCurrentSection(section);
-    this.shouldPatchContent = true;
   }
 
   /**
@@ -161,19 +162,20 @@ export default class AtlasBook extends Component {
    *
    * @param title
    */
-  onChangeTitle(title) {
+  onChangeTitle = (title) => {
+    if (this.state.lastTitle === title) return;
+
     // Create a new object from current section and change title
     const section = { ...this.currentSection(), title };
     // Replace section in tree
     this.replaceCurrentSection(section);
-    this.shouldPatchTitle = true;
   }
 
   /**
   * Returns the currently selected section
   * @returns {Object} The selected section or an empty section
   */
-  currentSection() {
+  currentSection = () => {
     const { tree, sectionParentId, sectionIndex } = this.state;
     if (!tree) return { title: '', content: null };
 
@@ -185,72 +187,62 @@ export default class AtlasBook extends Component {
    *
    * @param section
    */
-  replaceCurrentSection(section) {
+  replaceCurrentSection = (section) => {
     const { tree, sectionParentId, sectionIndex } = this.state;
+
     // Replace section in tree
-    this.setState({
+    return this.setState({
+      saving: true,
       tree: update(tree, {
         [sectionParentId]: {
           $splice: [[sectionIndex, 1, section]],
         },
       }),
-    });
+    }, this.debouncedPatchSection); // save after render
   }
 
   /**
    * Fetches a tree containing all the atlas' sections
    */
-  fetchTree() {
+  fetchTree = async (atlas) => {
     const query = {
-      atlasId: this.props.params.atlas.id,
+      atlasId: atlas.id || atlas,
       version: 'latest',
-      $limit: 100,
+      $limit: 1,
     };
 
-    return versionService.find({ query })
-      .then(results => {
-        const version = results.data[0];
-        // Get sections tree
-        return treeService.get(version.id)
-        .then(tree => {
-          this.setState({
-            tree,
-            versionId: version.id,
-          });
+    const results = await versionService.find({ query });
+    const version = results.data[0];
 
-          // Patch section every 3 seconds.
-          this.patchTimer = setInterval(() => this.tryPatchSection(), 3000);
-        });
-      });
+    const tree = await treeService.get(version.id);
+    return this.setState({ tree, version });
   }
 
 
   /**
    * Tries to update the currently selected section on server
    */
-  tryPatchSection() {
+  patchSection = () => {
     const { _id, title, content } = this.currentSection();
 
-    const patch = {};
-    if (this.shouldPatchTitle) {
-      patch.title = title;
-    }
-    if (this.shouldPatchContent) {
-      patch.content = content;
-    }
+    const patch = {
+      title,
+      content,
+    };
 
-    // Nothing to patch
-    if (isEmpty(patch)) return;
-
-    sectionService.patch(_id, patch);
-    this.shouldPatchTitle = false;
-    this.shouldPatchContent = false;
+    return sectionService.patch(_id, patch).then(result => {
+      console.log('Saved at', result.updatedAt); // eslint-disable-line
+      this.setState({
+        saving: false,
+        lastTitle: result.title,
+        lastContent: result.content,
+      });
+    }).catch(error => this.setState({ error }));
   }
-
 
   render() {
     const atlas = this.props.params.atlas;
-    const { tree, versionId, error } = this.state;
+    const { tree, error, saving } = this.state;
     const readOnly = currentUser().id !== atlas.responsableId;
 
     if (error) {
@@ -264,7 +256,6 @@ export default class AtlasBook extends Component {
         <AtlasTree
           tree={tree}
           title={atlas.title}
-          versionId={versionId}
           selectedSectionId={section._id}
           onSelectSection={this.onSelectSection}
           onAddSection={this.onAddSection}
@@ -272,6 +263,7 @@ export default class AtlasBook extends Component {
           readOnly={readOnly}
         />
         <AtlasSection
+          saving={saving}
           section={section}
           readOnly={readOnly}
           onChangeContent={this.onChangeContent}

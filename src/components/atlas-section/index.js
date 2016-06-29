@@ -6,13 +6,13 @@ import RichEditor from '../rich-editor';
 
 const MIN_DELTA = 30;
 
-
 export default class AtlasSection extends Component {
 
   static get propTypes() {
     return {
       readOnly: PropTypes.bool,
       section: PropTypes.object,
+      saving: PropTypes.bool,
       onChangeTitle: PropTypes.func,
       onChangeContent: PropTypes.func,
     };
@@ -38,11 +38,13 @@ export default class AtlasSection extends Component {
 
   // Only update if contents or title have changed
   shouldComponentUpdate(nextProps, nextState) {
+    const { content, title } = this.props.section;
     const collapsedChanged = this.state.collapsed !== nextState.collapsed;
-    const contentChanged = !isEqual(nextProps.section.content, this.props.section.content);
-    const titleChanged = !isEqual(nextProps.section.title, this.props.section.title);
+    const contentChanged = !isEqual(nextProps.section.content, content);
+    const titleChanged = !isEqual(nextProps.section.title, title);
+    const savingChanged = nextProps.saving !== this.props.saving;
 
-    return contentChanged || titleChanged || collapsedChanged;
+    return contentChanged || titleChanged || collapsedChanged || savingChanged;
   }
 
   onChangeContent(rawContent) {
@@ -80,7 +82,8 @@ export default class AtlasSection extends Component {
   }
 
   render() {
-    const { section, readOnly } = this.props;
+    const { section, readOnly, saving } = this.props;
+
     return (
       <div style={styles.container}>
         <Collapse in={!this.state.collapsed}>
@@ -97,6 +100,7 @@ export default class AtlasSection extends Component {
 
         <RichEditor
           content={section.content}
+          saving={saving}
           onChange={this.onChangeContent}
           onScroll={this.onEditorScroll}
           readOnly={readOnly}
