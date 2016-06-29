@@ -238,7 +238,7 @@ export default class Questions extends Component {
     const { evaluationQuestions } = this.state;
     const questionId = object.question.id;
     const points = event.target.value;
-    const index = this.props.evaluationQuestions.findIndex(item => item.questionId === questionId);
+    const index = evaluationQuestions.findIndex(item => item.questionId === questionId);
     return evaluationQuestionsService.patch(evaluationQuestions[index].id, { points })
       .then(result => {
         evaluationQuestions[index] = result;
