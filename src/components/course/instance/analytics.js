@@ -6,9 +6,12 @@ import Icon from 'react-fa';
 import renderIf from 'render-if';
 import json2csv from 'json2csv';
 import FileSaver from 'browser-filesaver';
+import { withRouter } from 'react-router';
 
 import ErrorAlert from '../../error-alert';
 import Excel from '../../../utils/excel';
+
+import { withTimeSyncronizer } from '../../time-syncronizer';
 
 import app, { currentUser } from '../../../app';
 const attendanceService = app.service('/attendances');
@@ -61,7 +64,7 @@ const LINES = {
   },
 };
 
-export default class Summary extends Component {
+class Summary extends Component {
 
   static get propTypes() {
     return {
@@ -72,6 +75,7 @@ export default class Summary extends Component {
       instance: PropTypes.object,
       // React Router
       params: PropTypes.object,
+      getTime: PropTypes.func,
     };
   }
 
@@ -160,13 +164,15 @@ export default class Summary extends Component {
   }
 
   getAnalyticsAverages(evalAnalytics) {
-    const totalMin = evalAnalytics.reduce((sum, analyticGrade) => analyticGrade.min ? sum + analyticGrade.min : sum, 0);
-    const totalMax = evalAnalytics.reduce((sum, analyticGrade) => analyticGrade.max ? sum + analyticGrade.max : sum, 0);
-    const totalAvg = evalAnalytics.reduce((sum, analyticGrade) => analyticGrade.avg ? sum + analyticGrade.avg : sum, 0);
+    const totalMin = evalAnalytics.reduce((sum, total) => (total.min ? sum + total.min : sum), 0);
+    const totalMax = evalAnalytics.reduce((sum, total) => (total.max ? sum + total.max : sum), 0);
+    const totalAvg = evalAnalytics.reduce((sum, total) => (total.avg ? sum + total.avg : sum), 0);
+    const totalStddev = evalAnalytics.reduce((sum, total) => (total.stddev ? sum + total.stddev : sum), 0);
     return {
-      min: totalMin ? totalMin / evalAnalytics.length : null,
-      max: totalMax ? totalMax / evalAnalytics.length : null,
-      avg: totalAvg ? totalAvg / evalAnalytics.length : null,
+      min: totalMin || totalMin === 0 ? totalMin / evalAnalytics.length : null,
+      max: totalMax || totalMax === 0 ? totalMax / evalAnalytics.length : null,
+      avg: totalAvg || totalAvg === 0 ? totalAvg / evalAnalytics.length : null,
+      stddev: totalStddev || totalStddev === 0 ? totalStddev / evalAnalytics.length : null,
     };
   }
 
@@ -177,7 +183,6 @@ export default class Summary extends Component {
     let min = grades[0].grade;
     let max = grades[0].grade;
     let avg = 0;
-    const stddev = 0;
     grades.forEach(evalGrade => {
       avg += evalGrade.grade;
       if (evalGrade.grade < min) {
@@ -188,8 +193,12 @@ export default class Summary extends Component {
       }
     });
     avg = avg / grades.length;
+    const squareSum = grades.reduce((sum, current) => {
+      const sqroot = Math.pow((current.grade - avg), 2);
+      return current.grade ? sqroot + sum : sum;
+    }, 0);
+    const stddev = Math.sqrt(squareSum / grades.length);
     return { min, max, avg, stddev };
-    // TODO calculate stddev
   }
 
   calculateTeamsPercentages(evaluation) {
@@ -412,9 +421,11 @@ export default class Summary extends Component {
   }
 
   fetchEvaluations(instance) {
+    const { getTime } = this.props;
     this.setState({ loading: true });
     const query = {
       instanceId: instance.id || instance,
+      finishAt: { $lt: getTime() },
       $populate: ['answer', 'question'],
       $sort: { createdAt: -1 },
     };
@@ -497,7 +508,7 @@ export default class Summary extends Component {
     evaluations.forEach((evaluation) => {
       completeAnalytics.push(this.getMinMaxAvgStddev(evaluation));
     });
-    const analyticsAverages = this.getAnalyticsAverages(completeAnalytics);
+    const avrgs = this.getAnalyticsAverages(completeAnalytics);
     // if (selectedEvaluations.length > 0) {
     //   this.setState({ histogramEvaluation: selectedEvaluations[0] });
     // }
@@ -702,30 +713,49 @@ export default class Summary extends Component {
                       <th>{this.getStudentAverage(student.grades).toFixed(3)}</th>
                     </tr>
                   ))}
+                  </tbody>
+                </Table>
+                <Table condensed hover>
+                  <thead>
                     <tr>
-                      <th> Min </th>
-                        {completeAnalytics.map((evaluation, k) => (
-                          <td key={k}>{evaluation.min || evaluation.min === 0 ? evaluation.min.toFixed(3) : null}</td>
-                        ))}
-                      <th>{analyticsAverages.min || analyticsAverages.min === 0 ? analyticsAverages.min.toFixed(3) : null}</th>
+                      <th>Analytics Variable</th>
+                      {evaluations.map((evaluation, i) => (
+                        <th key={i}>{evaluation.title}</th>
+                      ))}
+                      <th>Average</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th>Minimum</th>
+                      {completeAnalytics.map((evaluation, k) => (
+                        <td key={k}>{evaluation.min || evaluation.min === 0 ? evaluation.min.toFixed(3) : null}</td>
+                      ))}
+                      <th>{(avrgs.min || avrgs.min === 0) ? avrgs.min.toFixed(3) : null}</th>
                     </tr>
                     <tr>
-                      <th> Max </th>
-                        {completeAnalytics.map((evaluation, k) => (
-                          <td key={k}> {evaluation.max || evaluation.max === 0 ? evaluation.max.toFixed(3) : null} </td>
-                        ))}
-                      <th>{analyticsAverages.max || analyticsAverages.max === 0 ? analyticsAverages.max.toFixed(3) : null}</th>
+                      <th>Maximum</th>
+                      {completeAnalytics.map((evaluation, k) => (
+                        <td key={k}> {evaluation.max || evaluation.max === 0 ? evaluation.max.toFixed(3) : null} </td>
+                      ))}
+                      <th>{(avrgs.max || avrgs.max === 0) ? avrgs.max.toFixed(3) : null}</th>
                     </tr>
                     <tr>
-                      <th> Avg </th>
-                        {completeAnalytics.map((evaluation, k) => (
-                          <td key={k}> {evaluation.avg || evaluation.avg === 0 ? evaluation.avg.toFixed(3) : null} </td>
-                        ))}
-                      <th>{analyticsAverages.avg || analyticsAverages.avg === 0 ? analyticsAverages.avg.toFixed(3) : null}</th>
+                      <th>Average</th>
+                      {completeAnalytics.map((evaluation, k) => (
+                        <td key={k}> {evaluation.avg || evaluation.avg === 0 ? evaluation.avg.toFixed(3) : null} </td>
+                      ))}
+                      <th>{(avrgs.avg || avrgs.avg === 0) ? avrgs.avg.toFixed(3) : null}</th>
+                    </tr>
+                    <tr>
+                      <th>Standard Deviation</th>
+                      {completeAnalytics.map((evaluation, k) => (
+                        <td key={k}> {(evaluation.stddev || evaluation.stddev === 0) ? evaluation.stddev.toFixed(3) : null} </td>
+                      ))}
+                      <th>{avrgs.stddev || avrgs.stddev === 0 ? avrgs.stddev.toFixed(3) : null}</th>
                     </tr>
                   </tbody>
                 </Table>
-
                 <Row>
                   <Col>
                     <Button
@@ -823,7 +853,7 @@ export default class Summary extends Component {
     evaluations.forEach((evaluation) => {
       completeAnalytics.push(this.getMinMaxAvgStddev(evaluation));
     });
-    const analyticsAverages = this.getAnalyticsAverages(completeAnalytics);
+    const avrgs = this.getAnalyticsAverages(completeAnalytics);
 
     const { approvalGrade, minGrade, maxGrade } = instance;
     const labels = [];
@@ -977,26 +1007,46 @@ export default class Summary extends Component {
                       <th>{this.getStudentAverage(student.grades).toFixed(3)}</th>
                     </tr>
                   ))}
+                  </tbody>
+                </Table>
+                <Table condensed hover>
+                  <thead>
                     <tr>
-                      <th> Min </th>
-                        {completeAnalytics.map((evaluation, k) => (
-                          <td key={k}>{evaluation.min || evaluation.min === 0 ? evaluation.min.toFixed(3) : null}</td>
-                        ))}
-                      <th>{analyticsAverages.min || analyticsAverages.min === 0 ? analyticsAverages.min.toFixed(3) : null}</th>
+                      <th>Analytics Variable</th>
+                      {evaluations.map((evaluation, i) => (
+                        <th key={i}>{evaluation.title}</th>
+                      ))}
+                      <th>Average</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th>Minimum</th>
+                      {completeAnalytics.map((evaluation, k) => (
+                        <td key={k}>{evaluation.min || evaluation.min === 0 ? evaluation.min.toFixed(3) : null}</td>
+                      ))}
+                      <th>{avrgs.min || avrgs.min === 0 ? avrgs.min.toFixed(3) : null}</th>
                     </tr>
                     <tr>
-                      <th> Max </th>
-                        {completeAnalytics.map((evaluation, k) => (
-                          <td key={k}> {evaluation.max || evaluation.max === 0 ? evaluation.max.toFixed(3) : null} </td>
-                        ))}
-                      <th>{analyticsAverages.max || analyticsAverages.max === 0 ? analyticsAverages.max.toFixed(3) : null}</th>
+                      <th>Maximum</th>
+                      {completeAnalytics.map((evaluation, k) => (
+                        <td key={k}> {evaluation.max || evaluation.max === 0 ? evaluation.max.toFixed(3) : null} </td>
+                      ))}
+                      <th>{avrgs.max || avrgs.max === 0 ? avrgs.max.toFixed(3) : null}</th>
                     </tr>
                     <tr>
-                      <th> Avg </th>
-                        {completeAnalytics.map((evaluation, k) => (
-                          <td key={k}> {evaluation.avg || evaluation.avg === 0 ? evaluation.avg.toFixed(3) : null} </td>
-                        ))}
-                      <th>{analyticsAverages.avg || analyticsAverages.avg === 0 ? analyticsAverages.avg.toFixed(3) : null}</th>
+                      <th>Average</th>
+                      {completeAnalytics.map((evaluation, k) => (
+                        <td key={k}> {evaluation.avg || evaluation.avg === 0 ? evaluation.avg.toFixed(3) : null} </td>
+                      ))}
+                      <th>{avrgs.avg || avrgs.avg === 0 ? avrgs.avg.toFixed(3) : null}</th>
+                    </tr>
+                    <tr>
+                      <th>Standard Deviation</th>
+                      {completeAnalytics.map((evaluation, k) => (
+                        <td key={k}> {evaluation.stddev || evaluation.stddev === 0 ? evaluation.stddev.toFixed(3) : null} </td>
+                      ))}
+                      <th>{avrgs.stddev || avrgs.stddev === 0 ? avrgs.stddev.toFixed(3) : null}</th>
                     </tr>
                   </tbody>
                 </Table>
@@ -1045,3 +1095,4 @@ const styles = {
     marginLeft: 40,
   },
 };
+export default withRouter(withTimeSyncronizer({ ticks: Infinity })(Summary));

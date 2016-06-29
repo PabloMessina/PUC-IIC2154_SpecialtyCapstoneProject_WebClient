@@ -48,9 +48,11 @@ export default class Excel {
       const minRow = studentTable.length + 1;
       const maxRow = minRow + 1;
       const avgRow = maxRow + 1;
+      const stdDevRow = avgRow + 1;
       writeText(worksheet, { c: 0, r: minRow }, 'Min');
       writeText(worksheet, { c: 0, r: maxRow }, 'Max');
       writeText(worksheet, { c: 0, r: avgRow }, 'Average');
+      writeText(worksheet, { c: 0, r: stdDevRow }, 'Standard Deviation');
       for (let column = 1; column <= avgColumn; column++) {
         const range = {
           // 0-indexed column and row numbers
@@ -61,6 +63,7 @@ export default class Excel {
         writeFormula(worksheet, rangeRef, { c: column, r: minRow }, 'MIN');
         writeFormula(worksheet, rangeRef, { c: column, r: maxRow }, 'MAX');
         writeFormula(worksheet, rangeRef, { c: column, r: avgRow }, 'AVERAGE');
+        writeFormula(worksheet, rangeRef, { c: column, r: stdDevRow }, 'STDEVP');
       }
 
       /** Borders... doesn't work
