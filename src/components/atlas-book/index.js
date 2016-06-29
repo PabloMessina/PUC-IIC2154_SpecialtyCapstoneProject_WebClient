@@ -36,9 +36,13 @@ export default class AtlasBook extends Component {
 
   constructor(props) {
     super(props);
+    const atlas = this.props.params.atlas;
+    const readOnly = currentUser().id !== atlas.responsableId;
     this.state = {
       tree: null,
       saving: false,
+      title: atlas.title,
+      readOnly,
       sectionParentId: 'undefined', // First select root sections
       sectionIndex: 0, // Select the first root section
       version: {},
@@ -241,9 +245,7 @@ export default class AtlasBook extends Component {
   }
 
   render() {
-    const atlas = this.props.params.atlas;
-    const { tree, error, saving } = this.state;
-    const readOnly = currentUser().id !== atlas.responsableId;
+    const { tree, error, saving, title, readOnly } = this.state;
 
     if (error) {
       console.log(error); // eslint-disable-line
@@ -252,10 +254,10 @@ export default class AtlasBook extends Component {
     const section = this.currentSection();
     return (
       <div style={styles.container}>
-        <DocumentTitle title={atlas.title} />
+        <DocumentTitle title={title} />
         <AtlasTree
           tree={tree}
-          title={atlas.title}
+          title={title}
           selectedSectionId={section._id}
           onSelectSection={this.onSelectSection}
           onAddSection={this.onAddSection}
