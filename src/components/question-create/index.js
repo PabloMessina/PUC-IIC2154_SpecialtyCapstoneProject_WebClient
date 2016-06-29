@@ -11,13 +11,16 @@ import renderIf from 'render-if';
 import app from '../../app';
 const questionService = app.service('/questions');
 
-import { TrueFalse, MultiChoice, TShort, Correlation } from '../questions';
+import { TrueFalse, MultiChoice, TShort, Correlation /* , MultiChoice2D*/} from '../questions';
+// TODO: implement MultiChoice2D (with interactive image)
+// the code of the MultiChoice2D component is partially complete
 
 const QUESTION_TYPES = {
   multiChoice: 'Multi choice',
   tshort: 'Short text',
   trueFalse: 'True - False',
   correlation: 'Correlation',
+  // multiChoice2D: 'Multi choice 2D',
 };
 
 const EMPTY_QUESTION = {
@@ -33,6 +36,7 @@ function questionFactory(qtype, props) {
     case 'multiChoice': return <MultiChoice {...props} />;
     case 'tshort': return <TShort {...props} />;
     case 'correlation': return <Correlation {...props} />;
+    // case 'multiChoice2D': return <MultiChoice2D {...props} />;
     default: return null;
   }
 }

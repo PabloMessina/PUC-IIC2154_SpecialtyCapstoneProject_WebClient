@@ -27,6 +27,7 @@ const QTYPE = {
   multiChoice: 'Multi-choice',
   tshort: 'Short text',
   correlation: 'Correlation',
+  // multiChoice2D: 'Multi-choice 2D',
 };
 
 const MODES = [

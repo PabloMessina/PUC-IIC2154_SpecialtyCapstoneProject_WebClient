@@ -82,6 +82,7 @@ export default class CourseTab extends Component {
   }
 
   onModalSave(question) {
+    console.log('question.js:: onModalSave()');
     // Remove id if present and associate organization
     const data = { ...question, id: undefined, organizationId: this.props.organization.id };
 

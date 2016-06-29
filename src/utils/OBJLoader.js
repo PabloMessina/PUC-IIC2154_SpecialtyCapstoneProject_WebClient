@@ -1,3 +1,5 @@
+/* eslint no-console:0, no-param-reassign:0, no-alert:0, react/sort-comp:0,
+key-spacing:0, no-multi-spaces:0 no-cond-assign:0 */
 import THREE from 'three';
 import BufferedReader from './buffered-reader';
 
@@ -55,7 +57,7 @@ const OBJLoader = {
           return;
         }
         if (eof) {
-          console.log("EOF reached");
+          console.log('EOF reached');
           resolve();
           return;
         }
@@ -71,7 +73,7 @@ const OBJLoader = {
             Number(result[2]),
             Number(result[3])
           );
-        } else if ((result = normalPattern.exec(line)) !== null ) {
+        } else if ((result = normalPattern.exec(line)) !== null) {
           // ["vn 1.0 2.0 3.0", "1.0", "2.0", "3.0"]
           normals.push(
             Number(result[1]),
@@ -133,7 +135,7 @@ const OBJLoader = {
           // smooth shading
           object.material.smooth = result[1] === '1' || result[1] === 'on';
         } else {
-          reject({ reason: `unexpected line = {_line}` });
+          reject({ reason: `unexpected line = ${_line}` });
         }
       }, onProgress, interrupter);
     })
@@ -379,7 +381,8 @@ const OBJLoader = {
           Number(result[2]),
           Number(result[3])
         );
-      } else if ((result = normalPattern.exec(line)) !== null ) {
+      } else if ((result = normalPattern.exec(line)) !== null) {
+      } else if ((result = normalPattern.exec(line)) !== null) {
         // ["vn 1.0 2.0 3.0", "1.0", "2.0", "3.0"]
         normals.push(
           Number(result[1]),
@@ -471,7 +474,7 @@ const OBJLoader = {
         if (object.material.name !== '') {
           material = materials[object.material.name];
           if (material === undefined) {
-            throw new Error('Material ' + object.material.name + ' was not found');
+            throw new Error(`Material ${object.material.name} was not found`);
           }
         } else {
           material = new THREE.MeshPhongMaterial({ color: 0x0000ff });

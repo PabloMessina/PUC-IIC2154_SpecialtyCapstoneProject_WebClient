@@ -1,14 +1,11 @@
+/* eslint no-param-reassign:0, no-console:0 */
 import THREE from 'three';
+import Utils2D from './utils2D';
 
-//unit vectors
-const UnitX_p = new THREE.Vector3(1, 0, 0);
-const UnitY_p = new THREE.Vector3(0, 1, 0);
-const UnitZ_p = new THREE.Vector3(0, 0, 1);
-const UnitX_n = new THREE.Vector3(-1, 0, 0);
-const UnitY_n = new THREE.Vector3(0, -1, 0);
-const UnitZ_n = new THREE.Vector3(0, 0, -1);
+// unit vectors
+const UnitYp = new THREE.Vector3(0, 1, 0);
+const UnitZp = new THREE.Vector3(0, 0, 1);
 const NullVector = new THREE.Vector3(0, 0, 0);
-
 /**
  * [ThreeUtils : a namespace with several utility functions on top of THREE.js]
  */
@@ -56,18 +53,20 @@ const ThreeUtils = {
     const max = boundingBox.max;
     const radius = min.distanceTo(max) * 0.5;
     const center = new THREE.Vector3()
-      .copy(NullVector).addVectors(min, max).multiplyScalar(0.5);
+      .copy(NullVector)
+      .addVectors(min, max)
+      .multiplyScalar(0.5);
 
     // set camera's position
     camera.position
       .copy(center)
-      .addScaledVector(UnitZ_p, radius * 1.5);
+      .addScaledVector(UnitZp, radius * 1.5);
 
     // set camera's light's position
     cameraLight.position.copy(camera.position);
 
     // correct camera's orientation
-    camera.up.copy(UnitY_p);
+    camera.up.copy(UnitYp);
     camera.lookAt(center);
 
     // recompute zoom
@@ -121,7 +120,7 @@ const ThreeUtils = {
     const m = rDir.dot(pNormal);
     const n = rPos.dot(pNormal) - pPos.dot(pNormal);
     if (m === 0) {
-      console.log('WARNING: division by 0 detected');
+      console.error('WARNING: division by 0 detected');
       return null;
     }
     const t = - n / m;
@@ -248,9 +247,7 @@ const ThreeUtils = {
         const ctx = canvas.getContext('2d');
         canvas.width = resX;
         canvas.height = resY;
-        ctx.beginPath();
-        ctx.ellipse(0.5 * resX, 0.5 * resY, 0.5 * resX, 0.5 * resY, 0, 0, 2 * Math.PI);
-        ctx.clip();
+        Utils2D.clipEllipse(ctx, 0.5 * resX, 0.5 * resY, 0.5 * resX, 0.5 * resY);
         ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, resX, resY);
       },
       editSpriteFunction: (sprite) => {
@@ -267,18 +264,14 @@ const ThreeUtils = {
         const ctx = canvas.getContext('2d');
         // draw ellipse
         const blw = (resX + resY) * 0.02;
-        ctx.beginPath();
-        ctx.ellipse(
+        ctx.fillStyle = 'red';
+        ctx.lineWidth = blw;
+        ctx.strokeStyle = 'black';
+        Utils2D.drawEllipse(ctx,
           0.5 * resX,
           0.5 * resY,
           0.5 * (resX - blw),
-          0.5 * (resY - blw),
-          0, 0, 2 * Math.PI);
-        ctx.fillStyle = 'red';
-        ctx.fill();
-        ctx.lineWidth = blw;
-        ctx.strokeStyle = 'black';
-        ctx.stroke();
+          0.5 * (resY - blw));
         // draw an X symbol
         ctx.lineWidth = (resX + resY) * 0.075;
         ctx.lineCap = 'round';
@@ -305,18 +298,14 @@ const ThreeUtils = {
         const ctx = canvas.getContext('2d');
         // draw ellipse
         const blw = (resX + resY) * 0.02;
-        ctx.beginPath();
-        ctx.ellipse(
+        ctx.fillStyle = 'rgb(153,153,0)';
+        ctx.lineWidth = blw;
+        ctx.strokeStyle = 'black';
+        Utils2D.drawEllipse(ctx,
           0.5 * resX,
           0.5 * resY,
           0.5 * (resX - blw),
-          0.5 * (resY - blw),
-          0, 0, 2 * Math.PI);
-        ctx.fillStyle = 'rgb(153,153,0)';
-        ctx.fill();
-        ctx.lineWidth = blw;
-        ctx.strokeStyle = 'black';
-        ctx.stroke();
+          0.5 * (resY - blw));
         // draw a - symbol
         ctx.lineWidth = (resX + resY) * 0.06;
         ctx.strokeStyle = 'white';

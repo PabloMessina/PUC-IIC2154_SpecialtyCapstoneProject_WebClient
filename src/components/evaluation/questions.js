@@ -121,7 +121,6 @@ export default class Questions extends Component {
       this.timer = setInterval(() => {
         const attendance = attendances.find(a => a.userId === currentUser().id);
         this.getLocation().then(geojson => {
-          // console.log('Location sent to server');
           attendanceService.patch(attendance.id, { startedAt: new Date(), location: geojson });
         });
       }, interval);
@@ -148,13 +147,15 @@ export default class Questions extends Component {
   onModalSave = (question) => {
     if (this.state.creating) {
       const data = { ...question, id: undefined, organizationId: this.props.organization.id };
-
       return questionService.create(data)
         .then(created => {
           this.setState({ creating: false, editing: false, error: null });
           this.props.onQuestionAdd(created);
+          this.setState({ modalErrors: [] });
         })
-        .catch(error => this.setState({ error }));
+        .catch(error => {
+          this.setState({ modalErrors: [error] });
+        });
     } else if (this.state.editing) {
       const query = {
         questionId: question.id,
@@ -248,6 +249,16 @@ export default class Questions extends Component {
   }
 
   toggleHover = () => this.setState({ hover: !this.state.hover })
+
+  dismissModalError = error => {
+    let { modalErrors } = this.state;
+    const i = modalErrors.indexOf(error);
+    if (i > -1) {
+      modalErrors = modalErrors.slice(0);
+      modalErrors.splice(i, 1);
+      this.setState({ modalErrors });
+    }
+  }
 
   fetchTags = () => {
     const query = {
@@ -513,7 +524,7 @@ export default class Questions extends Component {
   }
 
   renderInstructor = () => {
-    const { viewAs, viewAsLoading, editing, creating, currentQuestion } = this.state;
+    const { viewAs, viewAsLoading, editing, creating, currentQuestion, modalErrors } = this.state;
 
     const students = this.props.attendances.filter(a => a.user).map(a => ({
       label: a.user.name,
@@ -528,6 +539,8 @@ export default class Questions extends Component {
           onHide={this.onModalClose}
           onSave={this.onModalSave}
           question={currentQuestion}
+          externalErrors={modalErrors}
+          onDismissExternalError={this.dismissModalError}
         />
         <Col style={styles.rigth} xs={12} sm={12} md={5}>
           <Col xs={12}>

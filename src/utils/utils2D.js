@@ -1,3 +1,4 @@
+/* eslint no-param-reassign:0, no-nested-ternary:0 */
 const Utils2D = {
   /** returns coordinates (x,y) of mouse relative to the element */
   getElementMouseCoords: (elem, event) => {
@@ -11,23 +12,31 @@ const Utils2D = {
   /** returns coordinates normalized according to the
   element's dimensions */
   getNormalizedCoords: (coords, elem) => ({
-    x: coords.x / elem.width,
-    y: coords.y / elem.height,
+    x: coords.x / elem.offsetWidth,
+    y: coords.y / elem.offsetHeight,
   }),
 
   /** returns coordinates clipped by the boundaries of the element */
-  getClippedCoords: (coords, elem) => ({
-    x: coords.x < 0 ? 0 : (coords.x > elem.width) ? elem.width : coords.x,
-    y: coords.y < 0 ? 0 : (coords.y > elem.height) ? elem.height : coords.y,
-  }),
+  getClippedCoords: (coords, elem) => {
+    const w = elem.offsetWidth;
+    const h = elem.offsetHeight;
+    const { x, y } = coords;
+    return {
+      x: x < 0 ? 0 : (x > w) ? w : x,
+      y: y < 0 ? 0 : (y > h) ? h : y,
+    };
+  },
 
   /** a combination of clipping and normalization */
-  getClippedAndNormalizedCoords: (coords, elem) => ({
-    x: (coords.x < 0 ? 0 :
-      (coords.x > elem.width) ? elem.width : coords.x) / elem.width,
-    y: (coords.y < 0 ? 0 :
-      (coords.y > elem.height) ? elem.height : coords.y) / elem.height,
-  }),
+  getClippedAndNormalizedCoords: (coords, elem) => {
+    const w = elem.offsetWidth;
+    const h = elem.offsetHeight;
+    const { x, y } = coords;
+    return {
+      x: (x < 0 ? 0 : (x > w) ? w : x) / w,
+      y: (y < 0 ? 0 : (y > h) ? h : y) / h,
+    };
+  },
 
   /** check if (x,y) is within circle (cx,cy,r) */
   coordsInCircle: (x, y, cx, cy, r) => ((x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r),
@@ -83,9 +92,9 @@ const Utils2D = {
   },
 
   /** check if 2 rectangles intersect */
-  rectanglesIntersect: (x1, y1, w1, h1, x2, y2, w2, h2) => {
-    return (x1 <= x2 + w2) && (x2 <= x1 + w1) && (y1 <= y2 + h2) && (y2 <= y1 + h1);
-  },
+  rectanglesIntersect: (x1, y1, w1, h1, x2, y2, w2, h2) => (
+    (x1 <= x2 + w2) && (x2 <= x1 + w1) && (y1 <= y2 + h2) && (y2 <= y1 + h1)
+  ),
 
   /** check if 2 dom elements intersect */
   domElementsIntersect: (elem1, elem2) => {
@@ -126,9 +135,20 @@ const Utils2D = {
   },
 
   /** draw an ellipse */
-  drawEllipse: (ctx, x, y, rx, ry, nofill) => {
+  drawEllipse: (ctx, cx, cy, rx, ry, nofill) => {
+    // ctx.save(); // save state
+    // ctx.beginPath();
+    //
+    // ctx.translate(cx - rx, cy - ry);
+    // ctx.scale(rx, ry);
+    // ctx.arc(1, 1, 1, 0, 2 * Math.PI, false);
+    //
+    // ctx.restore(); // restore to original state
+    // if (!nofill) ctx.fill();
+    // ctx.stroke();
+
     ctx.beginPath();
-    ctx.ellipse(x, y, rx, ry, 0, 0, 2 * Math.PI);
+    ctx.ellipse(cx, cy, rx, ry, 0, 2 * Math.PI, false);
     if (!nofill) ctx.fill();
     ctx.stroke();
   },
@@ -149,13 +169,11 @@ const Utils2D = {
   drawDeleteIcon: (ctx, x, y, width, height) => {
     // draw ellipse
     const blw = (width + height) * 0.02;
-    ctx.beginPath();
-    ctx.ellipse(x, y, 0.5 * (width - blw), 0.5 * (height - blw), 0, 0, 2 * Math.PI);
     ctx.fillStyle = 'red';
-    ctx.fill();
     ctx.lineWidth = blw;
     ctx.strokeStyle = 'black';
-    ctx.stroke();
+    Utils2D.drawEllipse(ctx, x, y, 0.5 * (width - blw), 0.5 * (height - blw));
+
     // draw an X symbol
     ctx.lineWidth = (width + height) * 0.075;
     ctx.lineCap = 'round';
@@ -168,6 +186,17 @@ const Utils2D = {
     ctx.moveTo(x + 0.2 * width, y - 0.2 * height);
     ctx.lineTo(x - 0.2 * width, y + 0.2 * height);
     ctx.stroke();
+  },
+
+  /** clip the canvas with an ellipse shape */
+  clipEllipse: (ctx, cx, cy, rx, ry) => {
+    ctx.save(); // save state
+    ctx.beginPath();
+    ctx.translate(cx - rx, cy - ry);
+    ctx.scale(rx, ry);
+    ctx.arc(1, 1, 1, 0, 2 * Math.PI, false);
+    ctx.restore(); // restore to original state
+    ctx.clip();
   },
 
   /** get the convex hull of the given points */

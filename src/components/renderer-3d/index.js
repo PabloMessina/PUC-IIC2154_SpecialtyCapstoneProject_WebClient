@@ -1,8 +1,9 @@
+/* eslint no-param-reassign:0, react/sort-comp:0, no-console:0 */
 import React, { Component } from 'react';
 import THREE from 'three';
-import MTLLoader from '../../_3Dlibrary/MTLLoader';
-import OBJLoader from '../../_3Dlibrary/OBJLoader';
-import ThreeUtils from '../../_3Dlibrary/ThreeUtils';
+import MTLLoader from '../../utils/MTLLoader';
+import OBJLoader from '../../utils/OBJLoader';
+import ThreeUtils from '../../utils/ThreeUtils';
 import TouchUtils from '../../utils/touch-utils';
 import isEqual from 'lodash/isEqual';
 import cloneDeep from 'lodash/cloneDeep';
@@ -18,8 +19,8 @@ const DEFAULT_EVALUATION_LABEL_MESSAGE = '...';
 const OBJ_EXT = '.obj';
 const MTL_EXT = '.mtl';
 
-const DELETE_ICON_URL = 'http://localhost:3000/img/delete_icon.png';
-const MINIMIZE_ICON_URL = 'http://localhost:3000/img/minimize_icon.png';
+const DELETE_ICON_URL = '/img/delete_icon.png';
+const MINIMIZE_ICON_URL = '/img/minimize_icon.png';
 
 const ICON_COEF = 1 / 40;
 const ICON_RES = 256;
@@ -34,7 +35,7 @@ export default class Renderer3D extends Component {
 
   static get defaultProps() {
     return {
-      filesActuallyUsedCallback: (files) => console.log('files used: ', files),
+      filesActuallyUsedCallback: () => {}, // (files) => console.log('files used: ', files),
     };
   }
 
@@ -55,7 +56,7 @@ export default class Renderer3D extends Component {
     this.animateForAWhile = this.animateForAWhile.bind(this);
     this.highlightLabel = this.highlightLabel.bind(this);
     this.unhighlightLabel = this.unhighlightLabel.bind(this);
-    this.onResize = this.onResize.bind(this);
+    this.onWindowResize = this.onWindowResize.bind(this);
     this.onKeydown = this.onKeydown.bind(this);
     this.updateSpritePlaneOrientations = this.updateSpritePlaneOrientations.bind(this);
     this.getViewportCoords = this.getViewportCoords.bind(this);
@@ -102,7 +103,7 @@ export default class Renderer3D extends Component {
 
   componentDidMount() {
     // add event listeners
-    window.addEventListener('resize', this.onResize);
+    window.addEventListener('resize', this.onWindowResize);
     window.addEventListener('keydown', this.onKeydown);
     window.addEventListener('mouseup', this.onMouseUp);
     window.addEventListener('mousemove', this.onMouseMove);
@@ -234,11 +235,9 @@ export default class Renderer3D extends Component {
       iconCircleGroup,
     };
 
-
     /* load source, it must be either remoteFiles (JSON object with urls) or
      localFiles (an array of File objects, e.g: [objFile, mtlFile, imgFile1, imgFile2, ... ]) */
-    const source = this.props.source;
-    const labels = this.props.labels;
+    const { source, labels } = this.props;
     // remote files
     if (source.remoteFiles) {
       this.load3DModelFromUrls(source.remoteFiles)
@@ -286,6 +285,7 @@ export default class Renderer3D extends Component {
     this._.deleteIconCircle = mesh;
     this._.iconCircleGroup.add(mesh);
   }
+
   reloadMinimizeIcon() {
     if (this._.minimizeIconSprite) {
       this._.iconSpriteGroup.remove(this._.minimizeIconSprite);
@@ -390,7 +390,7 @@ export default class Renderer3D extends Component {
 
   componentWillUnmount() {
     // remove event listeners
-    window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('resize', this.onWindowResize);
     window.removeEventListener('keydown', this.onKeydown);
     window.removeEventListener('mouseup', this.onMouseUp);
     window.removeEventListener('mousemove', this.onMouseMove);
@@ -662,9 +662,6 @@ export default class Renderer3D extends Component {
    * @return {[Promise]}       [a promise wrapping all the asynchronous actions performed]
    */
   load3DModelFromFiles(files) {
-    console.log("====>load3DModelFromFiles()");
-    console.log("files = ", files);
-
     // files we   to read
     let objFile = null;
     let mtlFile = null;
@@ -819,7 +816,6 @@ export default class Renderer3D extends Component {
    * as 3D labels that show up on the screen
    */
   loadLabels(labels) {
-    console.log('===> loadLabels()');
     // remove all existing labels
     this.clearAllLabelData();
     // update last screen
@@ -995,7 +991,6 @@ export default class Renderer3D extends Component {
    * refreshes the scene]
    */
   setNormalLabelStyle(style) {
-    console.log('====> setNormalLabelStyle()');
     this._.normalLabelStyle = clone(style);
     if (this._.labelSet.size > 0) {
       for (const label of this._.labelSet) {
@@ -1011,7 +1006,6 @@ export default class Renderer3D extends Component {
    * refreshes the scene]
    */
   setHighlightedLabelStyle(style) {
-    console.log('====> setHighlightedLabelStyle()');
     this._.highlightedLabelStyle = clone(style);
     if (this._.selectedLabel) {
       this.highlightLabel(this._.selectedLabel);
@@ -1021,7 +1015,6 @@ export default class Renderer3D extends Component {
   }
 
   setSphereRadiusCoef(coef) {
-    console.log('====> setSphereRadiusCoef()');
     this._.sphereRadiusCoef = coef;
     if (this._.meshGroup) {
       const r = coef * this._.meshDiameter;
@@ -1045,7 +1038,6 @@ export default class Renderer3D extends Component {
    * Handle mouse down events
    */
   onMouseDown(event) {
-    // console.log("====> onMouseDown()");
     const viewport = this.refs.viewport;
     const vpcoords = this.getViewportCoords(event.clientX, event.clientY);
     const screenX = vpcoords.x;
@@ -1053,27 +1045,6 @@ export default class Renderer3D extends Component {
 
     if (event.button === LEFT_BUTTON) {
       if (this._.meshGroup !== null && !this._.draggingTempLabel) {
-        /**
-         * Conditions:
-         * 	  1) there is 3D Model already loaded
-         *    2) we are not dragging a temporary label (transparent label)
-         *
-         * What can happen:
-         * 	  1) left click on spritePlane
-         * 	  	-> selects/highlight the label
-         * 	  	-> unselect/unhighlight previously selected label (if any)
-         * 	  	-> starts dragging this label (if in edition mode)
-         * 	  2) left click on sphere
-         * 	  	2.1) if the sphere belongs to a highlighted label (and in edition mode)
-         * 	  		-> remove the sphere and the line
-         * 	  		if the label runs out of spheres
-         * 	  			-> remove the label too
-         * 	    2.2) else
-         * 	    	highlight the label
-         * 	  3) left click on any other part of the canvas
-         * 	  	-> we are initiating a camera orbit around the 3D Model
-         **/
-
         // we check if the click interacts we existing labels only
         // if they are enabled, otherwise the default behaviour
         // is to start orbiting the camera
@@ -1163,24 +1134,6 @@ export default class Renderer3D extends Component {
     } else if (event.button === RIGHT_BUTTON) {
       if (this._.meshGroup !== null && this._.labelsEnabled
         && this._.mode === EDITION) {
-        /**
-         * Conditions:
-         * 	1) there is a 3D Model already loaded
-         * 	2) labels are enabled
-         * 	3) edition is enabled
-         *
-         * What can happen:
-         *  1) first right click on model:
-         *  	an initial sphere is dropped in intersection point,
-         *  	and a temporary, transparent label will start following the mouse cursor
-         *  2) second right click (a temporary label already being dragged)
-         *  	2.1) intersection with an already existing label
-         *  		the new sphere and line get merged into the existing label
-         *  	2.2) no intersection with existing labels
-         *  		a new label gets created
-         *  	In both cases the dragging cycle of temporary label finishes
-         **/
-
         // -----------------
         // set up raycaster
         this._.mouseClipping.x = (screenX / viewport.offsetWidth) * 2 - 1;
@@ -1201,13 +1154,13 @@ export default class Renderer3D extends Component {
         this._.iconCircleGroup.visible = false;
 
         // --------------------------------------------
-        // case 2) already dragging a temporary label
+        // case 1) already dragging a temporary label
         if (this._.draggingTempLabel) {
           const dragLabel = this._.tempDraggableLabel;
           // auxiliar pointer
           let labelToSelect;
           // ----------------------------------------
-          // case 2.1) existing label intersected:
+          // case 1.1) existing label intersected:
           // temp label gets merged into it
           if (intrs && intrs.group === this._.spritePlaneGroup) {
             // -----
@@ -1233,7 +1186,7 @@ export default class Renderer3D extends Component {
             labelToSelect = intrsLabel;
 
           // -----------------------------------------
-          // case 2.2) no existing label intersected:
+          // case 1.2) no existing label intersected:
           // temp label becomes a brand new label
           } else {
             // set up spheres and lines as sets
@@ -1269,7 +1222,7 @@ export default class Renderer3D extends Component {
             this._.id2labelMap[labelObj.id] = labelObj;
           }
           //----------------------------------------
-          // Things that happen for both cases 2.1 and 2.2
+          // Things that happen for both cases 1.1 and 1.2
           // --------------------------------
           // select label
           this.selectLabel(labelToSelect);
@@ -1288,7 +1241,7 @@ export default class Renderer3D extends Component {
           this.animateForAWhile();
 
         // ------------------------------------------
-        // Case 1): we were not dragging anything
+        // Case 2): we were not dragging anything
         // so this is the first right click to start
         // adding a new label
         } else {
@@ -1371,7 +1324,7 @@ export default class Renderer3D extends Component {
    */
   updateSpritePlaneOrientations() {
     const quat = this._.camera.quaternion;
-    this._.spritePlaneGroup.children.forEach((p) => { p.quaternion.copy(quat); });
+    this._.spritePlaneGroup.children.forEach((p) => p.quaternion.copy(quat));
   }
 
   /**
@@ -1714,7 +1667,7 @@ export default class Renderer3D extends Component {
     return false;
   }
 
-  onResize() {
+  onWindowResize() {
     if (this._.meshGroup !== null) {
       const viewport = this.refs.viewport;
       const w = viewport.offsetWidth;
@@ -1793,7 +1746,6 @@ export default class Renderer3D extends Component {
   }
 
   onHiddenTextChanged() {
-    // console.log('===> onHiddenTextChanged()');
     if (this._.mode === READONLY) return;
     const text = this.refs.hiddenTxtInp.value;
     const label = this._.selectedLabel;

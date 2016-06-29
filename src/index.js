@@ -67,11 +67,7 @@ import AtlasCreate from './components/atlas-create/';
 import AtlasBook from './components/atlas-book/';
 
 import Renderer3DWrapper from './components/renderer-3d-wrapper/';
-import ImageWithLabelsEditionWrapper from './components/image-with-labels-wrappers/edition-wrapper';
-import ImageWithLabelsRegionsOnlyWrapper from './components/image-with-labels-wrappers/regionsonly-wrapper';
-import ImageWithLabelsMultiSelectWrapper from './components/image-with-labels-wrappers/multiselect-wrapper';
-import ImageWithLabelsWriteAnswerWrapper from './components/image-with-labels-wrappers/writeanswer-wrapper';
-import ImageWithLabelsReadOnlyWrapper from './components/image-with-labels-wrappers/readonly-wrapper';
+import InteractiveImagesTest from './components/interactive-images/test';
 
 // Development help
 // Go AtlasBook: http://localhost:3000/template
@@ -153,12 +149,7 @@ const Routing = (
       <Route path="signup" component={SignUp} onEnter={requireAnnon} />
 
       <Route path="renderer-3d-wrapper" component={Renderer3DWrapper} />
-      <Route path="image-with-labels-edition-wrapper" component={ImageWithLabelsEditionWrapper} />
-      <Route path="image-with-labels-regionsonly-wrapper" component={ImageWithLabelsRegionsOnlyWrapper} />
-      <Route path="image-with-labels-multiselect-wrapper" component={ImageWithLabelsMultiSelectWrapper} />
-      <Route path="image-with-labels-writeanswer-wrapper" component={ImageWithLabelsWriteAnswerWrapper} />
-      <Route path="image-with-labels-readonly-wrapper" component={ImageWithLabelsReadOnlyWrapper} />
-
+      <Route path="interactive-images-test" component={InteractiveImagesTest} />
       <Route path="documents" component={DocumentList} onEnter={fetching()} />
       <Route
         path="documents/:docId"
