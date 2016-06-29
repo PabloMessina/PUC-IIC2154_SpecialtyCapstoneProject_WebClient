@@ -16,6 +16,8 @@ import renderIf from 'render-if';
 import ErrorAlert from '../error-alert';
 import moment from 'moment';
 
+import keyBy from 'lodash/keyBy';
+
 import HorizontalNavigationBar from './navigation-bar/';
 import { withTimeSyncronizer } from '../time-syncronizer';
 
@@ -262,11 +264,8 @@ class Evaluation extends Component {
         .find(att => att.userId === user.id && att.evaluationId === evl.id);
 
       if (attendance) {
-        this.answerObserver = this.observeAnswers(evl, attendance, ids).subscribe(objects => {
-          // console.debug('answers$', objects);
-          const answers = {};
-          objects.forEach(({ questionId, answer }) => (answers[questionId] = answer));
-          this.setState({ answers });
+        this.answerObserver = this.observeAnswers(evl, attendance, ids).subscribe(answers => {
+          this.setState({ answers: keyBy(answers, 'questionId').map(a => a.answer) });
         });
       }
 
