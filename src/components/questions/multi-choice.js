@@ -67,7 +67,11 @@ const MultiChoice = ({ mode, fields, answer, onFieldsChange, onAnswerChange, ...
 const Editor = ({ choices, fields, disabled, onTextChange, onRemoveChoice, onAddChoice, onCheck, ...props }) => {
   const selectable = choices.length || 0;
   return (
-    <form style={styles.container} {...props}>
+    <form
+      style={styles.container}
+      onSubmit={(e) => e.preventDefault()}
+      {...props}
+    >
       <div style={styles.column}>
         {fields.choices.map((choice, i) => (
           <div key={i} style={styles.row}>
@@ -76,7 +80,7 @@ const Editor = ({ choices, fields, disabled, onTextChange, onRemoveChoice, onAdd
               bsStyle="link"
               type="button"
               onClick={() => onRemoveChoice(i)}
-              >
+            >
               -
             </Button>
             <Checkbox
