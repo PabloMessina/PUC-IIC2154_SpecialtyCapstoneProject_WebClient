@@ -55,7 +55,7 @@ const styles = {
     color: Colors.WHITE,
   },
   buttonFalse: {
-    backgroundColor: Colors.RED,
+    backgroundColor: Colors.MAIN,
     color: Colors.WHITE,
   },
 };
