@@ -1,53 +1,50 @@
 import React, { PropTypes, Component } from 'react';
-import { Grid, Col, Panel, Button, Glyphicon } from 'react-bootstrap';
+import { Grid, Col, Panel, Button } from 'react-bootstrap';
 import { withRouter } from 'react-router';
 import renderIf from 'render-if';
-import CourseList from '../course-list/';
+import Icon from 'react-fa';
 
 import app from '../../app';
 const courseService = app.service('/courses');
 
+import CourseList from '../course-list/';
+
+
 class CourseTab extends Component {
 
-  static get propTypes() {
-    return {
-      organization: PropTypes.object,
-      membership: PropTypes.object,
-      router: PropTypes.object,
-    };
+  static propTypes = {
+    organization: PropTypes.object,
+    membership: PropTypes.object,
+    router: PropTypes.object,
   }
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      courses: [],
-    };
-    this.onCreateCourse = this.onCreateCourse.bind(this);
-    this.fetchCourses = this.fetchCourses.bind(this);
+  state = {
+    courses: [],
   }
 
   componentDidMount() {
-    this.fetchCourses(this.props.organization.id);
+    this.fetchCourses(this.props.organization);
   }
 
   componentWillReceiveProps(nextProps) {
     if (nextProps.organization) {
-      this.fetchCourses(nextProps.organization.id);
+      this.fetchCourses(nextProps.organization);
     }
   }
 
-  onCreateCourse() {
+  onCreateCourse = () => {
     const url = `/organizations/show/${this.props.organization.id}/courses/create`;
     return this.props.router.push(url);
   }
 
-  fetchCourses(organizationId) {
+  fetchCourses = (organization) => {
     const query = {
-      organizationId,
+      organizationId: organization.id || organization,
     };
     return courseService.find({ query })
-    .then(result => result.data)
-    .then(courses => this.setState({ courses }));
+      .then(result => result.data)
+      .then(courses => courses.map(c => ({ ...c, organization })))
+      .then(courses => this.setState({ courses }));
   }
 
   render() {
@@ -58,7 +55,6 @@ class CourseTab extends Component {
 
     return (
       <Grid style={styles.container}>
-
         <Col xs={12} md={9}>
           <CourseList courses={courses} />
         </Col>
@@ -71,7 +67,7 @@ class CourseTab extends Component {
                 <hr />
                 <p>Want to share knowledge?</p>
                 <Button bsStyle="primary" bsSize="small" onClick={this.onCreateCourse}>
-                  <Glyphicon glyph="plus" /> Create course
+                  <Icon name="plus" style={styles.icon} /> Create course
                 </Button>
               </div>
             )}
@@ -85,6 +81,9 @@ class CourseTab extends Component {
 const styles = {
   container: {
 
+  },
+  icon: {
+    marginRight: 7,
   },
 };
 

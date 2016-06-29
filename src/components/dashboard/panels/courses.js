@@ -2,11 +2,16 @@ import React, { Component, PropTypes } from 'react';
 import { Panel, Image } from 'react-bootstrap';
 import renderIf from 'render-if';
 import { Link } from 'react-router';
+import Icon from 'react-fa';
+
+import uniq from 'lodash/uniq';
+import keyBy from 'lodash/keyBy';
 
 
 import app, { currentUser } from '../../../app';
 const participantService = app.service('/participants');
 const instanceService = app.service('/instances');
+const organizationService = app.service('/organizations');
 
 import Title from './common/title';
 
@@ -20,14 +25,10 @@ class CoursesPanel extends Component {
     };
   }
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      instances: [],
-      total: null,
-    };
-    this.renderInstance = this.renderInstance.bind(this);
-    this.fetchInstances = this.fetchInstances.bind(this);
+  state = {
+    organizations: {},
+    instances: [],
+    total: null,
   }
 
   componentDidMount() {
@@ -40,29 +41,43 @@ class CoursesPanel extends Component {
     }
   }
 
-  fetchInstances(custom) {
+  fetchInstances = async (custom) => {
     let query = {
       userId: currentUser().id,
     };
-    return participantService.find({ query })
-      .then(result => result.data)
-      .then(participants => {
-        query = {
-          id: { $in: participants.map(participant => participant.instanceId) },
-          $populate: 'course',
-          $sort: { createdAt: -1 },
-          ...custom,
-        };
-        return instanceService.find({ query });
-      })
-      .then(({ data, total }) => this.setState({ instances: data, total }));
+    const result = await participantService.find({ query });
+    const participants = result.data;
+    query = {
+      id: { $in: participants.map(participant => participant.instanceId) },
+      $populate: 'course',
+      $sort: { createdAt: -1 },
+      ...custom,
+    };
+    const { data, total } = await instanceService.find({ query });
+    const instances = data;
+    const organizationIds = uniq(instances.map(i => i.course.organizationId));
+    const organizations = await this.fetchOrganizations(organizationIds);
+    return this.setState({ instances, total, organizations: keyBy(organizations, 'id') });
   }
 
-  renderInstance({ course, ...instance }) {
+  fetchOrganizations = (organizationIds) => {
+    const query = {
+      id: { $in: organizationIds },
+    };
+    return organizationService.find({ query })
+      .then(result => result.data);
+  }
+
+  renderInstance = ({ course, ...instance }) => {
+    const organization = this.state.organizations[course.organizationId];
     const url = `/courses/show/${course.id}/instances/show/${instance.id}`;
     return (
       <Link key={instance.id} style={styles.cell} to={url}>
-        <Image style={styles.logo} src="https://coursera-university-assets.s3.amazonaws.com/89/d0ddf06ad611e4b53d95ff03ce5aa7/360px.png" />
+        {organization.logo ? (
+          <Image style={styles.logo} src={organization.logo} />
+        ) : (
+          <Icon name="folder-open" size="4x" />
+        )}
         <h6 style={styles.course}>
           {course.name}
           <br />
@@ -103,6 +118,7 @@ const styles = {
     textDecoration: 'none',
   },
   logo: {
+    objectFit: 'contain',
     width: 80,
     height: 80,
     marginBottom: 8,
