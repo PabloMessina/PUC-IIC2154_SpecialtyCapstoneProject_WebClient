@@ -8,6 +8,7 @@ module.exports = {
     'webpack-dev-server/client?http://localhost:3000',
     'webpack/hot/only-dev-server',
     'babel-polyfill',
+    'whatwg-fetch',
     './src/index.js',
     './stylesheets/app.less',
   ],
