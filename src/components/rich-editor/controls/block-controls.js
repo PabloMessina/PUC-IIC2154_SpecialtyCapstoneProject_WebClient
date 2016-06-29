@@ -72,7 +72,7 @@ export default class BlockControls extends Component {
       });
       this.props.onChange(editorState);
     };
-    this.props.onShowFileModal({ type, multiple: true, acceptedFiles: `${type}/*`, onSuccess });
+    this.props.onShowFileModal({ type, acceptUrl: true, multiple: true, acceptedFiles: `${type}/*`, onSuccess });
   }
 
   addLatex() {
