@@ -15,6 +15,7 @@ import renderIf from 'render-if';
 import JSZip from 'jszip';
 
 import ErrorAlert from '../error-alert';
+import { Colors } from '../../styles';
 // const SUPPORTED_FILES = {
   // image: ['jpg'],
 // };
@@ -55,6 +56,15 @@ export default class FileModal extends Component {
     this.onUrlChange = this.onUrlChange.bind(this);
   }
 
+  componentWillReceiveProps(nextProps) {
+    const { uploadState, files, value } = this.state;
+    if (!uploadState && (files.length > 0 || value)) {
+      this.setState({ uploadState: 'ready' });
+    } else if (uploadState === 'ready' && files.length === 0 && !value) {
+      this.setState({ uploadState: null });
+    }
+  }
+
   onHide() {
     const { uploadState, error } = this.state;
     if (!error && uploadState !== null && uploadState !== 'success') {
@@ -86,7 +96,8 @@ export default class FileModal extends Component {
 
   onDrop(dropped) {
     const files = update(this.state.files, { $push: dropped });
-    this.setState({ files });
+    const uploadState = files.length > 0 ? 'ready' : this.state.uploadState;
+    this.setState({ files, uploadState });
   }
 
   onDropRejected() {
@@ -139,14 +150,12 @@ export default class FileModal extends Component {
       this.onSuccess();
     } else if (error) {
       this.onHide();
-    } else {
+    } else if (uploadState === 'ready') {
       this.onUpload();
     }
   }
 
-  onRemoveFile(e, index) {
-    e.preventDefault();
-    e.stopPropagation();
+  onRemoveFile(index) {
     const files = update(this.state.files, { $splice: [[index, 1]] });
     this.setState({ files });
   }
@@ -169,11 +178,15 @@ export default class FileModal extends Component {
 
   render() {
     const { show, acceptedFiles, maxFiles, acceptUrl } = this.props;
-    const { files, uploadState, error } = this.state;
+    const { files, value, uploadState, error } = this.state;
 
-    let buttonText;
     let buttonDisabled = true;
+    let buttonText;
     switch (uploadState) {
+      case 'ready':
+        buttonText = 'Upload';
+        buttonDisabled = false;
+        break;
       case 'uploading':
         buttonText = 'Uploading...';
         break;
@@ -185,46 +198,51 @@ export default class FileModal extends Component {
         buttonDisabled = false;
     }
 
+    const urlInput = acceptUrl && files.length === 0 ? (
+      <FormGroup>
+        <ControlLabel>Type in an url:</ControlLabel>
+        <FormControl
+          type="text"
+          value={this.state.value}
+          placeholder="http://www.something.com/hello.png"
+          onChange={this.onUrlChange}
+        />
+      </FormGroup>
+    ) : null;
+
+    const dropzone = !value ? (
+      <Dropzone
+        style={styles.dropzone}
+        activeStyle={{ ...styles.dropzone, backgroundColor: Colors.withAlpha('MAIN', 0.2) }}
+        rejectStyle={{ ...styles.dropzone, backgroundColor: Colors.withAlpha('RED', 0.2) }}
+        accept={acceptedFiles}
+        onDrop={this.onDrop}
+        onDropRejected={this.onDropRejected}
+      >
+        <p>Click or drop some files!</p>
+      </Dropzone>
+    ) : null;
+
     return (
       <Modal show={show} onHide={this.onHide}>
         <Modal.Body>
+          {urlInput}
           {renderIf(!error && uploadState !== 'success')(() => (
             <div>
-              {renderIf(acceptUrl)(() => (
-                <FormGroup>
-                  <ControlLabel>Type in an url:</ControlLabel>
-                  <FormControl
-                    type="text"
-                    value={this.state.value}
-                    placeholder="http://www.something.com/hello.png"
-                    onChange={this.onUrlChange}
-                  />
-                </FormGroup>
+              {renderIf(files)(() => (
+                <ListGroup>
+                  {files.map((file, i) => (
+                    <ListGroupItem style={styles.file} key={i}>
+                      {file.name}
+                      <Icon name="remove" onClick={() => this.onRemoveFile(i)} />
+                    </ListGroupItem>
+                  ))}
+                </ListGroup>
               ))}
-              <Dropzone
-                style={styles.dropzone}
-                accept={acceptedFiles}
-                onDrop={this.onDrop}
-                onDropRejected={this.onDropRejected}
-              >
-                {renderIf(files)(() => (
-                  <ListGroup>
-                    {files.map((file, i) => (
-                      <ListGroupItem style={styles.file} key={i}>
-                        {file.name}
-                        <Icon name="remove" onClick={(e) => this.onRemoveFile(e, i)} />
-                      </ListGroupItem>
-                    ))}
-                  </ListGroup>
-                ))}
-
-                {renderIf(files.length === 0)(() => (
-                  <p>Click or drop some files!</p>
-                ))}
-              </Dropzone>
+              {dropzone}
             </div>
           ))}
-          {renderIf(uploadState === 'success')(() => (
+          {renderIf(uploadState === 'success' && !value)(() => (
             <p>All files uploaded!</p>
           ))}
           <ErrorAlert
@@ -248,8 +266,13 @@ export default class FileModal extends Component {
 
 const styles = {
   dropzone: {
-    height: 300,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    height: 200,
     width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   file: {
     display: 'flex',
