@@ -349,6 +349,7 @@ class DocumentDescription extends Component {
       tags = this.tagsObjectToArray(this.state.tags);
     }
     image = image || 'http://sightlinemediaentertainment.com/wp-content/uploads/2015/09/placeholder-cover.jpg';
+    tags = tags.map((element) => ` ${element}`);
     return (
       <Grid>
         <DocumentTitle title={this.state.title} />
@@ -422,6 +423,7 @@ class DocumentDescription extends Component {
                     <div style={styles.formTags}>
                       <Select
                         multi
+                        allowCreate
                         simpleValue={false}
                         disabled={false}
                         value={tags}
