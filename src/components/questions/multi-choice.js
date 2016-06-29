@@ -76,7 +76,7 @@ const Editor = ({ choices, fields, disabled, onTextChange, onRemoveChoice, onAdd
               bsStyle="link"
               type="button"
               onClick={() => onRemoveChoice(i)}
-              >
+            >
               -
             </Button>
             <Checkbox
@@ -113,21 +113,23 @@ const Editor = ({ choices, fields, disabled, onTextChange, onRemoveChoice, onAdd
 
 const Responder = ({ fields, choices, disabled, onCheck, ...props }) => (
   <div style={styles.container} {...props}>
-    <div style={styles.column}>
-      {fields.choices.map((choice, i) => (
-        <Checkbox
-          key={i}
-          disabled={disabled}
-          checked={choices.includes(i)}
-          onChange={() => onCheck(i, fields.selectable)}
-        >
-          {choice.text}
-        </Checkbox>
-      ))}
-      <p style={styles.instruction}>
-        Select {fields.selectable} option{fields.selectable > 1 ? 's' : ''}
-      </p>
-    </div>
+    {fields.choices ? (
+      <div style={styles.column}>
+        {fields.choices.map((choice, i) => (
+          <Checkbox
+            key={i}
+            disabled={disabled}
+            checked={choices.includes(i)}
+            onChange={() => onCheck(i, fields.selectable)}
+          >
+            {choice.text}
+          </Checkbox>
+        ))}
+        <p style={styles.instruction}>
+          Select {fields.selectable} option{fields.selectable > 1 ? 's' : ''}
+        </p>
+      </div>
+    ) : <p>Corrupted question</p>}
   </div>
 );
 
