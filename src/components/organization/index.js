@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PropTypes, Component } from 'react';
 import { Grid, Tabs, Tab, Row, Col, Image } from 'react-bootstrap';
 import Icon from 'react-fa';
 import { withRouter } from 'react-router';
@@ -31,24 +31,17 @@ const TABS = [{
 
 class Organization extends Component {
 
-  static get propTypes() {
-    return {
-      // From react-router
-      router: React.PropTypes.any,
-      params: React.PropTypes.object,
-      children: React.PropTypes.any,
-      location: React.PropTypes.any,
-    };
+  static propTypes = {
+    // From react-router
+    router: PropTypes.any,
+    params: PropTypes.object,
+    children: PropTypes.any,
+    location: PropTypes.any,
   }
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      organization: props.params.organization,
-      membership: {},
-    };
-    this.renderNavigationTabBar = this.renderNavigationTabBar.bind(this);
-    this.onTabChange = this.onTabChange.bind(this);
+  state = {
+    organization: this.props.params.organization,
+    membership: {},
   }
 
   componentDidMount() {
@@ -64,14 +57,14 @@ class Organization extends Component {
     }
   }
 
-  onTabChange(path) {
+  onTabChange = (path) => {
     if (path && this.activeTab !== path) {
       const organization = this.state.organization;
       this.props.router.replace(`/organizations/show/${organization.id}/${path}`);
     }
   }
 
-  fetchMembership(organizationId) {
+  fetchMembership = (organizationId) => {
     const query = {
       organizationId,
       userId: currentUser().id,
@@ -89,7 +82,7 @@ class Organization extends Component {
     return active;
   }
 
-  renderNavigationTabBar() {
+  renderNavigationTabBar = () => {
     const { membership } = this.state;
     const title = ({ name, icon }) => (
       <span><Icon style={styles.icon} name={icon} /> {name}</span>
@@ -123,7 +116,7 @@ class Organization extends Component {
           <Col xs={12}>
             <Grid style={styles.content}>
               <Row style={styles.banner}>
-                <Col xsOffset={0} xs={12} smOffset={0} sm={11} style={styles.information}>
+                <Col xsHidden style={styles.information}>
                   {renderIf(logo)(() =>
                     <Image style={styles.logo} src={logo} rounded />
                   )}
@@ -131,6 +124,9 @@ class Organization extends Component {
                     <h1 style={styles.name}>{name}</h1>
                     <p style={styles.description}>{description || 'No description'}</p>
                   </div>
+                </Col>
+                <Col smHidden mdHidden lgHidden style={styles.information}>
+                  <h1 style={styles.name}>{name}</h1>
                 </Col>
               </Row>
               <Row>
@@ -205,6 +201,7 @@ const styles = {
     overflow: 'hidden',
   },
   logo: {
+    objectFit: 'contain',
     height: 160,
     width: 160,
     minHeight: 160,
