@@ -14,8 +14,6 @@ import moment from 'moment';
 import Icon from 'react-fa';
 import renderIf from 'render-if';
 
-import keyBy from 'lodash/keyBy';
-
 import app, { currentUser } from '../../app';
 const questionService = app.service('/questions');
 const attendanceService = app.service('/attendances');
@@ -564,7 +562,8 @@ export default class Questions extends Component {
                   // Fetch answer form selected user
                   return this.fetchAsnwersOf(teamId).then(answers => {
                     // Save those answers to the state
-                    const viewAsAnswers = keyBy(answers, 'questionId').map(a => a.answer);
+                    const viewAsAnswers = {};
+                    answers.forEach(a => (viewAsAnswers[a.questionId] = a.answer));
                     this.setState({ viewAsAnswers, viewAsLoading: false });
                   });
                 } else {
