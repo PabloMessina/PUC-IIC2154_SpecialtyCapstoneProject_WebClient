@@ -1,8 +1,9 @@
 import React, { PropTypes, Component } from 'react';
-import { Grid, Col, Panel, Button, Glyphicon } from 'react-bootstrap';
+import { Grid, Col, Panel, Button } from 'react-bootstrap';
 import { withRouter } from 'react-router';
 import AtlasGrid from '../document-list/atlas-grid';
 import renderIf from 'render-if';
+import Icon from 'react-fa';
 
 import app from '../../app';
 const atlasService = app.service('/atlases');
@@ -67,7 +68,7 @@ class AtlasTab extends Component {
                 <hr />
                 <p>Do you want to be your own publisher?</p>
                 <Button bsStyle="primary" bsSize="small" onClick={this.createAtlas}>
-                  <Glyphicon glyph="plus" /> Create atlas
+                  <Icon name="plus" style={styles.icon} /> Create atlas
                 </Button>
               </div>
             )}
@@ -81,6 +82,9 @@ class AtlasTab extends Component {
 const styles = {
   container: {
 
+  },
+  icon: {
+    marginRight: 4,
   },
 };
 

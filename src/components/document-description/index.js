@@ -8,7 +8,6 @@ import {
   Col,
   Row,
   Button,
-  Glyphicon,
   Nav,
   NavItem,
   FormGroup,
@@ -459,8 +458,8 @@ class DocumentDescription extends Component {
         <Col xs={12} md={12}>
           <Panel>
             <Nav bsStyle="tabs" activeKey={this.state.selectedTab} onSelect={this.handleSelect}>
-              <NavItem eventKey={1}> <Glyphicon glyph="pencil" /> My Notes</NavItem>
-              <NavItem eventKey={2} title="Item"> <Glyphicon glyph="bookmark" /> My Bookmarks </NavItem>
+              <NavItem eventKey={1}> <Icon name="pencil" style={styles.icon} /> My Notes</NavItem>
+              <NavItem eventKey={2} title="Item"> <Icon name="bookmark" style={styles.icon} /> My Bookmarks </NavItem>
             </Nav>
              {(() => {
                switch (this.state.selectedTab) {
