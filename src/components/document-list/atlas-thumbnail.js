@@ -24,8 +24,12 @@ class AtlasThumbnail extends Component {
     const route = `/documents/${this.props.document.id}`;
     const doc = this.props.document;
     const image = doc.cover.url || 'http://sightlinemediaentertainment.com/wp-content/uploads/2015/09/placeholder-cover.jpg';
-    const tags = doc.tags || [];
-
+    let tags = doc.tags || [];
+    if (tags.length === 0) {
+      tags = 'No tags';
+    } else {
+      tags = tags.map((element) => `${element} `);
+    }
     return (
       <Panel style={styles.box} onClick={() => this.props.router.push(route)}>
         <Image style={styles.image} src={image} thumbnail responsive />
