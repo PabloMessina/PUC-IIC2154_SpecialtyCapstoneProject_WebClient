@@ -72,7 +72,7 @@ export default class BlockControls extends Component {
       });
       this.props.onChange(editorState);
     };
-    this.props.onShowFileModal({ type, acceptUrl: true, multiple: true, acceptedFiles: `${type}/*`, onSuccess });
+    this.props.onShowFileModal({ type, acceptUrl: true, acceptedFiles: `${type}/*`, onSuccess });
   }
 
   addLatex() {
@@ -105,9 +105,7 @@ export default class BlockControls extends Component {
     this.props.onShowFileModal({
       type: 'model',
       zip: true,
-      multiple: true,
       acceptedFiles: '.mtl,.obj,image/*',
-      maxFiles: 10,
       onSuccess,
     });
   }
@@ -128,7 +126,7 @@ export default class BlockControls extends Component {
       });
       this.props.onChange(editorState);
     };
-    this.props.onShowFileModal({ type, multiple: true, acceptedFiles: 'image/*', onSuccess });
+    this.props.onShowFileModal({ type, acceptedFiles: 'image/*', onSuccess });
   }
 
   render() {

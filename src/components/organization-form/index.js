@@ -84,7 +84,7 @@ export default class OrganizationForm extends Component {
         this.setState({ logo: urls[0] });
       }
     };
-    this.showFileModal({ multiple: false, acceptedFiles: 'image/*', onSuccess });
+    this.showFileModal({ acceptUrl: true, multiple: false, acceptedFiles: 'image/*', onSuccess });
   }
 
   showFileModal(props) {

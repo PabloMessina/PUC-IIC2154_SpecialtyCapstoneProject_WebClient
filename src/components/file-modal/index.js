@@ -26,7 +26,7 @@ export default class FileModal extends Component {
       show: React.PropTypes.bool,
       onSuccess: React.PropTypes.func,
       onHide: React.PropTypes.func,
-      maxFiles: React.PropTypes.number,
+      multiple: React.PropTypes.bool,
       acceptedFiles: React.PropTypes.string,
       acceptUrl: React.PropTypes.bool,
       type: React.PropTypes.string,
@@ -56,7 +56,7 @@ export default class FileModal extends Component {
     this.onUrlChange = this.onUrlChange.bind(this);
   }
 
-  componentWillReceiveProps(nextProps) {
+  componentWillReceiveProps() {
     const { uploadState, files, value } = this.state;
     if (!uploadState && (files.length > 0 || value)) {
       this.setState({ uploadState: 'ready' });
@@ -84,7 +84,7 @@ export default class FileModal extends Component {
     this.setState({
       files: [],
       fileUrls: [],
-      value: null,
+      value: '',
       uploadState: null,
     }, () => {
       if (fileUrls.length === 0) return;
@@ -95,7 +95,8 @@ export default class FileModal extends Component {
   }
 
   onDrop(dropped) {
-    const files = update(this.state.files, { $push: dropped });
+    const { multiple } = this.props;
+    const files = multiple ? update(this.state.files, { $push: dropped }) : [dropped[0]];
     const uploadState = files.length > 0 ? 'ready' : this.state.uploadState;
     this.setState({ files, uploadState });
   }
@@ -177,7 +178,7 @@ export default class FileModal extends Component {
   }
 
   render() {
-    const { show, acceptedFiles, maxFiles, acceptUrl } = this.props;
+    const { show, acceptedFiles, multiple, acceptUrl } = this.props;
     const { files, value, uploadState, error } = this.state;
 
     let buttonDisabled = true;
@@ -203,7 +204,7 @@ export default class FileModal extends Component {
         <ControlLabel>Type in an url:</ControlLabel>
         <FormControl
           type="text"
-          value={this.state.value}
+          value={value}
           placeholder="http://www.something.com/hello.png"
           onChange={this.onUrlChange}
         />
@@ -216,6 +217,7 @@ export default class FileModal extends Component {
         activeStyle={{ ...styles.dropzone, backgroundColor: Colors.withAlpha('MAIN', 0.2) }}
         rejectStyle={{ ...styles.dropzone, backgroundColor: Colors.withAlpha('RED', 0.2) }}
         accept={acceptedFiles}
+        multiple={multiple}
         onDrop={this.onDrop}
         onDropRejected={this.onDropRejected}
       >
