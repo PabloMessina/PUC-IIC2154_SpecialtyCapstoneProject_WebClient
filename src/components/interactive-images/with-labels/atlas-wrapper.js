@@ -122,8 +122,8 @@ export default class ImageWithLabelsAtlasWrapper extends Component {
     return (
       <div style={style} ref={ref} key={key}>
         <div style={styles.label.innerDiv}>
-          <a href="#" style={styles.label.minimizeButton} onClick={onMinimize}>-</a>
-          <a href="#" style={styles.label.closeButton} onClick={onClose}>x</a>
+          <Icon name="minus" style={styles.label.minimizeButton} onClick={onMinimize} />
+          <Icon name="times" style={styles.label.closeButton} onClick={onClose} />
           <input
             style={styles.label.input}
             id={focusId}
@@ -388,18 +388,18 @@ const styles = {
       backgroundColor: 'white',
     },
     closeButton: {
+      cursor: 'pointer',
       position: 'absolute',
-      top: -6,
-      right: 2,
-      width: 9,
-      height: 7,
+      top: 0,
+      right: 0,
+      padding: 5,
     },
     minimizeButton: {
+      cursor: 'pointer',
       position: 'absolute',
-      top: -6,
-      right: 15,
-      width: 12,
-      height: 9,
+      top: 0,
+      right: 20,
+      padding: 5,
     },
     input: {
       marginTop: 10,
