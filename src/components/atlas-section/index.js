@@ -1,10 +1,7 @@
 import React, { PropTypes, Component } from 'react';
-import { Collapse } from 'react-bootstrap';
 import isEqual from 'lodash/isEqual';
 
 import RichEditor from '../rich-editor';
-
-const MIN_DELTA = 30;
 
 export default class AtlasSection extends Component {
 
@@ -28,23 +25,20 @@ export default class AtlasSection extends Component {
     super(props);
     this.state = {
       previousY: 0,
-      collapsed: false,
     };
-    this.onEditorScroll = this.onEditorScroll.bind(this);
     this.onChangeContent = this.onChangeContent.bind(this);
     this.onChangeTitle = this.onChangeTitle.bind(this);
     this.onTitleLostFocus = this.onTitleLostFocus.bind(this);
   }
 
   // Only update if contents or title have changed
-  shouldComponentUpdate(nextProps, nextState) {
+  shouldComponentUpdate(nextProps) {
     const { content, title } = this.props.section;
-    const collapsedChanged = this.state.collapsed !== nextState.collapsed;
     const contentChanged = !isEqual(nextProps.section.content, content);
     const titleChanged = !isEqual(nextProps.section.title, title);
     const savingChanged = nextProps.saving !== this.props.saving;
 
-    return contentChanged || titleChanged || collapsedChanged || savingChanged;
+    return contentChanged || titleChanged || savingChanged;
   }
 
   onChangeContent(rawContent) {
@@ -65,44 +59,23 @@ export default class AtlasSection extends Component {
     }
   }
 
-  onEditorScroll(e) {
-    const y = e.target.scrollTop;
-    const { previousY } = this.state;
-    const delta = y - previousY;
-    if (delta > MIN_DELTA && !this.state.collapsed) {
-      // Scrolling down
-      this.setState({ collapsed: true });
-    } else if (-delta > MIN_DELTA && this.state.collapsed) {
-      // Scrolling up
-      this.setState({ collapsed: false });
-    } else {
-      return;
-    }
-    this.setState({ previousY: y });
-  }
-
   render() {
     const { section, readOnly, saving } = this.props;
 
     return (
       <div style={styles.container}>
-        <Collapse in={!this.state.collapsed}>
-          <div>
-            <input
-              style={styles.title}
-              onChange={this.onChangeTitle}
-              onBlur={this.onTitleLostFocus}
-              value={section.title}
-              disabled={readOnly}
-            />
-          </div>
-        </Collapse>
+        <input
+          style={styles.title}
+          onChange={this.onChangeTitle}
+          onBlur={this.onTitleLostFocus}
+          value={section.title}
+          disabled={readOnly}
+        />
 
         <RichEditor
           content={section.content}
           saving={saving}
           onChange={this.onChangeContent}
-          onScroll={this.onEditorScroll}
           readOnly={readOnly}
           style={styles.editor}
         />

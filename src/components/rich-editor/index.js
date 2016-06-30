@@ -33,7 +33,6 @@ export default class RichEditor extends Component {
       contentKey: PropTypes.any,
       readOnly: PropTypes.bool,
       onChange: PropTypes.func,
-      onScroll: PropTypes.func,
     };
   }
 
@@ -116,7 +115,7 @@ export default class RichEditor extends Component {
   }
 
   render() {
-    const { style, saving, readOnly, onScroll } = this.props;
+    const { style, saving, readOnly } = this.props;
     const { editorState, editorLocked, showFileModal, fileModalProps } = this.state;
 
     if (!editorState) return null;
@@ -143,7 +142,6 @@ export default class RichEditor extends Component {
         <div
           ref="editorContainer"
           onClick={this.focus}
-          onScroll={onScroll}
           style={{ ...styles.editor, ...style }}
         >
           <Editor
