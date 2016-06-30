@@ -55,7 +55,8 @@ class CoursesPanel extends Component {
     };
     const { data, total } = await instanceService.find({ query });
     const instances = data;
-    const organizationIds = uniq(instances.map(i => i.course.organizationId));
+    // TODO: check if are re-fetched
+    const organizationIds = uniq(instances.filter(i => i.course).map(i => i.course.organizationId));
     const organizations = await this.fetchOrganizations(organizationIds);
     return this.setState({ instances, total, organizations: keyBy(organizations, 'id') });
   }
@@ -94,7 +95,7 @@ class CoursesPanel extends Component {
       <Panel style={{ ...styles.container, ...style }}>
         <Title style={styles.title} title="Courses" />
         <hr />
-        {instances.map(this.renderInstance)}
+        {instances.filter(i => i.course).map(this.renderInstance)}
       </Panel>
     );
   }

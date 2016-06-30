@@ -62,7 +62,7 @@ export default class Announcement extends Component {
     const { instance } = this.state;
     return (
       <div>
-        {renderIf(instance)(() =>
+        {renderIf(instance && instance.course)(() =>
           <Link
             key={instance}
             style={styles.instance}
