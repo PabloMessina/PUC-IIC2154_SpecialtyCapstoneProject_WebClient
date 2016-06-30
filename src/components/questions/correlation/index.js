@@ -60,10 +60,10 @@ class Correlation extends Component {
   componentDidMount() {
     window.addEventListener('resize', this.handleResize);
 
-    const { mode, question, onAnswerChange, onFieldsAndAnswerChange, fields, answer } = this.props;
-    if (mode === 'editor' && (!question.answer || !question.fields)) {
+    const { disable, question, onAnswerChange, onFieldsAndAnswerChange, fields, answer } = this.props;
+    if (disable === 'editor' && (!question.answer || !question.fields)) {
       onFieldsAndAnswerChange(fields, answer);
-    } else if (mode === 'responder' && !question.answer) {
+    } else if (disable === 'responder' && !question.answer) {
       onAnswerChange({ choices: [] });
     } else {
       this.forceUpdate();
@@ -248,14 +248,14 @@ class Correlation extends Component {
   }
 
   renderElementsColumn = (i) => {
-    const { fields, mode } = this.props;
+    const { fields, disable } = this.props;
     const { extraRowSpace, dragging } = this.state;
     const { columns } = fields;
     const { md, sm, xs } = GRID_ELEMENTS_COLUMNS;
     const cursorClick = dragging && dragging.sourceColumn !== i;
     const isDragging = !!dragging;
-    const canEdit = mode === 'editor';
-    const canRespond = mode !== 'reader';
+    const canEdit = disable === 'editor';
+    const canRespond = disable !== 'reader';
 
     return (
       <ElementsColumn
@@ -306,7 +306,7 @@ class Correlation extends Component {
    * with the correct positions and total height.
    */
   render() {
-    const { fields, answer, mode } = this.props;
+    const { fields, answer, disable } = this.props;
     const columns = fields ? fields.columns : null;
 
     if (!columns || columns.length === 0) {
@@ -338,7 +338,7 @@ class Correlation extends Component {
     const onMouseMove = dragging ? dragging.onMouseMove : null;
     const cursor = dragging ? 'cursorGrabbing' : '';
 
-    const canEdit = mode === 'editor';
+    const canEdit = disable === 'editor';
 
     return (
       <div>

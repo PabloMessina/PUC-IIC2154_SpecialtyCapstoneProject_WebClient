@@ -394,6 +394,7 @@ export default class Questions extends Component {
   }
 
   renderEvaluation = (mode) => {
+    debugger;
     const {
       evaluation,
       questions,
@@ -429,7 +430,6 @@ export default class Questions extends Component {
       });
     });
     const points = Object.values(evaluationQuestions).reduce((previous, current) => previous + current.points, 0);
-
     return (
       <Panel>
         <div style={styles.row}>

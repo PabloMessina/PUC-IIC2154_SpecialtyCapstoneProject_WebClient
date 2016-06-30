@@ -68,6 +68,26 @@ const HorizontalNavigationBar = ({
 
     let disabled = false;
     let tooltip = null;
+    if (attendance && section.name === 'Results' && !canEdit) {
+      // In 'ms'
+      const duration = evaluation.duration;
+      // // When the evaluation can be started
+      const startAt = moment(evaluation.startAt);
+      // // When the evaluation finish
+      const finishAt = moment(evaluation.finishAt);
+      // // When the user started
+      const startedAt = moment(attendance.startedAt);
+      // // The user deadline
+      const finishedAt = startedAt.isValid() ? moment.min(finishAt, startedAt.clone().add(duration, 'ms')) : finishAt;
+      // // We are in the valid range
+      const isOpen = now.isBetween(startAt, finishAt);
+      // // We passed our or the global deadline
+      const isOver = now.isAfter(finishedAt);
+      // EDIT is disabled if can't edit and has not started yet or did finish
+      disabled = (isOpen || !isOver);
+      if (isOpen) tooltip = 'Evaluation is open';
+      if (!isOver) tooltip = "Evaluation isn't over";
+    }
     if (attendance && section.name === 'Questions' && !canEdit) {
       // In 'ms'
       const duration = evaluation.duration;

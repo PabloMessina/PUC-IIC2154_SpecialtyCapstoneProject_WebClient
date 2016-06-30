@@ -351,7 +351,7 @@ export default class EvaluationRecorrection extends Component {
     const { attendances } = this.props;
     return (
       <div style={styles.container}>
-        {renderIf(!recorrections.length)(<h3>Sorry, there aren't recorrection in this evaluation.</h3>)}
+        {renderIf(!recorrections.length)(<h3>There aren't recorrection in this evaluation.</h3>)}
         {recorrections.map((recorrection, index) => {
           const attendance = attendances
             .find(item => item.userId === recorrection.responsableId);
