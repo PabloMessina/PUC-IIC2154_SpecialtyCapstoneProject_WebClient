@@ -46,12 +46,21 @@ Section.propTypes = {
   tooltip: PropTypes.any,
 };
 
-const HorizontalNavigationBar = ({ sections, evaluation, attendance, selected, canEdit, onClick, getTime, ...props }) => {
+const HorizontalNavigationBar = ({
+  sections,
+  evaluation,
+  attendance,
+  selected,
+  canEdit,
+  onClick,
+  getTime,
+  ...props,
+}) => {
   const now = getTime();
 
   const filtered = sections.filter(section => {
-    // Remove Results
-    if (!canEdit && section.name === 'Results') return false;
+    // Remove Recorrection section to students
+    if (!canEdit && section.name === 'Recorrection') return false;
     return true;
   }).map(section => {
     const active = selected === section.path;

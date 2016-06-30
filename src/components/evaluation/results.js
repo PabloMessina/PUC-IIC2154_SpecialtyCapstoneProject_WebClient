@@ -189,9 +189,9 @@ export default class EvaluationResults extends Component {
       .catch(error => this.setState({ error }));
   }
 
-  generateData(question, userId, index) {
+  generateData(question, userId) {
     const { answers } = this.state;
-    const { attendances, evaluationQuestions } = this.props;
+    const { attendances, evaluationQuestions, evaluation } = this.props;
 
     // User's attendance object
     const attendance = attendances.find(item => item.userId === userId);
@@ -204,9 +204,9 @@ export default class EvaluationResults extends Component {
     const correct = question.answer;
 
     // expected score
-    const evaluationQuestion = evaluationQuestions.find(eq => eq.questionId === question.id);
+    const evaluationQuestion = evaluationQuestions
+      .find(eq => eq.questionId === question.id && eq.evaluationId === evaluation.id);
     const totalScore = evaluationQuestion ? evaluationQuestion.points : null;
-
     // Default options to tshort correction.
     // TODO: Allow user change the correction options
     const options = question.qtype === 'tshort'
@@ -220,7 +220,7 @@ export default class EvaluationResults extends Component {
     // Correct user's answer
     const score = answer
       ? correction(question.qtype, correct, answer, options)
-      : {};
+      : { score: 0, correct: 0 };
 
     // Create the component corresponding to current data
     const questionComponent = questionFactory(question.qtype, {
@@ -229,7 +229,7 @@ export default class EvaluationResults extends Component {
         ...question,
         answer,
       },
-      identifier: index,
+      // identifier: index,
       disabled: true,
       mode: 'reader',
     });

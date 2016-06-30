@@ -107,8 +107,10 @@ export default class Questions extends Component {
     viewAs: null,
     viewAsLoading: false,
     viewAsAnswers: {},
-
-    currentPoints: this.props.evaluationQuestions.map(eq => eq.points || 0),
+    evaluationQuestions: this.props.evaluationQuestions
+      .reduce((previous, current) => ({ ...previous, [current.questionId]: current }), {}),
+    currentPoints: this.props.evaluationQuestions
+      .reduce((previous, current) => ({ ...previous, [current.questionId]: current.points }), {}),
   }
 
   componentDidMount() {
@@ -128,11 +130,12 @@ export default class Questions extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    const { evaluationQuestions } = this.props;
-    const newEQ = nextProps.evaluationQuestions;
+    const newEQ = nextProps.evaluationQuestions
+      .reduce((previous, current) => ({ ...previous, [current.questionId]: current }), {});
     if (newEQ) {
-      const currentPoints = newEQ.map(eq => eq.points);
-      this.setState({ evaluationQuestions, currentPoints });
+      const currentPoints = Object.values(newEQ)
+        .reduce((previous, current) => ({ ...previous, [current.questionId]: current.points }), {});
+      this.setState({ evaluationQuestions: newEQ, currentPoints });
     }
   }
 
@@ -229,21 +232,21 @@ export default class Questions extends Component {
     }));
   }
 
-  setPoints = (event, index) => {
-    const currentPoints = this.state.currentPoints;
-    currentPoints[index] = event.target.value;
-    this.setState({ currentPoints });
+  setPoints = (event, questionId) => {
+    this.setState({ currentPoints: { ...this.state.currentPoints, [questionId]: event.target.value } });
   }
 
   patchPoints = (event, object) => {
     const { evaluationQuestions } = this.state;
     const questionId = object.question.id;
     const points = event.target.value;
-    const index = evaluationQuestions.findIndex(item => item.questionId === questionId);
-    return evaluationQuestionsService.patch(evaluationQuestions[index].id, { points })
+    const evaluationQuestion = evaluationQuestions[questionId];
+    return evaluationQuestionsService.patch(evaluationQuestion.id, { points })
       .then(result => {
-        evaluationQuestions[index] = result;
-        this.setState({ evaluationQuestions });
+        const newEq = { ...evaluationQuestions, [questionId]: result };
+        const currentPoints = Object.values(newEq)
+          .reduce((previous, current) => ({ ...previous, [current.questionId]: current.points }), {});
+        this.setState({ evaluationQuestions: newEq, currentPoints });
       })
       .catch(error => this.setState({ error }));
   }
@@ -401,7 +404,7 @@ export default class Questions extends Component {
 
     const { viewAs, viewAsAnswers } = this.state;
     const objects = questions.map(question => {
-      const eq = evaluationQuestions.find(item => item.questionId === question.id) || { points: 0 };
+      const eq = evaluationQuestions[question.id] || { points: 0 };
       let answer = undefined;
       let disabled = false;
       if (mode === 'instructor' && viewAs) {
@@ -425,7 +428,7 @@ export default class Questions extends Component {
         // disabled: mode === 'instructor',
       });
     });
-    const points = evaluationQuestions.reduce((previous, current) => previous + current.points, 0);
+    const points = Object.values(evaluationQuestions).reduce((previous, current) => previous + current.points, 0);
 
     return (
       <Panel>
@@ -443,8 +446,8 @@ export default class Questions extends Component {
                 <input
                   style={styles.pointsInput}
                   type="number"
-                  value={this.state.currentPoints[i]}
-                  onChange={event => this.setPoints(event, i)}
+                  value={this.state.currentPoints[object.question.id]}
+                  onChange={event => this.setPoints(event, object.question.id)}
                   onBlur={event => this.patchPoints(event, object)}
                 />
                 <span style={styles.pts}>pts.</span>

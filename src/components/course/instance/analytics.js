@@ -227,7 +227,7 @@ class Summary extends Component {
           let options = {};
           if (question.qtype === 'tshort') {
             options = {
-              threshold: 0.6,
+              threshold: 0.8,
               lower: true,
               special: true,
             };
@@ -750,7 +750,11 @@ class Summary extends Component {
                     <tr>
                       <th>Standard Deviation</th>
                       {completeAnalytics.map((evaluation, k) => (
-                        <td key={k}> {(evaluation.stddev || evaluation.stddev === 0) ? evaluation.stddev.toFixed(3) : null} </td>
+                        <td key={k}>
+                          {(evaluation.stddev || evaluation.stddev === 0)
+                            ? evaluation.stddev.toFixed(3)
+                            : null}
+                        </td>
                       ))}
                       <th>{avrgs.stddev || avrgs.stddev === 0 ? avrgs.stddev.toFixed(3) : null}</th>
                     </tr>
@@ -1044,7 +1048,11 @@ class Summary extends Component {
                     <tr>
                       <th>Standard Deviation</th>
                       {completeAnalytics.map((evaluation, k) => (
-                        <td key={k}> {evaluation.stddev || evaluation.stddev === 0 ? evaluation.stddev.toFixed(3) : null} </td>
+                        <td key={k}>
+                          {evaluation.stddev || evaluation.stddev === 0
+                              ? evaluation.stddev.toFixed(3)
+                              : null}
+                        </td>
                       ))}
                       <th>{avrgs.stddev || avrgs.stddev === 0 ? avrgs.stddev.toFixed(3) : null}</th>
                     </tr>
