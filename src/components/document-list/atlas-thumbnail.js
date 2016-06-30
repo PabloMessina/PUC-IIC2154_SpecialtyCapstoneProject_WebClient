@@ -61,6 +61,7 @@ const styles = {
     borderRadius: 0,
     top: 5,
     margin: 15,
+    cursor: 'pointer',
   },
   name: {
     whiteSpace: 'nowrap',
