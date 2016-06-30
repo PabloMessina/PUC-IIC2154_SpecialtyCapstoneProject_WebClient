@@ -6,7 +6,7 @@ import {
 const Link = (props) => {
   const { url } = Entity.get(props.entityKey).getData();
   return (
-    <a href={url}>
+    <a href={url} target="_blank">
       {props.children}
     </a>
   );
