@@ -1,14 +1,5 @@
 /* eslint no-param-reassign:0, no-nested-ternary:0 */
 const Utils2D = {
-  /** returns coordinates (x,y) of mouse relative to the element */
-  getElementMouseCoords: (elem, event) => {
-    const bcr = elem.getBoundingClientRect();
-    return {
-      x: event.clientX - bcr.left,
-      y: event.clientY - bcr.top,
-    };
-  },
-
   /** returns coordinates normalized according to the
   element's dimensions */
   getNormalizedCoords: (coords, elem) => ({

@@ -82,8 +82,6 @@ export default class ImageWithLabels extends Component {
     /* ===============================*/
 
     labelsChangedCallback: React.PropTypes.func,
-    gotFocusCallback: React.PropTypes.func,
-    lostFocusCallback: React.PropTypes.func,
 
     /* ===================================*/
     /* READONLY mode only */
@@ -160,7 +158,6 @@ export default class ImageWithLabels extends Component {
       selectedLabelTextDirty: false,
       selectedLabelPositionDirty: false,
       regionWithSelectedString: null,
-      componentFocused: false,
       componentUnmounted: false,
       showLabels: props.showLabels,
       sourceLoaded: false,
@@ -200,6 +197,8 @@ export default class ImageWithLabels extends Component {
     this.startRegionAnimationForLabel = this.startRegionAnimationForLabel.bind(this);
     this.refreshCanvases = this.refreshCanvases.bind(this);
     this.onWindowResize = this.onWindowResize.bind(this);
+    this.refreshAllCirclesRadius = this.refreshAllCirclesRadius.bind(this);
+    this.refreshAllRegionStringPositions = this.refreshAllRegionStringPositions.bind(this);
 
     // specific settings for each mode
     switch (props.mode) {
@@ -245,15 +244,7 @@ export default class ImageWithLabels extends Component {
       /* check if a new circle radius was provided */
       if (nextProps.circleRadius !== this.props.circleRadius) {
         // update radius of all ellipses
-        const canvas = this.refs.labelCanvas;
-        for (const label of this._.labelSet) {
-          for (const reg of label.regions) {
-            if (reg.type === CIRCLE_TYPE) {
-              reg.rx = nextProps.circleRadius / canvas.offsetWidth;
-              reg.ry = nextProps.circleRadius / canvas.offsetHeight;
-            }
-          }
-        }
+        this.refreshAllCirclesRadius(nextProps.circleRadius);
         this.renderForAWhile();
       }
     }
@@ -271,12 +262,6 @@ export default class ImageWithLabels extends Component {
         const canvas = this.refs.labelCanvas;
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
-
-        /* if in edition mode, notify parent that we lost focus */
-        if (mode === MODES.EDITION && this._.componentFocused) {
-          this._.componentFocused = false;
-          this.props.lostFocusCallback();
-        }
       }
     }
 
@@ -350,7 +335,7 @@ export default class ImageWithLabels extends Component {
         break;
       default: break;
     }
-    window.addEventListener('resize', this.onWindowResize);
+    window.removeEventListener('resize', this.onWindowResize);
     // remember we have been unmounted
     this._.componentUnmounted = true;
   }
@@ -362,7 +347,7 @@ export default class ImageWithLabels extends Component {
     const canvas = this.refs.labelCanvas;
     const cwidth = canvas.offsetWidth;
     const cheight = canvas.offsetHeight;
-    const canvCoords = Utils2D.getElementMouseCoords(canvas, event);
+    const canvCoords = DOMUtils.getElementMouseCoords(canvas, event);
     const mouseCanvasX = canvCoords.x;
     const mouseCanvasY = canvCoords.y;
 
@@ -370,17 +355,6 @@ export default class ImageWithLabels extends Component {
     const clickInsideCanvas = Utils2D.coordsInRectangle(mouseCanvasX, mouseCanvasY,
       0, 0, cwidth, cheight)
       && DOMUtils.isAncestorOf(this.refs.canvasWrapper, event.target);
-
-    /* notify about gain or loss of focus to parent */
-    if (clickInsideCanvas && !this._.componentFocused) {
-      this._.componentFocused = true;
-      const { gotFocusCallback } = this.props;
-      if (gotFocusCallback) gotFocusCallback();
-    } else if (!clickInsideCanvas && this._.componentFocused) {
-      this._.componentFocused = false;
-      const { lostFocusCallback } = this.props;
-      if (lostFocusCallback) lostFocusCallback();
-    }
 
     /** left button click */
     if (event.button === LEFT_BUTTON) {
@@ -565,7 +539,7 @@ export default class ImageWithLabels extends Component {
     if (!this._.showLabels) return;
     // get mouse coordinates relative to canvas
     const canvas = this.refs.labelCanvas;
-    const mcoords = Utils2D.getElementMouseCoords(canvas, e);
+    const mcoords = DOMUtils.getElementMouseCoords(canvas, e);
 
     /* dragging a temporal point */
     if (this._.draggingFirstTempPoint || this._.draggingNextTempPoint) {
@@ -665,7 +639,7 @@ export default class ImageWithLabels extends Component {
       const canvas = this.refs.labelCanvas;
       const cwidth = canvas.offsetWidth;
       const cheight = canvas.offsetHeight;
-      const mcoords = Utils2D.getElementMouseCoords(canvas, e);
+      const mcoords = DOMUtils.getElementMouseCoords(canvas, e);
       const ncmcoords = Utils2D.getClippedAndNormalizedCoords(mcoords, canvas);
       // check intersection against dropped points
       const p = this._.tmpPoints[0];
@@ -777,6 +751,14 @@ export default class ImageWithLabels extends Component {
       }
     }
     return null;
+  }
+
+  refreshAllRegionStringPositions() {
+    for (const label of this._.labelSet) {
+      for (const reg of label.regions) {
+        reg.stringPosition = this.getRegionStringPosition(reg);
+      }
+    }
   }
 
   getRegionStringPosition(region) {
@@ -1091,8 +1073,6 @@ export default class ImageWithLabels extends Component {
     // debugger
     if (this._.imageLoaded) {
       const { labelCanvas, imgCanvas, canvasWrapper } = this.refs;
-      if (!labelCanvas || !labelCanvas || !imgCanvas) return;
-
       const img = this._.backgroundImg;
       const canvasAux = this._.canvasAux;
       // resize canvas and canvasAux
@@ -1114,9 +1094,25 @@ export default class ImageWithLabels extends Component {
       // draw canvasAux into imgCanvas
       const imgctx = imgCanvas.getContext('2d');
       imgctx.drawImage(canvasAux, 0, 0, canvasAux.width, canvasAux.height, 0, 0, imgCanvas.width, imgCanvas.height);
+      // refresh radius of all circles
+      this.refreshAllCirclesRadius(this.props.circleRadius);
+      // refresh string positions
+      this.refreshAllRegionStringPositions();
       // refresh GUI
       this.renderForAWhile();
       this.forceUpdate(this.refreshAllLabelsPositions);
+    }
+  }
+
+  refreshAllCirclesRadius(radius) {
+    const canvas = this.refs.labelCanvas;
+    for (const label of this._.labelSet) {
+      for (const reg of label.regions) {
+        if (reg.type === CIRCLE_TYPE) {
+          reg.rx = radius / canvas.offsetWidth;
+          reg.ry = radius / canvas.offsetHeight;
+        }
+      }
     }
   }
 

@@ -1,5 +1,6 @@
 /* eslint no-console:0, no-param-reassign:0, no-alert:0, react/sort-comp:0, key-spacing:0, no-multi-spaces:0 */
 import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
 import ImageWithLabels from './image-with-labels';
 import renderIf from 'render-if';
 import {
@@ -11,6 +12,8 @@ import {
 import Icon, { IconStack } from 'react-fa';
 import ToggleButton from '../../toggle-button/';
 import { Colors } from '../../../styles';
+import DOMUtils from '../../../utils/dom-utils';
+import Utils2D from '../../../utils/utils2D';
 
 const MODES = {
   EDITION: 'EDITION',
@@ -69,6 +72,10 @@ export default class ImageWithLabelsAtlasWrapper extends Component {
       mode,
       metadata,
     };
+    this._ = {
+      componentFocused: false,
+    };
+
     let specificState;
 
     switch (mode) {
@@ -76,6 +83,7 @@ export default class ImageWithLabelsAtlasWrapper extends Component {
         specificState = {};
         this.onCircleRadiusChanged = this.onCircleRadiusChanged.bind(this);
         this.onLabelsChanged = this.onLabelsChanged.bind(this);
+        this.onMouseDown = this.onMouseDown.bind(this);
         break;
       case MODES.READONLY:
         specificState = {
@@ -93,14 +101,51 @@ export default class ImageWithLabelsAtlasWrapper extends Component {
     this.state = { ...commonState, ...specificState };
   }
 
+  componentDidMount() {
+    if (this.state.mode === MODES.EDITION) {
+      window.addEventListener('mousedown', this.onMouseDown);
+    }
+  }
+
   componentWillReceiveProps(nextProps) {
     const { metadata } = nextProps.blockProps;
     if (metadata) this.setState({ metadata });
   }
 
+  componentWillUnmount() {
+    if (this.state.mode === MODES.EDITION) {
+      window.removeEventListener('mousedown', this.onMouseDown);
+    }
+  }
+
   /*-------------------------*/
   /* EDITION MODE FUNCTIONS */
   /*-------------------------*/
+
+  onMouseDown(e) {
+    // debugger
+    const { root, img } = this.refs;
+    const imgRoot = ReactDOM.findDOMNode(img);
+    const { x, y } = DOMUtils.getElementMouseCoords(imgRoot, e);
+
+    const clickInComponent = Utils2D.coordsInRectangle(x, y,
+      0, 0, imgRoot.offsetWidth, imgRoot.offsetHeight)
+      || DOMUtils.isAncestorOf(root, e.target);
+
+    if (clickInComponent) {
+      if (!this._.componentFocused) {
+        this._.componentFocused = true;
+        this.props.blockProps.gotFocusCallback();
+        console.log('got focus');
+      }
+    } else {
+      if (this._.componentFocused) {
+        this._.componentFocused = false;
+        this.props.blockProps.lostFocusCallback();
+        console.log('lost focus');
+      }
+    }
+  }
 
   onCircleRadiusChanged(e) {
     const cr = Number(e.target.value);
@@ -155,12 +200,12 @@ export default class ImageWithLabelsAtlasWrapper extends Component {
     }
 
     return (
-      <div>
+      <div ref="root" style={edtionStyles.root}>
         <div>
           <ImageWithLabels
             mode="EDITION"
             ref="img"
-            style={styles.imgWithLabels}
+            style={edtionStyles.imgWithLabels}
             source={source}
             labels={labels}
             circleRadius={circleRadius}
@@ -301,7 +346,7 @@ export default class ImageWithLabelsAtlasWrapper extends Component {
       {renderIf(source)(() => (
         <div style={readonlyStyles.root}>
           <ImageWithLabels
-            style={styles.imgWithLabels}
+            style={readonlyStyles.imgWithLabels}
             mode="READONLY"
             ref="img"
             source={source}
@@ -327,7 +372,7 @@ export default class ImageWithLabelsAtlasWrapper extends Component {
               </Checkbox>
               <a style={styles.selectAll} onClick={this.selectAllLabels}>Select All</a>{' | '}
               <a style={styles.unselectAll} onClick={this.unselectAllLabels}>Unselect All</a>
-              <ListGroup>
+              <ListGroup style={readonlyStyles.listGroup}>
                 {labels.map(label => this.renderLabelReadonly(label))}
               </ListGroup>
             </div>
@@ -347,32 +392,51 @@ export default class ImageWithLabelsAtlasWrapper extends Component {
 
 
 const readonlyStyles = {
+  imgWithLabels: {
+    width: '70%',
+  },
   imageSidebar: {
     position: 'absolute',
-    left: '80%',
+    left: '70%',
     top: 0,
     marginLeft: 10,
     wordWrap: 'break-word',
     whiteSpace: 'nowrap',
     fontSize: '13px',
-    width: '20%',
+    width: '30%',
+    height: '100%',
+  },
+  listGroup: {
+    overflow: 'scroll',
+    position: 'absolute',
+    top: '72px',
+    bottom: 0,
   },
   root: {
     position: 'relative',
     display: 'inline-block',
+    width: '80%',
+  },
+};
+
+const edtionStyles = {
+  imgWithLabels: {
     width: '100%',
+  },
+  root: {
+    position: 'relative',
+    display: 'inline-block',
+    width: '70%',
   },
 };
 
 const styles = {
-  imgWithLabels: {
-    width: '80%',
-  },
   inlineBlockme: {
     display: 'inline-block',
   },
   toolbar: {
     height: '44px',
+    display: 'inline-block',
   },
   toolbarButton: {
     backgroundColor: 'transparent',

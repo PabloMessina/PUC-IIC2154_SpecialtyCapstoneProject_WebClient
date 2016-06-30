@@ -247,7 +247,7 @@ export default class ImageWithRegions extends Component {
 
     /* get mouse coordinates in canvas space */
     const canvas = this.refs.regionCanvas;
-    const canvCoords = Utils2D.getElementMouseCoords(canvas, event);
+    const canvCoords = DOMUtils.getElementMouseCoords(canvas, event);
     const mouseCanvasX = canvCoords.x;
     const mouseCanvasY = canvCoords.y;
 
@@ -376,7 +376,7 @@ export default class ImageWithRegions extends Component {
 
     // get mouse coordinates relative to canvas
     const canvas = this.refs.regionCanvas;
-    const mcoords = Utils2D.getElementMouseCoords(canvas, e);
+    const mcoords = DOMUtils.getElementMouseCoords(canvas, e);
 
     /* dragging a temporal point */
     if (this._.draggingFirstTempPoint || this._.draggingNextTempPoint) {
@@ -441,7 +441,7 @@ export default class ImageWithRegions extends Component {
     if (this._.draggingFirstTempPoint) {
       // get mouse coordinates relative to canvas
       const canvas = this.refs.regionCanvas;
-      const mcoords = Utils2D.getElementMouseCoords(canvas, e);
+      const mcoords = DOMUtils.getElementMouseCoords(canvas, e);
       const ncmcoords = Utils2D.getClippedAndNormalizedCoords(mcoords, canvas);
       // check intersection against dropped points
       const p = this._.tmpPoints[0];
@@ -496,7 +496,7 @@ export default class ImageWithRegions extends Component {
 
     /* get mouse coordinates in canvas space */
     const canvas = this.refs.regionCanvas;
-    const canvCoords = Utils2D.getElementMouseCoords(canvas, event);
+    const canvCoords = DOMUtils.getElementMouseCoords(canvas, event);
     const mouseCanvasX = canvCoords.x;
     const mouseCanvasY = canvCoords.y;
 

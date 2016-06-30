@@ -42,6 +42,10 @@ export default class Renderer3D extends Component {
   constructor(props) {
     super(props);
 
+    this.state = {
+      mode: props.mode,
+    };
+
     this.threeUpdate = this.threeUpdate.bind(this);
     this.threeRender = this.threeRender.bind(this);
     this.threeAnimate = this.threeAnimate.bind(this);
@@ -104,10 +108,10 @@ export default class Renderer3D extends Component {
   componentDidMount() {
     // add event listeners
     window.addEventListener('resize', this.onWindowResize);
-    window.addEventListener('keydown', this.onKeydown);
-    window.addEventListener('mouseup', this.onMouseUp);
     window.addEventListener('mousemove', this.onMouseMove);
     window.addEventListener('mousedown', this.onWindowMouseDown);
+    window.addEventListener('mouseup', this.onMouseUp);
+    window.addEventListener('keydown', this.onKeydown);
 
     // reference to the viewport div
     const viewport = this.refs.viewport;
@@ -309,7 +313,7 @@ export default class Renderer3D extends Component {
   }
 
   reloadIcons() {
-    if (this._.mode === EDITION) this.reloadDeleteIcon();
+    if (this.state.mode === EDITION) this.reloadDeleteIcon();
     this.reloadMinimizeIcon();
   }
 
@@ -358,7 +362,7 @@ export default class Renderer3D extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (this._.mode === EDITION && this._.meshGroup) {
+    if (this.state.mode === EDITION && this._.meshGroup) {
       /* check for changes in labels */
       // debugger
       if (!isEqual(this._.lastLabelsJSONScreenshot, nextProps.labels)) {
@@ -750,7 +754,7 @@ export default class Renderer3D extends Component {
       // remove labels
       this.clearAllLabelData();
       // notify parent of changes in labels
-      if (this._.mode === EDITION) this.onLabelsChanged();
+      if (this.state.mode === EDITION) this.onLabelsChanged();
     }
     // set the new meshGroup
     this._.meshGroup = meshGroup;
@@ -866,10 +870,11 @@ export default class Renderer3D extends Component {
           const line = new THREE.Line(lineGeo, lineMat);
           lines.add(line);
           this._.sphereToLineMap[sphere.uuid] = line;
-          if (this._.mode !== EVALUATION) this._.lineGroup.add(line);
+          if (this.state.mode !== EVALUATION) this._.lineGroup.add(line);
         });
+
         /** sprite */
-        const text = (this._.mode === EVALUATION) ? '' : label.text;
+        const text = (this.state.mode === EVALUATION) ? '' : label.text;
         const sprite = ThreeUtils.makeTextSprite({
           text: text || DEFAULT_LABEL_MESSAGE,
           opacity: 1,
@@ -877,12 +882,12 @@ export default class Renderer3D extends Component {
           params: this._.normalLabelStyle,
         });
         sprite.position.set(label.position.x, label.position.y, label.position.z);
-        if (this._.mode !== EVALUATION) this._.spriteGroup.add(sprite);
+        if (this.state.mode !== EVALUATION) this._.spriteGroup.add(sprite);
         /** sprite plane */
         const spritePlane =
           ThreeUtils.createPlaneFromSprite(sprite, this._.camera);
         this._.spritePlaneToLabelMap[spritePlane.uuid] = labelObj;
-        if (this._.mode !== EVALUATION) this._.spritePlaneGroup.add(spritePlane);
+        if (this.state.mode !== EVALUATION) this._.spritePlaneGroup.add(spritePlane);
         /** set labelObj's fields */
         labelObj.spheres = spheres;
         labelObj.lines = lines;
@@ -890,7 +895,7 @@ export default class Renderer3D extends Component {
         labelObj.sprite = sprite;
         labelObj.text = label.text;
         labelObj.id = label.id;
-        if (this._.mode === EVALUATION) {
+        if (this.state.mode === EVALUATION) {
           labelObj.minimized = true;
           labelObj.student_answer = '';
         }
@@ -1075,7 +1080,7 @@ export default class Renderer3D extends Component {
               // select label
               const label = this._.spritePlaneToLabelMap[pickedObj.object.uuid];
               this.selectLabel(label);
-              if (this._.mode === EDITION) {
+              if (this.state.mode === EDITION) {
                 /** starts dragging the label */
                 this._.draggingSelectedLabel = true;
                 // plane parameters where dragging will happen
@@ -1093,7 +1098,7 @@ export default class Renderer3D extends Component {
               const sphere = pickedObj.object;
               const label = this._.sphereToLabelMap[sphere.uuid];
               // case 2.1) sphere belongs to already selected label
-              if (label === prevLabel && this._.mode === EDITION) {
+              if (label === prevLabel && this.state.mode === EDITION) {
                 // remove line
                 const line = this._.sphereToLineMap[sphere.uuid];
                 this._.lineGroup.remove(line); // from scene
@@ -1133,7 +1138,7 @@ export default class Renderer3D extends Component {
       }
     } else if (event.button === RIGHT_BUTTON) {
       if (this._.meshGroup !== null && this._.labelsEnabled
-        && this._.mode === EDITION) {
+        && this.state.mode === EDITION) {
         // -----------------
         // set up raycaster
         this._.mouseClipping.x = (screenX / viewport.offsetWidth) * 2 - 1;
@@ -1334,7 +1339,7 @@ export default class Renderer3D extends Component {
     // set text to display according to mode
     // debugger
     let text;
-    if (this._.mode === EVALUATION) {
+    if (this.state.mode === EVALUATION) {
       text = label.student_answer || DEFAULT_EVALUATION_LABEL_MESSAGE;
     } else {
       text = label.text || DEFAULT_LABEL_MESSAGE;
@@ -1351,7 +1356,7 @@ export default class Renderer3D extends Component {
     // debugger
     // set text to display according to mode
     let text;
-    if (this._.mode === EVALUATION) {
+    if (this.state.mode === EVALUATION) {
       text = label.student_answer || DEFAULT_EVALUATION_LABEL_MESSAGE;
     } else {
       text = label.text || DEFAULT_LABEL_MESSAGE;
@@ -1733,12 +1738,14 @@ export default class Renderer3D extends Component {
             break;
         }
         cam.position.copy(shift);
-        this.refs.hiddenTxtInp.blur();
+        if (this.state.mode !== READONLY) {
+          this.refs.hiddenTxtInp.blur();
+        }
         this.animateForAWhile();
         return;
       }
     }
-    if (this._.mode === READONLY || !this._.labelsEnabled) return;
+    if (this.state.mode === READONLY || !this._.labelsEnabled) return;
     if (this._.selectedLabel) {
       if (key === 13) this.unselectSelectedLabel();
       else this.refs.hiddenTxtInp.focus();
@@ -1746,11 +1753,11 @@ export default class Renderer3D extends Component {
   }
 
   onHiddenTextChanged() {
-    if (this._.mode === READONLY) return;
+    if (this.state.mode === READONLY) return;
     const text = this.refs.hiddenTxtInp.value;
     const label = this._.selectedLabel;
     if (label) {
-      if (this._.mode === EDITION) label.text = text;
+      if (this.state.mode === EDITION) label.text = text;
       else label.student_answer = text; // EVALUATION
       this.highlightLabel(label);
       this.refreshIconsPositions();
@@ -1772,9 +1779,9 @@ export default class Renderer3D extends Component {
       this.animateForAWhile(0);
       // if text is dirty, notify parent about it (according to mode)
       if (this._.selectedLabelTextDirty) {
-        if (this._.mode === EDITION) {
+        if (this.state.mode === EDITION) {
           this.onLabelsChanged();
-        } else if (this._.mode === EVALUATION) {
+        } else if (this.state.mode === EVALUATION) {
           this.props.labelAnswerChangedCallback({ id: label.id, text: label.student_answer });
         }
         this._.selectedLabelTextDirty = false;
@@ -1803,10 +1810,12 @@ export default class Renderer3D extends Component {
       this.animateForAWhile(0);
     }
     // prepare hidden input for writing on it
-    this._.canFocusHiddenInput = true;
-    this.refs.hiddenTxtInp.value =
-      (this._.mode === EDITION) ? label.text : label.student_answer;
-    this.refs.hiddenTxtInp.focus();
+    if (this.state.mode !== 'READONLY') {
+      this._.canFocusHiddenInput = true;
+      this.refs.hiddenTxtInp.value =
+        (this.state.mode === EDITION) ? label.text : label.student_answer;
+      this.refs.hiddenTxtInp.focus();
+    }
   }
 
   refreshIconsPositions() {
@@ -1825,7 +1834,7 @@ export default class Renderer3D extends Component {
       .copy(this._.minimizeIconSprite.position);
     this._.minimizeIconCircle.quaternion.copy(quat);
 
-    if (this._.mode === EDITION) {
+    if (this.state.mode === EDITION) {
       // update delete icon's position
       this._.deleteIconSprite.position
         .set(w * 0.5 + h * 0.04 + this._.meshDiameter * ICON_COEF, h * 0.6, 0)
@@ -1945,6 +1954,7 @@ export default class Renderer3D extends Component {
   }
 
   render() {
+    const { mode } = this.state;
     return (
       <div style={styles.root}>
         <div
@@ -1957,7 +1967,9 @@ export default class Renderer3D extends Component {
           onTouchEnd={this.onTouchEnd}
         >
         </div>
-        <input ref="hiddenTxtInp" onChange={this.onHiddenTextChanged} style={styles.hiddenTxtInp}></input>
+        {(mode !== READONLY) ?
+          <input ref="hiddenTxtInp" onChange={this.onHiddenTextChanged} style={styles.hiddenTxtInp}></input>
+          : null}
       </div>
     );
   }
