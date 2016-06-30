@@ -33,7 +33,9 @@ export function tshort(correct, answer, { threshold, lower, special }) {
 
     return last.dist < dist ? last : { dist, word };
   }, { dist: Infinity, word: '' });
-  const isCorrect = threshold ? min.dist <= threshold : min.dist <= min.word.length / 2;
+  const isCorrect = threshold
+    ? min.dist <= (1 - threshold) * min.word.length
+    : min.dist <= min.word.length / 2;
   return {
     correct: isCorrect ? 1 : 0,
     score: 1 - (min.dist / min.word.length),
