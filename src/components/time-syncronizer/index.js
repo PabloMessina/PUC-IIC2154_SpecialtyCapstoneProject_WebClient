@@ -74,7 +74,7 @@ export function withTimeSyncronizer(options) {
         // console.log('bottom', bottom.format());
         // console.log('now', lastChecked.format());
 
-        if (lastChecked.isBetween(bottom, upper)) {
+        if (lastChecked && lastChecked.isBetween(bottom, upper)) {
           // it's ok
           this.setState({ lastChecked: moment(), counter: (counter + 1) % ticks });
         } else {
