@@ -105,7 +105,7 @@ class UserProfile extends Component {
               <Col sm={6}>
                 <Panel header={<h3><Icon name="graduation-cap" /> Courses</h3>}>
                   <ListGroup fill>
-                    {this.state.instances.map(instance => (
+                    {this.state.instances.filter(i => i.course).map(instance => (
                       <ListGroupItem onClick={() => this.onCourseSelect(instance.course)}>
                       {instance.course.name}
                       </ListGroupItem>
